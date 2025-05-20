@@ -1,0 +1,21 @@
+# Root
+node_modules/
+.env
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Client
+client/node_modules/
+client/.next/
+client/dist/
+client/.env.local
+
+# Server
+server/node_modules/
+server/.env
+server/dist/
+server/coverage/
