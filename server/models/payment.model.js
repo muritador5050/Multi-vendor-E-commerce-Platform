@@ -8,7 +8,7 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
     paymentProvider: { type: String, required: true }, // Stripe, PayPal, etc.
-    paymentId: { type: String, required: true, unique: true },
+    paymentId: { type: String, required: true, unique: true, index: true },
     amount: { type: Number, required: true, min: 0 },
     currency: { type: String, default: 'USD' },
     status: {
@@ -20,7 +20,5 @@ const paymentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-paymentSchema.index({ paymentId: 1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

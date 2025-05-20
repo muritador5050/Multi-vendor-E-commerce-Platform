@@ -1,8 +1,5 @@
-const mongoose = require('mongoose');
 const Order = require('../models/order.model');
 const { resSuccessObject } = require('../utils/responseObject');
-const Product = require('../models/product.model');
-const User = require('../controllers/user.controllers');
 
 class OrderController {
   //Create new order
