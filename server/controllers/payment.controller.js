@@ -1,36 +1,95 @@
 const Payment = require('../models/payment.model');
+const Order = require('../models/order.model');
 const { resSuccessObject } = require('../utils/responseObject');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const crypto = require('crypto');
+require('dotenv').config();
 
 //Payment controller
 class PaymentController {
   //Create a new payment
   static async createPayment(req, res) {
     const {
-      order,
+      order: orderId,
       paymentProvider,
-      paymentId,
       amount,
-      currency,
-      status,
+      currency = currency || 'USD',
       paidAt,
     } = req.body;
 
-    const existingPayment = await Payment.findOne({ paymentId });
+    if (!paymentProvider || !orderId || !amount)
+      return res.status(404).json('Missing required payment fields');
+
+    if (!['stripe', 'paypal', 'paystack'].includes(paymentProvider))
+      return res.status(404).json('Unsupported payment provider');
+
+    //Check for existing payment
+    const existingPayment = await Payment.findOne({
+      order: orderId,
+      status: { $in: ['completed', 'pending'] },
+    });
     if (existingPayment) {
-      res.status(400).json({ message: 'Payment already exist!' });
+      res
+        .status(400)
+        .json({ message: 'Payment already exists for this order' });
     }
 
+    // Generate idempotency key
+    const idempotencyKey = crypto.randomUUID();
+
+    // Create payment with respective provider
+    let paymentData = {};
+    let paymentMethodDetails = {};
+
+    if (paymentProvider === 'stripe') {
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount: Math.round(amount * 100),
+          currency: currency.toLowerCase(),
+          metaData: { orderId, idempotencyKey },
+        },
+        { idempotencyKey }
+      );
+      paymentData = {
+        paymentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+      };
+      paymentMethodDetails = {
+        clientSecret: paymentIntent.client_secret,
+        publicKey: process.env.STRIPE_PUBLIC_KEY,
+      };
+    }
+
+    // Create payment record
     const payment = await Payment.create({
-      order,
+      order: orderId,
       paymentProvider,
-      paymentId,
+      paymentId: paymentData.paymentId,
       amount,
-      currency: currency || 'USD',
-      status: status || 'pending',
-      paidAt,
+      currency,
+      status: 'pending',
+      idempotencyKey,
+      paymentDetails: btoa(paymentData),
+      metadata: {
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip,
+      },
     });
 
-    res.json(resSuccessObject({ results: payment }));
+    res.json(
+      resSuccessObject({
+        results: {
+          payment: {
+            id: payment._id,
+            amount,
+            currency,
+            status: payment.status,
+            paymentProvider,
+          },
+          paymentMethodDetails,
+        },
+      })
+    );
   }
 
   //Get all payments
@@ -106,6 +165,8 @@ class PaymentController {
       })
     );
   }
+
+  //
 
   //Delete or Cancel payment
   static async deletePayment(req, res) {
