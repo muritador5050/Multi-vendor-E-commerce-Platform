@@ -20,10 +20,10 @@ const login = joi
   })
   .required();
 
-exports.reviewInput = joi.object({
+const reviewInput = joi.object({
   product: joi.string().required(),
   rating: joi.number().min(1).max(5).required(),
   comment: joi.string().optional(),
 });
 
-module.exports = { register, login };
+module.exports = { register, login, reviewInput };
