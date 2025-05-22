@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
 //Routes
-app.use('/api', require('./routes'));
+app.use('/', require('./routes'));
 
 // Error handling middleware
 app.use(globalErrorHandler);

@@ -5,33 +5,10 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 
 // Create order
-router.post('/', authenticate, asyncHandler(OrderController.creatOrder));
-
-// Get logged-in user's orders
-router.get(
-  '/user/:id',
-  authenticate,
-  asyncHandler(OrderController.getOrderByUser)
-);
-
-// Get all orders (admin)
-router.get(
-  '/',
-  authenticate,
-  isAdmin,
-  asyncHandler(OrderController.getAllOrders)
-);
-
-// Get order by ID
-router.get('/:id', authenticate, asyncHandler(OrderController.getOrderById));
-
-// Update order status (admin)
-router.put(
-  '/:id/status',
-  authenticate,
-  isAdmin,
-  asyncHandler(OrderController.updateOrderStatus)
-);
+router
+  .route('/')
+  .post(authenticate, asyncHandler(OrderController.creatOrder))
+  .get(authenticate, isAdmin, asyncHandler(OrderController.getAllOrders));
 
 //Get order statistics
 router.get(
@@ -40,13 +17,24 @@ router.get(
   isAdmin,
   asyncHandler(OrderController.getOrderStats)
 );
-
-// Soft delete an order (admin)
-router.delete(
-  '/:id',
+// Get logged-in user's orders
+router.get(
+  '/users/:id',
+  authenticate,
+  asyncHandler(OrderController.getOrderByUser)
+);
+// Update order status (admin)
+router.put(
+  '/:id/status',
   authenticate,
   isAdmin,
-  asyncHandler(OrderController.deleteOrder)
+  asyncHandler(OrderController.updateOrderStatus)
 );
+
+// Get order by ID
+router
+  .route('/:id')
+  .get(authenticate, asyncHandler(OrderController.getOrderById))
+  .delete(authenticate, isAdmin, asyncHandler(OrderController.deleteOrder));
 
 module.exports = router;

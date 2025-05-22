@@ -4,18 +4,15 @@ const Products = require('../controllers/product.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 
 // Create a new product
-router.post('/products', asyncHandler(Products.createProduct));
+router
+  .route('/')
+  .post(asyncHandler(Products.createProduct))
+  .get(asyncHandler(Products.getAllProducts));
 
-// Get all products
-router.get('/products', asyncHandler(Products.getAllProducts));
-
-// Get a single product by ID
-router.get('/products/:id', asyncHandler(Products.getProductById));
-
-// Update a product by ID
-router.put('/products/:id', asyncHandler(Products.updateProduct));
-
-// Delete a product by ID
-router.delete('/products/:id', asyncHandler(Products.deleteProduct));
+router
+  .route('/:id')
+  .get(asyncHandler(Products.getProductById))
+  .put(asyncHandler(Products.updateProduct))
+  .delete(asyncHandler(Products.deleteProduct));
 
 module.exports = router;
