@@ -225,11 +225,8 @@ class UserController {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Get the requesting user's details
-    const requestingUser = await User.findById(req.user.id);
-
     // Allow access if user is admin OR if user is requesting their own data
-    if (requestingUser !== 'admin' && req.params.id !== req.user.id) {
+    if (req.user.role !== 'admin' && req.params.id !== req.user.id) {
       return res.status(403).json({
         message: 'Access denied. You can only access your own profile.',
       });
@@ -259,11 +256,16 @@ class UserController {
 
   // Delete user (admin only)
   static async deleteUser(req, res) {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found!' });
     }
+
+    if (!req.user.id || req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin permission required!' });
+    }
+    await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
   }
 }
