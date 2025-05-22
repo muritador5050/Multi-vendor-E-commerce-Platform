@@ -18,13 +18,15 @@ const authenticate = (req, res, next) => {
     req.user = decode;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Invalid or Expired token' });
   }
 };
 
 const isAdmin = asyncHandler(async function (req, res, next) {
   if (req.user.role !== 'admin') {
-    res.json({ message: 'Access denied!' });
+    return res
+      .status(403)
+      .json({ message: 'Access denied. Admin role required.' });
   }
   next();
 });

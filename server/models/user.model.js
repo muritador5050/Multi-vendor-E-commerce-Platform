@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../configs/index');
+const { JWT_SECRET, REFRESH_TOKEN } = require('../configs/index');
 const bcrypt = require('bcrypt');
 const EmailService = require('../services/emailService');
 
@@ -59,9 +59,9 @@ const userSchema = new mongoose.Schema(
     },
     emailVerificationToken: String,
     emailVerificationExpires: Date,
-
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    refreshToken: String,
   },
   { timestamps: true }
 );
@@ -77,11 +77,17 @@ userSchema.methods.checkPassword = async function (password) {
 };
 
 userSchema.methods.generateToken = function () {
-  return jwt.sign(
+  const accessToken = jwt.sign(
     { id: this._id, email: this.email, role: this.role },
     JWT_SECRET,
     { expiresIn: '1h' }
   );
+  const refreshToken = jwt.sign(
+    { id: this._id, email: this.email, role: this.role },
+    REFRESH_TOKEN,
+    { expiresIn: '30d' }
+  );
+  return { accessToken, refreshToken };
 };
 
 //Method to generate email reset token
@@ -107,10 +113,10 @@ userSchema.methods.createPasswordResetToken = function () {
 // Pre-save: generate verification token before saving new user
 userSchema.pre('save', async function (next) {
   // Check if this is a Google or Facebook user and skip token generation
-  if (this.googleId && this.facebookId && this.isEmailVerified) {
+  if ((this.googleId || this.facebookId) && this.isEmailVerified) {
     return next();
   }
-  if (this.isNew) {
+  if (this.isNew || !this.isEmailVerified) {
     this.generateVerificationEmailToken();
   }
   next();

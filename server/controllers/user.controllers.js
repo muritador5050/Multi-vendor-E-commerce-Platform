@@ -1,32 +1,73 @@
-const User_model = require('../models/user.model');
+const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../configs/index');
 const { resSuccessObject } = require('../utils/responseObject');
 const EmailService = require('../services/emailService');
 const passport = require('passport');
 
-//Controller
-class User {
-  //Create users
+class UserController {
+  //Register user
   static async createUser(req, res) {
-    const findByEmail = await User_model.findByEmail(req.body.email);
+    //Find existind user
+    const findByEmail = await User.findByEmail(req.body.email);
     if (findByEmail) {
-      return res
-        .status(400)
-        .json({ message: 'User with this email already exist' });
+      return res.status(400).json({ message: 'User already exist' });
     }
 
     // Only include allowed fields
-    const user = await User_model.create({ ...req.body });
-
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    const user = await User.create({ ...req.body });
 
     res.json(
       resSuccessObject({
         message:
-          'User created successfully. Please verify your email to login!',
-        results: { user: userResponse },
+          'User created successfully. Please check your email for verification.',
+        results: { userId: user._id },
+      })
+    );
+  }
+  //Login user
+  static async loginUser(req, res, next) {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user || !(await user.checkPassword(password))) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (!user.isEmailVerified) {
+      return res
+        .status(401)
+        .json({ message: 'Please verify your email first' });
+    }
+
+    //Generate token
+    const { accessToken, refreshToken } = user.generateToken();
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res.status(200).json(
+      resSuccessObject({
+        message: 'Login successful',
+        accessToken,
+        refreshToken,
+        results: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      })
+    );
+  }
+
+  // Get all users (admin only)
+  static async getAllUsers(req, res) {
+    const users = await User.find({}, '-password, -refreshToken');
+    res.json(
+      resSuccessObject({
+        results: users,
       })
     );
   }
@@ -35,19 +76,15 @@ class User {
   static async emailVerification(req, res) {
     //Token
     const { token } = req.params;
-    const decode = jwt.verify(token, JWT_SECRET);
 
     //Model
-    const user = await User_model.findOne({
-      _id: decode.id,
+    const user = await User.findOne({
       emailVerificationToken: token,
       emailVerificationExpires: { $gt: Date.now() },
     });
 
     if (!user) {
-      return res.status(400).json({
-        message: 'Invalid or expired verification token',
-      });
+      return res.status(400).json({ message: 'Invalid verification token' });
     }
 
     if (user.isEmailVerified) {
@@ -62,55 +99,15 @@ class User {
 
     //Send welcome email
     await EmailService.sendWelcomeEmail(user);
-    res.json(
-      resSuccessObject({
-        message: 'Email verified successfully.',
-      })
-    );
-  }
-
-  //Login users
-  static async loginUser(req, res, next) {
-    const { email, password } = req.body;
-
-    const user = await User_model.findOne({ email });
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: 'User with this email does not exist' });
-    }
-
-    if (!user.isEmailVerified) {
-      return next(new Error('Please Verify Your Email First!', { cause: 404 }));
-    }
-
-    //Check password
-    const isMatch = await user.checkPassword(password);
-    if (!isMatch) return next(new Error('Invalid Password!', { cause: 404 }));
-
-    //Generate token
-    const token = user.generateToken();
-
-    res.status(200).json(
-      resSuccessObject({
-        message: 'Login successful',
-        results: { token },
-      })
-    );
+    res.json({ message: 'Email verified successfully' });
   }
 
   // Request password reset
   static async forgotPassword(req, res) {
     //Find user by email
-    const user = await User_model.findOne({ email: req.body.email });
+    const user = await User.findOne({ email: req.body.email });
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User with that email does not exist',
-      });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Generate reset token
     const resetToken = user.createPasswordResetToken();
@@ -119,60 +116,49 @@ class User {
     await EmailService.sendPasswordResetEmail(user, resetToken);
 
     // 5. Respond to client
-    return res.status(200).json({
-      success: true,
-      message: 'Password reset email sent successfully',
-    });
+    res.json({ message: 'Password reset email sent' });
   }
 
-  // Reset password with token
-  static async resetPassword(req, res) {
-    const { token } = req.params;
-    const decode = jwt.verify(token, JWT_SECRET);
-
-    if (!req.body.password) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password is required',
-      });
+  //Resend password reset email
+  static async resendForgotPassword(req, res) {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(400).json('Invalid email');
     }
 
-    const user = await User_model.findOne({
-      _id: decode.id,
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    await EmailService.sendPasswordResetEmail(user, resetToken);
+
+    return res.json({ message: 'Password resend' });
+  }
+
+  // Reset password
+  static async resetPassword(req, res) {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
     });
 
     // Check if user exists and token hasn't expired
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'Token is invalid or has expired',
-      });
+      return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
     // Set new password
-    user.password = req.body.password;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    const generateToken = (userId) => {
-      return jwt.sign({ id: userId }, JWT_SECRET, {
-        expiresIn: '30d',
-      });
-    };
-    // Generate JWT token for auto login
-    const jwtToken = generateToken(user._id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Password reset successful',
-      token: jwtToken,
-    });
+    res.json({ message: 'Password reset successful' });
   }
 
-  //Google auth
+  // Google OAuth routes (implement with passport-google-oauth20)
   static googleAuth(req, res, next) {
     return passport.authenticate('google', { scope: ['profile', 'email'] })(
       req,
@@ -181,33 +167,26 @@ class User {
     );
   }
 
-  //Google Callback
   static googleCallback(req, res, next) {
     passport.authenticate(
       'google',
       { failureRedirect: '/login' },
       async (err, user) => {
-        if (err || !user) {
-          return res.redirect('/login?error=auth_failed');
-        }
+        if (err) return next(err);
+        if (!user)
+          return res.redirect(
+            `${process.env.FRONTEND_URL}/login?error=oauth_fialed`
+          );
 
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, {
-          expiresIn: '30d',
-        });
-
-        res.cookie('jwt', token, {
-          expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: true,
-        });
+        const { accessToken, refreshToken } = user.generateToken();
+        res.redirect(
+          `${process.env.FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}`
+        );
 
         if (!user.isEmailVerified) {
-          EmailService.sendWelcomeEmail(user).catch((err) =>
-            console.error('Welcome email error:', err)
-          );
+          await EmailService.sendWelcomeEmail(user);
+          next();
         }
-
-        return res.redirect('/dashboard');
       }
     )(req, res, next);
   }
@@ -223,94 +202,75 @@ class User {
 
   //Facebook Callback
   static facebookCallback(req, res, next) {
-    passport.authenticate(
-      'facebook',
-      { failureRedirect: '/login' },
-      async (err, user) => {
-        if (err || !user) {
-          return res.redirect('/login?error=auth_failed');
-        }
+    passport.authenticate('facebook', { session: false }, async (err, user) => {
+      if (err) return next(err);
+      if (!user)
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/login?error=oauth_failed`
+        );
 
-        const generateToken = (userId) => {
-          return jwt.sign({ id: userId }, JWT_SECRET, {
-            expiresIn: '30d',
-          });
-        };
-        // Generate JWT token for auto login
-        const token = generateToken(user._id);
-
-        res.cookie('jwt', token, {
-          expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-          secure: process.env.NODE_ENV === 'production',
-          httpOnly: true,
-        });
-
-        try {
-          await EmailService.sendWelcomeEmail(user);
-        } catch (error) {
-          console.error('Error sending welcome email:', error);
-        }
-
-        return res.redirect('/dashboard');
+      const { accessToken, refreshToken } = user.generateToken();
+      res.redirect(
+        `${process.env.FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}`
+      );
+      if (!user.isEmailVerified) {
+        await EmailService.sendWelcomeEmail(user);
+        next();
       }
-    )(req, res, next);
+    })(req, res, next);
   }
 
-  static logOut(req, res) {
-    res.clearCookie('jwt');
-    res.redirect('/');
+  //Logout
+  static async logOut(req, res) {
+    if (req.user) {
+      const user = await User.findById(req.user._id);
+      if (user) {
+        user.refreshToken = undefined;
+        await user.save();
+      }
+    }
+    res.json({ message: 'Logged out successfully' });
   }
 
-  //Get all users
-  static async getAllUsers(req, res) {
-    const users = await User_model.find().select('-password');
-    res.status(200).json({
-      success: true,
-      users,
-    });
-  }
-
-  //Get a single user
+  // Get user by ID
   static async getUserById(req, res, next) {
-    const user = await User_model.findById(req.params.id).select('-password');
+    const user = await User.findById(req.params.id, '-password -refreshToken');
 
-    if (!user)
-      return next(new Error(`User with this id:${req.params.id} not exist`), {
-        cause: 400,
-      });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    res.status(200).json({
-      success: true,
-      user,
-    });
+    res.status(200).json({ user });
   }
 
+  //Update user
   static async updateUser(req, res) {
-    const updated = await User_model.findByIdAndUpdate(
+    const { name, email } = req.body;
+    const user = await User.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { name, email },
       {
         new: true,
         runValidators: true,
-        select: '-password',
+        select: '-password -refreshToken',
       }
     );
 
-    if (!updated) {
-      return res.status(404).json({ message: 'User not found!' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-    res.status(200).json({ message: 'Updated successfully', user: updated });
+    res.json({ user });
   }
 
-  //Delete user
+  // Delete user (admin only)
   static async deleteUser(req, res) {
-    const findUser = await User_model.findByIdAndDelete(req.params.id);
+    const user = await User.findByIdAndDelete(req.params.id);
 
-    if (!findUser) {
-      return res.status(400).json({ message: 'User not found!' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found!' });
     }
-    res.status(200).json({ message: 'deleted successfully' });
+    res.json({ message: 'User deleted successfully' });
   }
 }
 
-module.exports = User;
+module.exports = UserController;

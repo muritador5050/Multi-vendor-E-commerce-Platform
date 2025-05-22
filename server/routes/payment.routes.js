@@ -7,16 +7,16 @@ const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 // Payment CRUD routes
 router
   .route('/')
-  .post('/', asyncHandler(PaymentController.createPayment))
-  .get('/', asyncHandler(PaymentController.getAllPayments));
+  .post(asyncHandler(PaymentController.createPayment))
+  .get(asyncHandler(PaymentController.getAllPayments));
 router.patch(
   '/:id/status',
   asyncHandler(PaymentController.updatePaymentStatus)
 );
 router
   .route('/:id')
-  .get('/:id', asyncHandler(PaymentController.getPaymentById))
-  .delete('/:id', asyncHandler(PaymentController.deletePayment));
+  .get(asyncHandler(PaymentController.getPaymentById))
+  .delete(asyncHandler(PaymentController.deletePayment));
 
 // Webhook routes (these should NOT use asyncHandler as they need different error handling)
 router.post(

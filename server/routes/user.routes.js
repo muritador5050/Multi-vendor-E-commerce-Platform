@@ -1,32 +1,57 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../controllers/user.controllers');
-const { authenticate } = require('../middlewares/authMiddleware');
+const UserController = require('../controllers/user.controllers');
+const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
 
 //Register and Login routes
-router.post('/register', validation(register), asyncHandler(User.createUser));
-router.post('/login', validation(login), asyncHandler(User.loginUser));
+router.post(
+  '/register',
+  validation(register),
+  asyncHandler(UserController.createUser)
+);
+router.post(
+  '/login',
+  validation(login),
+  asyncHandler(UserController.loginUser)
+);
+router.get(
+  '/users',
+  authenticate,
+  isAdmin,
+  asyncHandler(UserController.getAllUsers)
+);
 
 //Password reset routes
-router.post('/forgot-password', asyncHandler(User.forgotPassword));
-router.post('/reset-password/:token', asyncHandler(User.resetPassword));
+router.post('/forgot-password', asyncHandler(UserController.forgotPassword));
+router.post(
+  '/reset-password/:token',
+  asyncHandler(UserController.resetPassword)
+);
+//Resend forgot-password  email
+router.post(
+  '/resend-forgot-password',
+  authenticate,
+  asyncHandler(UserController.resendForgotPassword)
+);
 
 //Email verification route
-router.get('/verify-email/:token', asyncHandler(User.emailVerification));
-router.get('/users', asyncHandler(User.getAllUsers));
+router.get(
+  '/verify-email/:token',
+  asyncHandler(UserController.emailVerification)
+);
 
 //oAuth route
-router.get('/google', asyncHandler(User.googleAuth));
-router.get('/google/callback', asyncHandler(User.googleCallback));
+router.get('/google', asyncHandler(UserController.googleAuth));
+router.get('/google/callback', asyncHandler(UserController.googleCallback));
 
-router.get('/facebook', asyncHandler(User.facebookAuth));
-router.get('/facebook/callback', asyncHandler(User.facebookCallback));
+router.get('/facebook', asyncHandler(UserController.facebookAuth));
+router.get('/facebook/callback', asyncHandler(UserController.facebookCallback));
 
 //Logout
-router.get('/logout', asyncHandler(User.logOut));
+router.get('/logout', asyncHandler(UserController.logOut));
 
 router.get('/dashboard', authenticate, (req, res) => {
   res.status(200).json({ message: 'welcome to dashboard' });
@@ -34,8 +59,8 @@ router.get('/dashboard', authenticate, (req, res) => {
 
 router
   .route('/users/:id')
-  .get(asyncHandler(User.getUserById))
-  .patch(asyncHandler(User.updateUser))
-  .delete(asyncHandler(User.deleteUser));
+  .get(authenticate, asyncHandler(UserController.getUserById))
+  .put(authenticate, asyncHandler(UserController.updateUser))
+  .delete(authenticate, isAdmin, asyncHandler(UserController.deleteUser));
 
 module.exports = router;
