@@ -1,18 +1,19 @@
 const joi = require('joi');
 
 //Register
-exports.register = joi
+
+const register = joi
   .object({
-    name: joi.string().required(),
+    name: joi.string().min(2).max(50).required(),
     email: joi.string().email().required(),
-    password: joi.string().required(),
+    password: joi.string().min(5).required(),
     rePassword: joi.string().valid(joi.ref('password')).required(),
     role: joi.string().valid('customer', 'admin', 'vendor').default('customer'),
   })
   .required();
 
 //Login
-exports.login = joi
+const login = joi
   .object({
     email: joi.string().required(),
     password: joi.string().required(),
@@ -24,3 +25,5 @@ exports.reviewInput = joi.object({
   rating: joi.number().min(1).max(5).required(),
   comment: joi.string().optional(),
 });
+
+module.exports = { register, login };
