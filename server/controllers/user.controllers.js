@@ -119,21 +119,6 @@ class UserController {
     res.json({ message: 'Password reset email sent' });
   }
 
-  //Resend password reset email
-  static async resendForgotPassword(req, res) {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user) {
-      return res.status(400).json('Invalid email');
-    }
-
-    const resetToken = user.createPasswordResetToken();
-    await user.save({ validateBeforeSave: false });
-
-    await EmailService.sendPasswordResetEmail(user, resetToken);
-
-    return res.json({ message: 'Password resend' });
-  }
-
   // Reset password
   static async resetPassword(req, res) {
     const { token } = req.params;
@@ -238,6 +223,16 @@ class UserController {
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get the requesting user's details
+    const requestingUser = await User.findById(req.user.id);
+
+    // Allow access if user is admin OR if user is requesting their own data
+    if (requestingUser !== 'admin' && req.params.id !== req.user.id) {
+      return res.status(403).json({
+        message: 'Access denied. You can only access your own profile.',
+      });
     }
 
     res.status(200).json({ user });

@@ -25,16 +25,15 @@ router.get(
 );
 
 //Password reset routes
-router.post('/forgot-password', asyncHandler(UserController.forgotPassword));
+router.post(
+  '/forgot-password',
+  authenticate,
+  asyncHandler(UserController.forgotPassword)
+);
 router.post(
   '/reset-password/:token',
-  asyncHandler(UserController.resetPassword)
-);
-//Resend forgot-password  email
-router.post(
-  '/resend-forgot-password',
   authenticate,
-  asyncHandler(UserController.resendForgotPassword)
+  asyncHandler(UserController.resetPassword)
 );
 
 //Email verification route
@@ -51,7 +50,7 @@ router.get('/facebook', asyncHandler(UserController.facebookAuth));
 router.get('/facebook/callback', asyncHandler(UserController.facebookCallback));
 
 //Logout
-router.get('/logout', asyncHandler(UserController.logOut));
+router.get('/logout', authenticate, asyncHandler(UserController.logOut));
 
 router.get('/dashboard', authenticate, (req, res) => {
   res.status(200).json({ message: 'welcome to dashboard' });
