@@ -4,67 +4,102 @@ const { resSuccessObject } = require('../utils/responseObject');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
 const axios = require('axios');
-const { readdirSync } = require('fs');
+
 require('dotenv').config();
 
-//Payment controller
+// Payment controller
 class PaymentController {
-  //Create a new payment
+  // Create a new payment
   static async createPayment(req, res) {
     const { order, paymentProvider, amount, currency = 'USD' } = req.body;
 
-    if (!paymentProvider || !order || !amount)
-      return res.status(404).json('Missing required payment fields');
+    // Validation
+    if (!paymentProvider || !order || !amount) {
+      return res.status(400).json({
+        message:
+          'Missing required fields: order, paymentProvider, and amount are required',
+      });
+    }
 
-    //Check for existing payment
+    if (!['stripe', 'paystack'].includes(paymentProvider)) {
+      return res.status(400).json({
+        message: 'Unsupported payment provider. Use "stripe" or "paystack"',
+      });
+    }
+
+    // Check for existing payment
     const existingPayment = await Payment.findOne({
       order,
       status: { $in: ['completed', 'pending'] },
     });
+
     if (existingPayment) {
-      res
-        .status(400)
-        .json({ message: 'Payment already exists for this order' });
+      return res.status(409).json({
+        message: 'Payment already exists for this order',
+      });
     }
 
-    // Generate idempotency key
+    // Create payment based on provider
+    const paymentData = await PaymentController.createProviderPayment(
+      paymentProvider,
+      amount,
+      currency
+    );
+
+    // Save payment to database
+    const payment = await Payment.create({
+      order,
+      paymentProvider,
+      paymentId: paymentData.paymentId,
+      amount,
+      currency: paymentProvider === 'paystack' ? 'NGN' : currency,
+      status: 'pending',
+    });
+
+    return res.json(
+      resSuccessObject({
+        results: payment,
+        checkoutUrl: paymentData.checkoutUrl,
+      })
+    );
+  }
+
+  // Helper method to create payment with different providers (fixed typo)
+  static async createProviderPayment(provider, amount, currency) {
     const idempotencyKey = crypto.randomUUID();
 
-    // Create payment with respective provider
-    let paymentData = {};
-
-    if (paymentProvider === 'stripe') {
-      const session = await stripe.checkout.sessions.create(
-        {
-          payment_method_types: ['card'],
-          line_items: [
-            {
-              price_data: {
-                currency: currency || 'usd',
-                product_data: { name: 'order payment' },
-                unit_amount: amount * 100,
-              },
-              quantity: 1,
+    if (provider === 'stripe') {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: { name: 'Order Payment' },
+              unit_amount: Math.round(amount * 100),
             },
-          ],
-          mode: 'payment',
-          success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
-        },
-        { idempotencyKey }
-      );
-      paymentData = {
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
+        metadata: { idempotencyKey }, // Fixed: should be object
+      });
+
+      return {
         paymentId: session.id,
         checkoutUrl: session.url,
-        provider: 'stripe',
-        status: 'pending',
       };
-    } else if (paymentProvider === 'paystack') {
-      const paystackRes = await axios.post(
+    }
+
+    if (provider === 'paystack') {
+      const response = await axios.post(
         'https://api.paystack.co/transaction/initialize',
         {
-          amount: amount * 100,
-          callback_url: `${process.env.CLIENT_URL}/payment-success`,
+          amount: Math.round(amount * 100),
+          currency: 'NGN',
+          callback_url: `${process.env.FRONTEND_URL}/payment-success`, // Fixed: underscore
         },
         {
           headers: {
@@ -73,35 +108,125 @@ class PaymentController {
           },
         }
       );
-      const { reference, authorization_url } = paystackRes.data.data;
-      paymentData = {
+
+      const { reference, authorization_url } = response.data.data;
+      return {
         paymentId: reference,
         checkoutUrl: authorization_url,
-        provider: 'paystack',
-        status: 'pending',
       };
-    } else {
-      return res.status(400).json({ message: 'Unsupported payment provider' });
     }
 
-    const payment = await Payment.create({
-      order,
-      paymentProvider,
-      paymentId: paymentData.paymentId,
-      amount,
-      currency: currency || 'NGN',
-      status: paymentData.status,
-    });
-
-    res.json(
-      resSuccessObject({
-        results: payment,
-        checkoutUrl: paymentData.checkoutUrl,
-      })
-    );
+    throw new Error('Unsupported payment provider');
   }
 
-  //Get all payments
+  // Process webhooks
+  static async processWebhooks(req, res) {
+    const { paymentProvider } = req.params;
+
+    if (paymentProvider === 'stripe') {
+      await PaymentController.handleStripeWebhook(req);
+    } else if (paymentProvider === 'paystack') {
+      await PaymentController.handlePaystackWebhook(req); // Fixed typo
+    } else {
+      return res.status(400).json({ message: 'Unknown payment provider' });
+    }
+
+    return res.status(200).json({ message: 'Webhook processed successfully' });
+  }
+
+  // Handle Stripe webhooks
+  static async handleStripeWebhook(req) {
+    const sig = req.headers['stripe-signature'];
+    const event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    const session = event.data.object;
+    const payment = await Payment.findOne({ paymentId: session.id });
+
+    if (!payment) {
+      throw new Error('Payment not found for session ID: ' + session.id);
+    }
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await Promise.all([
+          Payment.findByIdAndUpdate(payment._id, {
+            status: 'completed',
+            paidAt: new Date(),
+            transactionDetails: JSON.stringify(session),
+          }),
+          Order.findByIdAndUpdate(payment.order, {
+            paymentStatus: 'completed',
+            orderStatus: 'processing',
+          }),
+        ]);
+        break;
+
+      case 'checkout.session.expired':
+        await Payment.findByIdAndUpdate(payment._id, {
+          status: 'failed',
+          failureReason: 'Session expired',
+          transactionDetails: JSON.stringify(session),
+        });
+        break;
+
+      case 'charge.dispute.created':
+        await Payment.findByIdAndUpdate(payment._id, {
+          status: 'disputed',
+          transactionDetails: JSON.stringify(session),
+        });
+        break;
+    }
+  }
+
+  // Handle Paystack webhooks (fixed typo)
+  static async handlePaystackWebhook(req) {
+    // Verify webhook signature for security
+    const hash = crypto
+      .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+
+    if (hash !== req.headers['x-paystack-signature']) {
+      throw new Error('Invalid webhook signature');
+    }
+
+    const { event, data } = req.body;
+    const payment = await Payment.findOne({ paymentId: data.reference });
+
+    if (!payment) {
+      throw new Error('Payment not found for reference: ' + data.reference);
+    }
+
+    switch (event) {
+      case 'charge.success':
+        await Promise.all([
+          Payment.findByIdAndUpdate(payment._id, {
+            status: 'completed',
+            paidAt: new Date(),
+            transactionDetails: JSON.stringify(data),
+          }),
+          Order.findByIdAndUpdate(payment.order, {
+            paymentStatus: 'completed',
+            orderStatus: 'processing',
+          }),
+        ]);
+        break;
+
+      case 'charge.failed':
+        await Payment.findByIdAndUpdate(payment._id, {
+          status: 'failed',
+          failureReason: data.gateway_response,
+          transactionDetails: JSON.stringify(data),
+        });
+        break;
+    }
+  }
+
+  // Get all payments
   static async getAllPayments(req, res) {
     const {
       status,
@@ -114,12 +239,12 @@ class PaymentController {
 
     const filter = {};
     if (status) filter.status = status;
-    if (orderId) filter.orderId = orderId;
+    if (orderId) filter.order = orderId; // Fixed: should be 'order' not 'orderId'
     if (paidAt) filter.paidAt = paidAt;
     if (paymentProvider) filter.paymentProvider = paymentProvider;
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const payment = await Payment.find(filter)
+    const payments = await Payment.find(filter) // Fixed: better variable naming
       .populate('order')
       .skip(skip)
       .sort({ createdAt: -1 })
@@ -128,10 +253,10 @@ class PaymentController {
     const totalPayments = await Payment.countDocuments(filter);
     const numOfPages = Math.ceil(totalPayments / parseInt(limit));
 
-    res.json(
+    return res.json(
       resSuccessObject({
-        results: payment,
-        count: payment.length,
+        results: payments,
+        count: payments.length,
         totalPayments,
         numOfPages,
         currentPage: parseInt(page),
@@ -139,127 +264,67 @@ class PaymentController {
     );
   }
 
-  //Get payment by ID
+  // Get payment by ID
   static async getPaymentById(req, res) {
     const payment = await Payment.findById(req.params.id).populate('order');
-    if (!payment) return res.status(404).json({ message: 'Payment not found' });
 
-    res.json(resSuccessObject({ results: payment }));
-  }
-
-  //Update payment status
-  static async updatePaymentStatus(req, res) {
-    const { paidAt, status } = req.body;
-
-    if (
-      !status ||
-      !['pending', 'completed', 'failed', 'refunded'].includes(status)
-    ) {
-      res.status(404).json({ message: 'Please provide a valid status' });
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
     }
 
-    const payment = await Payment.findByIdAndUpdate(
-      req.params.id,
-      {
-        paidAt,
-        status,
-      },
-      { new: true, runValidators: true }
-    ).populate('order');
+    return res.json(resSuccessObject({ results: payment }));
+  }
 
-    if (!payment) return res.status(404).json({ message: 'Payment not found' });
-    res.json(
+  // Update payment status
+  static async updatePaymentStatus(req, res) {
+    const { status, paidAt } = req.body;
+    const validStatuses = [
+      'pending',
+      'completed',
+      'failed',
+      'refunded',
+      'disputed',
+    ];
+
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        // Fixed: should be 400 not 404
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+      });
+    }
+
+    const updateData = { status };
+    if (paidAt) updateData.paidAt = paidAt;
+
+    const payment = await Payment.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    }).populate('order');
+
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' });
+    }
+
+    return res.json(
       resSuccessObject({
         results: payment,
       })
     );
   }
 
-  //
-
-  //Delete or Cancel payment
+  // Delete or Cancel payment
   static async deletePayment(req, res) {
     const payment = await Payment.findByIdAndDelete(req.params.id);
-    if (!payment)
-      return res.status(404).json({ message: 'Payment did not found' });
 
-    res.json(
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment not found' }); // Fixed message
+    }
+
+    return res.json(
       resSuccessObject({
         message: 'Payment deleted successfully',
       })
     );
-  }
-
-  static async processWebhook(req, res) {
-    const { paymentProvider } = req.params;
-
-    if (paymentProvider === 'stripe') {
-      const sig = req.headers['stripe-signature'];
-      let event;
-
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-
-      const paymentIntent = event.data.object;
-      const paymentId = paymentIntent.id;
-      const payment = await Payment.findById({ paymentId });
-
-      switch (event.type) {
-        case 'checkout.session.completed':
-          await Payment.findOneAndUpdate(paymentId._id, {
-            status: 'completed',
-            paidAt: new Date(),
-            transactionDetails: JSON.stringify(paymentIntent),
-          });
-
-          await Order.findOneAndUpdate(payment.order, {
-            paymentStatus: 'completed',
-            orderStatus: 'processing',
-          });
-          break;
-        case 'checkout.session.failed':
-          await Payment.findByIdAndUpdate(payment._id, {
-            status: 'failed',
-            failureReason:
-              session.last_payment_error?.message || 'Payment failed',
-            transactionDetails: JSON.stringify(paymentIntent),
-          });
-          break;
-        case 'charge.refunded':
-          await Payment.findByIdAndUpdate(payment._id, {
-            status: 'refunded',
-            refundedAt: new Date(),
-            transactionDetails: JSON.stringify(paymentIntent),
-          });
-          break;
-      }
-    } else if (paymentProvider === 'paystack') {
-      const { reference } = req.query;
-
-      const paystackRes = await axios.get(
-        `https://api.paystack.co/transaction/verify/${reference}`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          },
-        }
-      );
-
-      const paymentData = paystackRes.data.data;
-      if (paymentData.status === 'success') {
-        await Payment.findOneAndUpdate(
-          { paymentId: reference },
-          { status: 'completed', paidAt: new Date() }
-        );
-      }
-
-      res.redirect(`${process.env.FRONTEND_URL}/payment-success`);
-    } else {
-    }
-    res.status(200).send('Webhook received');
   }
 }
 

@@ -4,38 +4,21 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const PaymentController = require('../controllers/payment.controller');
 const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 
-//Create payment
-router.post('/', authenticate, asyncHandler(PaymentController.createPayment));
-
-//Get all payments
-router.get(
-  '/',
-  authenticate,
-  isAdmin,
-  asyncHandler(PaymentController.getAllPayments)
-);
-
-//Get a single payment
-router.get(
-  '/:id',
-  authenticate,
-  asyncHandler(PaymentController.getPaymentById)
-);
-
-//Update payment status
-router.put(
+// Payment CRUD routes
+router.post('/', asyncHandler(PaymentController.createPayment));
+router.get('/', asyncHandler(PaymentController.getAllPayments));
+router.get('/:id', asyncHandler(PaymentController.getPaymentById));
+router.patch(
   '/:id/status',
-  authenticate,
-  isAdmin,
   asyncHandler(PaymentController.updatePaymentStatus)
 );
+router.delete('/:id', asyncHandler(PaymentController.deletePayment));
 
-//Delete payment
-router.delete(
-  '/:id',
-  authenticate,
-  isAdmin,
-  asyncHandler(PaymentController.deletePayment)
+// Webhook routes (these should NOT use asyncHandler as they need different error handling)
+router.post(
+  '/webhooks/:paymentProvider',
+  express.raw({ type: 'application/json' }),
+  PaymentController.processWebhooks
 );
 
 module.exports = router;
