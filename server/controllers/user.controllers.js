@@ -153,29 +153,43 @@ class UserController {
   }
 
   static googleCallback(req, res, next) {
-    passport.authenticate(
-      'google',
-      { failureRedirect: '/login' },
-      async (err, user) => {
-        if (err) return next(err);
-        if (!user)
-          return res.redirect(
-            `${process.env.FRONTEND_URL}/login?error=oauth_fialed`
-          );
-
-        const { accessToken, refreshToken } = user.generateToken();
-        res.redirect(
-          `${process.env.FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}`
+    passport.authenticate('google', { session: false }, async (err, user) => {
+      if (err) return next(err);
+      if (!user)
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/login?error=oauth_fialed`
         );
 
-        if (!user.isEmailVerified) {
-          await EmailService.sendWelcomeEmail(user);
-          next();
-        }
+      const { accessToken, refreshToken } = user.generateToken();
+      res.redirect(
+        `${
+          process.env.FRONTEND_URL
+        }/login?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
+          JSON.stringify({
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          })
+        )}`
+      );
+
+      if (!user.isEmailVerified) {
+        await EmailService.sendWelcomeEmail(user);
+        next();
       }
-    )(req, res, next);
+    })(req, res, next);
   }
 
+  // Test endpoint to verify OAuth setup
+  static async testGoogleAuth(req, res) {
+    res.json({
+      message: 'Google OAuth test endpoint',
+      googleClientId: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set',
+      googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set',
+      callbackUrl: '/api/auth/google/callback',
+    });
+  }
   //Facebook auth
   static facebookAuth(req, res, next) {
     return passport.authenticate('facebook', { scope: ['email'] })(
@@ -237,10 +251,10 @@ class UserController {
 
   //Update user
   static async updateUser(req, res) {
-    const { name, email } = req.body;
+    const { name, email, role } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email },
+      { name, email, role },
       {
         new: true,
         runValidators: true,

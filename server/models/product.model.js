@@ -1,26 +1,80 @@
 const mongoose = require('mongoose');
-
+const slugify = require('slugify');
 const productSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true, index: true },
-    description: { type: String, default: '' },
-    price: { type: String, required: true, min: 0 },
-    discount: { type: Number, min: 0, max: 100, default: 0 }, //percentage discount
-    quantityInStock: { type: Number, default: 0, min: 0 },
-    images: [{ type: String }], //Array of image URLs or path
-    categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
-    attributes: mongoose.Schema.Types.Mixed, // e.g. { color: 'red', size: 'M' }
-    averageRating: { type: Number, min: 0, max: 5, default: 0 },
-    totalReviews: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true },
-    isDeleted: { type: Boolean, default: false },
-    vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // if marketplace
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      index: true,
+    },
+    description: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    slug: { type: String, unique: true, trim: true, lowercase: true },
+    price: {
+      type: Number,
+      required: true,
+      min: 0.01,
+    },
+    discount: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0,
+    },
+    quantityInStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    images: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    categories: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+      },
+    ],
+    attributes: {
+      type: Map,
+      of: String,
+    }, // e.g. { color: 'red', size: 'M' }
+    averageRating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    vendor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   { timestamps: true }
 );
 
 //Indexes
-productSchema.index({ categories: 1 });
+productSchema.index({ categoryId: 1 });
 
 //Query helper
 productSchema.query.paginate = function ({ page, limit }) {
@@ -67,5 +121,13 @@ productSchema.query.activeFilter = function (isActive) {
   }
   return this;
 };
+
+// Auto-generate slug
+productSchema.pre('save', async function (next) {
+  if (this.isModified('name') || this.isNew) {
+    this.slug = slugify(this.name, { lower: true, strict: true });
+  }
+  next();
+});
 
 module.exports = mongoose.model('Product', productSchema);

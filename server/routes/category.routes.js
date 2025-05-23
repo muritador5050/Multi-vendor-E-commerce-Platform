@@ -2,18 +2,24 @@ const express = require('express');
 const router = express.Router();
 const category = require('../controllers/category.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 
 //Routes
 router
   .route('/')
-  .post(asyncHandler(category.createCategory))
-  .get(asyncHandler(category.getAllCategories));
-router.get('/tree', asyncHandler(category.getCategoryTree)); // optional
+  .post(authenticate, isAdmin, asyncHandler(category.createCategory))
+  .get(authenticate, isAdmin, asyncHandler(category.getAllCategories));
+router.get(
+  '/tree',
+  authenticate,
+  isAdmin,
+  asyncHandler(category.getCategoryTree)
+); // optional
 
 router
   .route('/:id')
-  .get(asyncHandler(category.getCategoryById))
-  .put(asyncHandler(category.updateCategory))
-  .delete(asyncHandler(category.deleteCategory));
+  .get(authenticate, isAdmin, asyncHandler(category.getCategoryById))
+  .put(authenticate, isAdmin, asyncHandler(category.updateCategory))
+  .delete(authenticate, isAdmin, asyncHandler(category.deleteCategory));
 
 module.exports = router;

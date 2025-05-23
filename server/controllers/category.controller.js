@@ -4,7 +4,7 @@ const { resSuccessObject } = require('../utils/responseObject');
 class Category {
   // Create a new category
   static async createCategory(req, res) {
-    const { name, description, parent, image, isActive = true } = req.body;
+    const { name, description, image, parent, isActive = true } = req.body;
 
     // Validate required fields
     if (!name) {
@@ -28,8 +28,8 @@ class Category {
     const category = await Category_model.create({
       name,
       description,
-      parent: parent || null,
       image,
+      parent: parent || null,
       isActive,
     });
 
@@ -64,10 +64,17 @@ class Category {
           page: parseInt(page),
           pages: Math.ceil(total / limit),
         },
-      },
-      resSuccessObject({
-        results: category,
-      })
+        category,
+      }
+      // resSuccessObject({
+      //   count: category.length,
+      //   pagination: {
+      //     total,
+      //     page: parseInt(page),
+      //     pages: Math.ceil(total / limit),
+      //   },
+      //   results: category,
+      // })
     );
   }
 

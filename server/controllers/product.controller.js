@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
-const Product_model = require('../models/product.model');
+const Product = require('../models/product.model');
 const { resSuccessObject } = require('../utils/responseObject');
 
 //Products
-class Products {
+class ProductsController {
   //Create new product(Admin only)
   static async createProduct(req, res) {
-    const product = new Product_model({
+    const product = new Product({
       ...req.body,
-      vendor: req.role.vendor || req.user._id,
+      vendor: req.role || req.user._id,
     });
     // Save to database
     const saveProduct = await product.save();
@@ -35,7 +35,7 @@ class Products {
     } = req.query;
 
     // Always filter deleted products
-    let productQuery = await Product_model.find({
+    let productQuery = await Product.find({
       isDeleted: false,
     })
       .activeFilter(isActive)
@@ -49,7 +49,7 @@ class Products {
 
     const [products, total] = await Promise.all([
       productQuery,
-      Product_model.countDocuments({
+      Product.countDocuments({
         isDeleted: false,
         ...(isActive !== undefined && { isActive: isActive === 'true' }),
         ...(category && { categories: category }),
@@ -96,7 +96,7 @@ class Products {
       });
     }
 
-    const product = await Product_model.findById(productId)
+    const product = await Product.findById(productId)
       .populate('categories', 'name')
       .populate('vendor', 'name email');
 
@@ -125,7 +125,7 @@ class Products {
         error: 'Invalid product ID format',
       });
     }
-    const product = await Product_model.findOneAndUpdate(
+    const product = await Product.findOneAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
@@ -156,7 +156,7 @@ class Products {
       });
     }
 
-    const product = await Product_model.findByIdAndUpdate(
+    const product = await Product.findByIdAndUpdate(
       productId,
       { isDeleted: true, isActive: false },
       { new: true }
@@ -173,4 +173,4 @@ class Products {
   }
 }
 
-module.exports = Products;
+module.exports = ProductsController;

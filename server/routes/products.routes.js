@@ -1,18 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const Products = require('../controllers/product.controller');
+const ProductsController = require('../controllers/product.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 
 // Create a new product
 router
   .route('/')
-  .post(asyncHandler(Products.createProduct))
-  .get(asyncHandler(Products.getAllProducts));
+  .post(authenticate, isAdmin, asyncHandler(ProductsController.createProduct))
+  .get(asyncHandler(ProductsController.getAllProducts));
 
 router
   .route('/:id')
-  .get(asyncHandler(Products.getProductById))
-  .put(asyncHandler(Products.updateProduct))
-  .delete(asyncHandler(Products.deleteProduct));
+  .get(asyncHandler(ProductsController.getProductById))
+  .put(authenticate, isAdmin, asyncHandler(ProductsController.updateProduct))
+  .delete(
+    authenticate,
+    isAdmin,
+    asyncHandler(ProductsController.deleteProduct)
+  );
 
 module.exports = router;
