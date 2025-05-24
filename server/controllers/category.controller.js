@@ -4,7 +4,7 @@ const { resSuccessObject } = require('../utils/responseObject');
 class CategoryController {
   // Create a new category
   static async createCategory(req, res) {
-    const { name, description, image, parent, isActive = true } = req.body;
+    const { name, image } = req.body;
 
     // Validate required fields
     if (!name) {
@@ -14,29 +14,16 @@ class CategoryController {
       });
     }
 
-    // Check if parent exists if provided
-    if (parent) {
-      const parentCategory = await Category.findById(parent);
-      if (!parentCategory) {
-        return res.status(404).json({
-          success: false,
-          message: 'Parent category not found',
-        });
-      }
-    }
-
     const category = await Category.create({
       name,
-      description,
       image,
-      parent: parent || null,
-      isActive,
     });
 
-    // Populate parent for response
-    await category.populate('parent', 'name slug');
-
-    return res.json(resSuccessObject({ results: category }));
+    return res.json(
+      resSuccessObject({
+        results: category,
+      })
+    );
   }
 
   static async getAllCategories(req, res) {
