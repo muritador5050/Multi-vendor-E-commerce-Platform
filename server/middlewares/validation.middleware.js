@@ -14,4 +14,23 @@ const validation = (schema) => {
   };
 };
 
-module.exports = { validation };
+const validateImageUpload = (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'Image file is required' });
+  }
+
+  //Additional Validations
+  const allowTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowTypes.includes(req.file.mimetype)) {
+    return res.status(400).json({ message: 'Invalid image format' });
+  }
+
+  if (req.file.size > 5 * 1024 * 1024) {
+    // 5MB
+    return res.status(400).json({ message: 'Image too large' });
+  }
+
+  next();
+};
+
+module.exports = { validation, validateImageUpload };
