@@ -23,6 +23,7 @@ class ProductsController {
   }
 
   //Get all products
+  //Get all products
   static async getAllProducts(req, res) {
     const {
       page = 1,
@@ -35,41 +36,23 @@ class ProductsController {
       isActive,
     } = req.query;
 
-    // Always filter deleted products
-    let productQuery = await Product.find({
-      isDeleted: false,
-    })
+    const query = Product.find({ isDeleted: false })
       .activeFilter(isActive)
       .filterByCategory(category)
-      .paginate({ page: parseInt(page), limit: parseInt(limit) })
       .priceRangeFilter(minPrice, maxPrice)
-      .searchByText(search)
-      .sort(sort)
-      .populate('category', 'name')
-      .populate('vendor', 'name email');
+      .searchByText(search);
 
     const [products, total] = await Promise.all([
-      productQuery,
-      Product.countDocuments({
-        isDeleted: false,
-        ...(isActive !== undefined && { isActive: isActive === 'true' }),
-        ...(category && { categories: category }),
-        ...(minPrice || maxPrice
-          ? {
-              price: {
-                ...(minPrice && { $gte: parseFloat(minPrice) }),
-                ...(maxPrice && { $lte: parseFloat(maxPrice) }),
-              },
-            }
-          : {}),
-        ...(search && {
-          $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
-          ],
-        }),
-      }),
+      query
+        .clone()
+        .paginate({ page: parseInt(page), limit: parseInt(limit) })
+        .sort(sort)
+        .populate('category', 'name')
+        .populate('vendor', 'name email'),
+      query.clone().countDocuments(),
     ]);
+
+    console.log('First product vendor:', products[0]?.vendor);
 
     return res.json({
       count: products.length,
@@ -81,7 +64,6 @@ class ProductsController {
       results: products,
     });
   }
-
   //Get a single product
   static async getProductById(req, res) {
     const productId = res.params.id;
