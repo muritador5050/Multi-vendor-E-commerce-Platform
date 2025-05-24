@@ -35,14 +35,6 @@ categorySchema.query.searchByText = function (search) {
   return this;
 };
 
-// Active filter
-categorySchema.query.activeFilter = function (isActive) {
-  if (isActive != undefined) {
-    return this.where('isActive').equals(isActive === 'true');
-  }
-  return this;
-};
-
 // Auto-generate slug
 categorySchema.pre('save', async function (next) {
   if (this.isModified('name') || this.isNew) {
