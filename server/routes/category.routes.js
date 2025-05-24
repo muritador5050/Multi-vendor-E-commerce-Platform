@@ -20,7 +20,7 @@ router
 
 // For specific slug
 router.get(
-  '/slug:slug',
+  '/slug/:slug',
   authenticate,
   isVendor,
   asyncHandler(CategoryController.getCategoryBySlug)
