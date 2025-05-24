@@ -17,12 +17,6 @@ router
     adminOrVendor,
     asyncHandler(CategoryController.getAllCategories)
   );
-router.get(
-  '/tree',
-  authenticate,
-  adminOrVendor,
-  asyncHandler(CategoryController.getCategoryTree)
-); // optional
 
 router
   .route('/:id')

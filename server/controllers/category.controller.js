@@ -76,6 +76,7 @@ class CategoryController {
     // Update fields
     Object.assign(category, req.body);
 
+    // Save (this will trigger pre('save') middleware)
     const updated = await category.save();
     res.json(resSuccessObject({ results: updated }));
   }
@@ -88,16 +89,6 @@ class CategoryController {
         .status(404)
         .json({ success: false, message: 'Category not found' });
     res.json(resSuccessObject({ message: 'Category deleted' }));
-  }
-
-  // Get category tree with children
-  static async getCategoryTree(req, res) {
-    const categories = await Category.find({ parent: null }).populate(
-      'children',
-      'name slug'
-    );
-
-    res.json(resSuccessObject({ results: categories }));
   }
 }
 
