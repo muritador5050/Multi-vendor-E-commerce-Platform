@@ -24,8 +24,8 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
-
 //Routes
+app.use('/uploads', express.static('uploads'));
 app.use('/', require('./routes'));
 
 // Error handling middleware

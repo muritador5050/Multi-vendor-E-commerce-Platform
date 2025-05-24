@@ -1,4 +1,3 @@
-const { upload } = require('../utils/imageUpload');
 const Category = require('../models/category.model');
 
 class UploadController {

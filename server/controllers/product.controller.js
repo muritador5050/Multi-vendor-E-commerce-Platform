@@ -6,17 +6,18 @@ const { resSuccessObject } = require('../utils/responseObject');
 class ProductsController {
   //Create new product(Admin only)
   static async createProduct(req, res) {
-    const product = new Product({
-      ...req.body,
-      vendor: req.role || req.user._id,
-    });
-    // Save to database
-    const saveProduct = await product.save();
+    if (req.body.categoryId) {
+      req.body.category = new mongoose.Types.ObjectId(req.body.categoryId);
+    }
+    const product = await Product.create({ ...req.body });
+    const populated = await Product.findById(product)
+      .populate('category', 'name slug image')
+      .select('-categoryId');
 
     res.json(
       resSuccessObject({
         message: 'Done',
-        results: saveProduct,
+        results: populated,
       })
     );
   }
@@ -44,7 +45,7 @@ class ProductsController {
       .priceRangeFilter(minPrice, maxPrice)
       .searchByText(search)
       .sort(sort)
-      .populate('categories', 'name')
+      .populate('category', 'name')
       .populate('vendor', 'name email');
 
     const [products, total] = await Promise.all([

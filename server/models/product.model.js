@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+
 const productSchema = new mongoose.Schema(
   {
     name: {
@@ -37,13 +38,14 @@ const productSchema = new mongoose.Schema(
         trim: true,
       },
     ],
-    categoryId: { type: String, required: true },
-    categories: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-      },
-    ],
+    categoryId: {
+      type: String,
+      required: true,
+    },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+    },
     attributes: {
       type: Map,
       of: String,

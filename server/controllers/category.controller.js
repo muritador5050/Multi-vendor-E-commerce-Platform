@@ -54,7 +54,12 @@ class CategoryController {
         pages: Math.ceil(total / limit),
         page: parseInt(page),
       },
-      categories,
+      categories: categories.map((cat) => ({
+        id: cat._id,
+        name: cat.name,
+        slug: cat.slug,
+        image: cat.image || '/default-images/category-placeholder.jpg',
+      })),
     });
   }
 

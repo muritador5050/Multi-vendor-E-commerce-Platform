@@ -14,3 +14,5 @@ router.post(
   validateImageUpload,
   asyncHandler(UploadController.uploadImage)
 );
+
+module.exports = router;
