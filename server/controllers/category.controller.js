@@ -42,7 +42,7 @@ class CategoryController {
   static async getAllCategories(req, res) {
     const { page = 1, limit = 10, isActive, parent, search } = req.query;
 
-    const category = await Category.find()
+    const categories = await Category.find()
       .paginate({
         page: parseInt(page),
         limit: parseInt(limit),
@@ -51,19 +51,20 @@ class CategoryController {
       .searchByText(search)
       .filterParent(parent)
       .sort({ name: 1 })
-      .populate('parent', 'name slug')
-      .populate('children', 'name slug');
+      // .populate('parent', 'name slug')
+      .populate('children', 'name slug image')
+      .exec();
 
-    const total = await Category.countDocuments(category);
+    const total = await Category.countDocuments(categories);
 
     return res.json({
-      count: category.length,
+      count: categories.length,
       pagination: {
         total,
         page: parseInt(page),
         pages: Math.ceil(total / limit),
       },
-      categories: category,
+      categories,
     });
   }
 

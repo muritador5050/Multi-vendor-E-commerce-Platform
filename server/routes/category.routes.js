@@ -4,29 +4,23 @@ const CategoryController = require('../controllers/category.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 const {
   authenticate,
-  isAdmin,
   isVendor,
+  adminOrVendor,
 } = require('../middlewares/authMiddleware');
 
 //Routes
 router
   .route('/')
-  .post(
-    authenticate,
-    isVendor,
-    isAdmin,
-    asyncHandler(CategoryController.createCategory)
-  )
+  .post(authenticate, isVendor, asyncHandler(CategoryController.createCategory))
   .get(
     authenticate,
-    isAdmin,
-    isVendor,
+    adminOrVendor,
     asyncHandler(CategoryController.getAllCategories)
   );
 router.get(
   '/tree',
   authenticate,
-  isAdmin,
+  adminOrVendor,
   asyncHandler(CategoryController.getCategoryTree)
 ); // optional
 
@@ -34,15 +28,13 @@ router
   .route('/:id')
   .get(
     authenticate,
-    isAdmin,
-    isVendor,
+    adminOrVendor,
     asyncHandler(CategoryController.getCategoryById)
   )
   .put(authenticate, isVendor, asyncHandler(CategoryController.updateCategory))
   .delete(
     authenticate,
-    isAdmin,
-    isVendor,
+    adminOrVendor,
     asyncHandler(CategoryController.deleteCategory)
   );
 

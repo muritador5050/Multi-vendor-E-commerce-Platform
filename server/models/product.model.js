@@ -37,6 +37,7 @@ const productSchema = new mongoose.Schema(
         trim: true,
       },
     ],
+    categoryId: { type: String, required: true },
     categories: [
       {
         type: mongoose.Schema.Types.ObjectId,

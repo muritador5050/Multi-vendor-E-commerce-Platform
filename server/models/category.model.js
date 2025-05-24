@@ -4,15 +4,8 @@ const slugify = require('slugify');
 const categorySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true, index: true },
-    description: { type: String, default: '' },
     slug: { type: String, unique: true, trim: true, lowercase: true },
-    isActive: { type: Boolean, default: true },
-    image: { type: String },
-    parent: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Category',
-      default: null,
-    },
+    image: { type: String, default: '' },
   },
   { timestamps: true }
 );
@@ -59,12 +52,12 @@ categorySchema.pre('save', async function (next) {
 });
 
 // Virtual for children
-categorySchema.virtual('children', {
-  ref: 'Category',
-  localField: '_id',
-  foreignField: 'parent',
-});
-categorySchema.set('toJSON', { virtuals: true });
-categorySchema.set('toObject', { virtuals: true });
+// categorySchema.virtual('children', {
+//   ref: 'Category',
+//   localField: '_id',
+//   foreignField: 'parent',
+// });
+// categorySchema.set('toJSON', { virtuals: true });
+// categorySchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Category', categorySchema);

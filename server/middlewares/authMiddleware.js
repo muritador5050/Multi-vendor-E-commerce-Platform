@@ -40,4 +40,13 @@ const isVendor = asyncHandler(async function (req, res, next) {
   next();
 });
 
-module.exports = { authenticate, isAdmin, isVendor };
+const adminOrVendor = asyncHandler(async function (req, res, next) {
+  if (req.user.role == 'vendor' || req.user.role == 'admin') {
+    return next();
+  }
+  return res
+    .status(403)
+    .json({ message: 'Access denied, Admin or Vendor role required.' });
+});
+
+module.exports = { authenticate, isAdmin, isVendor, adminOrVendor };
