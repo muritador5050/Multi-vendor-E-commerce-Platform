@@ -29,27 +29,51 @@ class CategoryController {
   static async getAllCategories(req, res) {
     const { page = 1, limit = 10, search } = req.query;
 
-    const categories = await Category.find()
+    // Check for invalid page or limit values
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Invalid page or limit values.' });
+    }
+
+    const query = search ? { name: new RegExp(search, 'i') } : {};
+
+    const categories = await Category.find(query)
       .paginate({
         page: parseInt(page),
         limit: parseInt(limit),
       })
-      .searchByText(search)
       .sort({ name: 1 })
       .exec();
 
-    const total = await Category.countDocuments(
-      search ? { name: new RegExp(search, 'i') } : {}
-    );
+    // For counting, use the same filter logic
+    const total = await Category.countDocuments(query);
 
     return res.json({
       message: `We have ${categories.length} categories to choose from.`,
       pagination: {
         total,
-        page: parseInt(page),
         pages: Math.ceil(total / limit),
+        page: parseInt(page),
       },
       categories,
+    });
+  }
+
+  static async getCategoryBySlug(req, res) {
+    const { slug } = req.params; // Get slug from URL parameters
+
+    if (!slug) {
+      return res.status(400).json({ message: 'Slug parameter is required.' });
+    }
+
+    const category = await Category.findOne({ slug: slug });
+
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found.' });
+    }
+
+    return res.json({
+      message: 'Category found successfully.',
+      category,
     });
   }
 

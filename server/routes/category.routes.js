@@ -18,6 +18,14 @@ router
     asyncHandler(CategoryController.getAllCategories)
   );
 
+// For specific slug
+router.get(
+  '/slug:slug',
+  authenticate,
+  isVendor,
+  asyncHandler(CategoryController.getCategoryBySlug)
+);
+
 router
   .route('/:id')
   .get(
