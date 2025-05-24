@@ -70,19 +70,15 @@ class ProductsController {
       }),
     ]);
 
-    return res.json(
-      {
-        count: products.length,
-        pagination: {
-          total,
-          page: parseInt(page),
-          pages: Math.ceil(total / limit),
-        },
+    return res.json({
+      count: products.length,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
       },
-      resSuccessObject({
-        results: products,
-      })
-    );
+      results: products,
+    });
   }
 
   //Get a single product

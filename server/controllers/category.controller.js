@@ -1,7 +1,7 @@
-const Category_model = require('../models/category.model');
+const Category = require('../models/category.model');
 const { resSuccessObject } = require('../utils/responseObject');
 
-class Category {
+class CategoryController {
   // Create a new category
   static async createCategory(req, res) {
     const { name, description, image, parent, isActive = true } = req.body;
@@ -16,7 +16,7 @@ class Category {
 
     // Check if parent exists if provided
     if (parent) {
-      const parentCategory = await Category_model.findById(parent);
+      const parentCategory = await Category.findById(parent);
       if (!parentCategory) {
         return res.status(404).json({
           success: false,
@@ -25,7 +25,7 @@ class Category {
       }
     }
 
-    const category = await Category_model.create({
+    const category = await Category.create({
       name,
       description,
       image,
@@ -42,7 +42,7 @@ class Category {
   static async getAllCategories(req, res) {
     const { page = 1, limit = 10, isActive, parent, search } = req.query;
 
-    const category = await Category_model.find()
+    const category = await Category.find()
       .paginate({
         page: parseInt(page),
         limit: parseInt(limit),
@@ -54,28 +54,17 @@ class Category {
       .populate('parent', 'name slug')
       .populate('children', 'name slug');
 
-    const total = await Category_model.countDocuments(category);
+    const total = await Category.countDocuments(category);
 
-    return res.json(
-      {
-        count: category.length,
-        pagination: {
-          total,
-          page: parseInt(page),
-          pages: Math.ceil(total / limit),
-        },
-        category,
-      }
-      // resSuccessObject({
-      //   count: category.length,
-      //   pagination: {
-      //     total,
-      //     page: parseInt(page),
-      //     pages: Math.ceil(total / limit),
-      //   },
-      //   results: category,
-      // })
-    );
+    return res.json({
+      count: category.length,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit),
+      },
+      categories: category,
+    });
   }
 
   static async getCategoryById(req, res) {
@@ -84,11 +73,11 @@ class Category {
 
     // Check if it's a valid ObjectId or treat as slug
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      category = await Category_model.findById(id)
+      category = await Category.findById(id)
         .populate('parent', 'name slug')
         .populate('children', 'name slug');
     } else {
-      category = await Category_model.findOne({ slug: id })
+      category = await Category.findOne({ slug: id })
         .populate('parent', 'name slug')
         .populate('children', 'name slug');
     }
@@ -104,7 +93,7 @@ class Category {
 
   static async updateCategory(req, res) {
     //Check for existing category
-    const existingCategory = await Category_model.findById(req.params.id);
+    const existingCategory = await Category.findById(req.params.id);
     if (!existingCategory) {
       return res.status(400).json({
         success: false,
@@ -121,7 +110,7 @@ class Category {
     }
     // Check if parent exists
     if (req.body.parent) {
-      const parentCategory = await Category_model.findById(req.body.parent);
+      const parentCategory = await Category.findById(req.body.parent);
       if (!parentCategory) {
         return res.status(404).json({
           success: false,
@@ -161,4 +150,4 @@ class Category {
   }
 }
 
-module.exports = Category;
+module.exports = CategoryController;

@@ -74,7 +74,7 @@ const productSchema = new mongoose.Schema(
 );
 
 //Indexes
-productSchema.index({ categoryId: 1 });
+productSchema.index({ categories: 1 });
 
 //Query helper
 productSchema.query.paginate = function ({ page, limit }) {
