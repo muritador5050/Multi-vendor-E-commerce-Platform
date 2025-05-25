@@ -14,6 +14,10 @@ router
   .post(authenticate, isVendor, asyncHandler(ProductsController.createProduct))
   .get(asyncHandler(ProductsController.getAllProducts));
 
+router.get(
+  '/category/:categoryId',
+  asyncHandler(ProductsController.getProductsByCategory)
+);
 router
   .route('/:id')
   .get(asyncHandler(ProductsController.getProductById))

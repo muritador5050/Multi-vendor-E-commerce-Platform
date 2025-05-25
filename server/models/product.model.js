@@ -49,7 +49,7 @@ const productSchema = new mongoose.Schema(
     attributes: {
       type: Map,
       of: String,
-    }, // e.g. { color: 'red', size: 'M' }
+    },
     averageRating: {
       type: Number,
       min: 0,
@@ -76,53 +76,16 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-//Indexes
-productSchema.index({ categories: 1 });
+// Indexes for better performance
+productSchema.index({ category: 1 });
+productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ price: 1 });
+productSchema.index({ isActive: 1, isDeleted: 1 });
 
 //Query helper
 productSchema.query.paginate = function ({ page, limit }) {
   const skip = limit * (page - 1);
   return this.skip(skip).limit(limit);
-};
-
-// Category filter
-productSchema.query.filterByCategory = function (category) {
-  if (category) {
-    return this.where('categories').equals(category);
-  }
-  return this;
-};
-
-// Price range filter
-productSchema.query.priceRangeFilter = function (minPrice, maxPrice) {
-  if (minPrice || maxPrice) {
-    const priceFilter = {};
-    if (minPrice) priceFilter.$gte = parseFloat(minPrice);
-    if (maxPrice) priceFilter.$lte = parseFloat(maxPrice);
-    return this.where('price')
-      .gte(priceFilter.$gte || 0)
-      .lte(priceFilter.$lte || Infinity);
-  }
-  return this;
-};
-
-// Search filter
-productSchema.query.searchByText = function (search) {
-  if (search) {
-    return this.or([
-      { name: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-    ]);
-  }
-  return this;
-};
-
-// Active filter
-productSchema.query.activeFilter = function (isActive) {
-  if (isActive != undefined) {
-    return this.where('isActive').equals(isActive === 'true');
-  }
-  return this;
 };
 
 // Auto-generate slug
