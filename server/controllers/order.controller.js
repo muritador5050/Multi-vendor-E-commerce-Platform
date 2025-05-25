@@ -1,5 +1,6 @@
 const Order = require('../models/order.model');
 const { resSuccessObject } = require('../utils/responseObject');
+const User = require('../models/user.model');
 
 class OrderController {
   //Create new order
@@ -65,6 +66,9 @@ class OrderController {
       user,
       sortBy = 'createdAt',
       sortOrder = 'desc',
+      startDate,
+      endDate,
+      search,
     } = req.query;
 
     // Build filter object
@@ -74,33 +78,70 @@ class OrderController {
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (user) filter.user = user;
 
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) filter.createdAt.$lte = new Date(endDate);
+    }
+
+    if (search) {
+      const searchRegex = { $regex: search.trim(), $options: 'i' };
+
+      //Find users matching the search term
+      const matchingUsers = await User.find({
+        $or: [{ name: searchRegex }, { email: searchRegex }],
+      })
+        .select('_id')
+        .lean();
+
+      filter.$or = [
+        { paymentMethod: searchRegex },
+        { trackingNumber: searchRegex },
+        { 'shippingAddress.city': searchRegex },
+        { 'shippingAddress.state': searchRegex },
+        { 'billingAddress.city': searchRegex },
+        { 'billingAddress.state': searchRegex },
+      ];
+
+      if (matchingUsers.length > 0) {
+        filter.$or.push({
+          user: { $in: matchingUsers.map((u) => u._id) },
+        });
+      }
+
+      // If search looks like ObjectId, also search by _id
+      if (search.match(/^[0-9a-fA-F]{24}$/)) {
+        filter.$or.push({ _id: search });
+      }
+    }
+
     // Calculate pagination
-    const skip = (parent(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page) - 1) * parseInt(limit);
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
     // Get orders with pagination
-    const orders = await Order.find(filter)
-      .populate('user', 'name email')
-      .populate('products.product', 'name price')
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit));
+    const [orders, total] = await Promise.all([
+      Order.find(filter)
+        .populate('user', 'name email')
+        .populate('products.product', 'name price')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Order.countDocuments(filter),
+    ]);
 
-    // Get total count for pagination
-    const total = await Order.countDocuments(filter);
-
-    res.json(
-      resSuccessObject({
-        results: orders,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / parseInt(limit)),
-          totalOrders: total,
-          hasNextPage: skip + orders.length < total,
-          hasPrevPage: parseInt(page) > 1,
-        },
-      })
-    );
+    res.json({
+      success: true,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalOrders: total,
+        hasNextPage: skip + orders.length < total,
+        hasPrevPage: parseInt(page) > 1,
+      },
+      orders,
+    });
   }
 
   static async getOrderByUser(req, res) {
