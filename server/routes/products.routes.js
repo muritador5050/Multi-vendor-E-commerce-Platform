@@ -5,6 +5,7 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const {
   authenticate,
   isAdmin,
+  adminOrVendor,
   isVendor,
 } = require('../middlewares/authMiddleware');
 
@@ -14,18 +15,13 @@ router
   .post(authenticate, isVendor, asyncHandler(ProductsController.createProduct))
   .get(asyncHandler(ProductsController.getAllProducts));
 
-router.get(
-  '/category/:categoryId',
-  asyncHandler(ProductsController.getProductsByCategory)
-);
 router
   .route('/:id')
   .get(asyncHandler(ProductsController.getProductById))
   .put(authenticate, isVendor, asyncHandler(ProductsController.updateProduct))
   .delete(
     authenticate,
-    isAdmin,
-    isVendor,
+    adminOrVendor,
     asyncHandler(ProductsController.deleteProduct)
   );
 

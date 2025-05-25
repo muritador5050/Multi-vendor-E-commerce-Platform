@@ -112,17 +112,12 @@ class ProductsController {
 
   //Get a single product
   static async getProductById(req, res) {
-    const { id } = res.params;
-
-    if (!mongoose.Types.ObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid product ID format',
-      });
-    }
-
-    const product = await Product.findOne({ _id: id, isDeleted: false })
-      .populate('category', 'name')
+    const product = await Product.findOne({
+      _id: req.params.id,
+      isDeleted: false,
+    })
+      .select('-categoryId') // Exclude categoryId from the response
+      .populate('category', 'name slug image')
       .populate('vendor', 'name email')
       .lean();
 
@@ -139,101 +134,17 @@ class ProductsController {
     });
   }
 
-  static async getProductsByCategory(req, res) {
-    const { categoryId } = req.params;
-    const {
-      page = 1,
-      limit = 10,
-      sort = '-createdAt',
-      minPrice,
-      maxPrice,
-      search,
-      isActive = true,
-    } = req.query;
-
-    // Build filter
-    const filter = {
-      isDeleted: false,
-      isActive: isActive === 'true',
-    };
-
-    // Handle category filter
-    if (mongoose.Types.ObjectId.isValid(categoryId)) {
-      filter.category = categoryId;
-    } else {
-      filter.categoryId = categoryId;
-    }
-
-    // Price range
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = parseFloat(minPrice);
-      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
-    }
-
-    let query = Product.find(filter);
-
-    // Text search
-    if (search) {
-      query = query.or([
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ]);
-    }
-
-    // Get total count
-    const total = await Product.countDocuments(
-      search
-        ? {
-            ...filter,
-            $or: [
-              { name: { $regex: search, $options: 'i' } },
-              { description: { $regex: search, $options: 'i' } },
-            ],
-          }
-        : filter
-    );
-
-    // Execute query
-    const products = await query
-      .paginate({ page: parseInt(page), limit: parseInt(limit) })
-      .sort(sort)
-      .populate('category', 'name')
-      .populate('vendor', 'name email')
-      .lean();
-
-    return res.json({
-      success: true,
-      count: products.length,
-      pagination: {
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
-        hasPrev: parseInt(page) > 1,
-      },
-      results: products,
-    });
-  }
-
   //Update product(Admin only)
   static async updateProduct(req, res) {
-    const productId = req.params.id;
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid product ID format',
-      });
-    }
     const product = await Product.findOneAndUpdate(
-      req.params.id,
+      { _id: req.params.id, isDeleted: false },
       { $set: req.body },
       { new: true, runValidators: true }
-    ).populate('categories', 'name');
+    )
+      .select('-categoryId')
+      .populate('category', 'name slug, image');
 
-    if (!product || product.isDeleted) {
+    if (!product) {
       return res
         .status(404)
         .json({ success: false, message: 'Product not found or deleted' });
@@ -241,6 +152,7 @@ class ProductsController {
 
     return res.json(
       resSuccessObject({
+        message: 'Updated successfully.',
         results: product,
       })
     );
@@ -248,18 +160,8 @@ class ProductsController {
 
   //Delete product(Admin only)
   static async deleteProduct(req, res) {
-    const productId = req.params.id;
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid product ID format',
-      });
-    }
-
     const product = await Product.findByIdAndUpdate(
-      productId,
+      { _id: req.params.id },
       { isDeleted: true, isActive: false },
       { new: true }
     );
