@@ -17,12 +17,7 @@ router.get(
   isAdmin,
   asyncHandler(OrderController.getOrderStats)
 );
-// Get logged-in user's orders
-router.get(
-  '/users/:id',
-  authenticate,
-  asyncHandler(OrderController.getOrderByUser)
-);
+
 // Update order status (admin)
 router.put(
   '/:id/status',

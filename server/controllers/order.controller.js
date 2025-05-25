@@ -144,13 +144,6 @@ class OrderController {
     });
   }
 
-  static async getOrderByUser(req, res) {
-    const order = await Order.find({ user: req.user._id }).populate(
-      'products.product'
-    );
-
-    res.json(resSuccessObject({ results: order }));
-  }
   //Get a single  order
   static async getOrderById(req, res) {
     const order = await Order.findById({ _id: req.params.id, isDeleted: false })
@@ -165,8 +158,8 @@ class OrderController {
 
     // Allow user to access only their own orders
     if (
-      !req.user.isAdmin &&
-      order.user._id.toString() !== req.user._id.toString()
+      req.user.role !== 'admin' &&
+      order.user._id.toString() !== req.user.id
     ) {
       return res
         .status(403)
