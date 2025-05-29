@@ -88,11 +88,12 @@ class OrderController {
       const searchRegex = { $regex: search.trim(), $options: 'i' };
 
       //Find users matching the search term
-      const matchingUsers = await User.find({
-        $or: [{ name: searchRegex }, { email: searchRegex }],
-      })
-        .select('_id')
-        .lean();
+      const matchingUsers = await User.find(
+        {
+          $or: [{ name: searchRegex }, { email: searchRegex }],
+        },
+        { _id: 0 }
+      ).lean();
 
       filter.$or = [
         { paymentMethod: searchRegex },
