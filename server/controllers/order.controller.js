@@ -44,7 +44,6 @@ class OrderController {
       shippingCost: shippingCost || 0,
       estimatedDelivery,
     });
-    await order.save();
     await order.populate('user', 'name email');
     await order.populate('products.product', 'name price');
 
@@ -176,15 +175,19 @@ class OrderController {
   //Update new order
   static async updateOrderStatus(req, res) {
     const { orderStatus, trackingNumber, deliveredAt } = req.body;
-    const order = await Order.findById(req.params.id);
+
+    const updateFields = {};
+    if (orderStatus) updateFields.orderStatus = orderStatus;
+    if (trackingNumber) updateFields.trackingNumber = trackingNumber;
+    if (deliveredAt) updateFields.deliveredAt = deliveredAt;
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updateFields, {
+      new: true,
+      runValidators: true,
+    });
+
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (orderStatus) order.orderStatus = orderStatus;
-    if (trackingNumber) order.trackingNumber = trackingNumber;
-    if (deliveredAt) order.deliveredAt = deliveredAt;
-
-    await order.save();
-    //update order
     res.json(resSuccessObject({ results: order }));
   }
 
