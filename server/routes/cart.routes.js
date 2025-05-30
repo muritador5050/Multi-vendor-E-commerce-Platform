@@ -17,7 +17,7 @@ router
   .get(asyncHandler(CartController.getCart));
 
 router.delete('/clear', isAdmin, asyncHandler(CartController.clearCart));
-router.put('/:id', asyncHandler(CartController.updateCartItem));
-router.delete('/:id', asyncHandler(CartController.removeFromCart));
+router.put('/:id', asyncHandler(CartController.updateProductQuantity));
+router.delete('/:id', asyncHandler(CartController.deleteCartItem));
 
 module.exports = router;
