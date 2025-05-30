@@ -14,8 +14,10 @@ router.use(authenticate);
 router
   .route('/')
   .post(asyncHandler(CartController.addToCart))
-  .get(isAdmin, CartController.getCart);
+  .get(asyncHandler(CartController.getCart));
 
 router.delete('/clear', isAdmin, asyncHandler(CartController.clearCart));
 router.put('/:id', asyncHandler(CartController.updateCartItem));
 router.delete('/:id', asyncHandler(CartController.removeFromCart));
+
+module.exports = router;

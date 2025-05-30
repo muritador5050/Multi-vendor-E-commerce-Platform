@@ -4,20 +4,14 @@ const { resSuccessObject } = require('../utils/responseObject');
 
 //Controller
 class CartController {
+  //Add product to cart
   static async addToCart(req, res) {
-    const { productId, quantity } = req.body;
+    const { productId, quantity = 1 } = req.body;
 
     if (!productId) {
-      return res.status.json({
-        success: false,
-        message: 'Product ID is required',
-      });
-    }
-
-    if (quantity < 1) {
       return res.status(400).json({
         success: false,
-        message: 'Quantity must be at least 1',
+        message: 'Product ID is required or Quantity must be at least 1',
       });
     }
 
@@ -34,7 +28,7 @@ class CartController {
     if (!cart) {
       cart = new Cart({
         user: req.user.id,
-        items: [{ product: productId, quantity }],
+        items: [],
       });
     }
     const itemsIndex = cart.items.findIndex(
@@ -75,6 +69,8 @@ class CartController {
       })
     );
   }
+
+  //Get cart
   static async getCart(req, res) {
     const userId = req.user.id;
 
@@ -120,12 +116,13 @@ class CartController {
   //Update item quantity in cart
   static async updateCartItem(req, res) {
     const userId = req.user.id;
-    const { productId, quantity } = req.body;
+    const productId = req.params.id; // Get productId from URL path
+    const { quantity } = req.body; // Only get quantity from request body
 
-    if (!productId || quantity === undefined) {
+    if (quantity === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Product ID and quantity are required',
+        message: 'Quantity is required',
       });
     }
 
@@ -143,10 +140,17 @@ class CartController {
         message: 'Cart not found',
       });
     }
-
     const itemIndex = cart.items.findIndex(
       (item) => item.product.toString() === productId
     );
+
+    // Check if the item exists in the cart
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found in cart',
+      });
+    }
 
     if (quantity === 0) {
       // Remove item if quantity is 0
@@ -158,6 +162,7 @@ class CartController {
 
     cart.updatedAt = new Date();
     await cart.save();
+
     // Populate and return updated cart
     const updatedCart = await Cart.findOne({ user: userId }).populate(
       'items.product',
@@ -183,6 +188,7 @@ class CartController {
       })
     );
   }
+  //Remove item from cart
   static async removeFromCart(req, res) {
     const userId = req.user.id;
     const { productId } = req.params;

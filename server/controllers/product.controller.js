@@ -5,7 +5,7 @@ const { resSuccessObject } = require('../utils/responseObject');
 
 //Products
 class ProductsController {
-  //Create new product(Admin only)
+  //Create new product(Vendor only)
   static async createProduct(req, res) {
     if (req.body.categoryId) {
       req.body.category = new mongoose.Types.ObjectId(req.body.categoryId);
