@@ -9,10 +9,7 @@ router
   .route('/')
   .post(asyncHandler(PaymentController.createPayment))
   .get(asyncHandler(PaymentController.getAllPayments));
-router.patch(
-  '/:id/status',
-  asyncHandler(PaymentController.updatePaymentStatus)
-);
+router.put('/:id/status', asyncHandler(PaymentController.updatePaymentStatus));
 router
   .route('/:id')
   .get(asyncHandler(PaymentController.getPaymentById))

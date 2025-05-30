@@ -11,7 +11,7 @@ require('dotenv').config();
 class PaymentController {
   // Create a new payment
   static async createPayment(req, res) {
-    const { order, paymentProvider, amount, currency = 'USD' } = req.body;
+    const { order, paymentProvider, amount, currency } = req.body;
 
     // Validation
     if (!paymentProvider || !order || !amount) {
@@ -43,7 +43,8 @@ class PaymentController {
     const paymentData = await PaymentController.createProviderPayment(
       paymentProvider,
       amount,
-      currency
+      currency,
+      order
     );
 
     // Save payment to database
@@ -56,64 +57,129 @@ class PaymentController {
       status: 'pending',
     });
 
-    return res.json(
-      resSuccessObject({
-        results: payment,
-        checkoutUrl: paymentData.checkoutUrl,
-      })
-    );
+    return res.json({
+      results: payment,
+      checkoutUrl: paymentData.checkoutUrl,
+    });
   }
 
   // Helper method to create payment with different providers (fixed typo)
-  static async createProviderPayment(provider, amount, currency) {
+  static async createProviderPayment(provider, amount, currency, orderId) {
     const idempotencyKey = crypto.randomUUID();
 
-    if (provider === 'stripe') {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: currency.toLowerCase(),
-              product_data: { name: 'Order Payment' },
-              unit_amount: Math.round(amount * 100),
-            },
-            quantity: 1,
-          },
-        ],
-        mode: 'payment',
-        success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
-        metadata: { idempotencyKey }, // Fixed: should be object
-      });
+    // FIXED: Use the orderId parameter that comes from request body
+    const order = await Order.findById(orderId);
+    if (!order) {
+      throw new Error('Order not found');
+    }
 
-      return {
-        paymentId: session.id,
-        checkoutUrl: session.url,
-      };
+    //Stripe
+    if (provider === 'stripe') {
+      try {
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: currency.toLowerCase(),
+                product_data: { name: 'Order Payment' },
+                unit_amount: Math.round(amount * 100),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: 'payment',
+          success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
+          metadata: {
+            idempotencyKey,
+            orderId: orderId.toString(),
+          },
+        });
+
+        return {
+          paymentId: session.id,
+          checkoutUrl: session.url,
+        };
+      } catch (error) {
+        console.error('Stripe error:', error);
+        throw new Error(`Stripe payment creation failed: ${error.message}`);
+      }
     }
 
     if (provider === 'paystack') {
-      const response = await axios.post(
-        'https://api.paystack.co/transaction/initialize',
-        {
-          amount: Math.round(amount * 100),
-          currency: 'NGN',
-          callback_url: `${process.env.FRONTEND_URL}/payment-success`, // Fixed: underscore
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-            'Content-Type': 'application/json',
-          },
+      try {
+        if (!process.env.PAYSTACK_SECRET_KEY) {
+          throw new Error('PAYSTACK_SECRET_KEY is not configured');
         }
-      );
 
-      const { reference, authorization_url } = response.data.data;
-      return {
-        paymentId: reference,
-        checkoutUrl: authorization_url,
-      };
+        // Ensure amount is in kobo (minimum 1 kobo = 0.01 NGN)
+        const amountInKobo = Math.round(amount * 100);
+        if (amountInKobo < 1) {
+          throw new Error('Amount too small for Paystack (minimum 0.01 NGN)');
+        }
+
+        // Get customer email from order if available
+        const customerEmail =
+          order.customerEmail || order.user?.email || 'customer@example.com';
+
+        const paymentData = {
+          amount: amountInKobo,
+          currency: 'NGN',
+          email: customerEmail,
+          reference: `order_${orderId}_${Date.now()}`, // NOW orderId is defined!
+          callback_url: `${process.env.FRONTEND_URL}/payment-success`,
+          metadata: {
+            orderId: orderId.toString(),
+            idempotencyKey,
+          },
+        };
+
+        console.log('Paystack request data:', paymentData);
+
+        const response = await axios.post(
+          'https://api.paystack.co/transaction/initialize',
+          paymentData,
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000,
+          }
+        );
+
+        console.log('Paystack response:', response.data);
+
+        if (!response.data.status) {
+          throw new Error(`Paystack API error: ${response.data.message}`);
+        }
+
+        const { reference, authorization_url } = response.data.data;
+
+        if (!authorization_url) {
+          throw new Error('Paystack did not return checkout URL');
+        }
+        console.log(reference);
+        console.log(authorization_url);
+        return {
+          paymentId: reference,
+          checkoutUrl: authorization_url,
+        };
+      } catch (error) {
+        console.error('Paystack error details:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
+
+        if (error.response?.data) {
+          throw new Error(
+            `Paystack API error: ${JSON.stringify(error.response.data)}`
+          );
+        }
+        throw new Error(`Paystack payment creation failed: ${error.message}`);
+      }
     }
 
     throw new Error('Unsupported payment provider');
@@ -121,12 +187,12 @@ class PaymentController {
 
   // Process webhooks
   static async processWebhooks(req, res) {
-    const { paymentProvider } = req.params;
+    const paymentProvider = req.params;
 
     if (paymentProvider === 'stripe') {
       await PaymentController.handleStripeWebhook(req);
     } else if (paymentProvider === 'paystack') {
-      await PaymentController.handlePaystackWebhook(req); // Fixed typo
+      await PaymentController.handlePaystackWebhook(req);
     } else {
       return res.status(400).json({ message: 'Unknown payment provider' });
     }
