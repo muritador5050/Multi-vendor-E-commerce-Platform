@@ -3,9 +3,9 @@ const { JWT_SECRET } = require('../configs/index');
 const { asyncHandler } = require('../utils/asyncHandler');
 
 const authenticate = (req, res, next) => {
-  const headerToken = req.headers['authorization']
-    ?.replace('Bearer', '')
-    .trim();
+  const authHeader = req.headers['authorization'];
+  const headerToken = authHeader && authHeader.split(' ')[1];
+
   const cookieToken = req.cookies?.jwt;
   const token = headerToken || cookieToken;
 
