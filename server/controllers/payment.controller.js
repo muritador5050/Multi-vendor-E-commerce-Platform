@@ -135,8 +135,6 @@ class PaymentController {
           },
         };
 
-        console.log('Paystack request data:', paymentData);
-
         const response = await axios.post(
           'https://api.paystack.co/transaction/initialize',
           paymentData,
@@ -149,8 +147,6 @@ class PaymentController {
           }
         );
 
-        console.log('Paystack response:', response.data);
-
         if (!response.data.status) {
           throw new Error(`Paystack API error: ${response.data.message}`);
         }
@@ -160,8 +156,7 @@ class PaymentController {
         if (!authorization_url) {
           throw new Error('Paystack did not return checkout URL');
         }
-        console.log(reference);
-        console.log(authorization_url);
+
         return {
           paymentId: reference,
           checkoutUrl: authorization_url,
