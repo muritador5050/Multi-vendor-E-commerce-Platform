@@ -12,7 +12,7 @@ class ProductsController {
     }
 
     // Set vendor to the authenticated user
-    req.body.vendor = req.user._id;
+    req.body.vendor = req.user.id;
 
     // Create the product
     const product = await Product.create({ ...req.body });

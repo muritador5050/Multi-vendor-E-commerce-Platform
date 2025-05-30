@@ -7,7 +7,7 @@ class Review {
   // Create a new review
   static async createReview(req, res) {
     const { product, rating, comment } = req.body;
-    const user = req.user._id;
+    const user = req.user.id;
 
     // Check if product is already reviewed
     const existingReview = await Review_model.findOne({
@@ -20,7 +20,11 @@ class Review {
       existingReview.rating = rating;
       existingReview.comment = comment;
       existingReview.isApproved = false; // re-approval needed
+
+      //Save
       await existingReview.save();
+
+      //Response
       return res.json(
         resSuccessObject({
           message: 'Review updated successfully',
@@ -109,13 +113,15 @@ class Review {
     // FIX: Correct response structure
     res.json(
       resSuccessObject({
-        results: reviews,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages,
-          total,
-          hasNextPage: parseInt(page) < totalPages,
-          hasPrevPage: parseInt(page) > 1,
+        results: {
+          reviews,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages,
+            total,
+            hasNextPage: parseInt(page) < totalPages,
+            hasPrevPage: parseInt(page) > 1,
+          },
         },
       })
     );
@@ -192,18 +198,14 @@ class Review {
     review.isDeleted = true;
     await review.save();
 
-    return res.json(
-      resSuccessObject({
-        message: 'Review deleted (soft delete)',
-        results: review,
-      })
-    );
+    return res.json({ message: 'Review deleted (soft delete)' });
   }
 
   // Get average rating for a product
   static async getAverageRating(req, res) {
     // FIX: Parameter name should match route (:Id -> :productId)
-    const { productId } = req.params;
+    const productId = req.params;
+    console.log(productId);
 
     const stats = await Review_model.aggregate([
       {

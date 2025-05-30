@@ -242,20 +242,9 @@ class CartController {
     }
 
     cart.items = [];
-    cart.updatedAt = new Date();
     await cart.save();
 
-    res.json(
-      resSuccessObject({
-        message: 'Cart cleared successfully',
-        results: {
-          user: userId,
-          items: [],
-          totalItems: 0,
-          totalAmount: 0,
-        },
-      })
-    );
+    res.json({ success: true, message: 'Cart cleared successfully' });
   }
 }
 
