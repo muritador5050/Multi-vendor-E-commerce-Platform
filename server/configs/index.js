@@ -6,4 +6,5 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET,
   REFRESH_TOKEN: process.env.REFRESH_TOKEN,
   NODE_ENV: process.env.NODE_ENV || 'development',
+  FRONTEND_URL: process.env.FRONTEND_URL,
 };

@@ -85,7 +85,7 @@ userSchema.methods.generateToken = function () {
   const refreshToken = jwt.sign(
     { id: this._id, email: this.email, role: this.role },
     REFRESH_TOKEN,
-    { expiresIn: '30d' }
+    { expiresIn: '7d' }
   );
   return { accessToken, refreshToken };
 };

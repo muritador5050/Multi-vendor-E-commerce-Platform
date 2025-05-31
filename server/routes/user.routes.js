@@ -17,6 +17,13 @@ router.post(
   validation(login),
   asyncHandler(UserController.loginUser)
 );
+
+//Refresh
+router.post('/refresh', asyncHandler(UserController.refreshToken));
+
+//Logout
+router.post('/logout', asyncHandler(UserController.logOut));
+
 router.get(
   '/users',
   authenticate,
@@ -25,14 +32,9 @@ router.get(
 );
 
 //Password reset routes
-router.post(
-  '/forgot-password',
-  authenticate,
-  asyncHandler(UserController.forgotPassword)
-);
+router.post('/forgot-password', asyncHandler(UserController.forgotPassword));
 router.post(
   '/reset-password/:token',
-  authenticate,
   asyncHandler(UserController.resetPassword)
 );
 
@@ -48,9 +50,6 @@ router.get('/google/callback', asyncHandler(UserController.googleCallback));
 router.get('/test-google', asyncHandler(UserController.testGoogleAuth));
 router.get('/facebook', asyncHandler(UserController.facebookAuth));
 router.get('/facebook/callback', asyncHandler(UserController.facebookCallback));
-
-//Logout
-router.get('/logout', authenticate, asyncHandler(UserController.logOut));
 
 router.get('/dashboard', authenticate, (req, res) => {
   res.status(200).json({ message: 'welcome to dashboard' });

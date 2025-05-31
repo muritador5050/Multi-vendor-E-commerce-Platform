@@ -1,6 +1,11 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../configs/index');
+const {
+  JWT_SECRET,
+  NODE_ENV,
+  REFRESH_TOKEN,
+  FRONTEND_URL,
+} = require('../configs/index');
 const { resSuccessObject } = require('../utils/responseObject');
 const EmailService = require('../services/emailService');
 const passport = require('passport');
@@ -8,7 +13,7 @@ const passport = require('passport');
 class UserController {
   //Register user
   static async createUser(req, res) {
-    //Find existind user
+    //Find existing user
     const findByEmail = await User.findByEmail(req.body.email);
     if (findByEmail) {
       return res.status(400).json({ message: 'User already exist' });
@@ -25,6 +30,7 @@ class UserController {
       })
     );
   }
+
   //Login user
   static async loginUser(req, res, next) {
     const { email, password } = req.body;
@@ -41,30 +47,100 @@ class UserController {
         .json({ message: 'Please verify your email first' });
     }
 
-    //Generate token
+    // Generate token pair
     const { accessToken, refreshToken } = user.generateToken();
 
+    //Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
 
-    res.status(200).json(
-      resSuccessObject({
-        message: 'Login successful',
-        accessToken,
-        refreshToken,
-        results: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+    // Set refresh token as httpOnly cookie
+    res
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
-    );
+      .json(
+        resSuccessObject({
+          message: 'Login successful',
+          accessToken,
+          results: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+        })
+      );
+  }
+
+  //Refresh Token
+  static async refreshToken(req, res) {
+    const token = req.cookies?.refreshToken;
+
+    if (!token) {
+      return res.status(403).json({ message: 'Refresh token not provided' });
+    }
+
+    //Verify refresh token
+    const payload = jwt.verify(token, REFRESH_TOKEN);
+
+    //Find user by ID from payload and check if refresh token matches
+    const user = await User.findById(payload.id);
+
+    if (!user || user.refreshToken !== token) {
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
+
+    //Generate new tokens
+    const { accessToken, refreshToken: newRefrshToken } = user.generateToken();
+
+    //Update refresh token in database
+    user.refreshToken = newRefrshToken;
+    await user.save();
+
+    // Set new refresh token as cookie
+    res
+      .cookie('refreshToken', newRefrshToken, {
+        httpOnly: true,
+        secure: NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+      })
+      .json({ accessToken, message: 'Token refreshed successfully' });
+  }
+
+  //Logout
+  static async logOut(req, res) {
+    const token = req.cookies?.refreshToken;
+
+    if (!token) {
+      // Clear cookie anyway and return success
+      res.clearCookie('refreshToken');
+      return res.status(200).json({ message: 'Logout successful' });
+    }
+
+    // Find user with this refresh token and clear it
+    const user = await User.findOne({ refreshToken: token });
+    if (user) {
+      user.refreshToken = null;
+      await user.save();
+    }
+    // Clear the refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    res.status(200).json({ message: 'Logout successful' });
   }
 
   // Get all users (admin only)
   static async getAllUsers(req, res) {
-    const users = await User.find({}, '-password, -refreshToken');
+    const users = await User.find({}, '-password -refreshToken');
     res.json(
       resSuccessObject({
         results: users,
@@ -156,15 +232,16 @@ class UserController {
     passport.authenticate('google', { session: false }, async (err, user) => {
       if (err) return next(err);
       if (!user)
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/login?error=oauth_fialed`
-        );
+        return res.redirect(`${FRONTEND_URL}/login?error=oauth_failed`);
 
       const { accessToken, refreshToken } = user.generateToken();
+
+      //Save refresh token to database
+      user.refreshToken = refreshToken;
+      await user.save();
+
       res.redirect(
-        `${
-          process.env.FRONTEND_URL
-        }/login?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
+        `${FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
           JSON.stringify({
             id: user._id,
             name: user.name,
@@ -204,31 +281,23 @@ class UserController {
     passport.authenticate('facebook', { session: false }, async (err, user) => {
       if (err) return next(err);
       if (!user)
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/login?error=oauth_failed`
-        );
+        return res.redirect(`${FRONTEND_URL}/login?error=oauth_failed`);
 
       const { accessToken, refreshToken } = user.generateToken();
+
+      // Save refresh token to database
+      user.refreshToken = refreshToken;
+      await user.save();
+
       res.redirect(
-        `${process.env.FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}`
+        `${FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}`
       );
+
       if (!user.isEmailVerified) {
         await EmailService.sendWelcomeEmail(user);
         next();
       }
     })(req, res, next);
-  }
-
-  //Logout
-  static async logOut(req, res) {
-    if (req.user) {
-      const user = await User.findById(req.user._id);
-      if (user) {
-        user.refreshToken = undefined;
-        await user.save();
-      }
-    }
-    res.json({ message: 'Logged out successfully' });
   }
 
   // Get user by ID
@@ -279,6 +348,7 @@ class UserController {
     if (!req.user.id || req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin permission required!' });
     }
+
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
   }
