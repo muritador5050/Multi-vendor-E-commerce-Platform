@@ -31,7 +31,7 @@ class ProductsController {
     );
   }
 
-  //Get all products
+  //Get all products (Public access)
   static async getAllProducts(req, res) {
     const {
       page = 1,
@@ -110,13 +110,13 @@ class ProductsController {
     });
   }
 
-  //Get a single product
+  //Get a single product (Public access)
   static async getProductById(req, res) {
     const product = await Product.findOne({
       _id: req.params.id,
       isDeleted: false,
     })
-      .select('-categoryId') // Exclude categoryId from the response
+      .select('-categoryId')
       .populate('category', 'name slug image')
       .populate('vendor', 'name email')
       .lean();
@@ -134,20 +134,35 @@ class ProductsController {
     });
   }
 
-  //Update product(Admin only)
+  //Update product (Vendor can update own products, Admin can update any)
   static async updateProduct(req, res) {
+    //Build the filter
+    const filter = { _id: req.params.id, isDeleted: false };
+
+    // If user is not admin, they can only update their own products
+    if (req.user.role !== 'admin') {
+      filter.vendor = req.user.id;
+    }
+
     const product = await Product.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
       { $set: req.body },
       { new: true, runValidators: true }
     )
       .select('-categoryId')
-      .populate('category', 'name slug, image');
+      .populate('category', 'name slug, image')
+      .populate('vendor', 'name email');
 
     if (!product) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Product not found or deleted' });
+      const message =
+        req.user.role === 'admin'
+          ? 'Product not found or deleted'
+          : 'Product not found, deleted, or you do not have permission to update this product';
+
+      return res.status(404).json({
+        success: false,
+        message,
+      });
     }
 
     return res.json(
@@ -158,8 +173,15 @@ class ProductsController {
     );
   }
 
-  //Delete product(Admin only)
+  //Delete product (Admin can delete any, Vendor can delete own)
   static async deleteProduct(req, res) {
+    const filter = { _id: req.params.id };
+
+    // If user is not admin, they can only delete their own products
+    if (req.user.role !== 'admin') {
+      filter.vendor = req.user.id;
+    }
+
     const product = await Product.findByIdAndUpdate(
       { _id: req.params.id },
       { isDeleted: true, isActive: false },
@@ -167,13 +189,64 @@ class ProductsController {
     );
 
     if (!product) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Product not found' });
+      const message =
+        req.user.role === 'admin'
+          ? 'Product not found'
+          : 'Product not found or you do not have permission to delete this product';
+
+      return res.status(404).json({
+        success: false,
+        message,
+      });
     }
     return res
       .status(200)
       .json({ success: true, message: 'Product soft-deleted successfully' });
+  }
+
+  // Get vendor's own products (Vendor only)
+  static async getVendorProducts(req, res) {
+    const { page = 1, limit = 10, sort = '-createdAt', isActive } = req.query;
+
+    // Check for invalid page or limit values
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({ message: 'Invalid page or limit values.' });
+    }
+
+    const filter = {
+      vendor: req.user.id,
+      isDeleted: false,
+    };
+
+    // Apply isActive filter
+    if (isActive !== undefined) {
+      filter.isActive = isActive === 'true';
+    }
+
+    const total = await Product.countDocuments(filter);
+
+    const products = await Product.find(filter)
+      .select('-categoryId')
+      .sort(sort)
+      .paginate({
+        page: parseInt(page),
+        limit: parseInt(limit),
+      })
+      .populate('category', 'name slug image')
+      .lean();
+
+    return res.json({
+      success: true,
+      count: products.length,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit)),
+        hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
+        hasPrev: parseInt(page) > 1,
+      },
+      products: products,
+    });
   }
 }
 

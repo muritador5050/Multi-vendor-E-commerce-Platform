@@ -4,25 +4,38 @@ const ProductsController = require('../controllers/product.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 const {
   authenticate,
-  isAdmin,
   adminOrVendor,
   isVendor,
 } = require('../middlewares/authMiddleware');
 
-// Create a new product
+// Public routes
 router
   .route('/')
-  .post(authenticate, isVendor, asyncHandler(ProductsController.createProduct))
-  .get(asyncHandler(ProductsController.getAllProducts));
+  .get(asyncHandler(ProductsController.getAllProducts)) // Public: Get all products
+  .post(authenticate, isVendor, asyncHandler(ProductsController.createProduct)); // Vendor only: Create product
 
+// Vendor-specific routes
+router
+  .route('/my-products')
+  .get(
+    authenticate,
+    isVendor,
+    asyncHandler(ProductsController.getVendorProducts)
+  ); // Vendor only: Get own products
+
+// Product-specific routes
 router
   .route('/:id')
-  .get(asyncHandler(ProductsController.getProductById))
-  .put(authenticate, isVendor, asyncHandler(ProductsController.updateProduct))
+  .get(asyncHandler(ProductsController.getProductById)) // Public: Get single product
+  .put(
+    authenticate,
+    adminOrVendor,
+    asyncHandler(ProductsController.updateProduct)
+  ) // Admin or Vendor: Update product
   .delete(
     authenticate,
     adminOrVendor,
     asyncHandler(ProductsController.deleteProduct)
-  );
+  ); // Admin or Vendor: Delete product
 
 module.exports = router;
