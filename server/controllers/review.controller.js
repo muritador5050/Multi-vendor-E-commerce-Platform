@@ -1,16 +1,16 @@
-const Review_model = require('../models/review.model');
+const Review = require('../models/review.model');
 const Product = require('../models/product.model');
 const mongoose = require('mongoose');
 const { resSuccessObject } = require('../utils/responseObject');
 
-class Review {
-  // Create a new review
+class ReviewController {
+  // Create a new review - AUTHENTICATED USERS ONLY
   static async createReview(req, res) {
     const { product, rating, comment } = req.body;
     const user = req.user.id;
 
-    // Check if product is already reviewed
-    const existingReview = await Review_model.findOne({
+    // Check if product is already reviewed by this user
+    const existingReview = await Review.findOne({
       product,
       user: user,
       isDeleted: false,
@@ -42,7 +42,7 @@ class Review {
       });
     }
 
-    const review = await Review_model.create({
+    const review = await Review.create({
       user,
       product,
       rating,
@@ -63,6 +63,7 @@ class Review {
     );
   }
 
+  // Get reviews - PUBLIC ACCESS (no authentication required for viewing)
   static async getReviews(req, res) {
     const {
       page = 1,
@@ -98,19 +99,19 @@ class Review {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const [reviews, total] = await Promise.all([
-      Review_model.find(filter)
-        .populate('user', 'name email avatar')
-        .populate('product', 'name price images')
+      Review.find(filter)
+        .populate([
+          { path: 'user', select: 'name email avater' },
+          { path: 'product', select: 'name price, images' },
+        ])
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit)),
-      Review_model.countDocuments(filter),
+      Review.countDocuments(filter),
     ]);
 
-    // FIX: Use 'total' instead of 'totalCount'
     const totalPages = Math.ceil(total / parseInt(limit));
 
-    // FIX: Correct response structure
     res.json(
       resSuccessObject({
         results: {
@@ -127,6 +128,7 @@ class Review {
     );
   }
 
+  // Get single review - PUBLIC ACCESS
   static async getReviewById(req, res) {
     const { id } = req.params;
 
@@ -137,13 +139,13 @@ class Review {
       });
     }
 
-    // FIX: Use Review_model instead of Review
-    const review = await Review_model.findOne({
+    const review = await Review.findOne({
       _id: id,
       isDeleted: false,
-    })
-      .populate('user', 'name email avatar')
-      .populate('product', 'name price images');
+    }).populate([
+      { path: 'user', select: 'name email avater' },
+      { path: 'product', select: 'name price, images' },
+    ]);
 
     if (!review) {
       return res.status(404).json({
@@ -152,18 +154,13 @@ class Review {
       });
     }
 
-    res.json(
-      resSuccessObject({
-        results: review,
-      })
-    );
+    res.json({ results: review });
   }
 
-  // Approve or disapprove a review (Admin only)
+  // Approve or disapprove a review - ADMIN ONLY
   static async toggleReviewApproval(req, res) {
-    // FIX: Parameter name should match route (:id)
     const { id } = req.params;
-    const review = await Review_model.findById(id);
+    const review = await Review.findById(id);
 
     if (!review) {
       return res.status(404).json({
@@ -183,15 +180,33 @@ class Review {
     );
   }
 
+  // Delete review - AUTHENTICATED USERS (own reviews) or ADMIN
   static async deleteReview(req, res) {
-    // FIX: Parameter name should match route (:Id -> :id for consistency)
     const { id } = req.params;
-    const review = await Review_model.findById(id);
+    const userId = req.user.id;
+    const isAdminUser = req.user.role === 'admin' || req.user.isAdmin;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid review ID',
+      });
+    }
+
+    const review = await Review.findById(id);
 
     if (!review || review.isDeleted) {
       return res.status(400).json({
         success: false,
         message: 'Review not found or already deleted',
+      });
+    }
+
+    // Check if user owns the review or is admin
+    if (review.user.toString() !== userId && !isAdminUser) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this review',
       });
     }
 
@@ -201,11 +216,16 @@ class Review {
     return res.json({ message: 'Review deleted (soft delete)' });
   }
 
-  // Get average rating for a product
+  // Get average rating for a product - PUBLIC ACCESS
   static async getAverageRating(req, res) {
-    // FIX: Parameter name should match route (:Id -> :productId)
-    const productId = req.params;
-    console.log(productId);
+    const { id: productId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID',
+      });
+    }
 
     const stats = await Review_model.aggregate([
       {
@@ -230,4 +250,4 @@ class Review {
   }
 }
 
-module.exports = Review;
+module.exports = ReviewController;

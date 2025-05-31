@@ -9,15 +9,22 @@ const {
   adminOrVendor,
 } = require('../middlewares/authMiddleware');
 
+// Apply authentication to all cart routes
 router.use(authenticate);
-//Routes
+
+// Add to cart and get cart
 router
   .route('/')
   .post(asyncHandler(CartController.addToCart))
   .get(asyncHandler(CartController.getCart));
 
+// Clear entire cart
 router.delete('/clear', asyncHandler(CartController.clearCart));
+
+// Update product quantity in cart
 router.put('/:id', asyncHandler(CartController.updateProductQuantity));
-router.delete('/:id/delete', asyncHandler(CartController.deleteCartItem));
+
+// Remove specific item from cart
+router.delete('/:id', asyncHandler(CartController.deleteCartItem));
 
 module.exports = router;
