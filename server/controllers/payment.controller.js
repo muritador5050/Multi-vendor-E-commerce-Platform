@@ -4,6 +4,7 @@ const { resSuccessObject } = require('../utils/responseObject');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
 const axios = require('axios');
+const { default: mongoose } = require('mongoose');
 
 require('dotenv').config();
 
@@ -336,6 +337,27 @@ class PaymentController {
     return res.json(resSuccessObject({ results: payment }));
   }
 
+  // Get user's own payments
+  static async getUserPayments(req, res) {
+    const userId = req.user.id;
+
+    // Get all payments for this user
+    const payments = await Payment.find({ user: userId })
+      .populate([
+        { path: 'order', select: 'orderNumber totalAmount' },
+        { path: 'user', select: 'name email' },
+      ])
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(
+      resSuccessObject({
+        message: 'User payments retrieved successfully',
+        results: payments,
+      })
+    );
+  }
+
   // Update payment status
   static async updatePaymentStatus(req, res) {
     const { status, paidAt } = req.body;
@@ -384,6 +406,221 @@ class PaymentController {
     return res.json(
       resSuccessObject({
         message: 'Payment deleted successfully',
+      })
+    );
+  }
+
+  // Get user's payment analytics and statistics
+  static async getPaymentAnalytics(req, res) {
+    const userId = req.user.id;
+    const { period = '12months' } = req.query;
+
+    // Calculate date range based on period
+    const now = new Date();
+    let startDate;
+
+    switch (period) {
+      case '7days':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30days':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '3months':
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case '6months':
+        startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+        break;
+      case '12months':
+      default:
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+    }
+
+    const matchStage = {
+      user: new mongoose.Types.ObjectId(userId),
+      createdAt: { $gte: startDate },
+    };
+
+    // Execute multiple aggregations in parallel
+    const [
+      overallStats,
+      statusBreakdown,
+      monthlyTrends,
+      paymentMethodBreakdown,
+      recentTransactions,
+    ] = await Promise.all([
+      // Overall statistics
+      Payment.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: '$amount' },
+            totalTransactions: { $sum: 1 },
+            avgTransactionAmount: { $avg: '$amount' },
+            maxTransactionAmount: { $max: '$amount' },
+            minTransactionAmount: { $min: '$amount' },
+            successfulPayments: {
+              $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
+            },
+            failedPayments: {
+              $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] },
+            },
+            pendingPayments: {
+              $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+
+      // Payment status breakdown
+      Payment.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+            totalAmount: { $sum: '$amount' },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+
+      // Monthly payment trends
+      Payment.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+            },
+            totalAmount: { $sum: '$amount' },
+            transactionCount: { $sum: 1 },
+            avgAmount: { $avg: '$amount' },
+          },
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1 } },
+        {
+          $project: {
+            _id: 0,
+            year: '$_id.year',
+            month: '$_id.month',
+            monthName: {
+              $arrayElemAt: [
+                [
+                  '',
+                  'Jan',
+                  'Feb',
+                  'Mar',
+                  'Apr',
+                  'May',
+                  'Jun',
+                  'Jul',
+                  'Aug',
+                  'Sep',
+                  'Oct',
+                  'Nov',
+                  'Dec',
+                ],
+                '$_id.month',
+              ],
+            },
+            totalAmount: 1,
+            transactionCount: 1,
+            avgAmount: { $round: ['$avgAmount', 2] },
+          },
+        },
+      ]),
+
+      // Payment method breakdown
+      Payment.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: '$paymentMethod',
+            count: { $sum: 1 },
+            totalAmount: { $sum: '$amount' },
+            avgAmount: { $avg: '$amount' },
+          },
+        },
+        { $sort: { count: -1 } },
+        {
+          $project: {
+            _id: 0,
+            paymentMethod: '$_id',
+            count: 1,
+            totalAmount: 1,
+            avgAmount: { $round: ['$avgAmount', 2] },
+            percentage: {
+              $multiply: [{ $divide: ['$count', { $sum: '$count' }] }, 100],
+            },
+          },
+        },
+      ]),
+
+      // Recent transactions (last 5)
+      Payment.find(matchStage)
+        .populate('order', 'orderNumber')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('amount status paymentMethod createdAt order transactionId')
+        .lean(),
+    ]);
+
+    // Process overall stats
+    const stats = overallStats[0] || {
+      totalAmount: 0,
+      totalTransactions: 0,
+      avgTransactionAmount: 0,
+      maxTransactionAmount: 0,
+      minTransactionAmount: 0,
+      successfulPayments: 0,
+      failedPayments: 0,
+      pendingPayments: 0,
+    };
+
+    // Calculate success rate
+    const successRate =
+      stats.totalTransactions > 0
+        ? ((stats.successfulPayments / stats.totalTransactions) * 100).toFixed(
+            2
+          )
+        : 0;
+
+    // Format the response
+    const analytics = {
+      period,
+      dateRange: {
+        startDate,
+        endDate: now,
+      },
+      overview: {
+        totalSpent: stats.totalAmount,
+        totalTransactions: stats.totalTransactions,
+        averageTransactionAmount:
+          Math.round(stats.avgTransactionAmount * 100) / 100,
+        largestTransaction: stats.maxTransactionAmount,
+        smallestTransaction: stats.minTransactionAmount,
+        successRate: `${successRate}%`,
+      },
+      paymentCounts: {
+        successful: stats.successfulPayments,
+        failed: stats.failedPayments,
+        pending: stats.pendingPayments,
+      },
+      statusBreakdown,
+      monthlyTrends,
+      paymentMethodBreakdown,
+      recentTransactions,
+    };
+
+    res.json(
+      resSuccessObject({
+        message: 'User payment analytics retrieved successfully',
+        results: analytics,
       })
     );
   }

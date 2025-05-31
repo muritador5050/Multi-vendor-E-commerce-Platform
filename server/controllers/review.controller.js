@@ -112,20 +112,16 @@ class ReviewController {
 
     const totalPages = Math.ceil(total / parseInt(limit));
 
-    res.json(
-      resSuccessObject({
-        results: {
-          reviews,
-          pagination: {
-            currentPage: parseInt(page),
-            totalPages,
-            total,
-            hasNextPage: parseInt(page) < totalPages,
-            hasPrevPage: parseInt(page) > 1,
-          },
-        },
-      })
-    );
+    res.json({
+      reviews,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        total,
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1,
+      },
+    });
   }
 
   // Get single review - PUBLIC ACCESS
@@ -227,7 +223,7 @@ class ReviewController {
       });
     }
 
-    const stats = await Review_model.aggregate([
+    const stats = await Review.aggregate([
       {
         $match: {
           product: new mongoose.Types.ObjectId(productId),
