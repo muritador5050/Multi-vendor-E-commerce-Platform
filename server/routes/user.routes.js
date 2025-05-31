@@ -45,7 +45,7 @@ router.get(
 );
 
 //oAuth route
-router.get('/google', asyncHandler(UserController.googleAuth));
+router.get('/google-signup', asyncHandler(UserController.googleAuth));
 router.get('/google/callback', asyncHandler(UserController.googleCallback));
 router.get('/test-google', asyncHandler(UserController.testGoogleAuth));
 router.get('/facebook', asyncHandler(UserController.facebookAuth));

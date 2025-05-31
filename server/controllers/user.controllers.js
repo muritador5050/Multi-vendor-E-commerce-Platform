@@ -1,11 +1,6 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
-const {
-  JWT_SECRET,
-  NODE_ENV,
-  REFRESH_TOKEN,
-  FRONTEND_URL,
-} = require('../configs/index');
+const { NODE_ENV, REFRESH_TOKEN, FRONTEND_URL } = require('../configs/index');
 const { resSuccessObject } = require('../utils/responseObject');
 const EmailService = require('../services/emailService');
 const passport = require('passport');
@@ -16,19 +11,16 @@ class UserController {
     //Find existing user
     const findByEmail = await User.findByEmail(req.body.email);
     if (findByEmail) {
-      return res.status(400).json({ message: 'User already exist' });
+      return res.status(400).json({ message: 'Email already exist' });
     }
 
     // Only include allowed fields
     const user = await User.create({ ...req.body });
 
-    res.json(
-      resSuccessObject({
-        message:
-          'User created successfully. Please check your email for verification.',
-        results: { userId: user._id },
-      })
-    );
+    res.json({
+      message:
+        'User created successfully. Please check your email for verification.',
+    });
   }
 
   //Login user
@@ -62,18 +54,10 @@ class UserController {
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
-      .json(
-        resSuccessObject({
-          message: 'Login successful',
-          accessToken,
-          results: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          },
-        })
-      );
+      .json({
+        message: 'Login successful',
+        accessToken,
+      });
   }
 
   //Refresh Token
@@ -143,6 +127,7 @@ class UserController {
     const users = await User.find({}, '-password -refreshToken');
     res.json(
       resSuccessObject({
+        message: 'Retrived users',
         results: users,
       })
     );
@@ -267,6 +252,7 @@ class UserController {
       callbackUrl: '/api/auth/google/callback',
     });
   }
+
   //Facebook auth
   static facebookAuth(req, res, next) {
     return passport.authenticate('facebook', { scope: ['email'] })(
