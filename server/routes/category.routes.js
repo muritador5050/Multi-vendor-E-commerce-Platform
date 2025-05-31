@@ -5,39 +5,44 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const {
   authenticate,
   isVendor,
+  isAdmin,
   adminOrVendor,
 } = require('../middlewares/authMiddleware');
 
-//Routes
-router
-  .route('/')
-  .post(authenticate, isVendor, asyncHandler(CategoryController.createCategory))
-  .get(
-    authenticate,
-    adminOrVendor,
-    asyncHandler(CategoryController.getAllCategories)
-  );
+// PUBLIC ROUTES - No authentication required
+router.get('/', asyncHandler(CategoryController.getAllCategories));
+router.get('/:slug', asyncHandler(CategoryController.getCategoryBySlug));
 
-// For specific slug
-router.get(
-  '/:slug',
+// ADMIN ONLY ROUTES - Category management is typically admin responsibility
+router.post(
+  '/',
   authenticate,
-  isVendor,
-  asyncHandler(CategoryController.getCategoryBySlug)
+  isAdmin,
+  asyncHandler(CategoryController.createCategory)
 );
 
-router
-  .route('/:id')
-  .get(
-    authenticate,
-    adminOrVendor,
-    asyncHandler(CategoryController.getCategoryById)
-  )
-  .put(authenticate, isVendor, asyncHandler(CategoryController.updateCategory))
-  .delete(
-    authenticate,
-    adminOrVendor,
-    asyncHandler(CategoryController.deleteCategory)
-  );
+// Only admins can delete categories (major structural change)
+router.delete(
+  '/:id',
+  authenticate,
+  isAdmin,
+  asyncHandler(CategoryController.deleteCategory)
+);
+
+// ADMIN OR VENDOR ROUTES
+router.get(
+  '/:id',
+  authenticate,
+  adminOrVendor,
+  asyncHandler(CategoryController.getCategoryById)
+);
+
+// Both can update category details (like images, descriptions)
+router.put(
+  '/:id',
+  authenticate,
+  adminOrVendor,
+  asyncHandler(CategoryController.updateCategory)
+);
 
 module.exports = router;
