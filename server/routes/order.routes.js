@@ -4,13 +4,14 @@ const OrderController = require('../controllers/order.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
 
-// Create order
+// Create order (authenticated users)
+// Get all orders (admin only)
 router
   .route('/')
   .post(authenticate, asyncHandler(OrderController.creatOrder))
   .get(authenticate, isAdmin, asyncHandler(OrderController.getAllOrders));
 
-//Get order statistics
+// Get order statistics (admin only)
 router.get(
   '/stats',
   authenticate,
@@ -18,7 +19,7 @@ router.get(
   asyncHandler(OrderController.getOrderStats)
 );
 
-// Update order status (admin)
+// Update order status (admin only)
 router.put(
   '/:id/status',
   authenticate,
@@ -26,7 +27,8 @@ router.put(
   asyncHandler(OrderController.updateOrderStatus)
 );
 
-// Get order by ID
+// Get single order (authenticated users - with ownership check in controller)
+// Delete order (admin only)
 router
   .route('/:id')
   .get(authenticate, asyncHandler(OrderController.getOrderById))
