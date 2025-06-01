@@ -69,6 +69,71 @@ class UploadController {
     }
   }
 
+  // Upload multiple images (for products only)
+  static async uploadMultipleImages(req, res) {
+    try {
+      const { id, type } = req.params;
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'No image files provided' });
+      }
+
+      const modelConfig = MODEL_MAP[type];
+      if (!modelConfig) {
+        return res.status(400).json({
+          message: `Invalid type. Supported types: ${Object.keys(
+            MODEL_MAP
+          ).join(', ')}`,
+        });
+      }
+
+      const existingEntity = await modelConfig.model.findById(id);
+      if (!existingEntity) {
+        return res.status(404).json({
+          message: `${
+            modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+          } not found`,
+        });
+      }
+
+      const imageUrls = req.files.map(
+        (file) => `/uploads/images/${file.filename}`
+      );
+      const fieldKey = modelConfig.name === 'product' ? 'images' : 'image';
+
+      // Only allow multiple uploads for products
+      const updateData =
+        fieldKey === 'images'
+          ? { $push: { [fieldKey]: { $each: imageUrls } } }
+          : { [fieldKey]: imageUrls[0] };
+
+      const updatedEntity = await modelConfig.model.findByIdAndUpdate(
+        id,
+        updateData,
+        {
+          new: true,
+        }
+      );
+
+      res.json({
+        message: `${
+          modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+        } image(s) uploaded successfully`,
+        images: imageUrls,
+        [modelConfig.name]: updatedEntity,
+      });
+    } catch (error) {
+      console.error('Upload multiple images error:', error);
+      res.status(500).json({
+        message: 'Error uploading images',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? error.message
+            : 'Internal server error',
+      });
+    }
+  }
+
   // Delete image
   static async deleteImage(req, res) {
     try {

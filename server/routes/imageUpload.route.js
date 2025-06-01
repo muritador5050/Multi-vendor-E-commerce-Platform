@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { upload } = require('../utils/imageUpload');
+const { uploadSingle, uploadMultiple } = require('../utils/imageUpload');
 const { asyncHandler } = require('../utils/asyncHandler');
 const {
   authenticate,
@@ -10,20 +10,29 @@ const {
 const { validateImageUpload } = require('../middlewares/validation.middleware');
 const UploadController = require('../controllers/imageUpload.controller');
 
-// Generic upload endpoint for both categories and products
+// Upload single image (e.g category)
 router.post(
   '/:type/:id/image',
-  upload.single('image'),
+  uploadSingle,
   authenticate,
   adminOrVendor,
   validateImageUpload,
   asyncHandler(UploadController.uploadImage)
 );
 
+// Upload multiple images (e.g., product)
+router.post(
+  '/:type/:id/images',
+  uploadMultiple,
+  authenticate,
+  adminOrVendor,
+  asyncHandler(UploadController.uploadMultipleImages)
+);
+
 // Replace existing image
 router.put(
   '/:type/:id/image',
-  upload.single('image'),
+  uploadSingle,
   authenticate,
   adminOrVendor,
   validateImageUpload,
