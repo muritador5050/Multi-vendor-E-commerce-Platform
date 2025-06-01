@@ -1,28 +1,182 @@
 const Category = require('../models/category.model');
+const Product = require('../models/product.model');
+
+// Model mapping for easy extension
+const MODEL_MAP = {
+  categories: { model: Category, name: 'category' },
+  products: { model: Product, name: 'product' },
+};
 
 class UploadController {
   static async uploadImage(req, res) {
-    const { id } = req.params;
+    try {
+      const { id, type } = req.params;
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided' });
-    }
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image file provided' });
+      }
 
-    const imageUrl = `/upload/images/${req.file.filename}`;
+      // Validate type
+      const modelConfig = MODEL_MAP[type];
+      if (!modelConfig) {
+        return res.status(400).json({
+          message: `Invalid type. Supported types: ${Object.keys(
+            MODEL_MAP
+          ).join(', ')}`,
+        });
+      }
 
-    const category = await Category.findByIdAndUpdate(
-      id,
-      {
+      // Fixed: Match the actual upload path (uploads not upload)
+      const imageUrl = `/uploads/images/${req.file.filename}`;
+
+      // Check if entity exists first
+      const existingEntity = await modelConfig.model.findById(id);
+      if (!existingEntity) {
+        return res.status(404).json({
+          message: `${
+            modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+          } not found`,
+        });
+      }
+
+      // Update the entity
+      const updatedEntity = await modelConfig.model.findByIdAndUpdate(
+        id,
+        { image: imageUrl },
+        { new: true }
+      );
+
+      // Dynamic response
+      const response = {
+        message: `${
+          modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+        } image uploaded successfully`,
         image: imageUrl,
-      },
-      { new: true }
-    );
+      };
+      response[modelConfig.name] = updatedEntity;
 
-    res.json({
-      message: 'Image uploaded successfully',
-      image: imageUrl,
-      category,
-    });
+      res.json(response);
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({
+        message: 'Error uploading image',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? error.message
+            : 'Internal server error',
+      });
+    }
+  }
+  // Bonus: Delete image method
+  static async deleteImage(req, res) {
+    try {
+      const { id, type } = req.params;
+
+      const modelConfig = MODEL_MAP[type];
+      if (!modelConfig) {
+        return res.status(400).json({
+          message: `Invalid type. Supported types: ${Object.keys(
+            MODEL_MAP
+          ).join(', ')}`,
+        });
+      }
+
+      const updatedEntity = await modelConfig.model.findByIdAndUpdate(
+        id,
+        { $unset: { image: 1 } },
+        { new: true }
+      );
+
+      if (!updatedEntity) {
+        return res.status(404).json({
+          message: `${
+            modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+          } not found`,
+        });
+      }
+
+      res.json({
+        message: `${
+          modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+        } image deleted successfully`,
+        [modelConfig.name]: updatedEntity,
+      });
+    } catch (error) {
+      console.error('Delete image error:', error);
+      res.status(500).json({
+        message: 'Error deleting image',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? error.message
+            : 'Internal server error',
+      });
+    }
+  }
+
+  // Bonus: Replace image method
+  static async replaceImage(req, res) {
+    try {
+      const { id, type } = req.params;
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'No image file provided' });
+      }
+
+      const modelConfig = MODEL_MAP[type];
+      if (!modelConfig) {
+        return res.status(400).json({
+          message: `Invalid type. Supported types: ${Object.keys(
+            MODEL_MAP
+          ).join(', ')}`,
+        });
+      }
+
+      const existingEntity = await modelConfig.model.findById(id);
+      if (!existingEntity) {
+        return res.status(404).json({
+          message: `${
+            modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+          } not found`,
+        });
+      }
+
+      // TODO: Add logic to delete old image file if needed
+      // const oldImagePath = existingEntity.image;
+      // if (oldImagePath) {
+      //   const fs = require('fs').promises;
+      //   const oldFilePath = path.join(__dirname, '../..', oldImagePath);
+      //   try {
+      //     await fs.unlink(oldFilePath);
+      //   } catch (error) {
+      //     console.log('Old image file not found or already deleted');
+      //   }
+      // }
+
+      const imageUrl = `/uploads/images/${req.file.filename}`;
+
+      const updatedEntity = await modelConfig.model.findByIdAndUpdate(
+        id,
+        { image: imageUrl },
+        { new: true }
+      );
+
+      res.json({
+        message: `${
+          modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
+        } image replaced successfully`,
+        image: imageUrl,
+        [modelConfig.name]: updatedEntity,
+      });
+    } catch (error) {
+      console.error('Replace image error:', error);
+      res.status(500).json({
+        message: 'Error replacing image',
+        error:
+          process.env.NODE_ENV === 'development'
+            ? error.message
+            : 'Internal server error',
+      });
+    }
   }
 }
 
