@@ -14,7 +14,8 @@ const validation = (schema) => {
   };
 };
 
-const validateImageUpload = (req, res) => {
+//Image validation
+const validateImageUpload = (req, res, next) => {
   if (!req.file) {
     return res.status(400).json({ message: 'Image file is required' });
   }
@@ -26,7 +27,6 @@ const validateImageUpload = (req, res) => {
   }
 
   if (req.file.size > 5 * 1024 * 1024) {
-    // 5MB
     return res.status(400).json({ message: 'Image too large' });
   }
 

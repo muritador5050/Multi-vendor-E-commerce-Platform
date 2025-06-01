@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { upload } = require('../utils/imageUpload');
 const { asyncHandler } = require('../utils/asyncHandler');
-const { authenticate } = require('../middlewares/authMiddleware');
+const {
+  authenticate,
+  adminOrVendor,
+  isAdmin,
+} = require('../middlewares/authMiddleware');
 const { validateImageUpload } = require('../middlewares/validation.middleware');
 const UploadController = require('../controllers/imageUpload.controller');
 
@@ -11,6 +15,7 @@ router.post(
   '/:type/:id/image',
   upload.single('image'),
   authenticate,
+  adminOrVendor,
   validateImageUpload,
   asyncHandler(UploadController.uploadImage)
 );
@@ -20,6 +25,7 @@ router.put(
   '/:type/:id/image',
   upload.single('image'),
   authenticate,
+  adminOrVendor,
   validateImageUpload,
   asyncHandler(UploadController.replaceImage)
 );
@@ -28,6 +34,7 @@ router.put(
 router.delete(
   '/:type/:id/image',
   authenticate,
+  isAdmin,
   asyncHandler(UploadController.deleteImage)
 );
 

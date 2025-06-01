@@ -8,6 +8,6 @@ router.use('/api/reviews', require('./review.routes'));
 router.use('/api/orders', require('./order.routes'));
 router.use('/api/payments', require('./payment.routes'));
 router.use('/api/cart', require('./cart.routes'));
-router.use('/api', require('./imageUpload.route'));
+router.use('/api/upload', require('./imageUpload.route'));
 
 module.exports = router;

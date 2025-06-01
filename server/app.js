@@ -28,7 +28,7 @@ app.use(
   })
 );
 //Routes
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads/images', express.static('uploads/images'));
 app.use('/', require('./routes'));
 
 // Only connect DB here if not in test environment

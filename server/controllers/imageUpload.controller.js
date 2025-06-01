@@ -8,6 +8,7 @@ const MODEL_MAP = {
 };
 
 class UploadController {
+  //Upload image
   static async uploadImage(req, res) {
     try {
       const { id, type } = req.params;
@@ -26,7 +27,6 @@ class UploadController {
         });
       }
 
-      // Fixed: Match the actual upload path (uploads not upload)
       const imageUrl = `/uploads/images/${req.file.filename}`;
 
       // Check if entity exists first
@@ -39,10 +39,11 @@ class UploadController {
         });
       }
 
+      const fieldKey = modelConfig.name === 'product' ? 'images' : 'image';
       // Update the entity
       const updatedEntity = await modelConfig.model.findByIdAndUpdate(
         id,
-        { image: imageUrl },
+        { [fieldKey]: imageUrl },
         { new: true }
       );
 
@@ -51,7 +52,7 @@ class UploadController {
         message: `${
           modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
         } image uploaded successfully`,
-        image: imageUrl,
+        [fieldKey]: imageUrl,
       };
       response[modelConfig.name] = updatedEntity;
 
@@ -67,7 +68,8 @@ class UploadController {
       });
     }
   }
-  // Bonus: Delete image method
+
+  // Delete image
   static async deleteImage(req, res) {
     try {
       const { id, type } = req.params;
@@ -81,9 +83,11 @@ class UploadController {
         });
       }
 
+      const fieldKey = modelConfig.name === 'product' ? 'images' : 'image';
+
       const updatedEntity = await modelConfig.model.findByIdAndUpdate(
         id,
-        { $unset: { image: 1 } },
+        { $unset: { [fieldKey]: 1 } },
         { new: true }
       );
 
@@ -140,23 +144,11 @@ class UploadController {
         });
       }
 
-      // TODO: Add logic to delete old image file if needed
-      // const oldImagePath = existingEntity.image;
-      // if (oldImagePath) {
-      //   const fs = require('fs').promises;
-      //   const oldFilePath = path.join(__dirname, '../..', oldImagePath);
-      //   try {
-      //     await fs.unlink(oldFilePath);
-      //   } catch (error) {
-      //     console.log('Old image file not found or already deleted');
-      //   }
-      // }
-
       const imageUrl = `/uploads/images/${req.file.filename}`;
-
+      const fieldKey = modelConfig.name === 'product' ? 'images' : 'image';
       const updatedEntity = await modelConfig.model.findByIdAndUpdate(
         id,
-        { image: imageUrl },
+        { [fieldKey]: imageUrl },
         { new: true }
       );
 
@@ -164,7 +156,7 @@ class UploadController {
         message: `${
           modelConfig.name.charAt(0).toUpperCase() + modelConfig.name.slice(1)
         } image replaced successfully`,
-        image: imageUrl,
+        [fieldKey]: imageUrl,
         [modelConfig.name]: updatedEntity,
       });
     } catch (error) {
