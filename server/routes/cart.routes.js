@@ -13,18 +13,16 @@ const {
 router.use(authenticate);
 
 // Add to cart and get cart
-router
-  .route('/')
-  .post(asyncHandler(CartController.addToCart))
-  .get(asyncHandler(CartController.getCart));
+router.post('/items', asyncHandler(CartController.addToCart));
+router.get('/', asyncHandler(CartController.getCart));
 
 // Clear entire cart
 router.delete('/clear', asyncHandler(CartController.clearCart));
 
 // Update product quantity in cart
-router.put('/:id', asyncHandler(CartController.updateProductQuantity));
+router.put('/items/:id', asyncHandler(CartController.updateProductQuantity));
 
 // Remove specific item from cart
-router.delete('/:id', asyncHandler(CartController.deleteCartItem));
+router.delete('/items/:id', asyncHandler(CartController.deleteCartItem));
 
 module.exports = router;

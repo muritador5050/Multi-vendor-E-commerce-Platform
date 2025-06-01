@@ -19,7 +19,7 @@ router.post(
 );
 
 //Refresh
-router.post('/refresh', asyncHandler(UserController.refreshToken));
+router.post('/refresh-token', asyncHandler(UserController.refreshToken));
 
 //Logout
 router.post('/logout', asyncHandler(UserController.logOut));
@@ -48,7 +48,7 @@ router.get(
 router.get('/google-signup', asyncHandler(UserController.googleAuth));
 router.get('/google/callback', asyncHandler(UserController.googleCallback));
 router.get('/test-google', asyncHandler(UserController.testGoogleAuth));
-router.get('/facebook', asyncHandler(UserController.facebookAuth));
+router.get('/facebook-signup', asyncHandler(UserController.facebookAuth));
 router.get('/facebook/callback', asyncHandler(UserController.facebookCallback));
 
 router.get('/dashboard', authenticate, (req, res) => {
