@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { authLimiter } = require('../middlewares/rateLimiter');
 
-router.use('/api/auth', require('./user.routes'));
+router.use('/api/auth', authLimiter, require('./user.routes'));
 router.use('/api/products', require('./products.routes'));
 router.use('/api/categories', require('./category.routes'));
 router.use('/api/reviews', require('./review.routes'));

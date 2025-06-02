@@ -9,7 +9,7 @@ const options = {
       version: '1.0.0',
       description: 'A comprehensive ecommerce backend API',
       contact: {
-        name: 'Abdulazeez',
+        name: 'Abdulazeez Muritador',
         email: 'muritador5050@gmail.com',
       },
     },
@@ -29,7 +29,7 @@ const options = {
       },
     },
   },
-  apis: ['./routes/*.js', './models/*model.js'], // Path to files with API docs
+  apis: ['./routes/*routes.js', './models/*model.js'], // Path to files with API docs
 };
 
 const specs = swaggerJSDoc(options);

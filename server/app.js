@@ -10,10 +10,12 @@ const passport = require('passport');
 const { FRONTEND_URL, NODE_ENV } = require('./configs');
 const connectDB = require('./database/index');
 const { specs, swaggerUi } = require('./swagger');
+const { generalLimiter } = require('./middlewares/rateLimiter');
 
 const app = express();
 
 // Middleware setup
+app.use(generalLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(helmet());
