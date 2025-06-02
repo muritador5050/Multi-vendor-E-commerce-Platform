@@ -1,4 +1,5 @@
 require('./controllers/passport');
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -8,7 +9,7 @@ const { globalErrorHandler } = require('./utils/globalErrorHandler');
 const passport = require('passport');
 const { FRONTEND_URL, NODE_ENV } = require('./configs');
 const connectDB = require('./database/index');
-require('dotenv').config();
+const { specs, swaggerUi } = require('./swagger');
 
 const app = express();
 
@@ -27,6 +28,10 @@ app.use(
     credentials: true,
   })
 );
+
+//Swagger UI route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
 //Routes
 app.use('/uploads/images', express.static('uploads/images'));
 app.use('/', require('./routes'));
