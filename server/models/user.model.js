@@ -44,14 +44,14 @@ const userSchema = new mongoose.Schema(
     googleId: {
       type: String,
       unique: true,
-      sparse: true, // ensures no unique constraint error for non-Google users
+      sparse: true,
     },
     facebookId: {
       type: String,
       unique: true,
-      sparse: true, // ensures no unique constraint error for non-Google users
+      sparse: true,
     },
-    avatar: String, // Profile image from OAuth provide
+    avatar: String,
 
     isEmailVerified: {
       type: Boolean,
