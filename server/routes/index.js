@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const apicache = require('apicache');
 const { authLimiter } = require('../middlewares/rateLimiter');
+const cache = apicache.middleware;
 
+//Routes
 router.use('/api/auth', authLimiter, require('./user.routes'));
-router.use('/api/products', require('./products.routes'));
-router.use('/api/categories', require('./category.routes'));
+router.use('/api/products', cache('10 minutes'), require('./products.routes'));
+router.use('/api/categories', cache('4 hours'), require('./category.routes'));
 router.use('/api/reviews', require('./review.routes'));
 router.use('/api/orders', require('./order.routes'));
 router.use('/api/payments', require('./payment.routes'));

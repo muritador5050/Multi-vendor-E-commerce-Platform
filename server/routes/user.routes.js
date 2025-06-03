@@ -6,7 +6,54 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
 
-//Register and Login routes
+/**
+ * @openapi
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserRegister'
+ *           examples:
+ *             regularUser:
+ *               summary: Regular user registration
+ *               value:
+ *                 name: John Doe
+ *                 email: johndoe@example.com
+ *                 password: SecurePassword123!
+ *                 phone: '+1234567890'
+ *                 role:
+ *                   default: customer
+ *             adminUser:
+ *               summary: Admin user creation
+ *               value:
+ *                 name: Admin User
+ *                 email: admin@example.com
+ *                 password: AdminPassword123!
+ *                 role: admin
+ *             vendorUser:
+ *               summary: Vendor user creation
+ *               value:
+ *                 name: Vendor User
+ *                 email: vendoremail@example.com
+ *                 password: VendorSecurePassword123!
+ *                 role: vendor
+ *     responses:
+ *       '201':
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserPublic'
+ *       '400':
+ *         description: Invalid input or user already exists
+ */
+
 router.post(
   '/register',
   validation(register),

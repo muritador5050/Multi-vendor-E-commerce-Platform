@@ -12,6 +12,7 @@ const connectDB = require('./database/index');
 const { specs, swaggerUi } = require('./swagger');
 const { generalLimiter } = require('./middlewares/rateLimiter');
 
+//App
 const app = express();
 
 // Middleware setup

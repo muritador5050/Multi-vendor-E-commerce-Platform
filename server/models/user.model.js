@@ -4,7 +4,131 @@ const { JWT_SECRET, REFRESH_TOKEN } = require('../configs/index');
 const bcrypt = require('bcrypt');
 const EmailService = require('../services/emailService');
 
-//Schema
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     UserRegister:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: Abdulazeez
+ *         email:
+ *           type: string
+ *           example: user@example.com
+ *         password:
+ *           type: string
+ *           example: StrongPassword123!
+ *         phone:
+ *           type: string
+ *           example: "+1234567890"
+ *         role:
+ *            type: string
+ *            enum: [customer, admin, vendor]
+ *            default: customer
+ *         address:
+ *           type: object
+ *           properties:
+ *             street:
+ *               type: string
+ *               example: "123 Main St"
+ *             city:
+ *               type: string
+ *               example: "New York"
+ *             state:
+ *               type: string
+ *               example: "NY"
+ *             zipCode:
+ *               type: string
+ *               example: "10001"
+ *             country:
+ *               type: string
+ *               example: "USA"
+ */
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     UserLogin:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *         password:
+ *           type: string
+ */
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     UserPublic:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           example: "64d7a8a6bcf86cd799439011"
+ *         name:
+ *           type: string
+ *           example: John Doe
+ *         email:
+ *           type: string
+ *           example: user@example.com
+ *         role:
+ *           type: string
+ *           enum: [customer, admin, vendor]
+ *         phone:
+ *           type: string
+ *           example: "+1234567890"
+ *         avatar:
+ *           type: string
+ *           example: "https://example.com/avatar.png"
+ *         isEmailVerified:
+ *           type: boolean
+ *           example: false
+ *         address:
+ *           type: object
+ *           properties:
+ *             street:
+ *               type: string
+ *               example: "123 Main St"
+ *             city:
+ *               type: string
+ *               example: "New York"
+ *             state:
+ *               type: string
+ *               example: "NY"
+ *             zipCode:
+ *               type: string
+ *               example: "10001"
+ *             country:
+ *               type: string
+ *               example: "USA"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2023-06-02T10:15:30.000Z"
+ */
+
+/**
+ * @openapi
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+
 const userSchema = new mongoose.Schema(
   {
     name: {
