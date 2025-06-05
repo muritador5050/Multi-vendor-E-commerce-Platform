@@ -17,7 +17,7 @@ const EmailService = require('../services/emailService');
  *       properties:
  *         name:
  *           type: string
- *           example: Abdulazeez
+ *           example: John Doe
  *         email:
  *           type: string
  *           example: user@example.com
@@ -94,7 +94,7 @@ const EmailService = require('../services/emailService');
  *           example: "https://example.com/avatar.png"
  *         isEmailVerified:
  *           type: boolean
- *           example: false
+ *           example: false || true
  *         address:
  *           type: object
  *           properties:
@@ -113,10 +113,6 @@ const EmailService = require('../services/emailService');
  *             country:
  *               type: string
  *               example: "USA"
- *         createdAt:
- *           type: string
- *           format: date-time
- *           example: "2023-06-02T10:15:30.000Z"
  */
 
 /**

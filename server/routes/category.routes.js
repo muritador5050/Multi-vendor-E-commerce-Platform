@@ -9,11 +9,62 @@ const {
   adminOrVendor,
 } = require('../middlewares/authMiddleware');
 
-// PUBLIC ROUTES - No authentication required
+/**
+ * @openapi
+ * /api/categories:
+ *   get:
+ *     summary: Get all categories
+ *     tags: [Categories]
+ *     responses:
+ *       '200':
+ *         description: A list of categories
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Category'
+ */
 router.get('/', asyncHandler(CategoryController.getAllCategories));
+
+/**
+ * @openapi
+ * /api/categories/search:
+ *   get:
+ *     summary: Search categories by name
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Search term for category names
+ *     responses:
+ *       '200':
+ *         description: A list of categories matching the search term
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Category'
+ */
 router.get('/:slug', asyncHandler(CategoryController.getCategoryBySlug));
 
-// ADMIN ONLY ROUTES - Category management is typically admin responsibility
+/**
+ * @openapi
+ * /api/categories:
+ *   post:
+ *     summary: Create a new category
+ *     tags: [Categories]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Category'
+ */
 router.post(
   '/',
   authenticate,
@@ -21,28 +72,93 @@ router.post(
   asyncHandler(CategoryController.createCategory)
 );
 
-// Only admins can delete categories (major structural change)
-router.delete(
-  '/:id',
-  authenticate,
-  isAdmin,
-  asyncHandler(CategoryController.deleteCategory)
-);
+/**
+ * @openapi
+ * /api/categories/{id}:
+ *   delete:
+ *     summary: Delete a category by ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Category deleted successfully
+ */
 
-// ADMIN OR VENDOR ROUTES
-router.get(
-  '/:id',
-  authenticate,
-  adminOrVendor,
-  asyncHandler(CategoryController.getCategoryById)
-);
-
-// Both can update category details (like images, descriptions)
-router.put(
-  '/:id',
-  authenticate,
-  adminOrVendor,
-  asyncHandler(CategoryController.updateCategory)
-);
+/**
+ * @openapi
+ * /api/categories/{id}:
+ *   get:
+ *     summary: Get a single category by ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '200':
+ *         description: A single category
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *   put:
+ *     summary: Update a category by ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Category'
+ *     responses:
+ *       '200':
+ *         description: Category updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Category'
+ *   delete:
+ *     summary: Delete a category by ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       '204':
+ *         description: Category deleted successfully
+ */
+router
+  .route('/:id')
+  .get(
+    authenticate,
+    adminOrVendor,
+    asyncHandler(CategoryController.getCategoryById)
+  )
+  .put(
+    authenticate,
+    adminOrVendor,
+    asyncHandler(CategoryController.updateCategory)
+  )
+  .delete(
+    authenticate,
+    isAdmin,
+    asyncHandler(CategoryController.deleteCategory)
+  );
 
 module.exports = router;

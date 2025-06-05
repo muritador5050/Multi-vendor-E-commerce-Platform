@@ -2,27 +2,104 @@ const CartController = require('../controllers/cart.controller');
 const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../utils/asyncHandler');
-const {
-  isVendor,
-  authenticate,
-  isAdmin,
-  adminOrVendor,
-} = require('../middlewares/authMiddleware');
+const { authenticate } = require('../middlewares/authMiddleware');
 
 // Apply authentication to all cart routes
 router.use(authenticate);
 
-// Add to cart and get cart
-router.post('/items', asyncHandler(CartController.addToCart));
-router.get('/', asyncHandler(CartController.getCart));
+router
+  .route('/items')
+  /**
+   * @openapi
+   * /api/cart:
+   *   get:
+   *     summary: Get the current user's cart
+   *     tags: [Cart]
+   *     responses:
+   *       '200':
+   *         description: The user's cart details
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 user:
+   *                   type: string
+   *                   format: uuid
+   *                 items:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       product:
+   *                         type: string
+   *                         format: uuid
+   *                       quantity:
+   *                         type: integer
+   */
+  .post(asyncHandler(CartController.addToCart))
+  .get(asyncHandler(CartController.getCart));
 
-// Clear entire cart
+/**
+ * @openapi
+ * /api/cart/clear:
+ *   delete:
+ *     summary: Clear the current user's cart
+ *     tags: [Cart]
+ *     responses:
+ *       '204':
+ *         description: Cart cleared successfully
+ */
 router.delete('/clear', asyncHandler(CartController.clearCart));
 
-// Update product quantity in cart
+/**
+ * @openapi
+ * /api/cart/items/{id}:
+ *   put:
+ *     summary: Update the quantity of a specific item in the cart
+ *     tags: [Cart]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The ID of the cart item to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               quantity:
+ *                 type: integer
+ *                 minimum: 1
+ *     responses:
+ *       '200':
+ *         description: The updated cart item details
+ */
 router.put('/items/:id', asyncHandler(CartController.updateProductQuantity));
 
-// Remove specific item from cart
+/**
+ * @openapi
+ * /api/cart/items/{id}:
+ *   delete:
+ *     summary: Remove a specific item from the cart
+ *     tags: [Cart]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: The ID of the cart item to remove
+ *     responses:
+ *       '204':
+ *         description: Item removed from cart successfully
+ */
 router.delete('/items/:id', asyncHandler(CartController.deleteCartItem));
 
 module.exports = router;

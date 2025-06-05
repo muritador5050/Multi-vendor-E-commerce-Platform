@@ -1,6 +1,25 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Category:
+ *       type: object
+ *       required:
+ *         - name
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Electronics"
+ *         slug:
+ *           type: string
+ *           example: "electronics"
+ *         image:
+ *           type: string
+ *           example: "https://example.com/image.jpg"
+ */
 const categorySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true, index: true },

@@ -1,5 +1,28 @@
 const mongoose = require('mongoose');
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Payment:
+ *       type: object
+ *       properties:
+ *         order:
+ *           type: string
+ *           format: uuid
+ *         paymentProvider:
+ *           type: string
+ *         paymentId:
+ *           type: string
+ *         amount:
+ *           type: number
+ *           format: float
+ *         currency:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [pending, completed, failed, refunded]
+ */
 const paymentSchema = new mongoose.Schema(
   {
     order: {

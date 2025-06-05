@@ -11,8 +11,7 @@ const { register, login } = require('../services/auth.validation');
  * /api/auth/register:
  *   post:
  *     summary: Register a new user
- *     tags:
- *       - Auth
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -45,7 +44,11 @@ const { register, login } = require('../services/auth.validation');
  *                 role: vendor
  *     responses:
  *       '201':
- *         description: User registered successfully
+ *         description: |
+ *              User created successfully.
+ *              Please check your email for verification.
+ *              If you don't see it, please check your spam folder.
+ *              Google signup verification is not required.
  *         content:
  *           application/json:
  *             schema:
@@ -59,18 +62,84 @@ router.post(
   validation(register),
   asyncHandler(UserController.createUser)
 );
+
+/**
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     tags:
+ *      - Auth
+ *     summary: Login registered user
+ *     requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/UserLogin"
+ *   responses:
+ *       200:
+ *         content:
+ *            accessToken:
+ *               type: string
+ *               example: hjuy574h47hfhfb367fbb290vbiuf9hgf
+ */
+
 router.post(
   '/login',
   validation(login),
   asyncHandler(UserController.loginUser)
 );
 
-//Refresh
+/**
+ * @openapi
+ * /api/auth/refresh-token:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Refresh access token using refresh token
+ *     responses:
+ *       200:
+ *         description: Access token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ */
 router.post('/refresh-token', asyncHandler(UserController.refreshToken));
 
-//Logout
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Logout user and clear refresh token and cookies
+ *     responses:
+ *       200:
+ *         description: User logged out successfully
+ */
 router.post('/logout', asyncHandler(UserController.logOut));
 
+/**
+ * @openapi
+ * /api/auth/users:
+ *   get:
+ *     tags:
+ *       - Auth
+ *     summary: Get all users (Admin only)
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/UserPublic'
+ */
 router.get(
   '/users',
   authenticate,
@@ -78,30 +147,112 @@ router.get(
   asyncHandler(UserController.getAllUsers)
 );
 
-//Password reset routes
+/**
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Request password reset link
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Password reset link sent to email
+ */
 router.post('/forgot-password', asyncHandler(UserController.forgotPassword));
+
+/**
+ * @openapi
+ * /api/auth/reset-password/{token}:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Reset password using reset token
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ */
+
 router.post(
   '/reset-password/:token',
   asyncHandler(UserController.resetPassword)
 );
 
-//Email verification route
+/**
+ * @openapi
+ * /api/auth/verify-email/{token}:
+ *   get:
+ *     tags:
+ *       - Auth
+ *     summary: Verify user email using verification token
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ */
 router.get(
   '/verify-email/:token',
   asyncHandler(UserController.emailVerification)
 );
 
-//oAuth route
 router.get('/google-signup', asyncHandler(UserController.googleAuth));
+
 router.get('/google/callback', asyncHandler(UserController.googleCallback));
 router.get('/test-google', asyncHandler(UserController.testGoogleAuth));
 router.get('/facebook-signup', asyncHandler(UserController.facebookAuth));
 router.get('/facebook/callback', asyncHandler(UserController.facebookCallback));
 
-router.get('/dashboard', authenticate, (req, res) => {
-  res.status(200).json({ message: 'welcome to dashboard' });
-});
-
+/**
+ * @openapi
+ * /api/auth/users/{id}:
+ *   get:
+ *     tags:
+ *       - Auth
+ *     summary: Get user by ID (Admin only)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserPublic'
+ */
 router
   .route('/users/:id')
   .get(authenticate, asyncHandler(UserController.getUserById))

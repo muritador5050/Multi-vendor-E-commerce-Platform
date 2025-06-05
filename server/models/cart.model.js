@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Cart:
+ *       type: object
+ *       properties:
+ *         user:
+ *           type: string
+ *           format: uuid
+ *         items:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               product:
+ *                 type: string
+ *                 format: uuid
+ *               quantity:
+ *                 type: integer
+ *                 minimum: 1
+ */
 const cartSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   items: [

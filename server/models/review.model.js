@@ -1,5 +1,25 @@
 const mongoose = require('mongoose');
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Review:
+ *       type: object
+ *       properties:
+ *         user:
+ *           type: string
+ *           format: uuid
+ *         product:
+ *           type: string
+ *           format: uuid
+ *         rating:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 5
+ *         comment:
+ *           type: string
+ */
 const reviewSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

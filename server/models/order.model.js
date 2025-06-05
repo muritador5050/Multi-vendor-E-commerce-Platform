@@ -1,5 +1,27 @@
 const mongoose = require('mongoose');
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Order:
+ *       type: object
+ *       properties:
+ *         user:
+ *           type: string
+ *           format: uuid
+ *         products:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               product:
+ *                 type: string
+ *                 format: uuid
+ *               quantity:
+ *                 type: integer
+ *                 minimum: 1
+ */
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },

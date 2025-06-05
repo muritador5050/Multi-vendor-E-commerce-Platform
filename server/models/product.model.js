@@ -1,6 +1,57 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Product:
+ *       type: object
+ *       required:
+ *         - name
+ *         - price
+ *         - categoryId
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Sample Product"
+ *         description:
+ *           type: string
+ *           example: "This is a sample product description."
+ *         slug:
+ *           type: string
+ *           example: "sample-product"
+ *         price:
+ *           type: number
+ *           format: float
+ *           example: 19.99
+ *         discount:
+ *           type: number
+ *           format: float
+ *           example: 10
+ *         quantityInStock:
+ *           type: number
+ *           example: 100
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             example: "https://example.com/image.jpg"
+ *         categoryId:
+ *           type: string
+ *           example: "60d5f484f1b2c8b8f8e4c8b8"
+ *         attributes:
+ *           type: object
+ *           additionalProperties:
+ *             type: string
+ *         averageRating:
+ *           type: number
+ *           format: float
+ *           example: 4.5
+ *         totalReviews:
+ *           type: number
+ *           example: 25
+ */
 const productSchema = new mongoose.Schema(
   {
     name: {

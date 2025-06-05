@@ -9,15 +9,17 @@ class UserController {
   //Register user
   static async createUser(req, res) {
     //Find existing user
-    const findByEmail = await User.findByEmail(req.body.email);
-    if (findByEmail) {
+    const userExist = await User.findByEmail(req.body.email);
+
+    //Existing user
+    if (userExist) {
       return res.status(400).json({ message: 'Email already exist' });
     }
 
     // Only include allowed fields
     const user = await User.create({ ...req.body });
 
-    res.json({
+    res.status(201).json({
       message:
         'User created successfully. Please check your email for verification.',
     });
