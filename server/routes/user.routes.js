@@ -140,12 +140,7 @@ router.post('/logout', asyncHandler(UserController.logOut));
  *               items:
  *                 $ref: '#/components/schemas/UserPublic'
  */
-router.get(
-  '/users',
-  authenticate,
-  isAdmin,
-  asyncHandler(UserController.getAllUsers)
-);
+router.get('/user', authenticate, asyncHandler(UserController.getUserProfile));
 
 /**
  * @openapi

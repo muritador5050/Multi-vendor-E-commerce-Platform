@@ -7,4 +7,5 @@ module.exports = {
   REFRESH_TOKEN: process.env.REFRESH_TOKEN,
   NODE_ENV: process.env.NODE_ENV || 'development',
   FRONTEND_URL: process.env.FRONTEND_URL,
+  TEST_URL: process.env.TEST_URL || 'mongodb://localhost:27017/test',
 };

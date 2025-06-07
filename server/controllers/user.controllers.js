@@ -124,13 +124,16 @@ class UserController {
     res.status(200).json({ message: 'Logout successful' });
   }
 
-  // Get all users (admin only)
-  static async getAllUsers(req, res) {
-    const users = await User.find({}, '-password -refreshToken');
+  // Get user profile
+  static async getUserProfile(req, res) {
+    const user = await User.findById(req.user.id, '-password -refreshToken');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     res.json(
       resSuccessObject({
-        message: 'Retrived users',
-        results: users,
+        message: 'Retrieved user',
+        results: user,
       })
     );
   }
