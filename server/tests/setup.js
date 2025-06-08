@@ -1,28 +1,48 @@
+// tests/setup.js
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
-const connectDB = require('../database/index.js');
 
 let mongoServer;
+
 const setupDatabase = async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const mongoUri = mongoServer.getUri();
+  try {
+    // Close any existing connections first
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
 
-  await mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+    // Create and start in-memory MongoDB server
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
 
-  console.log('In-memory MongoDB server started');
+    // Connect to the in-memory database
+    await mongoose.connect(mongoUri);
+    console.log('In-memory MongoDB server started and connected');
+  } catch (error) {
+    console.error('Setup database error:', error);
+    throw error;
+  }
 };
 
 const teardownDatabase = async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
-  console.log('In-memory MongoDB server stopped');
+  try {
+    // Close mongoose connection
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
+
+    // Stop the in-memory server
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
+
+    console.log('In-memory MongoDB server stopped');
+  } catch (error) {
+    console.error('Teardown database error:', error);
+  }
 };
 
 module.exports = {
   setupDatabase,
   teardownDatabase,
-  connectDB, // Export connectDB for use in other tests if needed
 };
