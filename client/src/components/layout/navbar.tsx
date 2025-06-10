@@ -1,9 +1,9 @@
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 import {
   Box,
   Flex,
   HStack,
-  Link,
+  Link as ChakraLink,
   Button,
   Text,
   Spacer,
@@ -28,6 +28,7 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 
+//NavLink Component
 function NavLink({
   children,
   to,
@@ -39,24 +40,45 @@ function NavLink({
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Link
-      as={RouterLink}
-      {...(to ? { to } : {})}
+    <ChakraLink
+      as={ReactRouterLink}
+      to={to}
+      position='relative'
       px={2}
       py={1}
-      _hover={{ textDecoration: 'none', color: 'yellow.800' }}
-      color={isActive(to ?? '') ? 'blue.600' : undefined}
+      _hover={{
+        textDecoration: 'none',
+        color: 'yellow.500',
+        _after: {
+          content: '"• • •"',
+          position: 'absolute',
+          bottom: '-12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontSize: '20px',
+          color: 'yellow.500',
+        },
+      }}
+      color={isActive(to ?? '') ? 'yellow.500' : undefined}
+      _after={
+        isActive(to ?? '')
+          ? {
+              content: '"• • •"',
+              position: 'absolute',
+              bottom: '-12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: 'yellow.500',
+            }
+          : undefined
+      }
     >
-      <Flex
-        alignItems='center'
-        p={2}
-        borderBottom={isActive(to ?? '') ? '5px dotted yellow.400' : 'none'}
-        _hover={{ borderBottom: '5px dotted', borderColor: 'blue.500' }}
-        transition='border-bottom 0.2s ease-in-out'
-      >
+      <Flex alignItems='center' p={2}>
         {children}
       </Flex>
-    </Link>
+    </ChakraLink>
   );
 }
 
@@ -67,7 +89,11 @@ function Navbar() {
   return (
     <>
       <Box bg='brand.300' boxShadow='md'>
-        <Flex p={4} align='center'>
+        <Flex
+          align='center'
+          py={{ base: '2', md: '4' }}
+          px={{ base: '4', md: '8' }}
+        >
           <Text
             color='white'
             fontWeight='light'
@@ -85,10 +111,11 @@ function Navbar() {
         <Flex
           h={32}
           alignItems='center'
-          px={4}
           borderTop='1px solid'
           borderBottom='1px solid'
           borderColor='whiteAlpha.300'
+          py={{ base: '2', md: '4' }}
+          px={{ base: '4', md: '8' }}
         >
           <Box display='flex' justifyContent={'center'} alignItems='center'>
             <Text fontSize='70px' fontWeight='bold' color='white'>
@@ -134,26 +161,25 @@ function Navbar() {
           <Spacer />
 
           {/* User Icons */}
-          <HStack ml={2} color='white'>
+          <HStack ml={4} color='white'>
             {/* Mobile Menu Button */}
             <IconButton
               display={{ base: 'flex', md: 'none' }}
               onClick={onOpen}
               aria-label='Open Menu'
               icon={<HamburgerIcon />}
-              ml={4}
-              variant='ghost'
-              colorScheme='white'
-            />
-            <IconButton
-              icon={<UserRound />}
-              aria-label='User'
               variant='ghost'
               colorScheme='white'
             />
             <IconButton
               icon={<Heart />}
               aria-label='Favorites'
+              variant='ghost'
+              colorScheme='white'
+            />
+            <IconButton
+              icon={<UserRound />}
+              aria-label='User'
               variant='ghost'
               colorScheme='white'
             />
@@ -167,9 +193,9 @@ function Navbar() {
         </Flex>
         <Flex
           alignItems='center'
-          px={{ base: '2', md: '4' }}
+          py={{ base: '2', md: '4' }}
+          px={{ base: '4', md: '8' }}
           gap={{ base: 'none', md: 7 }}
-          py={4}
         >
           <Stack direction='row' spacing={4}>
             <Button
