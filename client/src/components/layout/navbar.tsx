@@ -18,6 +18,14 @@ import {
   InputGroup,
   InputLeftElement,
   Stack,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuItemOption,
+  MenuGroup,
+  MenuOptionGroup,
+  MenuDivider,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
@@ -180,18 +188,28 @@ function Navbar() {
           px={{ base: '4', md: '8' }}
           gap={{ base: 'none', md: 7 }}
         >
-          <Stack direction='row' spacing={4}>
-            <Button
+          <Menu>
+            <MenuButton
+              as={Button}
               leftIcon={<AlignLeft />}
               h={14}
+              w={64}
               display={{ base: 'none', md: 'inline-flex' }}
               bg='yellow.500'
               color='white'
-              px={9}
+              _hover='none'
             >
               All Categories
-            </Button>
-          </Stack>
+            </MenuButton>
+            <MenuList>
+              <MenuItem>Download</MenuItem>
+              <MenuItem>Create a Copy</MenuItem>
+              <MenuItem>Mark as Draft</MenuItem>
+              <MenuItem>Delete</MenuItem>
+              <MenuItem>Attend a Workshop</MenuItem>
+            </MenuList>
+          </Menu>
+
           <InputGroup>
             <InputLeftElement pointerEvents={'none'}>
               <SearchIcon color='gray.300' />
