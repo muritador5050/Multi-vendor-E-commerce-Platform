@@ -1,4 +1,4 @@
-import { Box, Flex, Stack } from '@chakra-ui/react';
+import { Box, Stack } from '@chakra-ui/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/layout/navbar';
 import Footer from './components/layout/footer';
@@ -14,7 +14,6 @@ function App() {
     <Router>
       <Stack minH='100vh'>
         <Navbar />
-
         <Box flex='1' as='main'>
           <Routes>
             <Route path='/' element={<HomePage />} />
