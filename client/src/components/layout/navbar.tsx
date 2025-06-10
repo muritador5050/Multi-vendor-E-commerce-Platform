@@ -20,13 +20,9 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
-import {
-  UserRound,
-  Heart,
-  ShoppingBag,
-  AlignLeft,
-  ShoppingCart,
-} from 'lucide-react';
+import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
+import Logo from '../ui/logo';
+import Cart from '@/pages/cart';
 
 //NavLink Component
 function NavLink({
@@ -84,7 +80,8 @@ function NavLink({
 
 //Navbar Component
 function Navbar() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const leftDrawer = useDisclosure();
+  const rightDrawer = useDisclosure();
 
   return (
     <>
@@ -117,29 +114,7 @@ function Navbar() {
           py={{ base: '2', md: '4' }}
           px={{ base: '4', md: '8' }}
         >
-          <Box display='flex' justifyContent={'center'} alignItems='center'>
-            <Text fontSize='70px' fontWeight='bold' color='white'>
-              M
-            </Text>
-
-            <Stack gap={0} margin={0}>
-              <Flex align='center'>
-                <Text fontSize='25px' fontWeight='bold' color='white'>
-                  ulti
-                </Text>
-                <IconButton
-                  aria-label='Shopping Cart'
-                  variant='solid'
-                  color='yellow.500'
-                  colorScheme='yellow.500'
-                  icon={<ShoppingCart />}
-                />
-              </Flex>
-              <Text fontSize='25px' fontWeight='bold' mt={-3} color='white'>
-                arket
-              </Text>
-            </Stack>
-          </Box>
+          <Logo />
 
           <Spacer />
 
@@ -165,29 +140,37 @@ function Navbar() {
             {/* Mobile Menu Button */}
             <IconButton
               display={{ base: 'flex', md: 'none' }}
-              onClick={onOpen}
+              onClick={leftDrawer.onOpen}
               aria-label='Open Menu'
               icon={<HamburgerIcon />}
               variant='ghost'
               colorScheme='white'
             />
-            <IconButton
-              icon={<Heart />}
-              aria-label='Favorites'
-              variant='ghost'
-              colorScheme='white'
-            />
-            <IconButton
-              icon={<UserRound />}
-              aria-label='User'
-              variant='ghost'
-              colorScheme='white'
-            />
+
+            <ChakraLink as={ReactRouterLink} to={'/wishlist'}>
+              <IconButton
+                icon={<Heart />}
+                aria-label='Favorites'
+                variant='ghost'
+                colorScheme='white'
+              />
+            </ChakraLink>
+
+            <ChakraLink as={ReactRouterLink} to={'/account'}>
+              <IconButton
+                icon={<UserRound />}
+                aria-label='Account'
+                variant='ghost'
+                colorScheme='white'
+              />
+            </ChakraLink>
+
             <IconButton
               icon={<ShoppingBag />}
               aria-label='Cart'
               variant='ghost'
               colorScheme='white'
+              onClick={rightDrawer.onOpen}
             />
           </HStack>
         </Flex>
@@ -235,8 +218,12 @@ function Navbar() {
         </Flex>
       </Box>
 
-      {/* Mobile Drawer */}
-      <Drawer placement='left' onClose={onClose} isOpen={isOpen}>
+      {/* LeftDrawer*/}
+      <Drawer
+        placement='left'
+        onClose={leftDrawer.onClose}
+        isOpen={leftDrawer.isOpen}
+      >
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -249,6 +236,27 @@ function Navbar() {
               <NavLink to='/vendor-membership'>Vendor Membership</NavLink>
               <NavLink to='/store-list'>Store List</NavLink>
               <NavLink to='/contact-us'>Contact Us</NavLink>
+              <Button colorScheme='blue' mt={4}>
+                Login
+              </Button>
+              <Button colorScheme='blue'>Sign Up</Button>
+            </Flex>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      {/* RightDrawer*/}
+      <Drawer
+        placement='right'
+        onClose={rightDrawer.onClose}
+        isOpen={rightDrawer.isOpen}
+      >
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerBody>
+            <Flex direction='column' p={4} gap={2}>
+              <Cart />
               <Button colorScheme='blue' mt={4}>
                 Login
               </Button>
