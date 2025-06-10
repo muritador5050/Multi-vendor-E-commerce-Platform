@@ -17,14 +17,10 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
-  Stack,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
-  MenuItemOption,
-  MenuGroup,
-  MenuOptionGroup,
   MenuDivider,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
@@ -133,12 +129,12 @@ function Navbar() {
             color='white'
           >
             <NavLink to='/'>Home</NavLink>
-            <NavLink to='/blog'>Blog</NavLink>
-            <NavLink to='/shop'>Shop</NavLink>
-            <NavLink to='/store-manager'>Store Manager</NavLink>
-            <NavLink to='/vendor-membership'>Vendor Membership</NavLink>
-            <NavLink to='/store-list'>Store List</NavLink>
-            <NavLink to='/contact-us'>Contact Us</NavLink>
+            <NavLink to='blog'>Blog</NavLink>
+            <NavLink to='shop'>Shop</NavLink>
+            <NavLink to='store-manager'>Store Manager</NavLink>
+            <NavLink to='vendor-membership'>Vendor Membership</NavLink>
+            <NavLink to='store-list'>Store List</NavLink>
+            <NavLink to='contact-us'>Contact Us</NavLink>
           </HStack>
 
           <Spacer />
@@ -188,7 +184,7 @@ function Navbar() {
           px={{ base: '4', md: '8' }}
           gap={{ base: 'none', md: 7 }}
         >
-          <Menu>
+          <Menu isLazy>
             <MenuButton
               as={Button}
               leftIcon={<AlignLeft />}
@@ -198,15 +194,50 @@ function Navbar() {
               bg='yellow.500'
               color='white'
               _hover='none'
+              px={4}
+              py={2}
+              transition='all 0.2s'
             >
               All Categories
             </MenuButton>
             <MenuList>
-              <MenuItem>Download</MenuItem>
-              <MenuItem>Create a Copy</MenuItem>
-              <MenuItem>Mark as Draft</MenuItem>
-              <MenuItem>Delete</MenuItem>
-              <MenuItem>Attend a Workshop</MenuItem>
+              <MenuItem>Accessories</MenuItem>
+              <MenuDivider />
+              <MenuItem>Art</MenuItem>
+              <MenuDivider />
+              <MenuItem>Audio</MenuItem>
+              <MenuDivider />
+              <MenuItem>Bikes</MenuItem>
+              <MenuDivider />
+              <MenuItem>Cameras</MenuItem>
+              <MenuDivider />
+              <MenuItem>Computer & Laptop</MenuItem>
+              <MenuDivider />
+              <MenuItem>Drill Machine</MenuItem>
+              <MenuDivider />
+              <MenuItem>Hand Tools</MenuItem>
+              <MenuDivider />
+              <MenuItem>Home Appliances</MenuItem>
+              <MenuDivider />
+              <MenuItem>Movies</MenuItem>
+              <MenuDivider />
+              <MenuItem>On Sale</MenuItem>
+              <MenuDivider />
+              <MenuItem>Smart Watch</MenuItem>
+              <MenuDivider />
+              <MenuItem>Smartphone</MenuItem>
+              <MenuDivider />
+              <MenuItem>Tool</MenuItem>
+              <MenuDivider />
+              <MenuItem>Tool Bag</MenuItem>
+              <MenuDivider />
+              <MenuItem>Tool Case</MenuItem>
+              <MenuDivider />
+              <MenuItem>Universal Tools</MenuItem>
+              <MenuDivider />
+              <MenuItem>Video Games</MenuItem>
+              <MenuDivider />
+              <MenuItem>Watches</MenuItem>
             </MenuList>
           </Menu>
 
@@ -231,7 +262,13 @@ function Navbar() {
             borderColor='yellow.500'
             px={9}
           >
-            Become a vendor
+            <ChakraLink
+              _hover={{ textDecoration: 'none' }}
+              as={ReactRouterLink}
+              to={'/vendor-register'}
+            >
+              Become a vendor
+            </ChakraLink>
           </Button>
         </Flex>
       </Box>
@@ -248,12 +285,12 @@ function Navbar() {
           <DrawerBody>
             <Flex direction='column' p={4} gap={2}>
               <NavLink to='/'>Home</NavLink>
-              <NavLink to='/blog'>Blog</NavLink>
-              <NavLink to='/shop'>Shop</NavLink>
-              <NavLink to='/store-manager'>Store Manager</NavLink>
-              <NavLink to='/vendor-membership'>Vendor Membership</NavLink>
-              <NavLink to='/store-list'>Store List</NavLink>
-              <NavLink to='/contact-us'>Contact Us</NavLink>
+              <NavLink to='blog'>Blog</NavLink>
+              <NavLink to='shop'>Shop</NavLink>
+              <NavLink to='store-manager'>Store Manager</NavLink>
+              <NavLink to='vendor-membership'>Vendor Membership</NavLink>
+              <NavLink to='store-list'>Store List</NavLink>
+              <NavLink to='contact-us'>Contact Us</NavLink>
               <Button colorScheme='blue' mt={4}>
                 Login
               </Button>

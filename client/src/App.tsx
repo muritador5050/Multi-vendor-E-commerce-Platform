@@ -9,6 +9,7 @@ import VendorMembership from './pages/vendorMemberShip';
 import Layout from './components/layout/layout';
 import AccountPage from './authentication/accountPage';
 import WishList from './pages/wishList';
+import VendorRegistration from './authentication/vendorRegistration';
 
 //App
 function App() {
@@ -24,6 +25,7 @@ function App() {
             <Route path='store-manager' element={<StoreManager />} />
             <Route path='contact-us' element={<ContactUs />} />
             <Route path='wishlist' element={<WishList />} />
+            <Route path='vendor-register' element={<VendorRegistration />} />
             <Route path='*' element={<Box>404 Not Found</Box>} />
           </Route>
           <Route path='/account' element={<AccountPage />} />
