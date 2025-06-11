@@ -13,14 +13,13 @@ import Footer from './footer';
 function Layout() {
   const location = useLocation();
 
-  // Remove the leading slash and format the pathname
   const getFormattedPathname = () => {
     // if (location.pathname === '/') {
     //   return '';
     // }
 
     return location.pathname
-      .substring(1) // Remove leading slash
+      .substring(1)
       .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');

@@ -1,7 +1,7 @@
 import { Box, Stack } from '@chakra-ui/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
-import Shop from './pages/shop';
+import ShopPage from './pages/shop';
 import Blog from './pages/blog';
 import ContactUs from './pages/contactUs';
 import StoreManager from './pages/storeManager';
@@ -20,7 +20,7 @@ function App() {
           <Route path='/' element={<Layout />}>
             <Route index element={<HomePage />} />
             <Route path='blog' element={<Blog />} />
-            <Route path='shop' element={<Shop />} />
+            <Route path='shop' element={<ShopPage />} />
             <Route path='vendor-membership' element={<VendorMembership />} />
             <Route path='store-manager' element={<StoreManager />} />
             <Route path='contact-us' element={<ContactUs />} />
