@@ -20,7 +20,12 @@ import {
   Button,
   HStack,
   GridItem,
+  Spacer,
+  Divider,
+  InputGroup,
+  Input,
 } from '@chakra-ui/react';
+import { base } from 'framer-motion/client';
 
 const mockProducts = [
   {
@@ -130,19 +135,59 @@ const categories = ['Electronics', 'Clothing', 'Furniture'];
 export default function ShopPage() {
   return (
     <Box p={6}>
-      <Grid
-        h='200px'
-        templateRows='repeat(2, 1fr)'
-        templateColumns='repeat(5, 1fr)'
-        gap={4}
-      >
-        <GridItem colSpan={1} bg='tomato'>
-          sidenav
-        </GridItem>
-        <GridItem colSpan={4} bg='papayawhip'>
-          main conttent
-        </GridItem>
-      </Grid>
+      <Flex direction={{ base: 'column', md: 'row' }}>
+        <Stack order={{ base: 1, md: 0 }} bg='tomato'>
+          <Box>
+            <Text>PRICE FILTER</Text>
+            <Divider />
+            <InputGroup display='flex' justifyContent='space-between'>
+              <Input h={12} w={12} />
+              <Input h={12} w={12} />
+            </InputGroup>
+          </Box>
+          <Box>
+            <Text>FILTER BY STOCK STATUS</Text>
+            <Stack spacing={5} direction='column'>
+              <Checkbox>Checkbox</Checkbox>
+              <Checkbox>Checkbox</Checkbox>
+            </Stack>
+          </Box>
+          <Box>
+            <Text>FILTER BY FRAME SIZE</Text>
+            <Stack spacing={5} direction='column'>
+              <Checkbox>Checkbox</Checkbox>
+              <Checkbox>Checkbox</Checkbox>
+              <Checkbox>Checkbox</Checkbox>
+            </Stack>
+          </Box>
+          <Box>
+            <Text>FILTER BY TYRE SIZE</Text>
+            <Stack spacing={5} direction='column'>
+              <Checkbox>Checkbox</Checkbox>
+              <Checkbox>Checkbox</Checkbox>
+            </Stack>
+          </Box>
+          <Box>
+            <Text>FILTER BY STRAP TYPE</Text>
+            <Stack spacing={5} direction='column'>
+              <Checkbox>Checkbox</Checkbox>
+              <Checkbox>Checkbox</Checkbox>
+              <Checkbox>Checkbox</Checkbox>
+            </Stack>
+          </Box>
+        </Stack>
+        <Stack order={{ base: 0, md: 1 }} bg='papayawhip'>
+          <Flex justifyContent='space-between' alignItems='center'>
+            <Text>Showing 1–16 of 46 results</Text>
+            <Select placeholder='Select option' w='20%'>
+              <option value='option1'>Option 1</option>
+              <option value='option2'>Option 2</option>
+              <option value='option3'>Option 3</option>
+              <option value='option3'>Option 3</option>
+            </Select>
+          </Flex>
+        </Stack>
+      </Flex>
     </Box>
   );
 }
