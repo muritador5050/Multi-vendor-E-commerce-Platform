@@ -1,31 +1,27 @@
+import { useState } from 'react';
 import {
   Box,
-  Grid,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
   Checkbox,
-  CheckboxGroup,
   Stack,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
   Flex,
   Select,
   Text,
   SimpleGrid,
   Image,
   Button,
-  HStack,
-  GridItem,
-  Spacer,
-  Divider,
-  InputGroup,
-  Input,
+  RangeSlider,
+  RangeSliderTrack,
+  RangeSliderFilledTrack,
+  RangeSliderThumb,
+  Card,
+  CardBody,
+  CardFooter,
+  ButtonGroup,
+  VStack,
+  NumberInput,
+  NumberInputField,
 } from '@chakra-ui/react';
-import { base } from 'framer-motion/client';
+import { Heart } from 'lucide-react';
 
 const mockProducts = [
   {
@@ -130,53 +126,129 @@ const mockProducts = [
   },
 ];
 
-const categories = ['Electronics', 'Clothing', 'Furniture'];
-
 export default function ShopPage() {
+  const format = (val: number) => `$${val}`;
+  const parse = (val: string) => val.replace(/^\$/, '');
+  const [sliderValue, setSliderValue] = useState<number[]>([5, 650]);
+
+  // Handle slider change
+  const handleSliderChange = (val: number[]) => {
+    setSliderValue(val);
+  };
+
+  // Handle min price input change
+  const handleMinChange = (valueString: string) => {
+    const numValue = parseInt(parse(valueString)) || 5;
+    // Ensure min doesn't exceed max and stays within bounds
+    const clampedValue = Math.max(5, Math.min(numValue, sliderValue[1] - 5));
+    setSliderValue([clampedValue, sliderValue[1]]);
+  };
+
+  // Handle max price input change
+  const handleMaxChange = (valueString: string) => {
+    const numValue = parseInt(parse(valueString)) || 650;
+    // Ensure max doesn't go below min and stays within bounds
+    const clampedValue = Math.min(650, Math.max(numValue, sliderValue[0] + 5));
+    setSliderValue([sliderValue[0], clampedValue]);
+  };
+
   return (
-    <Box p={6}>
-      <Flex direction={{ base: 'column', md: 'row' }}>
-        <Stack order={{ base: 1, md: 0 }} bg='tomato'>
-          <Box>
-            <Text>PRICE FILTER</Text>
-            <Divider />
-            <InputGroup display='flex' justifyContent='space-between'>
-              <Input h={12} w={12} />
-              <Input h={12} w={12} />
-            </InputGroup>
+    <Box>
+      <Flex direction={{ base: 'column', md: 'row' }} gap={5}>
+        <Stack
+          position='static'
+          left={0}
+          flex={0.75}
+          order={{ base: 1, md: 0 }}
+          bg='tomato'
+          p={4}
+          spacing={5}
+        >
+          <Box display='flex' flexDirection='column' gap={3}>
+            <Text fontSize='xl' fontWeight='bold'>
+              PRICE FILTER
+            </Text>
+            <RangeSlider
+              aria-label={['min', 'max']}
+              defaultValue={[5, 650]}
+              min={5}
+              max={650}
+              step={5}
+              onChange={handleSliderChange}
+            >
+              <RangeSliderTrack bg='gray.500'>
+                <RangeSliderFilledTrack bg='black' />
+              </RangeSliderTrack>
+              <RangeSliderThumb boxSize={5} borderColor='black' index={0} />
+              <RangeSliderThumb boxSize={5} borderColor='black' index={1} />
+            </RangeSlider>
+
+            <Flex justifyContent='space-between'>
+              <VStack>
+                <NumberInput
+                  min={5}
+                  max={645}
+                  onChange={handleMinChange}
+                  value={format(sliderValue[0])}
+                >
+                  <NumberInputField h={12} w={20} p={2} textAlign='center' />
+                </NumberInput>
+                <Text>Min. Price</Text>
+              </VStack>
+              <VStack>
+                <NumberInput
+                  min={10}
+                  max={650}
+                  onChange={handleMaxChange}
+                  value={format(sliderValue[1])}
+                >
+                  <NumberInputField h={12} w={20} p={2} textAlign='center' />
+                </NumberInput>
+                <Text>Max. Price</Text>
+              </VStack>
+            </Flex>
+            <Text float={'right'}>Reset</Text>
           </Box>
           <Box>
-            <Text>FILTER BY STOCK STATUS</Text>
-            <Stack spacing={5} direction='column'>
-              <Checkbox>Checkbox</Checkbox>
-              <Checkbox>Checkbox</Checkbox>
+            <Text fontSize='xl' fontWeight='bold'>
+              FILTER BY STOCK STATUS
+            </Text>
+            <Stack direction='column'>
+              <Checkbox>In Stock</Checkbox>
+              <Checkbox>Out Stock</Checkbox>
             </Stack>
           </Box>
           <Box>
-            <Text>FILTER BY FRAME SIZE</Text>
-            <Stack spacing={5} direction='column'>
-              <Checkbox>Checkbox</Checkbox>
-              <Checkbox>Checkbox</Checkbox>
-              <Checkbox>Checkbox</Checkbox>
+            <Text fontSize='xl' fontWeight='bold'>
+              FILTER BY FRAME SIZE
+            </Text>
+            <Stack direction='column'>
+              <Checkbox>15 Inch</Checkbox>
+              <Checkbox>17 Inch</Checkbox>
+              <Checkbox>19 Inch</Checkbox>
             </Stack>
           </Box>
           <Box>
-            <Text>FILTER BY TYRE SIZE</Text>
-            <Stack spacing={5} direction='column'>
-              <Checkbox>Checkbox</Checkbox>
-              <Checkbox>Checkbox</Checkbox>
+            <Text fontSize='xl' fontWeight='bold'>
+              FILTER BY TYRE SIZE
+            </Text>
+            <Stack direction='column'>
+              <Checkbox>60 Cm</Checkbox>
+              <Checkbox>75 Cm</Checkbox>
             </Stack>
           </Box>
           <Box>
-            <Text>FILTER BY STRAP TYPE</Text>
-            <Stack spacing={5} direction='column'>
-              <Checkbox>Checkbox</Checkbox>
-              <Checkbox>Checkbox</Checkbox>
-              <Checkbox>Checkbox</Checkbox>
+            <Text fontSize='xl' fontWeight='bold'>
+              FILTER BY STRAP TYPE
+            </Text>
+            <Stack direction='column'>
+              <Checkbox>Chain</Checkbox>
+              <Checkbox>Leather</Checkbox>
+              <Checkbox>Robber</Checkbox>
             </Stack>
           </Box>
         </Stack>
-        <Stack order={{ base: 0, md: 1 }} bg='papayawhip'>
+        <Stack flex={3} order={{ base: 0, md: 1 }} p={4} bg='papayawhip'>
           <Flex justifyContent='space-between' alignItems='center'>
             <Text>Showing 1–16 of 46 results</Text>
             <Select placeholder='Select option' w='20%'>
@@ -186,6 +258,56 @@ export default function ShopPage() {
               <option value='option3'>Option 3</option>
             </Select>
           </Flex>
+
+          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+            {mockProducts.map((product) => (
+              <Card
+                key={product.id}
+                bg={{ md: 'transparent' }}
+                position='relative'
+                cursor='pointer'
+                _hover={{ md: { bg: 'white', boxShadow: 'dark-lg' } }}
+                transition='background 0.3s ease-in-out'
+              >
+                <CardBody>
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    borderRadius='lg'
+                  />
+                  <Stack spacing={3} mt={3}>
+                    <Text>{product.name}</Text>
+                    <Text>{product.price}</Text>
+                  </Stack>
+                </CardBody>
+                <CardFooter
+                  position='absolute'
+                  bottom='-48'
+                  bg={'white'}
+                  w='100%'
+                >
+                  <ButtonGroup
+                    display='flex'
+                    flexDirection='column'
+                    gap={4}
+                    justifyContent='center'
+                    w='100%'
+                  >
+                    <Button variant='solid' colorScheme='blue'>
+                      Add to cart
+                    </Button>
+                    <Button
+                      variant='ghost'
+                      colorScheme='blue'
+                      leftIcon={<Heart />}
+                    >
+                      Wishlist
+                    </Button>
+                  </ButtonGroup>
+                </CardFooter>
+              </Card>
+            ))}
+          </SimpleGrid>
         </Stack>
       </Flex>
     </Box>
