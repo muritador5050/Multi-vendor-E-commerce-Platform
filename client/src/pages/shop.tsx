@@ -266,8 +266,10 @@ export default function ShopPage() {
                 bg={{ md: 'transparent' }}
                 cursor='pointer'
                 role='group'
-                _hover={{ bg: 'white', boxShadow: 'dark-lg' }}
+                _hover={{ bg: 'white', boxShadow: '2xl' }}
                 transition='all 0.3s ease-in-out'
+                overflow='hidden'
+                position='relative'
               >
                 <CardBody>
                   <Image
@@ -281,17 +283,35 @@ export default function ShopPage() {
                   </Stack>
                 </CardBody>
                 <CardFooter
-                  className='card-footer'
-                  visibility={{ base: 'visible', md: 'hidden' }}
-                  // bottom='0'
-                  transform={{ base: 'none', md: 'translateY(100%)' }}
+                  // visibility={{ base: 'visible', md: 'hidden' }}
+
+                  // transform={{ base: 'none', md: 'translateY(100%)' }}
+                  // _groupHover={{
+                  //   transform: 'translateY(0)',
+                  //   visibility: 'visible',
+                  // }}
+                  // transition='transform 0.6s ease-in-out'
+                  // bg='white'
+                  // w='100%'
+
+                  position='absolute'
+                  bottom='0'
+                  left='0'
+                  w='100%'
+                  bg='white'
+                  transform='translateY(100%)'
+                  opacity={0}
+                  transition='all 0.4s ease-in-out'
                   _groupHover={{
                     transform: 'translateY(0)',
-                    visibility: 'visible',
+                    opacity: 1,
                   }}
-                  transition='transform 0.6s ease-in-out'
-                  bg='white'
-                  w='100%'
+                  display='flex'
+                  flexDirection='column'
+                  gap={4}
+                  justifyContent='center'
+                  p={4}
+                  zIndex={1}
                 >
                   <ButtonGroup
                     display='flex'
