@@ -271,9 +271,11 @@ export default function ShopPage() {
                 overflow='hidden'
                 role='group'
                 _hover={{
-                  bg: 'white',
-                  boxShadow: '2xl',
-                  pb: '28',
+                  md: {
+                    bg: 'white',
+                    boxShadow: '2xl',
+                    pb: '28',
+                  },
                 }}
                 transition='all 0.3s ease-in-out'
               >
@@ -291,19 +293,21 @@ export default function ShopPage() {
                   </Stack>
                 </CardBody>
                 <CardFooter
-                  position='absolute'
-                  bottom='0'
-                  left='0'
+                  sx={{
+                    position: { md: 'absolute' },
+                    transform: { md: 'translateY(100%)' },
+                    zIndex: { md: 1 },
+                    opacity: { md: 0 },
+                    bottom: { md: 0 },
+                    left: { md: 0 },
+                  }}
                   w='100%'
                   bg='white'
-                  transform='translateY(100%)'
-                  opacity={0}
                   transition='all 0.4s ease-in-out'
                   _groupHover={{
                     transform: 'translateY(0)',
                     opacity: 1,
                   }}
-                  zIndex={1}
                 >
                   <ButtonGroup
                     display='flex'
