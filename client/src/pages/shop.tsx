@@ -248,7 +248,7 @@ export default function ShopPage() {
             </Stack>
           </Box>
         </Stack>
-        <Stack flex={3} order={{ base: 0, md: 1 }} p={4} bg='papayawhip'>
+        <Stack flex={3} order={{ base: 0, md: 1 }} p={4}>
           <Flex justifyContent='space-between' alignItems='center'>
             <Text>Showing 1–16 of 46 results</Text>
             <Select placeholder='Select option' w='20%'>
@@ -263,13 +263,19 @@ export default function ShopPage() {
             {mockProducts.map((product) => (
               <Card
                 key={product.id}
-                bg={{ md: 'transparent' }}
+                bg='white'
+                boxShadow='none'
+                border='none'
                 cursor='pointer'
-                role='group'
-                _hover={{ bg: 'white', boxShadow: '2xl' }}
-                transition='all 0.3s ease-in-out'
-                overflow='hidden'
                 position='relative'
+                overflow='hidden'
+                role='group'
+                _hover={{
+                  bg: 'white',
+                  boxShadow: '2xl',
+                  pb: '28',
+                }}
+                transition='all 0.3s ease-in-out'
               >
                 <CardBody>
                   <Image
@@ -277,23 +283,14 @@ export default function ShopPage() {
                     alt={product.name}
                     borderRadius='lg'
                   />
-                  <Stack spacing={3} mt={3}>
-                    <Text>{product.name}</Text>
-                    <Text>{product.price}</Text>
+                  <Stack mt={3} textAlign='center'>
+                    <Text fontWeight='medium' fontFamily='cursive'>
+                      {product.name}
+                    </Text>
+                    <Text color='gray.500'>${product.price}</Text>
                   </Stack>
                 </CardBody>
                 <CardFooter
-                  // visibility={{ base: 'visible', md: 'hidden' }}
-
-                  // transform={{ base: 'none', md: 'translateY(100%)' }}
-                  // _groupHover={{
-                  //   transform: 'translateY(0)',
-                  //   visibility: 'visible',
-                  // }}
-                  // transition='transform 0.6s ease-in-out'
-                  // bg='white'
-                  // w='100%'
-
                   position='absolute'
                   bottom='0'
                   left='0'
@@ -306,11 +303,6 @@ export default function ShopPage() {
                     transform: 'translateY(0)',
                     opacity: 1,
                   }}
-                  display='flex'
-                  flexDirection='column'
-                  gap={4}
-                  justifyContent='center'
-                  p={4}
                   zIndex={1}
                 >
                   <ButtonGroup
