@@ -264,10 +264,10 @@ export default function ShopPage() {
               <Card
                 key={product.id}
                 bg={{ md: 'transparent' }}
-                position='relative'
                 cursor='pointer'
-                _hover={{ md: { bg: 'white', boxShadow: 'dark-lg' } }}
-                transition='background 0.3s ease-in-out'
+                role='group'
+                _hover={{ bg: 'white', boxShadow: 'dark-lg' }}
+                transition='all 0.3s ease-in-out'
               >
                 <CardBody>
                   <Image
@@ -281,9 +281,16 @@ export default function ShopPage() {
                   </Stack>
                 </CardBody>
                 <CardFooter
-                  position='absolute'
-                  bottom='-48'
-                  bg={'white'}
+                  className='card-footer'
+                  visibility={{ base: 'visible', md: 'hidden' }}
+                  // bottom='0'
+                  transform={{ base: 'none', md: 'translateY(100%)' }}
+                  _groupHover={{
+                    transform: 'translateY(0)',
+                    visibility: 'visible',
+                  }}
+                  transition='transform 0.6s ease-in-out'
+                  bg='white'
                   w='100%'
                 >
                   <ButtonGroup
@@ -292,6 +299,7 @@ export default function ShopPage() {
                     gap={4}
                     justifyContent='center'
                     w='100%'
+                    transition='transform 0.3s ease-in-out'
                   >
                     <Button variant='solid' colorScheme='blue'>
                       Add to cart
