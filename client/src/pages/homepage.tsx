@@ -12,9 +12,11 @@ import {
   Spacer,
   Stack,
   Text,
+  VStack,
 } from '@chakra-ui/react';
 import ProductCard from '@/components/reuseable/productCard';
 import { categories } from '@/components/reuseable/categories';
+import { Truck, DollarSign, Headset } from 'lucide-react';
 
 const dummy = [
   {
@@ -260,7 +262,7 @@ function HomePage() {
           ))}
         </Grid>
       </Box>
-      <Box bg='purple' p={6}>
+      <Box bg='white' p={6}>
         <Flex
           align='center'
           gap={{ base: 3 }}
@@ -279,7 +281,7 @@ function HomePage() {
           ))}
         </SimpleGrid>
       </Box>
-      <Box bg='brown' p={6}>
+      <Box bg='white' p={6}>
         <Flex
           align='center'
           gap={{ base: 3 }}
@@ -291,12 +293,17 @@ function HomePage() {
           <Spacer />
           <Button>View all</Button>
         </Flex>
-        <Flex>Tools</Flex>
+
+        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+          {dummy.map((dm) => (
+            <ProductCard key={dm.id} product={dm} />
+          ))}
+        </SimpleGrid>
       </Box>
       <Box>
-        <Flex>PHOTOS</Flex>
+        <Image src='/spacejoy-9M66C_w_ToM-unsplash.jpg' alt='Photo' />
       </Box>
-      <Box>
+      <Box bg='white' p={6}>
         <Flex>
           <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
             For art lovers
@@ -304,9 +311,13 @@ function HomePage() {
           <Spacer />
           <Button>View all</Button>
         </Flex>
-        <Flex>Arts</Flex>
+        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+          {dummy.map((dm) => (
+            <ProductCard key={dm.id} product={dm} />
+          ))}
+        </SimpleGrid>
       </Box>
-      <Box>
+      <Box bg='white' p={6}>
         <Flex>
           <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
             Electronics Items
@@ -314,11 +325,13 @@ function HomePage() {
           <Spacer />
           <Button>show all</Button>
         </Flex>
-        <Flex>Electronics</Flex>
+        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+          {dummy.map((dm) => (
+            <ProductCard key={dm.id} product={dm} />
+          ))}
+        </SimpleGrid>
       </Box>
-      <Box>
-        <Flex>PHOTOS</Flex>
-      </Box>
+
       <Box>
         <Flex>
           <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
@@ -331,7 +344,57 @@ function HomePage() {
           <GridItem></GridItem>
         </Grid>
       </Box>
-      <Flex>ADVERTS</Flex>
+      <Flex bg='white'>
+        <VStack>
+          <IconButton
+            aria-label='Truck'
+            color='yellow'
+            variant='ghost'
+            icon={<Truck />}
+          />
+          <Text></Text>
+        </VStack>
+        <VStack>
+          <IconButton
+            aria-label='Dollar Sign'
+            color='yellow'
+            variant='ghost'
+            icon={<DollarSign />}
+          />
+          <Text></Text>
+        </VStack>
+        <VStack>
+          <IconButton
+            aria-label='Paypal'
+            color='yellow'
+            variant='ghost'
+            icon={
+              <svg
+                width='20'
+                height='20'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <path d='8666366_paypal_icon.svg' />
+              </svg>
+            }
+          />
+          <Text></Text>
+        </VStack>
+        <VStack>
+          <IconButton
+            aria-label='Headset'
+            color='yellow'
+            variant='ghost'
+            icon={<Headset />}
+          />
+          <Text></Text>
+        </VStack>
+      </Flex>
     </Box>
   );
 }
