@@ -238,7 +238,7 @@ function HomePage() {
         </GridItem>
       </Grid>
 
-      <Box bg='white' py={6} my={6}>
+      <Box bg='white' py={6} px={4} my={6}>
         <Text mb={4} fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
           Shop by category
         </Text>
@@ -251,9 +251,9 @@ function HomePage() {
             <GridItem key={category.id} textAlign='center'>
               <IconButton
                 icon={category.icon}
-                aria-label='Favorites'
+                aria-label={category.name}
                 variant='ghost'
-                colorScheme='white'
+                color={category.color}
               />
               <Text>{category.name}</Text>
             </GridItem>
