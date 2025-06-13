@@ -1,10 +1,10 @@
-import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import {
   Stack,
   Heading,
   Flex,
   Text,
+  Box,
   Link as ChakraLink,
 } from '@chakra-ui/react';
 import Navbar from './navbar';
@@ -33,7 +33,7 @@ function Layout() {
   };
 
   return (
-    <>
+    <Box bg='gray.100'>
       <Navbar />
       <Stack gap={4} spacing={4} p={4}>
         <Heading size='lg'>{getFormattedPathname()}</Heading>
@@ -53,7 +53,7 @@ function Layout() {
       </Stack>
       <Outlet />
       <Footer />
-    </>
+    </Box>
   );
 }
 

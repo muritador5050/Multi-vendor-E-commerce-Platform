@@ -5,6 +5,8 @@ import {
   Flex,
   Grid,
   GridItem,
+  HStack,
+  IconButton,
   Image,
   SimpleGrid,
   Spacer,
@@ -12,29 +14,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import ProductCard from '@/components/reuseable/productCard';
-
-const categories = [
-  { id: 1, name: 'A', icon: '📦' }, // Packages
-  { id: 2, name: 'B', icon: '📚' }, // Books
-  { id: 3, name: 'C', icon: '💻' }, // Computers
-  { id: 4, name: 'D', icon: '🎧' }, // Audio
-  { id: 5, name: 'E', icon: '👕' }, // Clothing
-  { id: 6, name: 'F', icon: '🛋️' }, // Furniture
-  { id: 7, name: 'G', icon: '🍔' }, // Food
-  { id: 8, name: 'H', icon: '🏀' }, // Sports
-  { id: 9, name: 'I', icon: '🍼' }, // Baby
-  { id: 10, name: 'J', icon: '🧴' }, // Skincare
-  { id: 11, name: 'K', icon: '📱' }, // Phones
-  { id: 12, name: 'L', icon: '🎮' }, // Gaming
-  { id: 13, name: 'M', icon: '🚗' }, // Automotive
-  { id: 14, name: 'N', icon: '🎨' }, // Art
-  { id: 15, name: 'O', icon: '💡' }, // Electronics
-  { id: 16, name: 'P', icon: '🍷' }, // Drinks
-  { id: 17, name: 'Q', icon: '🏡' }, // Home
-  { id: 18, name: 'R', icon: '📷' }, // Cameras
-  { id: 19, name: 'S', icon: '🛠️' }, // Tools
-  { id: 20, name: 'T', icon: '🧸' }, // Toys
-];
+import { categories } from '@/components/reuseable/categories';
 
 const dummy = [
   {
@@ -81,7 +61,7 @@ const dummy = [
 
 function HomePage() {
   return (
-    <Box p={3} display='grid' gap={6}>
+    <Box display='grid' gap={6}>
       <Grid
         templateAreas={{
           base: `"unset"`,
@@ -92,10 +72,13 @@ function HomePage() {
     `,
         }}
         templateColumns={{ base: 'unset', md: '1fr 1fr 1fr' }}
-        templateRows={{ base: 'unset', md: 'auto auto auto' }}
+        templateRows={{
+          base: 'unset',
+          md: 'auto auto auto',
+        }}
         gap={5}
       >
-        <GridItem bg='red' area={{ md: 'header' }}>
+        <GridItem bg='red.500' area={{ md: 'header' }}>
           <Stack
             position='relative'
             direction='row'
@@ -109,7 +92,7 @@ function HomePage() {
               justifyContent={{ base: 'center' }}
               alignItems={{ base: 'center', md: 'revert' }}
               position={{ base: 'absolute', md: 'revert' }}
-              zIndex={{ base: 5, md: 'none' }}
+              zIndex={{ base: 1, md: 'none' }}
             >
               <Text color='white' fontSize='larger'>
                 Get 40% off
@@ -118,25 +101,22 @@ function HomePage() {
                 Keeping your ears safe and music loud
               </Text>
               <Text color='white'>Fulfill your music needs</Text>
-              <Button w='20%'>Shop Now</Button>
+              <Button w='fit-content'>Shop Now</Button>
             </Flex>
-            <Box
-              position='relative'
-              display={{ base: 'flex' }}
-              justifyContent={{ base: 'center' }}
-              alignItems={{ base: 'center' }}
-              zIndex={{ base: 1, md: 'none' }}
-            >
-              <Image
-                src='	https://wpthemes.themehunk.com/multivendor-mania/wp-content/uploads/sites/229/2022/03/sliderw.png'
-                alt='mutilvendor-img'
-              />
-            </Box>
+
+            <Image
+              src='	https://wpthemes.themehunk.com/multivendor-mania/wp-content/uploads/sites/229/2022/03/sliderw.png'
+              alt='mutilvendor-img'
+            />
           </Stack>
         </GridItem>
-        <GridItem bg='blue' area={{ md: 'side' }}>
-          <Stack direction='row' align='center' justify='space-around'>
-            <Flex direction='column' gap={3}>
+        <GridItem p={3} bg='blue' area={{ md: 'side' }}>
+          <HStack alignItems='center'>
+            <Flex
+              direction='column'
+              gap={3}
+              position={{ md: 'absolute', lg: 'revert' }}
+            >
               <Text color='white' fontSize='larger'>
                 New iPhone
               </Text>
@@ -150,11 +130,15 @@ function HomePage() {
               alt='phone'
               boxSize='200px'
             />
-          </Stack>
+          </HStack>
         </GridItem>
-        <GridItem bg='green' area={{ md: 'sider' }}>
-          <Stack direction='row' align='center' justify='space-around'>
-            <Flex direction='column' gap={3}>
+        <GridItem p={3} bg='orange.500' area={{ md: 'sider' }}>
+          <HStack alignItems='center'>
+            <Flex
+              direction='column'
+              gap={3}
+              position={{ md: 'absolute', lg: 'revert' }}
+            >
               <Text color='white' fontSize='larger'>
                 House Hold
               </Text>
@@ -168,18 +152,27 @@ function HomePage() {
               objectFit='cover'
               boxSize='200px'
             />
-          </Stack>
+          </HStack>
         </GridItem>
-        <GridItem bg='purple' area={{ md: 'foot' }}>
-          <Stack direction='row' align='center' justify='space-around'>
-            <Flex direction='column' gap={3}>
-              <Text color='white' fontSize='larger'>
-                At lowest price
+        <GridItem p={3} bg='white' area={{ md: 'foot' }}>
+          <HStack alignItems='center'>
+            <Flex
+              direction='column'
+              gap={3}
+              position={{ md: 'absolute', lg: 'revert' }}
+            >
+              <Text fontSize='larger'>At lowest price</Text>
+              <Text fontWeight='semibold' fontSize='3xl'>
+                Art and Accessories
               </Text>
-              <Text color='white' fontWeight='semibold' fontSize='3xl'>
-                Art a Accessories
-              </Text>
-              <Button>Shop now</Button>
+              <Button
+                w='fit-content'
+                bg='yellow.500'
+                color='white'
+                _hover='none'
+              >
+                Shop Now
+              </Button>
             </Flex>
             <Image
               src='/abstract-dadaism-concept.jpg'
@@ -187,57 +180,81 @@ function HomePage() {
               objectFit='cover'
               boxSize='200px'
             />
-          </Stack>
+          </HStack>
         </GridItem>
-        <GridItem bg='yellow' area={{ md: 'footer' }}>
-          <Stack direction='row' align='center' justify='space-around'>
-            <Flex direction='column' gap={3}>
-              <Text color='white' fontSize='larger'>
-                20% off
-              </Text>
-              <Text color='white' fontWeight='semibold' fontSize='3xl'>
+        <GridItem p={3} bg='white' area={{ md: 'footer' }}>
+          <HStack alignItems='center'>
+            <Flex
+              direction='column'
+              gap={3}
+              position={{ md: 'absolute', lg: 'revert' }}
+            >
+              <Text fontSize='larger'>20% off</Text>
+              <Text fontWeight='semibold' fontSize='3xl'>
                 Laptop and computers
               </Text>
-              <Button>Shop now</Button>
+              <Button
+                w='fit-content'
+                bg='yellow.500'
+                color='white'
+                _hover='none'
+              >
+                Shop now
+              </Button>
             </Flex>
             <Image
               src='/view-3d-laptop-device-with-screen-keyboard-removebg-preview.png'
               alt='laptop'
               boxSize='200px'
             />
-          </Stack>
+          </HStack>
         </GridItem>
-        <GridItem bg='black' area={{ md: 'footest' }}>
-          <Stack direction='row' align='center' justify='space-around'>
-            <Flex direction='column' gap={3}>
-              <Text color='white' fontSize='larger'>
-                New Look
+        <GridItem p={3} bg='white' area={{ md: 'footest' }}>
+          <HStack alignItems='center'>
+            <Flex
+              direction='column'
+              gap={3}
+              position={{ md: 'absolute', lg: 'revert' }}
+            >
+              <Text fontSize='larger'>New Look</Text>
+              <Text fontWeight='semibold' fontSize='3xl'>
+                Go on ride <br /> hurry
               </Text>
-              <Text color='white' fontWeight='semibold' fontSize='3xl'>
-                Go on ride hurry
-              </Text>
-              <Button>Shop now</Button>
+              <Button
+                w='fit-content'
+                bg='yellow.500'
+                color='white'
+                _hover='none'
+              >
+                Shop now
+              </Button>
             </Flex>
             <Image
               src='/close-up-bike-indoor-removebg-preview.png'
               alt='bicycle'
               boxSize='200px'
             />
-          </Stack>
+          </HStack>
         </GridItem>
       </Grid>
 
-      <Box bg='wheat' my={6}>
+      <Box bg='white' py={6} my={6}>
         <Text mb={4} fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
           Shop by category
         </Text>
         <Grid
-          templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(10, 1fr)' }}
-          templateRows={{ base: 'repeat(10, 1fr)', md: 'repeat(2, 1fr)' }}
+          templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(8, 1fr)' }}
+          templateRows={{ base: 'repeat(8, 1fr)', md: 'repeat(2, 1fr)' }}
+          rowGap={10}
         >
           {categories.map((category) => (
             <GridItem key={category.id} textAlign='center'>
-              <Box>{category.icon}</Box>
+              <IconButton
+                icon={category.icon}
+                aria-label='Favorites'
+                variant='ghost'
+                colorScheme='white'
+              />
               <Text>{category.name}</Text>
             </GridItem>
           ))}
