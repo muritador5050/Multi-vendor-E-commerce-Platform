@@ -10,6 +10,19 @@ import Layout from './components/layout/layout';
 import AccountPage from './authentication/accountPage';
 import WishList from './pages/wishList';
 import VendorRegistration from './authentication/vendorRegistration';
+import Home from './pages/dashboard/home';
+import Media from './pages/dashboard/media';
+import Articles from './pages/dashboard/articles';
+import Products from './pages/dashboard/products';
+import Orders from './pages/dashboard/orders';
+import Payments from './pages/dashboard/payments';
+import Coupons from './pages/dashboard/coupons';
+import Customers from './pages/dashboard/customers';
+import LedgerBook from './pages/dashboard/ledgerBook';
+import Review from './pages/dashboard/review';
+import AddToMyStore from './pages/dashboard/addToMyStore';
+import Setting from './pages/dashboard/setting';
+import Reports from './pages/dashboard/reports';
 
 //App
 function App() {
@@ -22,7 +35,21 @@ function App() {
             <Route path='blog' element={<Blog />} />
             <Route path='shop' element={<ShopPage />} />
             <Route path='vendor-membership' element={<VendorMembership />} />
-            <Route path='store-manager' element={<StoreManager />} />
+            <Route path='store-manager' element={<StoreManager />}>
+              <Route index element={<Home />} />
+              <Route path='media' element={<Media />} />
+              <Route path='articles' element={<Articles />} />
+              <Route path='products' element={<Products />} />
+              <Route path='orders' element={<Orders />} />
+              <Route path='payments' element={<Payments />} />
+              <Route path='coupons' element={<Coupons />} />
+              <Route path='customers' element={<Customers />} />
+              <Route path='ledger-book' element={<LedgerBook />} />
+              <Route path='review' element={<Review />} />
+              <Route path='add-to-my-store' element={<AddToMyStore />} />
+              <Route path='reports' element={<Reports />} />
+              <Route path='settings' element={<Setting />} />
+            </Route>
             <Route path='contact-us' element={<ContactUs />} />
             <Route path='wishlist' element={<WishList />} />
             <Route path='vendor-register' element={<VendorRegistration />} />

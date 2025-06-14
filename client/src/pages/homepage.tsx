@@ -17,6 +17,7 @@ import {
 import ProductCard from '@/components/reuseable/productCard';
 import { categories } from '@/components/reuseable/categories';
 import { Truck, DollarSign, Headset } from 'lucide-react';
+import PaypalIcon from '../assets/8666366_paypal_icon.svg';
 
 const dummy = [
   {
@@ -207,7 +208,7 @@ function HomePage() {
             <Image
               src='/view-3d-laptop-device-with-screen-keyboard-removebg-preview.png'
               alt='laptop'
-              boxSize='200px'
+              boxSize={{ base: '150px', md: '200px' }}
             />
           </HStack>
         </GridItem>
@@ -272,7 +273,9 @@ function HomePage() {
             Explore in bikes
           </Text>
           <Spacer />
-          <Button>View all</Button>
+          <Button bg='black' color='white'>
+            View all
+          </Button>
         </Flex>
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
@@ -291,7 +294,9 @@ function HomePage() {
             Daily Use Tools
           </Text>
           <Spacer />
-          <Button>View all</Button>
+          <Button bg='black' color='white'>
+            View all
+          </Button>
         </Flex>
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
@@ -301,7 +306,11 @@ function HomePage() {
         </SimpleGrid>
       </Box>
       <Box>
-        <Image src='/spacejoy-9M66C_w_ToM-unsplash.jpg' alt='Photo' />
+        <Image
+          src='/spacejoy-9M66C_w_ToM-unsplash.jpg'
+          alt='Photo'
+          objectFit='cover'
+        />
       </Box>
       <Box bg='white' p={6}>
         <Flex>
@@ -309,7 +318,9 @@ function HomePage() {
             For art lovers
           </Text>
           <Spacer />
-          <Button>View all</Button>
+          <Button bg='black' color='white'>
+            View all
+          </Button>
         </Flex>
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
@@ -323,78 +334,93 @@ function HomePage() {
             Electronics Items
           </Text>
           <Spacer />
-          <Button>show all</Button>
+          <Button bg='black' color='white'>
+            View all
+          </Button>
         </Flex>
-        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+        <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
             <ProductCard key={dm.id} product={dm} />
           ))}
         </SimpleGrid>
       </Box>
 
-      <Box>
+      <Box bg='white' p={6}>
         <Flex>
           <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
             Most Popular
           </Text>
           <Spacer />
-          <Button>View all</Button>
+          <Button bg='black' color='white'>
+            View all
+          </Button>
         </Flex>
-        <Grid>
-          <GridItem></GridItem>
-        </Grid>
+        <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
+          {dummy.map((dm) => (
+            <ProductCard key={dm.id} product={dm} />
+          ))}
+        </SimpleGrid>
       </Box>
-      <Flex bg='white'>
-        <VStack>
+      <SimpleGrid
+        mb={6}
+        py={6}
+        bg='white'
+        spacing={3}
+        columns={{ base: 2, md: 4 }}
+      >
+        <VStack gap={3}>
           <IconButton
             aria-label='Truck'
-            color='yellow'
+            color='yellow.500'
             variant='ghost'
-            icon={<Truck />}
+            icon={<Truck size={80} />}
+            mb={6}
           />
-          <Text></Text>
+          <Text fontWeight='bold'>Free Shipping</Text>
+          <Text fontWeight='semibold' color='yellow.500'>
+            From $350
+          </Text>
         </VStack>
         <VStack>
           <IconButton
             aria-label='Dollar Sign'
-            color='yellow'
+            color='yellow.500'
             variant='ghost'
-            icon={<DollarSign />}
+            icon={<DollarSign size={80} />}
+            mb={6}
           />
-          <Text></Text>
+          <Text fontWeight='bold'>Money Guarantee</Text>
+          <Text fontWeight='semibold' color='yellow.500'>
+            30 Days Back
+          </Text>
         </VStack>
         <VStack>
           <IconButton
             aria-label='Paypal'
-            color='yellow'
+            icon={<img src={PaypalIcon} alt='paypal' />}
             variant='ghost'
-            icon={
-              <svg
-                width='20'
-                height='20'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-              >
-                <path d='8666366_paypal_icon.svg' />
-              </svg>
-            }
+            color='yellow.500'
+            mb={6}
           />
-          <Text></Text>
+          <Text fontWeight='bold'>Payment Method</Text>
+          <Text fontWeight='semibold' color='yellow.500'>
+            Secure Payment
+          </Text>
         </VStack>
         <VStack>
           <IconButton
             aria-label='Headset'
-            color='yellow'
+            color='yellow.500'
             variant='ghost'
-            icon={<Headset />}
+            icon={<Headset size={80} />}
+            mb={6}
           />
-          <Text></Text>
+          <Text fontWeight='bold'>Support 24x7</Text>
+          <Text fontWeight='semibold' color='yellow.500'>
+            Black Bread
+          </Text>
         </VStack>
-      </Flex>
+      </SimpleGrid>
     </Box>
   );
 }
