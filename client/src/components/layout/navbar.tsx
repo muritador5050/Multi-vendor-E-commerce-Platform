@@ -193,7 +193,6 @@ function Navbar() {
               display={{ base: 'none', md: 'inline-flex' }}
               bg='yellow.500'
               color='white'
-              _hover='none'
               px={4}
               py={2}
               transition='all 0.2s'
@@ -256,7 +255,6 @@ function Navbar() {
             h={14}
             display={{ base: 'none', md: 'inline-flex' }}
             color='white'
-            _hover={'none'}
             variant='outline'
             border='1px solid'
             borderColor='yellow.500'

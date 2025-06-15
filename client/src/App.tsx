@@ -4,13 +4,13 @@ import HomePage from './pages/homepage';
 import ShopPage from './pages/shop';
 import Blog from './pages/blog';
 import ContactUs from './pages/contactUs';
-import StoreManager from './pages/storeManager';
+import StoreManagerDashboard from './pages/storeManager';
 import VendorMembership from './pages/vendorMemberShip';
 import Layout from './components/layout/layout';
 import AccountPage from './authentication/accountPage';
 import WishList from './pages/wishList';
 import VendorRegistration from './authentication/vendorRegistration';
-import Home from './pages/dashboard/home';
+import DashboardHome from './pages/dashboard/dashboardHome';
 import Media from './pages/dashboard/media';
 import Articles from './pages/dashboard/articles';
 import Products from './pages/dashboard/products';
@@ -35,8 +35,8 @@ function App() {
             <Route path='blog' element={<Blog />} />
             <Route path='shop' element={<ShopPage />} />
             <Route path='vendor-membership' element={<VendorMembership />} />
-            <Route path='store-manager' element={<StoreManager />}>
-              <Route index element={<Home />} />
+            <Route path='store-manager' element={<StoreManagerDashboard />}>
+              <Route index element={<DashboardHome />} />
               <Route path='media' element={<Media />} />
               <Route path='articles' element={<Articles />} />
               <Route path='products' element={<Products />} />
