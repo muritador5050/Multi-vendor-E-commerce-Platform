@@ -11,12 +11,13 @@ interface NavItemProps {
 const NavItem = ({ icon, children, isActive, onClick }: NavItemProps) => (
   <Button
     variant={isActive ? 'solid' : 'ghost'}
-    colorScheme={isActive ? 'purple' : 'gray'}
+    colorScheme={isActive ? 'cyan' : 'gray'}
     justifyContent='flex-start'
-    leftIcon={<Icon as={icon} />}
+    leftIcon={<Icon as={icon} fontSize='2xl' />}
     onClick={onClick}
-    size='md'
     fontWeight='normal'
+    color='white'
+    _hover={{ color: isActive ? 'none' : 'cyan' }}
   >
     {children}
   </Button>

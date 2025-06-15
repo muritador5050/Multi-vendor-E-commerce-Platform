@@ -5,9 +5,13 @@ import NavItem from './Navitem';
 
 interface SidebarProps {
   isCollapsed: boolean;
+  onClose?: () => void;
 }
 
-export default function DashboardSidebar({ isCollapsed }: SidebarProps) {
+export default function DashboardSidebar({
+  isCollapsed,
+  onClose,
+}: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isDesktop = useBreakpointValue({ base: false, md: true });
@@ -21,23 +25,25 @@ export default function DashboardSidebar({ isCollapsed }: SidebarProps) {
       color='white'
       minH='calc(100vh - 80px)'
       transition='width 0.3s ease'
-      // width={isDesktop ? desktopWidth : '0'}
       width={isDesktop ? desktopWidth : mobileWidth}
       overflow='hidden'
       whiteSpace='nowrap'
-      position={{ base: 'fixed', md: 'relative' }}
-      left={0}
-      top={!isDesktop ? 10 : 0}
-      zIndex={3}
+      position={{ base: 'absolute', md: 'relative' }}
+      zIndex={1}
     >
-      <VStack spacing={1} align='stretch' mt={2} p={4}>
+      <VStack spacing={1} align='stretch' mt={2}>
         {LinkItems.map((link) => (
           <NavItem
             key={link.name}
             icon={link.icon}
             path={link.path}
             isActive={location.pathname === link.path}
-            onClick={() => navigate(link.path)}
+            onClick={() => {
+              navigate(link.path);
+              if (!isDesktop && onClose) {
+                onClose();
+              }
+            }}
           >
             {isCollapsed ? '' : link.name}
           </NavItem>
