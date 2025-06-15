@@ -55,7 +55,7 @@ function App() {
             <Route path='vendor-register' element={<VendorRegistration />} />
             <Route path='*' element={<Box>404 Not Found</Box>} />
           </Route>
-          <Route path='/account' element={<AccountPage />} />
+          <Route path='account' element={<AccountPage />} />
         </Routes>
       </Stack>
     </Router>

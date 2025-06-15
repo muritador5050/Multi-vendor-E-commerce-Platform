@@ -13,11 +13,18 @@ import Footer from './footer';
 function Layout() {
   const location = useLocation();
 
+  const isExcludedPage = () => {
+    const excluded = ['/', '/store-manager'];
+    return excluded.some((path) => {
+      if (path === '/') {
+        return location.pathname === '/';
+      }
+      return (
+        location.pathname === path || location.pathname.startsWith(path + '/')
+      );
+    });
+  };
   const getFormattedPathname = () => {
-    // if (location.pathname === '/') {
-    //   return '';
-    // }
-
     return location.pathname
       .substring(1)
       .split('-')
@@ -26,9 +33,7 @@ function Layout() {
   };
 
   const getCurrentPageName = () => {
-    if (location.pathname === '/') {
-      return '';
-    }
+    if (isExcludedPage()) return '';
     return getFormattedPathname();
   };
 
@@ -36,13 +41,17 @@ function Layout() {
     <Box bg='gray.100'>
       <Navbar />
       <Stack gap={4} spacing={4} p={4}>
-        <Heading size='lg'>{getFormattedPathname()}</Heading>
+        {!isExcludedPage() && (
+          <Heading size='lg'>{getFormattedPathname()}</Heading>
+        )}
         <Flex gap={2} align='center'>
-          <Text>
-            <ChakraLink href='/' color='blue.500'>
-              Home
-            </ChakraLink>
-          </Text>
+          {!isExcludedPage() && (
+            <Text>
+              <ChakraLink href='/' color='blue.500'>
+                Home
+              </ChakraLink>
+            </Text>
+          )}
           {getCurrentPageName() && (
             <>
               <Text>/</Text>
