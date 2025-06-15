@@ -16,9 +16,9 @@ export default function StoreManagerDashboard() {
       <DashboardNavbar onToggle={toggleSidebar} />
 
       {/* Layout Body */}
-      <Box display='flex' flex='1'>
+      <Box position='relative' display='flex' flex='1'>
         <DashboardSidebar isCollapsed={isCollapsed} />
-        <Box ml={0} flex='1' pt='20' transition='margin-left 0.3s ease'>
+        <Box ml={0} flex='1' transition='margin-left 0.5s ease-in'>
           <Container maxW='7xl' py={4}>
             <Outlet />
           </Container>
