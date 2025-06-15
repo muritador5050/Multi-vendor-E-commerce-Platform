@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import Login from './login';
 import SignUp from './signUp';
-import Logo from '../components/ui/logo';
+import Logo from '../components/logo/Logo';
 
 // Account Component
 function AccountPage() {

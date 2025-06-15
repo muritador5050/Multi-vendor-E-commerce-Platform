@@ -20,7 +20,7 @@ export default function StoreManagerDashboard() {
           isCollapsed={isCollapsed}
           onClose={() => setIsCollapsed(true)}
         />
-        <Box ml={0} flex='1' transition='margin-left 0.5s ease-in'>
+        <Box ml={0} flex='1' transition='margin-left 0.3s ease-in'>
           <Container maxW='7xl' py={4}>
             <Outlet />
           </Container>

@@ -1,4 +1,6 @@
-import { Button, Icon } from '@chakra-ui/react';
+import { Button, Flex, Icon, Text } from '@chakra-ui/react';
+import { Tooltip } from '../ui/tooltip';
+import { useState } from 'react';
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -8,19 +10,40 @@ interface NavItemProps {
   onClick: () => void;
 }
 
-const NavItem = ({ icon, children, isActive, onClick }: NavItemProps) => (
-  <Button
-    variant={isActive ? 'solid' : 'ghost'}
-    colorScheme={isActive ? 'cyan' : 'gray'}
-    justifyContent='flex-start'
-    leftIcon={<Icon as={icon} fontSize='2xl' />}
-    onClick={onClick}
-    fontWeight='normal'
-    color='white'
-    _hover={{ color: isActive ? 'none' : 'cyan' }}
-  >
-    {children}
-  </Button>
-);
+const NavItem = ({ icon, children, isActive, onClick }: NavItemProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Tooltip
+      content='Add New'
+      placement='left'
+      fontSize='md'
+      p={2}
+      boxShadow='lg'
+    >
+      <Button
+        onMouseEnter={() =>
+          !isActive ? setIsHovered(true) : setIsHovered(false)
+        }
+        onMouseLeave={() => setIsHovered(false)}
+        variant={isActive ? 'solid' : 'ghost'}
+        colorScheme={isActive ? 'cyan' : 'gray'}
+        justifyContent='flex-start'
+        leftIcon={<Icon as={icon} fontSize='2xl' />}
+        onClick={onClick}
+        fontWeight='normal'
+        color='white'
+        _hover={{ color: isActive ? 'none' : 'teal' }}
+        pr={0}
+        gap={3}
+      >
+        <Flex justify='space-between' align='center' width='full'>
+          <Text>{children}</Text>
+          {isHovered && <Text fontSize='2xl'>◀</Text>}
+        </Flex>
+      </Button>
+    </Tooltip>
+  );
+};
 
 export default NavItem;

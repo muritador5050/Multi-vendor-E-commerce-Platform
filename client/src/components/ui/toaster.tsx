@@ -1,43 +1,66 @@
-"use client"
+import { Box, useToast } from '@chakra-ui/react';
 
-import {
-  Toaster as ChakraToaster,
-  Portal,
-  Spinner,
-  Stack,
-  Toast,
-  createToaster,
-} from "@chakra-ui/react"
+// Custom hook to provide toaster functions
+export const useToaster = () => {
+  const toast = useToast();
 
-export const toaster = createToaster({
-  placement: "bottom-end",
-  pauseOnPageIdle: true,
-})
+  return {
+    loading: (title: string, description?: string) =>
+      toast({
+        title,
+        description,
+        status: 'loading',
+        duration: null,
+        isClosable: true,
+      }),
+    success: (title: string, description?: string) =>
+      toast({
+        title,
+        description,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      }),
+    error: (title: string, description?: string) =>
+      toast({
+        title,
+        description,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      }),
+  };
+};
 
-export const Toaster = () => {
+// Example usage inside any component
+export const ExampleComponent = () => {
+  const toast = useToast();
+
+  const handleAction = () => {
+    toast({
+      title: 'Processing...',
+      description: 'Please wait',
+      status: 'loading',
+      duration: null,
+      isClosable: true,
+    });
+
+    // Simulate async process
+    setTimeout(() => {
+      toast.closeAll(); // Close previous
+      toast({
+        title: 'Success!',
+        description: 'Your request was completed.',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+    }, 2000);
+  };
+
   return (
-    <Portal>
-      <ChakraToaster toaster={toaster} insetInline={{ mdDown: "4" }}>
-        {(toast) => (
-          <Toast.Root width={{ md: "sm" }}>
-            {toast.type === "loading" ? (
-              <Spinner size="sm" color="blue.solid" />
-            ) : (
-              <Toast.Indicator />
-            )}
-            <Stack gap="1" flex="1" maxWidth="100%">
-              {toast.title && <Toast.Title>{toast.title}</Toast.Title>}
-              {toast.description && (
-                <Toast.Description>{toast.description}</Toast.Description>
-              )}
-            </Stack>
-            {toast.action && (
-              <Toast.ActionTrigger>{toast.action.label}</Toast.ActionTrigger>
-            )}
-            {toast.closable && <Toast.CloseTrigger />}
-          </Toast.Root>
-        )}
-      </ChakraToaster>
-    </Portal>
-  )
-}
+    <Box>
+      <button onClick={handleAction}>Show Toast</button>
+    </Box>
+  );
+};

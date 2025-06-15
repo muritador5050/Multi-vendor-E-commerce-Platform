@@ -25,7 +25,7 @@ import {
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
-import Logo from '../ui/logo';
+import Logo from '../logo/logo';
 import Cart from '@/pages/cart';
 
 //NavLink Component
