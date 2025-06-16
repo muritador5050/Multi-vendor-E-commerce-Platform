@@ -267,7 +267,6 @@ export default function ShopPage() {
                 boxShadow='none'
                 border='none'
                 cursor='pointer'
-                position='relative'
                 overflow='hidden'
                 role='group'
                 _hover={{
@@ -276,6 +275,7 @@ export default function ShopPage() {
                     boxShadow: '2xl',
                     pb: '28',
                   },
+                  position: 'relative',
                 }}
                 transition='all 0.3s ease-in-out'
               >

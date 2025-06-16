@@ -2,8 +2,6 @@ import React from 'react';
 import {
   Box,
   Text,
-  VStack,
-  Button,
   Grid,
   GridItem,
   Card,
@@ -15,18 +13,54 @@ import {
   StatHelpText,
   StatArrow,
   SimpleGrid,
+  Flex,
+  Avatar,
+  Center,
+  Stack,
 } from '@chakra-ui/react';
-import { FiUsers, FiPackage } from 'react-icons/fi';
+
+import {
+  Bell,
+  ChartPie,
+  ChartSpline,
+  CircleHelp,
+  Megaphone,
+  Star,
+} from 'lucide-react';
+import CustomLineChart from '@/components/charts/CustomLinechart';
+import CustomPieChart from '@/components/charts/CustomPiechart';
 
 export default function DashboardHome() {
   return (
     <Box>
-      <Text fontSize='3xl' fontWeight='bold' mb={6}>
-        Dashboard Overview
-      </Text>
-
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        align='center'
+        justify='space-between'
+        mb={6}
+        w='100%'
+        bg='white'
+        borderRadius='2xl'
+        p={6}
+      >
+        <Stack direction={{ base: 'column', md: 'row' }} align='center' gap={6}>
+          <Avatar size='2xl' name='Vendor name' />
+          <Box p={0}>
+            <Text>Welcome to the multivendor-mania Dashboard</Text>
+            <Text textAlign='left'>Vendor Email</Text>
+            <Text>Login time</Text>
+          </Box>
+        </Stack>
+        <Stack display={{ base: 'none', md: 'block' }}>
+          <Text>Limit stat</Text>
+          <Text>Disk space</Text>
+        </Stack>
+      </Flex>
       <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
-        <Card>
+        <Card direction='row' overflow='hidden' variant='outline'>
+          <Center bg='red' w='25%'>
+            <Star />
+          </Center>
           <CardBody>
             <Stat>
               <StatLabel>Total Revenue</StatLabel>
@@ -39,7 +73,10 @@ export default function DashboardHome() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card direction='row' overflow='hidden' variant='outline'>
+          <Center bg='purple' w='25%'>
+            <Star />
+          </Center>
           <CardBody>
             <Stat>
               <StatLabel>Orders</StatLabel>
@@ -52,7 +89,10 @@ export default function DashboardHome() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card direction='row' overflow='hidden' variant='outline'>
+          <Center bg='blue' w='25%'>
+            <Star />
+          </Center>
           <CardBody>
             <Stat>
               <StatLabel>Products</StatLabel>
@@ -65,7 +105,10 @@ export default function DashboardHome() {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card direction='row' overflow='hidden' variant='outline'>
+          <Center bg='green' w='25%'>
+            <Star />
+          </Center>
           <CardBody>
             <Stat>
               <StatLabel>Customers</StatLabel>
@@ -79,57 +122,102 @@ export default function DashboardHome() {
         </Card>
       </SimpleGrid>
 
-      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
-        <GridItem>
+      <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
+        <GridItem colSpan={2}>
           <Card>
-            <CardHeader>
-              <Text fontSize='xl' fontWeight='semibold'>
-                Recent Orders
-              </Text>
-            </CardHeader>
             <CardBody>
-              <Text color='gray.600'>
-                Order management content would go here...
-              </Text>
+              <CustomLineChart />
+              <Text textAlign='center'>Sales Report by Date</Text>
             </CardBody>
           </Card>
         </GridItem>
 
         <GridItem>
           <Card>
-            <CardHeader>
-              <Text fontSize='xl' fontWeight='semibold'>
-                Quick Actions
-              </Text>
+            <CardHeader
+              display='flex'
+              alignItems='center'
+              gap={3}
+              bg='#203a43'
+              color='white'
+            >
+              <ChartSpline />
+              <Text fontWeight='semibold'>Store Analytics</Text>
             </CardHeader>
             <CardBody>
-              <VStack spacing={3}>
-                <Button
-                  colorScheme='purple'
-                  size='md'
-                  width='full'
-                  leftIcon={<FiPackage />}
-                >
-                  Add Product
-                </Button>
-                <Button
-                  colorScheme='blue'
-                  size='md'
-                  width='full'
-                  leftIcon={<FiUsers />}
-                >
-                  View Customers
-                </Button>
-                <Button
-                  colorScheme='green'
-                  size='md'
-                  width='full'
-                  leftIcon={<FiPackage />}
-                >
-                  View Reports
-                </Button>
-              </VStack>
+              <CustomLineChart />
             </CardBody>
+          </Card>
+        </GridItem>
+        <GridItem>
+          <Card>
+            <CardHeader
+              display='flex'
+              alignItems='center'
+              gap={3}
+              bg='#203a43'
+              color='white'
+            >
+              <ChartPie />
+              <Text fontWeight='semibold'>Sales by Products</Text>
+            </CardHeader>
+            <CardBody>
+              <CustomPieChart />
+              <Text textAlign='center'>No sales yet!!</Text>
+            </CardBody>
+          </Card>
+        </GridItem>
+        <GridItem>
+          <Card>
+            <CardHeader
+              display='flex'
+              alignItems='center'
+              gap={3}
+              bg='#203a43'
+              color='white'
+            >
+              <Bell />
+              <Text fontWeight='semibold'>Notifications</Text>
+            </CardHeader>
+            <CardBody></CardBody>
+          </Card>
+        </GridItem>
+        <GridItem>
+          <Card>
+            <CardHeader
+              display='flex'
+              alignItems='center'
+              gap={3}
+              bg='#203a43'
+              color='white'
+            >
+              <CircleHelp />
+              <Text fontWeight='semibold'>Inquiries</Text>
+            </CardHeader>
+            <CardBody></CardBody>
+          </Card>
+        </GridItem>
+        <GridItem>
+          <Card>
+            <CardHeader bg='#203a43' color='white'>
+              <Text fontWeight='semibold'>Store Stats</Text>
+            </CardHeader>
+            <CardBody></CardBody>
+          </Card>
+        </GridItem>
+        <GridItem>
+          <Card>
+            <CardHeader
+              display='flex'
+              alignItems='center'
+              gap={3}
+              bg='#203a43'
+              color='white'
+            >
+              <Megaphone />
+              <Text fontWeight='semibold'>Latest Topics</Text>
+            </CardHeader>
+            <CardBody></CardBody>
           </Card>
         </GridItem>
       </Grid>

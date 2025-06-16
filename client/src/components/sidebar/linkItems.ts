@@ -7,11 +7,10 @@ import {
   FiImage,
   FiFileText,
   FiGift,
-  FiCompass,
   FiStar,
   FiSettings,
 } from 'react-icons/fi';
-import { Bell } from 'lucide-react';
+import { SquareDashedBottomCode, Pointer, Power, ChartPie } from 'lucide-react';
 
 export const LinkItems = [
   { name: 'Home', icon: FiHome, path: '/store-manager' },
@@ -22,14 +21,18 @@ export const LinkItems = [
   { name: 'Payments', icon: FiDollarSign, path: '/store-manager/payments' },
   { name: 'Coupons', icon: FiGift, path: '/store-manager/coupons' },
   { name: 'Customers', icon: FiUsers, path: '/store-manager/customers' },
-  { name: 'Ledger Book', icon: Bell, path: '/store-manager/ledger-book' },
+  {
+    name: 'Ledger Book',
+    icon: SquareDashedBottomCode,
+    path: '/store-manager/ledger-book',
+  },
   { name: 'Reviews', icon: FiStar, path: '/store-manager/review' },
   {
     name: 'Add to Store',
-    icon: FiCompass,
+    icon: Pointer,
     path: '/store-manager/add-to-my-store',
   },
-  { name: 'Reports', icon: FiDollarSign, path: '/store-manager/reports' },
+  { name: 'Reports', icon: ChartPie, path: '/store-manager/reports' },
   { name: 'Settings', icon: FiSettings, path: '/store-manager/settings' },
-  { name: 'Logout', icon: FiSettings, path: '/store-manager/settings' },
+  { name: 'Logout', icon: Power, path: '/store-manager/settings' },
 ];
