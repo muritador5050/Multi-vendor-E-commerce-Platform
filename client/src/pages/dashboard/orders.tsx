@@ -1,20 +1,25 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Box,
-  Button,
   Flex,
   Text,
   Input,
   Select,
   Stack,
-  SimpleGrid,
   Center,
   Wrap,
   WrapItem,
 } from '@chakra-ui/react';
 import { Ellipsis } from 'lucide-react';
+import ExportButtons from '@/utils/File-format';
 
 export default function Orders() {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const sampleData = [
+    { name: 'Alice', age: 25 },
+    { name: 'Bob', age: 30 },
+  ];
   return (
     <Box display='flex' flexDirection='column' gap={6}>
       <Box bg='white' h={20} p={3}>
@@ -28,20 +33,11 @@ export default function Orders() {
           align='center'
           gap={{ base: 4, md: 10 }}
         >
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
-            <Button bg='#203a43' colorScheme='teal' variant='solid'>
-              PRINT
-            </Button>
-            <Button bg='#203a43' colorScheme='teal' variant='solid'>
-              PDF
-            </Button>
-            <Button bg='#203a43' colorScheme='teal' variant='solid'>
-              EXCEL
-            </Button>
-            <Button bg='#203a43' colorScheme='teal' variant='solid'>
-              CSV
-            </Button>
-          </SimpleGrid>
+          <ExportButtons
+            exportRef={contentRef}
+            exportData={sampleData}
+            fileName='my-report'
+          />
           <Stack>
             <Select placeholder='Select option'>
               <option value='option1'>Option 1</option>
@@ -53,8 +49,7 @@ export default function Orders() {
             <Input placeholder='Search...' />
           </Stack>
         </Flex>
-        {/* <Flex align='center'> */}
-        <Wrap spacing='50px' align='center'>
+        <Wrap ref={contentRef} spacing='50px' align='center'>
           <WrapItem>
             {' '}
             <Center bg='cyan.500' borderRadius='full'>
@@ -102,7 +97,6 @@ export default function Orders() {
             </Text>
           </WrapItem>
         </Wrap>
-        {/* </Flex> */}
       </Stack>
     </Box>
   );
