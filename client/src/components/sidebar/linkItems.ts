@@ -34,5 +34,5 @@ export const LinkItems = [
   },
   { name: 'Reports', icon: ChartPie, path: '/store-manager/reports' },
   { name: 'Settings', icon: FiSettings, path: '/store-manager/settings' },
-  { name: 'Logout', icon: Power, path: '/store-manager/settings' },
+  { name: 'Logout', icon: Power, path: '' },
 ];
