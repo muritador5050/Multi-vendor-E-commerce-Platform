@@ -142,6 +142,8 @@ router.post('/logout', asyncHandler(UserController.logOut));
  */
 router.get('/user', authenticate, asyncHandler(UserController.getUserProfile));
 
+router.get('/profile', authenticate, asyncHandler(UserController.userProfile));
+
 /**
  * @openapi
  * /api/auth/forgot-password:
