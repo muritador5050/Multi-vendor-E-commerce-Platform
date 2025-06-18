@@ -79,6 +79,7 @@ export default function Setting() {
               flexDirection='column'
               gap={3}
               w='25%'
+              maxH='fit-content'
               mb='1em'
               bg='#203a43'
               color='white'
@@ -91,6 +92,7 @@ export default function Setting() {
                     justifyContent='space-between'
                     border='none'
                     borderBottom='2px solid  white'
+                    maxH='12'
                     key={idx}
                   >
                     <Flex align='center' gap={2}>

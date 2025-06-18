@@ -8,6 +8,15 @@ import {
   Select,
   Stack,
   Text,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Checkbox,
+  CheckboxGroup,
+  Flex,
+  Center,
 } from '@chakra-ui/react';
 import React, { useState } from 'react';
 
@@ -28,75 +37,61 @@ export default function GeneralSetting() {
         <Text fontSize='2xl' color='teal.700'>
           General Setting
         </Text>
-        <FormControl
-          isRequired
-          display='flex'
-          justifyContent='center'
-          gap={32}
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Name:
-          </FormLabel>
-          <Input placeholder='text...' w='55%' />
+        <FormControl isRequired>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
+            >
+              Store Name:
+            </FormLabel>
+            <Input placeholder='text...' w='55%' />
+          </Flex>
         </FormControl>
-        <FormControl
-          isRequired
-          display='flex'
-          justifyContent='center'
-          gap={32}
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Slug:
-          </FormLabel>
-          <Input placeholder='text...' w='55%' />
+        <FormControl isRequired>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
+            >
+              Store Slug:
+            </FormLabel>
+            <Input placeholder='text...' w='55%' />
+          </Flex>
         </FormControl>
-        <FormControl
-          display='flex'
-          justifyContent='center'
-          gap={32}
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Email:
-          </FormLabel>
-          <Input placeholder='text...' w='55%' />
+        <FormControl>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
+            >
+              Store Email:
+            </FormLabel>
+            <Input placeholder='text...' w='55%' />
+          </Flex>
         </FormControl>
-        <FormControl
-          display='flex'
-          justifyContent='center'
-          gap={32}
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Phone:
-          </FormLabel>
-          <Input placeholder='text...' w='55%' />
+        <FormControl>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
+            >
+              Store Phone:
+            </FormLabel>
+            <Input placeholder='text...' w='55%' />
+          </Flex>
         </FormControl>
       </Stack>
 
@@ -104,45 +99,38 @@ export default function GeneralSetting() {
         <Text fontSize='2xl' color='teal.700'>
           Store Brand Setup
         </Text>
-        <FormControl
-          display='flex'
-          justifyContent='center'
-          gap={32}
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Logo:
-          </FormLabel>
-          <Input placeholder='text...' w='55%' />
-        </FormControl>
-
         <FormControl>
-          <Stack
-            display='flex'
-            flexDirection='row'
-            justifyContent='center'
-            gap={20}
-            alignItems='center'
-          >
+          <Flex align='center'>
             <FormLabel
               fontFamily='mono'
               fontWeight='semibold'
               fontSize='lg'
               color='teal.700'
               fontStyle='italic'
-              ml='-12'
+              ml={16}
+            >
+              Store Logo:
+            </FormLabel>
+            <Center ml={48}>
+              <GalleryFileUpload onFileChange={handleFile} />
+            </Center>
+          </Flex>
+        </FormControl>
+
+        <FormControl>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
             >
               Store Banner Type:
             </FormLabel>
 
             <Select
-              ml='-5'
+              mr={6}
               w='50%'
               value={bannerType}
               onChange={handleSelectChange}
@@ -151,7 +139,7 @@ export default function GeneralSetting() {
               <option value='Slider'>Slider</option>
               <option value='Video'>Video</option>
             </Select>
-          </Stack>
+          </Flex>
 
           <Box
             w='full'
@@ -169,11 +157,7 @@ export default function GeneralSetting() {
             {bannerType === 'Video' && <Input w='50%' />}
           </Box>
         </FormControl>
-        <FormControl
-          display='flex'
-          justifyContent='space-evenly'
-          alignItems='center'
-        >
+        <FormControl>
           <FormLabel
             fontFamily='mono'
             fontWeight='semibold'
@@ -181,21 +165,16 @@ export default function GeneralSetting() {
             color='teal.700'
             fontStyle='italic'
           >
-            Shop Description:
+            Shop Description
           </FormLabel>
           <RichTextEditor />
         </FormControl>
       </Stack>
-      <Stack spacing={3}>
+      <Stack spacing={3} mt={6}>
         <Text fontSize='2xl' color='teal.700'>
-          Store Brand Setup
+          Store Visibility Setup
         </Text>
-        <FormControl
-          isRequired
-          display='flex'
-          justifyContent='space-evenly'
-          alignItems='center'
-        >
+        <FormControl>
           <FormLabel
             fontFamily='mono'
             fontWeight='semibold'
@@ -203,36 +182,14 @@ export default function GeneralSetting() {
             color='teal.700'
             fontStyle='italic'
           >
-            Store Logo:
+            Store Name Position:
           </FormLabel>
-          <Input placeholder='text...' w='55%' />
-        </FormControl>
-        <FormControl
-          isRequired
-          display='flex'
-          justifyContent='space-evenly'
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Banner Type:
-          </FormLabel>
-          <Select w='55%'>
-            <option>Static Image</option>
-            <option>Slider</option>
-            <option>Video</option>
+          <Select>
+            <option>At Header</option>
+            <option>On Banner</option>
           </Select>
         </FormControl>
-        <FormControl
-          display='flex'
-          justifyContent='space-evenly'
-          alignItems='center'
-        >
+        <FormControl>
           <FormLabel
             fontFamily='mono'
             fontWeight='semibold'
@@ -240,26 +197,39 @@ export default function GeneralSetting() {
             color='teal.700'
             fontStyle='italic'
           >
-            Store Email:
+            Products per page:
           </FormLabel>
-          <Input placeholder='text...' w='55%' />
+          <NumberInput defaultValue={10} min={1} max={20}>
+            <NumberInputField />
+            <NumberInputStepper>
+              <NumberIncrementStepper />
+              <NumberDecrementStepper />
+            </NumberInputStepper>
+          </NumberInput>
         </FormControl>
-        <FormControl
-          display='flex'
-          justifyContent='space-evenly'
-          alignItems='center'
-        >
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Shop Description:
-          </FormLabel>
-          <Input placeholder='text...' w='55%' />
-        </FormControl>
+
+        <CheckboxGroup colorScheme='green'>
+          <Stack spacing={5}>
+            <Checkbox flexDirection='row-reverse' value='naruto'>
+              Hide Email from Store
+            </Checkbox>
+            <Checkbox flexDirection='row-reverse' value='sasuke'>
+              Hide Phone from Store
+            </Checkbox>
+            <Checkbox flexDirection='row-reverse' value='kakashi'>
+              Hide Address from Store
+            </Checkbox>
+            <Checkbox flexDirection='row-reverse' value='naruto'>
+              Hide Map from StoreHide
+            </Checkbox>
+            <Checkbox flexDirection='row-reverse' value='sasuke'>
+              Hide About from Store
+            </Checkbox>
+            <Checkbox flexDirection='row-reverse' value='kakashi'>
+              Hide Policy from Store
+            </Checkbox>
+          </Stack>
+        </CheckboxGroup>
       </Stack>
     </Box>
   );

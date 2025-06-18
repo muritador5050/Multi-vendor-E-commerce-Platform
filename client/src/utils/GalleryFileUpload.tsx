@@ -38,12 +38,13 @@ export default function GalleryFileUpload({
         bg='gray.100'
         p={4}
         borderRadius='xl'
+        border='2px solid teal'
         boxShadow='md'
         _hover={{ bg: 'gray.200' }}
         textAlign='center'
-        w='fit-content'
+        w='150px'
       >
-        <Icon as={MdPhotoLibrary} boxSize={8} color='purple.500' />
+        <Icon as={MdPhotoLibrary} boxSize={16} color='purple.500' />
       </Box>
     </>
   );
