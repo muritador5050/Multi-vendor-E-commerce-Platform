@@ -1,4 +1,5 @@
 import GalleryFileUpload from '@/utils/GalleryFileUpload';
+import RichTextEditor from '@/utils/RichTextEditor';
 import {
   Box,
   FormControl,
@@ -154,18 +155,18 @@ export default function GeneralSetting() {
 
           <Box
             w='full'
-            mt={4}
+            my={4}
             display='flex'
             justifyContent='center'
             alignItems='center'
           >
             {bannerType === 'Static Image' && (
-              <p>Static Image Banner Settings</p>
+              <GalleryFileUpload onFileChange={handleFile} />
             )}
             {bannerType === 'Slider' && (
               <GalleryFileUpload onFileChange={handleFile} />
             )}
-            {bannerType === 'Video' && <p>Video Banner Settings</p>}
+            {bannerType === 'Video' && <Input w='50%' />}
           </Box>
         </FormControl>
         <FormControl
@@ -182,7 +183,7 @@ export default function GeneralSetting() {
           >
             Shop Description:
           </FormLabel>
-          <Input placeholder='text...' w='55%' />
+          <RichTextEditor />
         </FormControl>
       </Stack>
       <Stack spacing={3}>
