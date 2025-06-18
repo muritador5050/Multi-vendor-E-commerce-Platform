@@ -16,7 +16,6 @@ import {
   Checkbox,
   CheckboxGroup,
   Flex,
-  Center,
 } from '@chakra-ui/react';
 import React, { useState } from 'react';
 
@@ -100,20 +99,19 @@ export default function GeneralSetting() {
           Store Brand Setup
         </Text>
         <FormControl>
-          <Flex align='center'>
+          <Flex align='center' justify='space-around'>
             <FormLabel
               fontFamily='mono'
               fontWeight='semibold'
               fontSize='lg'
               color='teal.700'
               fontStyle='italic'
-              ml={16}
             >
               Store Logo:
             </FormLabel>
-            <Center ml={48}>
+            <Stack ml={14} w='55%'>
               <GalleryFileUpload onFileChange={handleFile} />
-            </Center>
+            </Stack>
           </Flex>
         </FormControl>
 
@@ -129,16 +127,13 @@ export default function GeneralSetting() {
               Store Banner Type:
             </FormLabel>
 
-            <Select
-              mr={6}
-              w='50%'
-              value={bannerType}
-              onChange={handleSelectChange}
-            >
-              <option value='Static Image'>Static Image</option>
-              <option value='Slider'>Slider</option>
-              <option value='Video'>Video</option>
-            </Select>
+            <Stack w='55%'>
+              <Select value={bannerType} onChange={handleSelectChange}>
+                <option value='Static Image'>Static Image</option>
+                <option value='Slider'>Slider</option>
+                <option value='Video'>Video</option>
+              </Select>
+            </Stack>
           </Flex>
 
           <Box
@@ -149,12 +144,20 @@ export default function GeneralSetting() {
             alignItems='center'
           >
             {bannerType === 'Static Image' && (
-              <GalleryFileUpload onFileChange={handleFile} />
+              <Stack mr={14}>
+                <GalleryFileUpload onFileChange={handleFile} />
+              </Stack>
             )}
             {bannerType === 'Slider' && (
-              <GalleryFileUpload onFileChange={handleFile} />
+              <Stack mr={14}>
+                <GalleryFileUpload onFileChange={handleFile} />
+              </Stack>
             )}
-            {bannerType === 'Video' && <Input w='50%' />}
+            {bannerType === 'Video' && (
+              <Stack>
+                <Text>Video </Text>
+              </Stack>
+            )}
           </Box>
         </FormControl>
         <FormControl>
@@ -170,66 +173,129 @@ export default function GeneralSetting() {
           <RichTextEditor />
         </FormControl>
       </Stack>
-      <Stack spacing={3} mt={6}>
+      <Stack spacing={6} mt={12}>
         <Text fontSize='2xl' color='teal.700'>
           Store Visibility Setup
         </Text>
         <FormControl>
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Store Name Position:
-          </FormLabel>
-          <Select>
-            <option>At Header</option>
-            <option>On Banner</option>
-          </Select>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
+            >
+              Store Name Position:
+            </FormLabel>
+            <Stack w='55%'>
+              <Select>
+                <option>At Header</option>
+                <option>On Banner</option>
+              </Select>
+            </Stack>
+          </Flex>
         </FormControl>
         <FormControl>
-          <FormLabel
-            fontFamily='mono'
-            fontWeight='semibold'
-            fontSize='lg'
-            color='teal.700'
-            fontStyle='italic'
-          >
-            Products per page:
-          </FormLabel>
-          <NumberInput defaultValue={10} min={1} max={20}>
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
+          <Flex align='center' justify='space-around'>
+            <FormLabel
+              fontFamily='mono'
+              fontWeight='semibold'
+              fontSize='lg'
+              color='teal.700'
+              fontStyle='italic'
+            >
+              Products per page:
+            </FormLabel>
+            <Stack w='55%'>
+              <NumberInput defaultValue={10} min={1} max={20}>
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </Stack>
+          </Flex>
         </FormControl>
-
-        <CheckboxGroup colorScheme='green'>
-          <Stack spacing={5}>
-            <Checkbox flexDirection='row-reverse' value='naruto'>
-              Hide Email from Store
-            </Checkbox>
-            <Checkbox flexDirection='row-reverse' value='sasuke'>
-              Hide Phone from Store
-            </Checkbox>
-            <Checkbox flexDirection='row-reverse' value='kakashi'>
-              Hide Address from Store
-            </Checkbox>
-            <Checkbox flexDirection='row-reverse' value='naruto'>
-              Hide Map from StoreHide
-            </Checkbox>
-            <Checkbox flexDirection='row-reverse' value='sasuke'>
-              Hide About from Store
-            </Checkbox>
-            <Checkbox flexDirection='row-reverse' value='kakashi'>
-              Hide Policy from Store
-            </Checkbox>
-          </Stack>
-        </CheckboxGroup>
+        <Box>
+          <CheckboxGroup>
+            <Stack spacing={5}>
+              <Flex align='center' gap='100px' ml={14}>
+                <Text
+                  fontFamily='mono'
+                  fontWeight='semibold'
+                  fontSize='lg'
+                  color='teal.700'
+                  fontStyle='italic'
+                >
+                  Hide Email from Store
+                </Text>
+                <Checkbox value='naruto'></Checkbox>
+              </Flex>
+              <Flex align='center' gap='100px' ml={14}>
+                <Text
+                  fontFamily='mono'
+                  fontWeight='semibold'
+                  fontSize='lg'
+                  color='teal.700'
+                  fontStyle='italic'
+                >
+                  Hide Phone from Store
+                </Text>
+                <Checkbox value='sasuke'></Checkbox>
+              </Flex>
+              <Flex align='center' gap='80px' ml={14}>
+                <Text
+                  fontFamily='mono'
+                  fontWeight='semibold'
+                  fontSize='lg'
+                  color='teal.700'
+                  fontStyle='italic'
+                >
+                  Hide Address from Store
+                </Text>
+                <Checkbox value='naruto'></Checkbox>
+              </Flex>
+              <Flex align='center' gap='80px' ml={14}>
+                <Text
+                  fontFamily='mono'
+                  fontWeight='semibold'
+                  fontSize='lg'
+                  color='teal.700'
+                  fontStyle='italic'
+                >
+                  Hide Map from StoreHide
+                </Text>
+                <Checkbox flexDirection='row-reverse' value='naruto'></Checkbox>
+              </Flex>
+              <Flex align='center' gap='100px' ml={14}>
+                <Text
+                  fontFamily='mono'
+                  fontWeight='semibold'
+                  fontSize='lg'
+                  color='teal.700'
+                  fontStyle='italic'
+                >
+                  Hide About from Store
+                </Text>
+                <Checkbox value='naruto'></Checkbox>
+              </Flex>
+              <Flex align='center' gap='90px' ml={14}>
+                <Text
+                  fontFamily='mono'
+                  fontWeight='semibold'
+                  fontSize='lg'
+                  color='teal.700'
+                  fontStyle='italic'
+                >
+                  Hide Policy from Store
+                </Text>
+                <Checkbox flexDirection='row-reverse' value='naruto'></Checkbox>
+              </Flex>
+            </Stack>
+          </CheckboxGroup>
+        </Box>
       </Stack>
     </Box>
   );

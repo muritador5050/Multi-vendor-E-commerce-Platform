@@ -6,7 +6,7 @@ export default function RichTextEditor() {
     <Editor
       apiKey={apiKey}
       init={{
-        height: 400,
+        height: 300,
         menubar: false,
         plugins: [
           'advlist',
