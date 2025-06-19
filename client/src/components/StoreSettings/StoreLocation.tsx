@@ -30,6 +30,14 @@ interface IState {
   longitude?: string;
 }
 
+const formLabelStyle = {
+  fontFamily: 'mono',
+  fontWeight: 'semibold',
+  fontSize: 'lg',
+  color: 'teal.700',
+  fontStyle: 'italic',
+};
+
 export default function StoreLocation() {
   const [countries, setCountries] = useState<ICountry[]>([]);
   const [states, setStates] = useState<IState[]>([]);
@@ -45,7 +53,7 @@ export default function StoreLocation() {
     setSelectedCountryCode(countryCode);
     const fetchStates = State.getStatesOfCountry(countryCode);
     setStates(fetchStates as IState[]);
-    setSelectedStateCode(''); // reset state on country change
+    setSelectedStateCode('');
   };
 
   return (
@@ -57,30 +65,14 @@ export default function StoreLocation() {
 
         <FormControl>
           <Flex align='center' justify='space-around'>
-            <FormLabel
-              fontFamily='mono'
-              fontWeight='semibold'
-              fontSize='lg'
-              color='teal.700'
-              fontStyle='italic'
-            >
-              Street
-            </FormLabel>
-            <Input placeholder='Street address' w='55%' />
+            <FormLabel {...formLabelStyle}>Street</FormLabel>
+            <Input ml={6} placeholder='Street address' w='55%' />
           </Flex>
         </FormControl>
 
         <FormControl>
           <Flex align='center' justify='space-around'>
-            <FormLabel
-              fontFamily='mono'
-              fontWeight='semibold'
-              fontSize='lg'
-              color='teal.700'
-              fontStyle='italic'
-            >
-              Street 2
-            </FormLabel>
+            <FormLabel {...formLabelStyle}>Street 2</FormLabel>
             <Input
               placeholder='Apartment, suite, unit etc. (optional)'
               w='55%'
@@ -90,46 +82,22 @@ export default function StoreLocation() {
 
         <FormControl>
           <Flex align='center' justify='space-around'>
-            <FormLabel
-              fontFamily='mono'
-              fontWeight='semibold'
-              fontSize='lg'
-              color='teal.700'
-              fontStyle='italic'
-            >
-              City/Town
-            </FormLabel>
+            <FormLabel {...formLabelStyle}>City/Town</FormLabel>
             <Input placeholder='Town / City' w='55%' />
           </Flex>
         </FormControl>
 
         <FormControl>
           <Flex align='center' justify='space-around'>
-            <FormLabel
-              fontFamily='mono'
-              fontWeight='semibold'
-              fontSize='lg'
-              color='teal.700'
-              fontStyle='italic'
-            >
-              Postal Code/ZIP
-            </FormLabel>
-            <Input placeholder='Postal Code / ZIP' w='55%' />
+            <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
+            <Input mr={4} placeholder='Postal Code / ZIP' w='55%' />
           </Flex>
         </FormControl>
 
         <FormControl>
           <Flex align='center' justify='space-around'>
-            <FormLabel
-              fontFamily='mono'
-              fontWeight='semibold'
-              fontSize='lg'
-              color='teal.700'
-              fontStyle='italic'
-            >
-              Country
-            </FormLabel>
-            <Stack w='55%'>
+            <FormLabel {...formLabelStyle}>Country</FormLabel>
+            <Stack ml={6} w='55%'>
               <Select
                 placeholder='Select country'
                 onChange={handleCountryChange}
@@ -147,16 +115,8 @@ export default function StoreLocation() {
 
         <FormControl>
           <Flex align='center' justify='space-around'>
-            <FormLabel
-              fontFamily='mono'
-              fontWeight='semibold'
-              fontSize='lg'
-              color='teal.700'
-              fontStyle='italic'
-            >
-              State/Province
-            </FormLabel>
-            <Stack w='55%'>
+            <FormLabel {...formLabelStyle}>State/Province</FormLabel>
+            <Stack mr={4} w='55%'>
               <Select
                 placeholder='Select state'
                 disabled={!states.length}
