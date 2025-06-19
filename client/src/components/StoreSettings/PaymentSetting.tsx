@@ -48,7 +48,7 @@ export default function PaymentSetting() {
             <FormControl>
               <Flex align='center' justify='space-around'>
                 <FormLabel {...styles}>Paypal Email</FormLabel>
-                <Input ml={16} placeholder='text...' w='55%' />
+                <Input ml={32} placeholder='text...' w='55%' />
               </Flex>
             </FormControl>
           </Stack>
