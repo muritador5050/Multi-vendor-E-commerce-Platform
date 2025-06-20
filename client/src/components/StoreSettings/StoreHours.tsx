@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Stack,
@@ -8,11 +8,64 @@ import {
   FormControl,
   FormLabel,
   Input,
+  IconButton,
 } from '@chakra-ui/react';
 import ComboBox from '@/utils/ComboBox';
-import { CirclePlus } from 'lucide-react';
+import { CirclePlus, CircleX } from 'lucide-react';
+
+const styles = {
+  fontFamily: 'mono',
+  fontWeight: 'semibold',
+  fontSize: 'lg',
+  color: 'teal.700',
+  fontStyle: 'italic',
+};
+
+const daysOfWeek = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+type Slot = { opening: string; closing: string };
+type SlotField = keyof Slot;
 
 export default function StoreHours() {
+  const [slots, setSlots] = useState<Record<string, Slot[]>>(() =>
+    Object.fromEntries(
+      daysOfWeek.map((day) => [day, [{ opening: '', closing: '' }]])
+    )
+  );
+
+  const handleAddSlot = (day: string) => {
+    setSlots((prev) => ({
+      ...prev,
+      [day]: [...prev[day], { opening: '', closing: '' }],
+    }));
+  };
+
+  const handleRemoveSlot = (day: string, index: number) => {
+    setSlots((prev) => ({
+      ...prev,
+      [day]: prev[day].filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleChange = (
+    day: string,
+    index: number,
+    field: SlotField,
+    value: string
+  ) => {
+    const updated = [...slots[day]];
+    updated[index][field] = value;
+    setSlots({ ...slots, [day]: updated });
+  };
+
   return (
     <Box>
       <Stack>
@@ -24,23 +77,19 @@ export default function StoreHours() {
         >
           Store Hours Settings
         </Text>
-        <Flex align={'center'} gap={32}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            {' '}
-            Enable Store Hours
-          </Text>
-          <Checkbox size='lg'></Checkbox>
+
+        <Flex ml={6} align='center' gap={36}>
+          <Text {...styles}>Enable Store Hours</Text>
+          <Checkbox size='lg' />
         </Flex>
-        <Flex align={'center'} gap={2.5}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Disable Purchase During OFF Time
-          </Text>
-          <Checkbox size='lg'></Checkbox>
+
+        <Flex ml={6} align='center' gap={1}>
+          <Text {...styles}>Disable Purchase During OFF Time</Text>
+          <Checkbox size='lg' />
         </Flex>
-        <Flex align={'center'} gap='170px'>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Set Week OFF
-          </Text>
+
+        <Flex ml={6} align='center' gap='200px'>
+          <Text {...styles}>Set Week OFF</Text>
           <ComboBox />
         </Flex>
       </Stack>
@@ -54,251 +103,81 @@ export default function StoreHours() {
         >
           Daily Basis Opening & Closing Hours
         </Text>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Monday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
+
+        {daysOfWeek.map((day) => (
+          <Box key={day} mt={6} ml={6}>
+            <Text {...styles}>{day} Time Slots</Text>
+            {slots[day].map((slot, index) => (
+              <Stack
+                key={index}
+                spacing={5}
+                direction='row'
+                align='center'
+                p={6}
+                border='2px solid thistle'
+                borderRadius='xl'
+                my={4}
               >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Tuesday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Wednesday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Thursday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Friday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Saturday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
-        <Box mt={6}>
-          <Text fontWeight='semibold' fontStyle='italic' color='teal.700'>
-            Sunday Time Slots
-          </Text>
-          <Stack
-            spacing={5}
-            direction='row'
-            align='center'
-            p={6}
-            border='2px solid red'
-            borderRadius='xl'
-          >
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Opening
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <FormControl display='flex' alignItems='center' gap={9}>
-              <FormLabel
-                fontWeight='semibold'
-                fontStyle='italic'
-                color='teal.700'
-              >
-                Closing
-              </FormLabel>
-              <Input type='time' w={44} />
-            </FormControl>
-            <CirclePlus cursor='pointer' size={44} />
-          </Stack>
-        </Box>
+                <FormControl display='flex' alignItems='center' gap={4}>
+                  <FormLabel
+                    fontWeight='semibold'
+                    fontStyle='italic'
+                    color='teal.700'
+                  >
+                    Opening
+                  </FormLabel>
+                  <Input
+                    type='time'
+                    w={44}
+                    value={slot.opening}
+                    onChange={(e) =>
+                      handleChange(day, index, 'opening', e.target.value)
+                    }
+                  />
+                </FormControl>
+
+                <FormControl display='flex' alignItems='center' gap={4}>
+                  <FormLabel
+                    fontWeight='semibold'
+                    fontStyle='italic'
+                    color='teal.700'
+                  >
+                    Closing
+                  </FormLabel>
+                  <Input
+                    type='time'
+                    w={44}
+                    value={slot.closing}
+                    onChange={(e) =>
+                      handleChange(day, index, 'closing', e.target.value)
+                    }
+                  />
+                </FormControl>
+
+                {/* Add Button (only for last slot) */}
+                {index === slots[day].length - 1 && (
+                  <IconButton
+                    icon={<CirclePlus />}
+                    onClick={() => handleAddSlot(day)}
+                    aria-label='Add time slot'
+                    size='xs'
+                    variant='outline'
+                  />
+                )}
+                {/* Remove Button */}
+                {slots[day].length > 1 && (
+                  <IconButton
+                    icon={<CircleX />}
+                    aria-label='Remove slot'
+                    onClick={() => handleRemoveSlot(day, index)}
+                    variant='outline'
+                    size='xs'
+                  />
+                )}
+              </Stack>
+            ))}
+          </Box>
+        ))}
       </Box>
     </Box>
   );
