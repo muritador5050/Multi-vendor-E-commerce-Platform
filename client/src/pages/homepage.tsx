@@ -64,7 +64,7 @@ const dummy = [
 
 function HomePage() {
   return (
-    <Box display='grid' gap={6}>
+    <Box display='grid' gap={6} p={{ sm: 2, md: 6 }}>
       <Grid
         templateAreas={{
           base: `"unset"`,
