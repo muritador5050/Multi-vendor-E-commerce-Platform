@@ -116,7 +116,7 @@ export default function StoreHours() {
               <Stack
                 key={index}
                 spacing={5}
-                direction='row'
+                direction={{ base: 'column', md: 'row' }}
                 align='center'
                 p={6}
                 border='2px solid thistle'
@@ -133,7 +133,7 @@ export default function StoreHours() {
                   </FormLabel>
                   <Input
                     type='time'
-                    w={44}
+                    w={{ md: 44 }}
                     value={slot.opening}
                     onChange={(e) =>
                       handleChange(day, index, 'opening', e.target.value)
@@ -151,7 +151,7 @@ export default function StoreHours() {
                   </FormLabel>
                   <Input
                     type='time'
-                    w={44}
+                    w={{ md: 44 }}
                     value={slot.closing}
                     onChange={(e) =>
                       handleChange(day, index, 'closing', e.target.value)
@@ -159,26 +159,28 @@ export default function StoreHours() {
                   />
                 </FormControl>
 
-                {/* Add Button (only for last slot) */}
-                {index === slots[day].length - 1 && (
-                  <IconButton
-                    icon={<CirclePlus />}
-                    onClick={() => handleAddSlot(day)}
-                    aria-label='Add time slot'
-                    size='xs'
-                    variant='outline'
-                  />
-                )}
-                {/* Remove Button */}
-                {slots[day].length > 1 && (
-                  <IconButton
-                    icon={<CircleX />}
-                    aria-label='Remove slot'
-                    onClick={() => handleRemoveSlot(day, index)}
-                    variant='outline'
-                    size='xs'
-                  />
-                )}
+                <Flex align='center' gap={3}>
+                  {/* Add Button (only for last slot) */}
+                  {index === slots[day].length - 1 && (
+                    <IconButton
+                      icon={<CirclePlus />}
+                      onClick={() => handleAddSlot(day)}
+                      aria-label='Add time slot'
+                      size='xs'
+                      variant='outline'
+                    />
+                  )}
+                  {/* Remove Button */}
+                  {slots[day].length > 1 && (
+                    <IconButton
+                      icon={<CircleX />}
+                      aria-label='Remove slot'
+                      onClick={() => handleRemoveSlot(day, index)}
+                      variant='outline'
+                      size='xs'
+                    />
+                  )}
+                </Flex>
               </Stack>
             ))}
           </Box>
