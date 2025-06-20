@@ -67,6 +67,7 @@ export default function Setting() {
 
       <Stack>
         <Tabs
+          display={{ base: 'none', md: 'block' }}
           isFitted
           variant='enclosed'
           bg='white'
@@ -133,7 +134,8 @@ export default function Setting() {
           </Flex>
         </Tabs>
 
-        <Accordion>
+        {/**Mobile View */}
+        <Accordion display={{ base: 'block', md: 'none' }}>
           <AccordionItem>
             <h2>
               <AccordionButton
@@ -142,16 +144,13 @@ export default function Setting() {
                 borderBottom='2px solid  white'
               >
                 <Box as='span' flex='1' textAlign='left' color='white'>
-                  Section 1 title
+                  Store
                 </Box>
                 {/* */}
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat.
+              <GeneralSetting />
             </AccordionPanel>
           </AccordionItem>
 
@@ -163,15 +162,12 @@ export default function Setting() {
                 borderBottom='2px solid white'
               >
                 <Box as='span' flex='1' textAlign='left' color='white'>
-                  Section 2 title
+                  Location
                 </Box>
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat.
+              <StoreLocation />
             </AccordionPanel>
           </AccordionItem>
 
@@ -183,15 +179,12 @@ export default function Setting() {
                 borderBottom='2px solid  white'
               >
                 <Box as='span' flex='1' textAlign='left' color='white'>
-                  Section 2 title
+                  Payment
                 </Box>
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat.
+              <PaymentSetting />
             </AccordionPanel>
           </AccordionItem>
 
@@ -203,15 +196,12 @@ export default function Setting() {
                 borderBottom='2px solid  white'
               >
                 <Box as='span' flex='1' textAlign='left' color='white'>
-                  Section 2 title
+                  Shipping
                 </Box>
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat.
+              <ShippingSetting />
             </AccordionPanel>
           </AccordionItem>
 
@@ -223,15 +213,60 @@ export default function Setting() {
                 borderBottom='2px solid  white'
               >
                 <Box as='span' flex='1' textAlign='left' color='white'>
-                  Section 2 title
+                  SEO
                 </Box>
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat.
+              <SEOSetting />
+            </AccordionPanel>
+          </AccordionItem>
+          <AccordionItem>
+            <h2>
+              <AccordionButton
+                bg='#203a43'
+                _hover={{ bg: 'teal' }}
+                borderBottom='2px solid  white'
+              >
+                <Box as='span' flex='1' textAlign='left' color='white'>
+                  Store Policies
+                </Box>
+              </AccordionButton>
+            </h2>
+            <AccordionPanel pb={4}>
+              <StorePolicies />
+            </AccordionPanel>
+          </AccordionItem>
+          <AccordionItem>
+            <h2>
+              <AccordionButton
+                bg='#203a43'
+                _hover={{ bg: 'teal' }}
+                borderBottom='2px solid  white'
+              >
+                <Box as='span' flex='1' textAlign='left' color='white'>
+                  Customer Support
+                </Box>
+              </AccordionButton>
+            </h2>
+            <AccordionPanel pb={4}>
+              <CustomerSupport />
+            </AccordionPanel>
+          </AccordionItem>
+          <AccordionItem>
+            <h2>
+              <AccordionButton
+                bg='#203a43'
+                _hover={{ bg: 'teal' }}
+                borderBottom='2px solid  white'
+              >
+                <Box as='span' flex='1' textAlign='left' color='white'>
+                  Store Hours
+                </Box>
+              </AccordionButton>
+            </h2>
+            <AccordionPanel pb={4}>
+              <StoreHours />
             </AccordionPanel>
           </AccordionItem>
         </Accordion>

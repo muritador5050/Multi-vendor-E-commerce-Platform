@@ -35,10 +35,10 @@ export default function ShippingSetting() {
           <Flex align='center' gap='180px'>
             <Text {...styles}>Proccessing Time</Text>
             <Select placeholder='Ready to ship in...' w='55%'>
-              <option>1-3 business day</option>
-              <option>3-5 business day</option>
-              <option>1-2 weeks</option>
-              <option>3-5 weeks</option>
+              <option value='1-3 business day'>1-3 business day</option>
+              <option value='3-5 business day'>3-5 business day</option>
+              <option value='1-2 weeks'>1-2 weeks</option>
+              <option value='3-5 weeks'>3-5 weeks</option>
             </Select>
           </Flex>
           <Flex align='center' gap='220px'>
