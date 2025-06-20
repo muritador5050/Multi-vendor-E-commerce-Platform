@@ -16,9 +16,13 @@ export default function StorePolicies() {
         Policies Setting
       </Text>
 
-      <Flex gap={32}>
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        align={{ md: 'center' }}
+        gap={{ base: 3, md: 32 }}
+      >
         <Text {...styles}>Policy Tab Label</Text>
-        <Input width='55%' />
+        <Input width={{ md: '55%' }} />
       </Flex>
       <Flex direction='column' gap={6} mt={6}>
         <Text {...styles}>Shipping Policy</Text>

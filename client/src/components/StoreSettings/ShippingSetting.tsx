@@ -31,23 +31,27 @@ export default function ShippingSetting() {
         <Checkbox size='lg' isChecked={show} onChange={() => setShow(!show)} />
       </Flex>
       {show && (
-        <Stack mt={12}>
-          <Flex align='center' gap='180px'>
+        <Stack spacing={3} mt={12}>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            gap={{ md: '180px' }}
+          >
             <Text {...styles}>Proccessing Time</Text>
-            <Select placeholder='Ready to ship in...' w='55%'>
+            <Select placeholder='Ready to ship in...' w={{ md: '55%' }}>
               <option value='1-3 business day'>1-3 business day</option>
               <option value='3-5 business day'>3-5 business day</option>
               <option value='1-2 weeks'>1-2 weeks</option>
               <option value='3-5 weeks'>3-5 weeks</option>
             </Select>
           </Flex>
-          <Flex align='center' gap='220px'>
+          <Flex direction={{ base: 'column', md: 'row' }} gap={{ md: '220px' }}>
             <Text {...styles}>Shipping Fee</Text>
-            <Input type='number' w='55%' />
+            <Input type='number' w={{ md: '55%' }} />
           </Flex>
-          <Flex align='center' gap='70px'>
+          <Flex align={{ md: 'center' }} gap={{ md: '70px' }}>
             <Text {...styles}>Free Shipping Minimum Order</Text>
-            <NumberInput w='55%'>
+            <NumberInput w={{ md: '55%' }}>
               <NumberInputField />
               <NumberInputStepper>
                 <NumberIncrementStepper />

@@ -64,23 +64,35 @@ export default function CustomerSupport() {
         </Text>
 
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...formLabelStyle}>Phone</FormLabel>
-            <Input ml={12} w='55%' />
+            <Input ml={{ md: 12 }} w={{ md: '55%' }} />
           </Flex>
         </FormControl>
 
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...formLabelStyle}>Email</FormLabel>
-            <Input ml={12} w='55%' />
+            <Input ml={{ md: 12 }} w={{ md: '55%' }} />
           </Flex>
         </FormControl>
 
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...formLabelStyle}>Country</FormLabel>
-            <Stack ml={6} w='55%'>
+            <Stack ml={{ md: 6 }} w={{ md: '55%' }}>
               <Select
                 placeholder='Select country'
                 onChange={handleCountryChange}
@@ -96,16 +108,24 @@ export default function CustomerSupport() {
           </Flex>
         </FormControl>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...formLabelStyle}>City/Town</FormLabel>
-            <Input w='55%' />
+            <Input w={{ md: '55%' }} />
           </Flex>
         </FormControl>
 
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...formLabelStyle}>State/Province</FormLabel>
-            <Stack mr={4} w='55%'>
+            <Stack mr={{ md: 4 }} w={{ md: '55%' }}>
               <Select
                 placeholder='Select state'
                 disabled={!states.length}
@@ -122,9 +142,13 @@ export default function CustomerSupport() {
           </Flex>
         </FormControl>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
-            <Input mr={4} w='55%' />
+            <Input mr={{ md: 4 }} w={{ md: '55%' }} />
           </Flex>
         </FormControl>
       </Stack>

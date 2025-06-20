@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box,
   Stack,
   FormControl,
   FormLabel,
@@ -57,82 +56,108 @@ export default function StoreLocation() {
   };
 
   return (
-    <Box>
-      <Stack spacing={3} mb={6}>
-        <Text fontSize='2xl' color='teal.700'>
-          Store Address
-        </Text>
+    <Stack spacing={3} mb={6}>
+      <Text fontSize='2xl' color='teal.700'>
+        Store Address
+      </Text>
 
-        <FormControl>
-          <Flex align='center' justify='space-around'>
-            <FormLabel {...formLabelStyle}>Street</FormLabel>
-            <Input ml={6} placeholder='Street address' w='55%' />
-          </Flex>
-        </FormControl>
+      <FormControl>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ md: 'center' }}
+          justify={{ md: 'space-around' }}
+        >
+          <FormLabel {...formLabelStyle}>Street</FormLabel>
+          <Input
+            ml={{ md: 6 }}
+            placeholder='Street address'
+            w={{ md: '55%' }}
+          />
+        </Flex>
+      </FormControl>
 
-        <FormControl>
-          <Flex align='center' justify='space-around'>
-            <FormLabel {...formLabelStyle}>Street 2</FormLabel>
-            <Input
-              placeholder='Apartment, suite, unit etc. (optional)'
-              w='55%'
-            />
-          </Flex>
-        </FormControl>
+      <FormControl>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ md: 'center' }}
+          justify={{ md: 'space-around' }}
+        >
+          <FormLabel {...formLabelStyle}>Street 2</FormLabel>
+          <Input
+            placeholder='Apartment, suite, unit etc. (optional)'
+            w={{ md: '55%' }}
+          />
+        </Flex>
+      </FormControl>
 
-        <FormControl>
-          <Flex align='center' justify='space-around'>
-            <FormLabel {...formLabelStyle}>City/Town</FormLabel>
-            <Input placeholder='Town / City' w='55%' />
-          </Flex>
-        </FormControl>
+      <FormControl>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ md: 'center' }}
+          justify={{ md: 'space-around' }}
+        >
+          <FormLabel {...formLabelStyle}>City/Town</FormLabel>
+          <Input placeholder='Town / City' w={{ md: '55%' }} />
+        </Flex>
+      </FormControl>
 
-        <FormControl>
-          <Flex align='center' justify='space-around'>
-            <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
-            <Input mr={4} placeholder='Postal Code / ZIP' w='55%' />
-          </Flex>
-        </FormControl>
+      <FormControl>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ md: 'center' }}
+          justify={{ md: 'space-around' }}
+        >
+          <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
+          <Input mr={4} placeholder='Postal Code / ZIP' w={{ md: '55%' }} />
+        </Flex>
+      </FormControl>
 
-        <FormControl>
-          <Flex align='center' justify='space-around'>
-            <FormLabel {...formLabelStyle}>Country</FormLabel>
-            <Stack ml={6} w='55%'>
-              <Select
-                placeholder='Select country'
-                onChange={handleCountryChange}
-                value={selectedCountryCode}
-              >
-                {countries.map((country) => (
-                  <option key={country.isoCode} value={country.isoCode}>
-                    {country.name}
-                  </option>
-                ))}
-              </Select>
-            </Stack>
-          </Flex>
-        </FormControl>
+      <FormControl>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ md: 'center' }}
+          justify={{ md: 'space-around' }}
+        >
+          <FormLabel {...formLabelStyle}>Country</FormLabel>
+          <Stack ml={6} w={{ md: '55%' }}>
+            <Select
+              placeholder='Select country'
+              onChange={handleCountryChange}
+              value={selectedCountryCode}
+            >
+              {countries.map((country) => (
+                <option key={country.isoCode} value={country.isoCode}>
+                  {country.name}
+                </option>
+              ))}
+            </Select>
+          </Stack>
+        </Flex>
+      </FormControl>
 
-        <FormControl>
-          <Flex align='center' justify='space-around'>
-            <FormLabel {...formLabelStyle}>State/Province</FormLabel>
-            <Stack mr={4} w='55%'>
-              <Select
-                placeholder='Select state'
-                disabled={!states.length}
-                value={selectedStateCode}
-                onChange={(e) => setSelectedStateCode(e.target.value)}
-              >
-                {states.map((state) => (
-                  <option key={state.isoCode} value={state.isoCode}>
-                    {state.name}
-                  </option>
-                ))}
-              </Select>
-            </Stack>
-          </Flex>
-        </FormControl>
-      </Stack>
-    </Box>
+      <FormControl>
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ md: 'center' }}
+          justify={{ md: 'space-around' }}
+        >
+          <FormLabel {...formLabelStyle}>State/Province</FormLabel>
+          <Stack mr={{ md: 4 }} w={{ md: '55%' }}>
+            <Select
+              placeholder='Select state'
+              disabled={!states.length}
+              value={selectedStateCode}
+              onChange={(e) => setSelectedStateCode(e.target.value)}
+            >
+              {states.map((state) => (
+                <option key={state.isoCode} value={state.isoCode}>
+                  {state.name}
+                </option>
+              ))}
+            </Select>
+          </Stack>
+        </Flex>
+      </FormControl>
+    </Stack>
   );
 }

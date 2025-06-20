@@ -32,21 +32,33 @@ export default function SEOSetting() {
           General Setup
         </Text>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>SEO Title</FormLabel>
-            <Input ml={16} placeholder='text...' w='55%' />
+            <Input ml={{ md: 16 }} placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>Meta Description</FormLabel>
-            <Textarea placeholder='text...' w='55%' />
+            <Textarea placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>Meta Keywords</FormLabel>
-            <Textarea ml={9} placeholder='text...' w='55%' />
+            <Textarea ml={{ md: 9 }} placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
       </Stack>
@@ -56,19 +68,27 @@ export default function SEOSetting() {
           Facebook Setup
         </Text>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>Facebook Title</FormLabel>
-            <Input ml={12} placeholder='text...' w='55%' />
+            <Input ml={{ md: 12 }} placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
         <FormControl>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>Facebook Description</FormLabel>
-            <Textarea placeholder='text...' w='55%' />
+            <Textarea placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
 
-        <Stack ml='370px' w='55%'>
+        <Stack ml={{ md: '370px' }} w={{ md: '55%' }}>
           <GalleryFileUpload onFileChange={handleFile} />
         </Stack>
       </Stack>
@@ -77,18 +97,26 @@ export default function SEOSetting() {
           Twitter Setup
         </Text>
         <FormControl isRequired>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>Twitter Title</FormLabel>
-            <Input ml={16} placeholder='text...' w='55%' />
+            <Input ml={{ md: 16 }} placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
         <FormControl isRequired>
-          <Flex align='center' justify='space-around'>
+          <Flex
+            direction={{ base: 'column', md: 'row' }}
+            align={{ md: 'center' }}
+            justify={{ md: 'space-around' }}
+          >
             <FormLabel {...styles}>Twitter Description</FormLabel>
-            <Textarea placeholder='text...' w='55%' />
+            <Textarea placeholder='text...' w={{ md: '55%' }} />
           </Flex>
         </FormControl>
-        <Stack w='55%' ml='370px'>
+        <Stack w={{ md: '55%' }} ml={{ md: '370px' }}>
           <GalleryFileUpload onFileChange={handleFile} />
         </Stack>
       </Stack>
