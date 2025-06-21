@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   LineChart,
   Line,
@@ -22,31 +23,31 @@ const data = Array.from({ length: 10 }, (_, i) => {
 
 const CustomLineChart = () => {
   return (
-    <ResponsiveContainer width={700} height='80%'>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray='3 3' />
-        <XAxis
-          dataKey='date'
-          tickFormatter={(value) =>
-            new Date(value).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            })
-          }
-        />
-        <YAxis domain={[-10, 10]} ticks={[-10, -5, 0, 5, 10]} />
-
-        <Line
-          type='monotone'
-          dataKey='value'
-          stroke='#00cdac'
-          strokeWidth={2}
-          dot={{ r: 4 }}
-          activeDot={{ r: 6 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div style={{ width: '100%', height: 400 }}>
+      <ResponsiveContainer>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray='3 3' />
+          <XAxis
+            dataKey='date'
+            tickFormatter={(value) =>
+              new Date(value).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            }
+          />
+          <YAxis domain={[-10, 10]} ticks={[-10, -5, 0, 5, 10]} />
+          <Line
+            type='monotone'
+            dataKey='value'
+            stroke='#00cdac'
+            strokeWidth={2}
+            dot={{ r: 4 }}
+            activeDot={{ r: 6 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 

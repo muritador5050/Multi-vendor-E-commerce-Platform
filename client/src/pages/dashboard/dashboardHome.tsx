@@ -123,7 +123,7 @@ export default function DashboardHome() {
       </SimpleGrid>
 
       <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-        <GridItem colSpan={2}>
+        <GridItem colSpan={{ md: 2 }}>
           <Card>
             <CardBody>
               <CustomLineChart />
@@ -161,9 +161,9 @@ export default function DashboardHome() {
               <ChartPie />
               <Text fontWeight='semibold'>Sales by Products</Text>
             </CardHeader>
-            <CardBody>
+            <CardBody display='flex' flexDirection='column' alignItems='center'>
               <CustomPieChart />
-              <Text textAlign='center'>No sales yet!!</Text>
+              <Text>No sales yet!!</Text>
             </CardBody>
           </Card>
         </GridItem>

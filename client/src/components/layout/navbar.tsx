@@ -129,7 +129,7 @@ function Navbar() {
             color='white'
           >
             <NavLink to='/'>Home</NavLink>
-            <NavLink to='blog'>Blog</NavLink>
+            <NavLink to='blog'>Blogs</NavLink>
             <NavLink to='shop'>Shop</NavLink>
             <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>

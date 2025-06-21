@@ -1,67 +1,78 @@
-import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+// import React from 'react';
+// import { ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+
+// const data = [
+//   { name: 'Electronics', value: 400, color: '#0088FE' },
+//   { name: 'Clothing', value: 300, color: '#00C49F' },
+//   { name: 'Furniture', value: 300, color: '#FFBB28' },
+//   { name: 'Health', value: 200, color: '#FF8042' },
+// ];
+
+// export default function CustomPieChart() {
+//   return (
+//     <div style={{ width: '100%', height: 370 }}>
+//       <ResponsiveContainer>
+//         <PieChart>
+//           <Pie
+//             dataKey='value'
+//             startAngle={180}
+//             endAngle={0}
+//             data={data}
+//             cx='50%'
+//             cy='50%'
+//             innerRadius={70}
+//             outerRadius={120}
+//             stroke='none'
+//             label={({ name, percent }) =>
+//               `${name} ${(percent * 100).toFixed(0)}%`
+//             }
+//           >
+//             {data.map((entry, index) => (
+//               <Cell key={`cell-${index}`} fill={entry.color} />
+//             ))}
+//           </Pie>
+//         </PieChart>
+//       </ResponsiveContainer>
+//     </div>
+//   );
+// }
+
+import React from 'react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
 const data = [
-  { name: 'Electronics', value: 400, color: '#0088FE' },
-  { name: 'Clothing', value: 300, color: '#00C49F' },
-  { name: 'Furniture', value: 300, color: '#FFBB28' },
-  { name: 'Health', value: 200, color: '#FF8042' },
+  { name: 'Audio', value: 400 },
+  { name: 'Art', value: 300 },
+  { name: 'Camera', value: 300 },
+  { name: 'Laptop', value: 200 },
+  { name: 'Bikes', value: 300 },
+  { name: 'Tools', value: 300 },
+  { name: 'Drill Machine', value: 100 },
+  { name: 'Accessories', value: 200 },
+  { name: 'Smartphones', value: 400 },
 ];
 
-const cx = 200;
-const cy = 200;
-const iR = 70;
-const oR = 120;
-const value = 600; // Example value for needle (if used)
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-// Optional needle rendering function
-const needle = (
-  value: number,
-  data: { name: string; value: number; color: string }[],
-  cx: number,
-  cy: number,
-  iR: number,
-  oR: number,
-  color: string
-) => {
-  const total = data.reduce((acc, entry) => acc + entry.value, 0);
-  const angle = 180 - (value / total) * 180;
-  const length = oR;
-  const rad = Math.PI / 180;
-  const x = cx + length * Math.cos(-angle * rad);
-  const y = cy + length * Math.sin(-angle * rad);
-
+export default function TwoSimplePieChart() {
   return (
-    <g>
-      <line x1={cx} y1={cy} x2={x} y2={y} stroke={color} strokeWidth={2} />
-      <circle cx={cx} cy={cy} r={5} fill={color} />
-    </g>
-  );
-};
-
-export default function CustomPieChart() {
-  return (
-    <ResponsiveContainer width={700} height='80%'>
+    <ResponsiveContainer width='100%' height={375}>
       <PieChart>
-        <Pie
-          dataKey='value'
-          startAngle={180}
-          endAngle={0}
-          data={data}
-          cx={cx}
-          cy={cy}
-          innerRadius={iR}
-          outerRadius={oR}
-          fill='#8884d8'
-          stroke='none'
-          label={({ name, percent }) =>
-            `${name} ${(percent * 100).toFixed(0)}%`
-          }
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
+        <Pie data={data} cx='50%' cy='50%' fill='#8884d8' dataKey='value' label>
+          {data.map((_, index) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        {needle(value, data, cx, cy, iR, oR, '#d0d000')}
+
+        <Tooltip />
+        <Legend />
       </PieChart>
     </ResponsiveContainer>
   );
