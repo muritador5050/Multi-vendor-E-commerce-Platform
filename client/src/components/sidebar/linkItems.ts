@@ -10,7 +10,15 @@ import {
   FiStar,
   FiSettings,
 } from 'react-icons/fi';
-import { SquareDashedBottomCode, Pointer, Power, ChartPie } from 'lucide-react';
+import {
+  Power,
+  ChartPie,
+  Bell,
+  CircleHelp,
+  Megaphone,
+  NotebookTabs,
+  CircleUserRound,
+} from 'lucide-react';
 
 export const LinkItems = [
   { name: 'Home', icon: FiHome, path: '/store-manager' },
@@ -21,18 +29,24 @@ export const LinkItems = [
   { name: 'Payments', icon: FiDollarSign, path: '/store-manager/payments' },
   { name: 'Coupons', icon: FiGift, path: '/store-manager/coupons' },
   { name: 'Customers', icon: FiUsers, path: '/store-manager/customers' },
-  {
-    name: 'Ledger Book',
-    icon: SquareDashedBottomCode,
-    path: '/store-manager/ledger-book',
-  },
   { name: 'Reviews', icon: FiStar, path: '/store-manager/review' },
-  {
-    name: 'Add to Store',
-    icon: Pointer,
-    path: '/store-manager/add-to-my-store',
-  },
   { name: 'Reports', icon: ChartPie, path: '/store-manager/reports' },
   { name: 'Settings', icon: FiSettings, path: '/store-manager/settings' },
+
+  //special
+
+  {
+    name: 'Notification Dashboard',
+    icon: Bell,
+    path: '/store-manager/messages',
+  },
+  { name: 'Inquiry Board', icon: CircleHelp, path: '/store-manager/enquiry' },
+  { name: 'Announcement', icon: Megaphone, path: '/store-manager/notices' },
+  {
+    name: 'Knowledgebase',
+    icon: NotebookTabs,
+    path: '/store-manager/knowledgebase',
+  },
+  { name: 'Profile', icon: CircleUserRound, path: '/store-manager/profile' },
   { name: 'Logout', icon: Power, path: '' },
 ];

@@ -1,5 +1,13 @@
 import React from 'react';
-import { Avatar, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { Link as ReactRouterLink } from 'react-router-dom';
+import {
+  Avatar,
+  Flex,
+  HStack,
+  IconButton,
+  Link as ChakraLink,
+  Text,
+} from '@chakra-ui/react';
 import {
   AlignJustify,
   Bell,
@@ -76,35 +84,45 @@ export default function DashboardNavbar({ onToggle }: ToggleProp) {
       </HStack>
 
       <HStack spacing={1}>
-        <IconButton
-          variant='ghost'
-          colorScheme='white'
-          aria-label='Notification'
-          icon={<Bell />}
-        />
-        <IconButton
-          variant='ghost'
-          colorScheme='white'
-          aria-label='Help'
-          icon={<CircleHelp />}
-        />
-        <IconButton
-          variant='ghost'
-          colorScheme='white'
-          aria-label='Announcements'
-          icon={<Megaphone />}
-        />
-        <IconButton
-          variant='ghost'
-          colorScheme='white'
-          aria-label='Docs'
-          icon={<NotebookTabs />}
-        />
-        <Avatar
-          size='sm'
-          name='Store Owner'
-          src='https://images.unsplash.com/photo-1619946794135-5bc917a27793'
-        />
+        <ChakraLink as={ReactRouterLink} to={'/store-manager/messages'}>
+          <IconButton
+            variant='ghost'
+            colorScheme='white'
+            aria-label='Notification'
+            icon={<Bell />}
+          />
+        </ChakraLink>
+        <ChakraLink as={ReactRouterLink} to={'/store-manager/enquiry'}>
+          <IconButton
+            variant='ghost'
+            colorScheme='white'
+            aria-label='Help'
+            icon={<CircleHelp />}
+          />
+        </ChakraLink>
+        <ChakraLink as={ReactRouterLink} to={'/store-manager/notices'}>
+          <IconButton
+            variant='ghost'
+            colorScheme='white'
+            aria-label='Announcements'
+            icon={<Megaphone />}
+          />
+        </ChakraLink>
+        <ChakraLink as={ReactRouterLink} to={'/store-manager/knowledgebase'}>
+          <IconButton
+            variant='ghost'
+            colorScheme='white'
+            aria-label='Docs'
+            icon={<NotebookTabs />}
+          />
+        </ChakraLink>
+        <ChakraLink as={ReactRouterLink} to={'/store-manager/profile'}>
+          <Avatar
+            size='sm'
+            name='Store Owner'
+            src='https://images.unsplash.com/photo-1619946794135-5bc917a27793'
+          />
+        </ChakraLink>
       </HStack>
     </Flex>
   );

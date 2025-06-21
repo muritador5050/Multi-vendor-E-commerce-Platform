@@ -18,11 +18,14 @@ import Orders from './pages/dashboard/orders';
 import Payments from './pages/dashboard/payments';
 import Coupons from './pages/dashboard/coupons';
 import Customers from './pages/dashboard/customers';
-import LedgerBook from './pages/dashboard/ledgerBook';
 import Review from './pages/dashboard/review';
-import AddToMyStore from './pages/dashboard/addToMyStore';
 import Setting from './pages/dashboard/setting';
 import Reports from './pages/dashboard/reports';
+import Profile from './pages/dashboard/Profile';
+import Messages from './pages/dashboard/Messages';
+import Enquiry from './pages/dashboard/Enquiry';
+import Knowledgebase from './pages/dashboard/Knowledgebase';
+import Notices from './pages/dashboard/Notices';
 
 //App
 function App() {
@@ -44,11 +47,14 @@ function App() {
               <Route path='payments' element={<Payments />} />
               <Route path='coupons' element={<Coupons />} />
               <Route path='customers' element={<Customers />} />
-              <Route path='ledger-book' element={<LedgerBook />} />
+              <Route path='profile' element={<Profile />} />
               <Route path='review' element={<Review />} />
-              <Route path='add-to-my-store' element={<AddToMyStore />} />
               <Route path='reports' element={<Reports />} />
               <Route path='settings' element={<Setting />} />
+              <Route path='messages' element={<Messages />} />
+              <Route path='enquiry' element={<Enquiry />} />
+              <Route path='knowledgebase' element={<Knowledgebase />} />
+              <Route path='notices' element={<Notices />} />
             </Route>
             <Route path='contact-us' element={<ContactUs />} />
             <Route path='wishlist' element={<WishList />} />

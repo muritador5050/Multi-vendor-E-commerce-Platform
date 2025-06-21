@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, Link as ReactRouterLink } from 'react-router-dom';
 import {
   Stack,
   Heading,
@@ -47,7 +47,7 @@ function Layout() {
         <Flex gap={2} align='center'>
           {!isExcludedPage() && (
             <Text>
-              <ChakraLink href='/' color='blue.500'>
+              <ChakraLink as={ReactRouterLink} to={'/'} color='blue.500'>
                 Home
               </ChakraLink>
             </Text>
