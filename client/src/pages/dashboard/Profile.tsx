@@ -21,9 +21,7 @@ import {
   BookUser,
   CircleUserRound,
 } from 'lucide-react';
-import GeneralSetting from '@/components/StoreSettings/GeneralSetting';
-import StoreLocation from '@/components/StoreSettings/StoreLocation';
-import PaymentSetting from '@/components/StoreSettings/PaymentSetting';
+
 import PersonalProfile from '@/components/StoreSettings/PersonalProfile';
 import Address from '@/components/StoreSettings/Address';
 import SocialProfile from '@/components/StoreSettings/SocialProfile';
@@ -113,7 +111,7 @@ export default function Profile() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <GeneralSetting />
+              <PersonalProfile />
             </AccordionPanel>
           </AccordionItem>
 
@@ -130,7 +128,7 @@ export default function Profile() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <StoreLocation />
+              <Address />
             </AccordionPanel>
           </AccordionItem>
 
@@ -147,7 +145,7 @@ export default function Profile() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <PaymentSetting />
+              <SocialProfile />
             </AccordionPanel>
           </AccordionItem>
         </Accordion>
