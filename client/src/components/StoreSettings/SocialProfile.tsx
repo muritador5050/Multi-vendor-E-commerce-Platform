@@ -1,45 +1,43 @@
 import React from 'react';
 import { Stack, FormControl, FormLabel, Input } from '@chakra-ui/react';
 
-const styles = {
+const labelStyles = {
   fontFamily: 'mono',
   fontWeight: 'semibold',
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 
 export default function SocialProfile() {
+  const socialFields = [
+    { label: 'Twitter', placeholder: 'Twitter Handle' },
+    { label: 'Facebook', placeholder: 'Facebook Handle' },
+    { label: 'Instagram', placeholder: 'Instagram Username' },
+    { label: 'YouTube', placeholder: 'YouTube Channel Name' },
+    { label: 'LinkedIn', placeholder: 'LinkedIn Username' },
+    { label: 'Snapchat', placeholder: 'Snapchat ID' },
+    { label: 'Google Plus', placeholder: 'Google Plus Profile ID' },
+  ];
+
   return (
-    <Stack>
-      <FormControl {...styles}>
-        <FormLabel>Titter</FormLabel>
-        <Input placeholder='Twitter Handler' />
-      </FormControl>
-      <FormControl {...styles}>
-        <FormLabel>Facebook</FormLabel>
-        <Input placeholder='Facebook Handler' />
-      </FormControl>
-      <FormControl {...styles}>
-        <FormLabel>Instagram</FormLabel>
-        <Input placeholder='Instagram Username' />
-      </FormControl>
-      <FormControl {...styles}>
-        <FormLabel>Youtube</FormLabel>
-        <Input placeholder='Youtube Channel Name' />
-      </FormControl>
-      <FormControl {...styles}>
-        <FormLabel>Linkedin</FormLabel>
-        <Input placeholder='Linkedin Username' />
-      </FormControl>
-      <FormControl {...styles}>
-        <FormLabel>Snapchat</FormLabel>
-        <Input placeholder='Snapchat ID' />
-      </FormControl>
-      <FormControl {...styles}>
-        <FormLabel>Google Plus</FormLabel>
-        <Input placeholder='Google Plus Profile ID' />
-      </FormControl>
+    <Stack spacing={4}>
+      {socialFields.map((field, idx) => (
+        <FormControl
+          key={idx}
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={4}
+        >
+          <FormLabel {...labelStyles}>{field.label}</FormLabel>
+          <Input
+            placeholder={field.placeholder}
+            flex='1'
+            maxW={{ md: '60%' }}
+          />
+        </FormControl>
+      ))}
     </Stack>
   );
 }
