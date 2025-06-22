@@ -17,7 +17,7 @@ const labelStyles = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
-  minWidth: { md: '150px' }, // fixed label width for md+
+  minWidth: { md: '150px' },
 };
 
 export default function PersonalProfile() {

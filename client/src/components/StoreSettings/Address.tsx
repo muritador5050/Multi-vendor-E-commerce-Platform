@@ -7,7 +7,7 @@ const labelStyles = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
-  minWidth: { md: '150px' }, // fixed width only for md+
+  minWidth: { md: '150px' },
 };
 
 export default function Address() {

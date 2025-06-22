@@ -7,7 +7,6 @@ import {
   Input,
   Stack,
   Text,
-  Flex,
   Textarea,
 } from '@chakra-ui/react';
 
@@ -17,6 +16,7 @@ const styles = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 
 export default function SEOSetting() {
@@ -31,35 +31,30 @@ export default function SEOSetting() {
         <Text fontSize='2xl' color='teal.700'>
           General Setup
         </Text>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>SEO Title</FormLabel>
-            <Input ml={{ md: 16 }} placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: '182px' }}
+        >
+          <FormLabel {...styles}>SEO Title</FormLabel>
+          <Input placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>Meta Description</FormLabel>
-            <Textarea placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...styles}>Meta Description</FormLabel>
+          <Textarea placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>Meta Keywords</FormLabel>
-            <Textarea ml={{ md: 9 }} placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: '185px' }}
+        >
+          <FormLabel {...styles}>Meta Keywords</FormLabel>
+          <Textarea placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
       </Stack>
 
@@ -67,58 +62,52 @@ export default function SEOSetting() {
         <Text fontSize='2xl' color='teal.700'>
           Facebook Setup
         </Text>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>Facebook Title</FormLabel>
-            <Input ml={{ md: 12 }} placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 48 }}
+        >
+          <FormLabel {...styles}>Facebook Title</FormLabel>
+          <Input placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>Facebook Description</FormLabel>
-            <Textarea placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: '145px' }}
+        >
+          <FormLabel {...styles}>Facebook Description</FormLabel>
+          <Textarea placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
 
-        <Stack ml={{ md: '370px' }} w={{ md: '55%' }}>
+        <Box ml={{ md: '360px' }} maxW={{ md: '60%' }}>
           <GalleryFileUpload onFileChange={handleFile} />
-        </Stack>
+        </Box>
       </Stack>
       <Stack spacing={3} mb={6}>
         <Text fontSize='2xl' color='teal.700'>
           Twitter Setup
         </Text>
-        <FormControl isRequired>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>Twitter Title</FormLabel>
-            <Input ml={{ md: 16 }} placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          isRequired
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: '200px' }}
+        >
+          <FormLabel {...styles}>Twitter Title</FormLabel>
+          <Input placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
-        <FormControl isRequired>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...styles}>Twitter Description</FormLabel>
-            <Textarea placeholder='text...' w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          isRequired
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: '150px' }}
+        >
+          <FormLabel {...styles}>Twitter Description</FormLabel>
+          <Textarea placeholder='text...' flex='1' maxW={{ md: '60%' }} />
         </FormControl>
-        <Stack w={{ md: '55%' }} ml={{ md: '370px' }}>
+        <Box maxW={{ md: '60%' }} ml={{ md: '370px' }}>
           <GalleryFileUpload onFileChange={handleFile} />
-        </Stack>
+        </Box>
       </Stack>
     </Box>
   );

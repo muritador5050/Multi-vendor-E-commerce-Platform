@@ -5,7 +5,6 @@ import {
   FormLabel,
   Input,
   Text,
-  Flex,
   Select,
 } from '@chakra-ui/react';
 import { Country, State } from 'country-state-city';
@@ -35,6 +34,7 @@ const formLabelStyle = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 
 export default function StoreLocation() {
@@ -56,107 +56,94 @@ export default function StoreLocation() {
   };
 
   return (
-    <Stack spacing={3} mb={6}>
+    <Stack spacing={3}>
       <Text fontSize='2xl' color='teal.700'>
         Store Address
       </Text>
 
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
-        >
-          <FormLabel {...formLabelStyle}>Street</FormLabel>
-          <Input
-            ml={{ md: 6 }}
-            placeholder='Street address'
-            w={{ md: '55%' }}
-          />
-        </Flex>
+      {/**Street Address 1*/}
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
+      >
+        <FormLabel {...formLabelStyle}>Street</FormLabel>
+        <Input placeholder='Street address' flex='1' maxW={{ md: '60%' }} />
       </FormControl>
 
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
-        >
-          <FormLabel {...formLabelStyle}>Street 2</FormLabel>
-          <Input
-            placeholder='Apartment, suite, unit etc. (optional)'
-            w={{ md: '55%' }}
-          />
-        </Flex>
+      {/**Street Address 2 */}
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
+      >
+        <FormLabel {...formLabelStyle}>Street 2</FormLabel>
+        <Input
+          placeholder='Apartment, suite, unit etc. (optional)'
+          flex='1'
+          maxW={{ md: '60%' }}
+        />
       </FormControl>
 
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
-        >
-          <FormLabel {...formLabelStyle}>City/Town</FormLabel>
-          <Input placeholder='Town / City' w={{ md: '55%' }} />
-        </Flex>
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
+      >
+        <FormLabel {...formLabelStyle}>City/Town</FormLabel>
+        <Input placeholder='Town / City' flex='1' maxW={{ md: '60%' }} />
       </FormControl>
 
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
-        >
-          <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
-          <Input mr={4} placeholder='Postal Code / ZIP' w={{ md: '55%' }} />
-        </Flex>
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
+      >
+        <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
+        <Input placeholder='Postal Code / ZIP' flex='1' maxW={{ md: '60%' }} />
       </FormControl>
 
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
+      >
+        <FormLabel {...formLabelStyle}>Country</FormLabel>
+        <Select
+          flex='1'
+          maxW='60%'
+          placeholder='Select country'
+          onChange={handleCountryChange}
+          value={selectedCountryCode}
         >
-          <FormLabel {...formLabelStyle}>Country</FormLabel>
-          <Stack ml={6} w={{ md: '55%' }}>
-            <Select
-              placeholder='Select country'
-              onChange={handleCountryChange}
-              value={selectedCountryCode}
-            >
-              {countries.map((country) => (
-                <option key={country.isoCode} value={country.isoCode}>
-                  {country.name}
-                </option>
-              ))}
-            </Select>
-          </Stack>
-        </Flex>
+          {countries.map((country) => (
+            <option key={country.isoCode} value={country.isoCode}>
+              {country.name}
+            </option>
+          ))}
+        </Select>
       </FormControl>
 
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
+      >
+        <FormLabel {...formLabelStyle}>State/Province</FormLabel>
+        <Select
+          flex='1'
+          maxW='60%'
+          placeholder='Select state'
+          disabled={!states.length}
+          value={selectedStateCode}
+          onChange={(e) => setSelectedStateCode(e.target.value)}
         >
-          <FormLabel {...formLabelStyle}>State/Province</FormLabel>
-          <Stack mr={{ md: 4 }} w={{ md: '55%' }}>
-            <Select
-              placeholder='Select state'
-              disabled={!states.length}
-              value={selectedStateCode}
-              onChange={(e) => setSelectedStateCode(e.target.value)}
-            >
-              {states.map((state) => (
-                <option key={state.isoCode} value={state.isoCode}>
-                  {state.name}
-                </option>
-              ))}
-            </Select>
-          </Stack>
-        </Flex>
+          {states.map((state) => (
+            <option key={state.isoCode} value={state.isoCode}>
+              {state.name}
+            </option>
+          ))}
+        </Select>
       </FormControl>
     </Stack>
   );

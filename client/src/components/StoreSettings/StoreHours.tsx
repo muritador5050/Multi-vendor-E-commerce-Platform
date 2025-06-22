@@ -19,6 +19,7 @@ const styles = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 
 const daysOfWeek = [
@@ -78,25 +79,34 @@ export default function StoreHours() {
           Store Hours Settings
         </Text>
 
-        <Flex ml={{ md: 6 }} align='center' gap={36}>
-          <Text {...styles}>Enable Store Hours</Text>
-          <Checkbox size='lg' />
-        </Flex>
-
-        <Flex ml={{ md: 6 }} align='center' gap={1}>
-          <Text {...styles}>Disable Purchase During OFF Time</Text>
-          <Checkbox size='lg' />
-        </Flex>
-
-        <Flex
-          ml={{ md: 6 }}
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          gap={{ base: 3, md: '200px' }}
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={36}
         >
-          <Text {...styles}>Set Week OFF</Text>
-          <ComboBox />
-        </Flex>
+          <FormLabel {...styles}>Enable Store Hours</FormLabel>
+          <Checkbox size='lg' />
+        </FormControl>
+
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={1}
+        >
+          <FormLabel {...styles}>Disable Purchase During OFF Time</FormLabel>
+          <Checkbox size='lg' />
+        </FormControl>
+
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: '170px' }}
+        >
+          <FormLabel {...styles}>Set Week OFF</FormLabel>
+          <Box flex='1' maxW={{ md: '60%' }}>
+            <ComboBox />
+          </Box>
+        </FormControl>
       </Stack>
 
       <Box mt={12}>

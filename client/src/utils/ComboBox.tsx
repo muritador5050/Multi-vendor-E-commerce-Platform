@@ -1,5 +1,3 @@
-// import Select from 'react-select';
-import { Box } from '@chakra-ui/react';
 import CreatableSelect from 'react-select/creatable';
 
 const options = [
@@ -14,12 +12,10 @@ const options = [
 
 export default function ComboBox() {
   return (
-    <Box w={{ md: '55%' }}>
-      <CreatableSelect
-        isMulti
-        options={options}
-        placeholder='Select or type...'
-      />
-    </Box>
+    <CreatableSelect
+      isMulti
+      options={options}
+      placeholder='Select or type...'
+    />
   );
 }

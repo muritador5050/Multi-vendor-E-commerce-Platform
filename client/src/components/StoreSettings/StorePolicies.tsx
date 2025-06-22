@@ -1,6 +1,13 @@
 import React from 'react';
 import RichTextEditor from '@/utils/RichTextEditor';
-import { Flex, Input, Stack, Text } from '@chakra-ui/react';
+import {
+  Flex,
+  FormControl,
+  FormLabel,
+  Input,
+  Stack,
+  Text,
+} from '@chakra-ui/react';
 
 const styles = {
   fontFamily: 'mono',
@@ -8,6 +15,7 @@ const styles = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 export default function StorePolicies() {
   return (
@@ -16,14 +24,14 @@ export default function StorePolicies() {
         Policies Setting
       </Text>
 
-      <Flex
-        direction={{ base: 'column', md: 'row' }}
-        align={{ md: 'center' }}
-        gap={{ base: 3, md: 32 }}
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: 44 }}
       >
-        <Text {...styles}>Policy Tab Label</Text>
-        <Input width={{ md: '55%' }} />
-      </Flex>
+        <FormLabel {...styles}>Policy Tab Label</FormLabel>
+        <Input flex='1' maxW={{ md: '60%' }} />
+      </FormControl>
       <Flex direction='column' gap={6} mt={6}>
         <Text {...styles}>Shipping Policy</Text>
         <RichTextEditor />

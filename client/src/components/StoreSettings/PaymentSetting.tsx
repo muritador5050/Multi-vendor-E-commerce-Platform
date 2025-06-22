@@ -3,7 +3,6 @@ import {
   Box,
   FormControl,
   FormLabel,
-  Flex,
   Stack,
   Select,
   Text,
@@ -16,6 +15,7 @@ const styles = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 
 export default function PaymentSetting() {
@@ -26,157 +26,118 @@ export default function PaymentSetting() {
   };
   return (
     <Box>
-      <FormControl>
-        <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ md: 'center' }}
-          justify={{ md: 'space-around' }}
+      <FormControl
+        display={{ base: 'block', md: 'flex' }}
+        alignItems={{ md: 'center' }}
+        gap={{ base: 4, md: '85px' }}
+      >
+        <FormLabel {...styles}>Preferred Payment Method</FormLabel>
+        <Select
+          flex='1'
+          maxW='60%'
+          placeholder='Choose Withdrawal Payment Method'
+          value={bannerType}
+          onChange={handleSelectChange}
         >
-          <FormLabel {...styles}>Preferred Payment Method</FormLabel>
-
-          <Stack w={{ md: '55%' }}>
-            <Select
-              placeholder='Choose Withdrawal Payment Method'
-              value={bannerType}
-              onChange={handleSelectChange}
-            >
-              <option value='Paypal'>Paypal</option>
-              <option value='Bank Transfer'>Bank Transfer</option>
-            </Select>
-          </Stack>
-        </Flex>
+          <option value='Paypal'>Paypal</option>
+          <option value='Bank Transfer'>Bank Transfer</option>
+        </Select>
       </FormControl>
       <Box w='full' my={4}>
         {bannerType === 'Paypal' && (
-          <Stack>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Paypal Email</FormLabel>
-                <Input
-                  ml={{ md: 32 }}
-                  placeholder='text...'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
-            </FormControl>
-          </Stack>
+          <FormControl
+            display={{ base: 'block', md: 'flex' }}
+            alignItems={{ md: 'center' }}
+            gap={{ base: 4, md: 44 }}
+          >
+            <FormLabel {...styles}>Paypal Email</FormLabel>
+            <Input flex='1' placeholder='text...' maxW={{ md: '60%' }} />
+          </FormControl>
         )}
         {bannerType === 'Bank Transfer' && (
-          <Stack ml={{ md: 6 }} spacing={3} mb={6}>
+          <Stack spacing={3}>
             <Text fontSize='2xl' color='teal.700'>
               Bank Details
             </Text>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Account Name</FormLabel>
-                <Input
-                  ml={{ md: 6 }}
-                  placeholder='Your bank account name'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>Account Name</FormLabel>
+              <Input
+                flex='1'
+                placeholder='Your bank account name'
+                maxW={{ md: '60%' }}
+              />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Account Number</FormLabel>
-                <Input
-                  ml={{ md: 4 }}
-                  placeholder='Your bank account number'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>Account Number</FormLabel>
+              <Input
+                flex='1'
+                placeholder='Your bank account number'
+                maxW={{ md: '60%' }}
+              />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Bank Name</FormLabel>
-                <Input
-                  ml={{ md: 16 }}
-                  placeholder='Name of Bank'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>Bank Name</FormLabel>
+              <Input flex='1' placeholder='Name of Bank' maxW={{ md: '60%' }} />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Bank address</FormLabel>
-                <Input
-                  ml={{ md: 10 }}
-                  placeholder='Address of your bank'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>Bank address</FormLabel>
+              <Input
+                flex='1'
+                placeholder='Address of your bank'
+                maxW={{ md: '60%' }}
+              />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Routing Number</FormLabel>
-                <Input
-                  ml={{ md: 6 }}
-                  placeholder='Routing Number'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>Routing Number</FormLabel>
+              <Input
+                flex='1'
+                placeholder='Routing Number'
+                maxW={{ md: '60%' }}
+              />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>IBAN</FormLabel>
-                <Input ml={{ md: 32 }} placeholder='IBAN' w={{ md: '55%' }} />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>IBAN</FormLabel>
+              <Input flex='1' placeholder='IBAN' maxW={{ md: '60%' }} />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>Swift Code</FormLabel>
-                <Input
-                  ml={{ md: 16 }}
-                  placeholder='Swift code'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>Swift Code</FormLabel>
+              <Input flex='1' placeholder='Swift code' maxW={{ md: '60%' }} />
             </FormControl>
-            <FormControl>
-              <Flex
-                direction={{ base: 'column', md: 'row' }}
-                align={{ md: 'center' }}
-                justify={{ md: 'space-around' }}
-              >
-                <FormLabel {...styles}>IFSC Code</FormLabel>
-                <Input
-                  ml={{ md: 20 }}
-                  placeholder='IFSC code'
-                  w={{ md: '55%' }}
-                />
-              </Flex>
+            <FormControl
+              display={{ base: 'block', md: 'flex' }}
+              alignItems={{ md: 'center' }}
+              gap={{ base: 4, md: 44 }}
+            >
+              <FormLabel {...styles}>IFSC Code</FormLabel>
+              <Input flex='1' placeholder='IFSC code' maxW={{ md: '60%' }} />
             </FormControl>
           </Stack>
         )}

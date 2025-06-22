@@ -6,7 +6,6 @@ import {
   FormLabel,
   Input,
   Text,
-  Flex,
   Select,
 } from '@chakra-ui/react';
 import { Country, State } from 'country-state-city';
@@ -36,6 +35,7 @@ const formLabelStyle = {
   fontSize: 'lg',
   color: 'teal.700',
   fontStyle: 'italic',
+  minWidth: { md: '150px' },
 };
 
 export default function CustomerSupport() {
@@ -63,93 +63,82 @@ export default function CustomerSupport() {
           Store Address
         </Text>
 
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...formLabelStyle}>Phone</FormLabel>
-            <Input ml={{ md: 12 }} w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>Phone</FormLabel>
+          <Input flex='1' maxW={{ md: '60%' }} />
         </FormControl>
 
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...formLabelStyle}>Email</FormLabel>
-            <Input ml={{ md: 12 }} w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>Email</FormLabel>
+          <Input flex='1' maxW={{ md: '60%' }} />
         </FormControl>
 
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>Country</FormLabel>
+          <Select
+            flex='1'
+            maxW={{ md: '60%' }}
+            placeholder='Select country'
+            onChange={handleCountryChange}
+            value={selectedCountryCode}
           >
-            <FormLabel {...formLabelStyle}>Country</FormLabel>
-            <Stack ml={{ md: 6 }} w={{ md: '55%' }}>
-              <Select
-                placeholder='Select country'
-                onChange={handleCountryChange}
-                value={selectedCountryCode}
-              >
-                {countries.map((country) => (
-                  <option key={country.isoCode} value={country.isoCode}>
-                    {country.name}
-                  </option>
-                ))}
-              </Select>
-            </Stack>
-          </Flex>
+            {countries.map((country) => (
+              <option key={country.isoCode} value={country.isoCode}>
+                {country.name}
+              </option>
+            ))}
+          </Select>
         </FormControl>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...formLabelStyle}>City/Town</FormLabel>
-            <Input w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>City/Town</FormLabel>
+          <Input flex='1' maxW={{ md: '60%' }} />
         </FormControl>
 
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>State/Province</FormLabel>
+
+          <Select
+            flex='1'
+            maxW={{ md: '60%' }}
+            placeholder='Select state'
+            disabled={!states.length}
+            value={selectedStateCode}
+            onChange={(e) => setSelectedStateCode(e.target.value)}
           >
-            <FormLabel {...formLabelStyle}>State/Province</FormLabel>
-            <Stack mr={{ md: 4 }} w={{ md: '55%' }}>
-              <Select
-                placeholder='Select state'
-                disabled={!states.length}
-                value={selectedStateCode}
-                onChange={(e) => setSelectedStateCode(e.target.value)}
-              >
-                {states.map((state) => (
-                  <option key={state.isoCode} value={state.isoCode}>
-                    {state.name}
-                  </option>
-                ))}
-              </Select>
-            </Stack>
-          </Flex>
+            {states.map((state) => (
+              <option key={state.isoCode} value={state.isoCode}>
+                {state.name}
+              </option>
+            ))}
+          </Select>
         </FormControl>
-        <FormControl>
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            align={{ md: 'center' }}
-            justify={{ md: 'space-around' }}
-          >
-            <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
-            <Input mr={{ md: 4 }} w={{ md: '55%' }} />
-          </Flex>
+        <FormControl
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
+          <Input flex='1' maxW={{ md: '60%' }} />
         </FormControl>
       </Stack>
     </Box>
