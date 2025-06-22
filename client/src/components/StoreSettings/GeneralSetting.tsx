@@ -198,7 +198,7 @@ export default function GeneralSetting() {
         {checkBoxField.map((box, idx) => (
           <Flex key={idx} alignItems='center' mb={2}>
             {/* Fixed-width label box */}
-            <Box w={{ base: '60%', md: '39%' }}>
+            <Box w='39%'>
               <Text {...labelStyles}>{box.label}</Text>
             </Box>
             <Checkbox size='lg' value={box.value} />

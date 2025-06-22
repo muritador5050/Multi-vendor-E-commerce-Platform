@@ -23,7 +23,6 @@ export default function StorePolicies() {
       <Text fontSize='2xl' color='teal.700'>
         Policies Setting
       </Text>
-
       <FormControl
         display={{ base: 'block', md: 'flex' }}
         alignItems={{ md: 'center' }}
