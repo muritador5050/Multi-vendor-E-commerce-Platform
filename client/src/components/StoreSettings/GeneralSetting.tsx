@@ -194,12 +194,14 @@ export default function GeneralSetting() {
             </NumberInputStepper>
           </NumberInput>
         </FormControl>
+
         {checkBoxField.map((box, idx) => (
-          <Flex key={idx} alignItems='center' gap={44} flexWrap='wrap'>
-            <Text {...labelStyles}>{box.label}</Text>
-            <Box flex='1' maxW={{ md: '60%' }}>
-              <Checkbox size='lg' value={box.value} />
+          <Flex key={idx} alignItems='center' mb={2}>
+            {/* Fixed-width label box */}
+            <Box w={{ base: '60%', md: '39%' }}>
+              <Text {...labelStyles}>{box.label}</Text>
             </Box>
+            <Checkbox size='lg' value={box.value} />
           </Flex>
         ))}
       </Stack>
