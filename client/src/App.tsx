@@ -13,7 +13,7 @@ import VendorRegistration from './authentication/vendorRegistration';
 import DashboardHome from './pages/dashboard/dashboardHome';
 import Media from './pages/dashboard/media';
 import Articles from './pages/dashboard/articles';
-import Products from './pages/dashboard/products';
+import Products from './pages/dashboard/VendorProduct';
 import Orders from './pages/dashboard/orders';
 import Payments from './pages/dashboard/payments';
 import Coupons from './pages/dashboard/coupons';
@@ -27,6 +27,7 @@ import Enquiry from './pages/dashboard/Enquiry';
 import Knowledgebase from './pages/dashboard/Knowledgebase';
 import Notices from './pages/dashboard/Notices';
 import CategoryPage from './pages/CategoryPage';
+import ProductDetail from './pages/ProductDetail';
 
 //App
 function App() {
@@ -38,8 +39,8 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path='blog' element={<Blog />} />
             <Route path='shop' element={<ShopPage />} />
-            <Route path='/category/:categoryName' element={<CategoryPage />} />
-
+            <Route path='category/:categoryName' element={<CategoryPage />} />
+            <Route path='product/:id' element={<ProductDetail />} />
             <Route path='vendor-membership' element={<VendorMembership />} />
             <Route path='store-manager' element={<StoreManagerDashboard />}>
               <Route index element={<DashboardHome />} />

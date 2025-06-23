@@ -30,6 +30,7 @@ import {
   useDisclosure,
 } from '@chakra-ui/react';
 import { Heart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const mockProducts = [
   {
@@ -136,7 +137,7 @@ const mockProducts = [
 
 export default function ShopPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
-
+  const navigate = useNavigate();
   const format = (val: number) => `$${val}`;
   const parse = (val: string) => val.replace(/^\$/, '');
   const [sliderValue, setSliderValue] = useState<number[]>([5, 650]);
@@ -288,7 +289,13 @@ export default function ShopPage() {
                 }}
                 transition='all 0.3s ease-in-out'
               >
-                <CardBody>
+                <CardBody
+                  onClick={() =>
+                    navigate(`/product/${product.id}`, {
+                      state: { product },
+                    })
+                  }
+                >
                   <Box position='relative'>
                     <Image
                       src={product.image}
