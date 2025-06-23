@@ -26,7 +26,7 @@ import Messages from './pages/dashboard/Messages';
 import Enquiry from './pages/dashboard/Enquiry';
 import Knowledgebase from './pages/dashboard/Knowledgebase';
 import Notices from './pages/dashboard/Notices';
-import CategoryPage from './pages/Categories';
+import CategoryPage from './pages/CategoryPage';
 
 //App
 function App() {

@@ -20,6 +20,14 @@ import {
   VStack,
   NumberInput,
   NumberInputField,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { Heart } from 'lucide-react';
 
@@ -127,6 +135,8 @@ const mockProducts = [
 ];
 
 export default function ShopPage() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const format = (val: number) => `$${val}`;
   const parse = (val: string) => val.replace(/^\$/, '');
   const [sliderValue, setSliderValue] = useState<number[]>([5, 650]);
@@ -279,11 +289,55 @@ export default function ShopPage() {
                 transition='all 0.3s ease-in-out'
               >
                 <CardBody>
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    borderRadius='lg'
-                  />
+                  <Box position='relative'>
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      borderRadius='lg'
+                    />
+                    <Button
+                      onClick={onOpen}
+                      position='absolute'
+                      inset={0}
+                      margin='auto'
+                      maxW='fit-content'
+                      fontSize='xs'
+                      fontWeight='thin'
+                      colorScheme='yellow'
+                      color='white'
+                      opacity={{ md: 0 }}
+                      transition='all 0.4s ease-in-out'
+                      _groupHover={{
+                        opacity: 1,
+                      }}
+                    >
+                      Quik View
+                    </Button>
+                    {/**Quick View Modal */}
+                    <Modal
+                      isOpen={isOpen}
+                      onClose={onClose}
+                      size='5xl'
+                      motionPreset='slideInTop'
+                      isCentered
+                    >
+                      <ModalOverlay />
+                      <ModalContent>
+                        <ModalHeader>Modal Title</ModalHeader>
+                        <ModalCloseButton />
+                        <ModalBody>
+                          <Text>Hello wrld</Text>
+                        </ModalBody>
+
+                        <ModalFooter>
+                          <Button colorScheme='blue' mr={3} onClick={onClose}>
+                            Close
+                          </Button>
+                          <Button variant='ghost'>Secondary Action</Button>
+                        </ModalFooter>
+                      </ModalContent>
+                    </Modal>
+                  </Box>
                   <Stack mt={3} textAlign='center'>
                     <Text fontWeight='medium' fontFamily='cursive'>
                       {product.name}
