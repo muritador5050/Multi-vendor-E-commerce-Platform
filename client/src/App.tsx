@@ -26,6 +26,7 @@ import Messages from './pages/dashboard/Messages';
 import Enquiry from './pages/dashboard/Enquiry';
 import Knowledgebase from './pages/dashboard/Knowledgebase';
 import Notices from './pages/dashboard/Notices';
+import CategoryPage from './pages/Categories';
 
 //App
 function App() {
@@ -37,6 +38,8 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path='blog' element={<Blog />} />
             <Route path='shop' element={<ShopPage />} />
+            <Route path='/category/:categoryName' element={<CategoryPage />} />
+
             <Route path='vendor-membership' element={<VendorMembership />} />
             <Route path='store-manager' element={<StoreManagerDashboard />}>
               <Route index element={<DashboardHome />} />

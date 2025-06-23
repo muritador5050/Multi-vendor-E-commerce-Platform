@@ -153,14 +153,13 @@ export default function ShopPage() {
   };
 
   return (
-    <Box>
+    <Box bg='white'>
       <Flex direction={{ base: 'column', md: 'row' }} gap={5}>
         <Stack
           position='static'
           left={0}
           flex={0.75}
           order={{ base: 1, md: 0 }}
-          bg='tomato'
           p={4}
           spacing={5}
         >

@@ -87,6 +87,28 @@ function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
 
+  const categories = [
+    'Accessories',
+    'Art',
+    'Audio',
+    'Bikes',
+    'Cameras',
+    'Computer & Laptop',
+    'Drill Machine',
+    'Hand Tools',
+    'Home Appliances',
+    'Movies',
+    'On Sale',
+    'Smart Watch',
+    'Smartphone',
+    'Tool',
+    'Tool Bag',
+    'Tool Case',
+    'Universal Tools',
+    'Video Games',
+    'Watches',
+  ];
+
   return (
     <>
       <Box bg='brand.300' boxShadow='md'>
@@ -200,6 +222,22 @@ function Navbar() {
               All Categories
             </MenuButton>
             <MenuList>
+              {categories.map((category, idx) => (
+                <Box key={category}>
+                  <MenuItem
+                    as={ReactRouterLink}
+                    to={`/category/${category
+                      .toLowerCase()
+                      .replace(/ & | /g, '-')}`}
+                  >
+                    {category}
+                  </MenuItem>
+                  {idx !== categories.length - 1 && <MenuDivider />}
+                </Box>
+              ))}
+            </MenuList>
+
+            {/* <MenuList>
               <MenuItem>Accessories</MenuItem>
               <MenuDivider />
               <MenuItem>Art</MenuItem>
@@ -237,7 +275,7 @@ function Navbar() {
               <MenuItem>Video Games</MenuItem>
               <MenuDivider />
               <MenuItem>Watches</MenuItem>
-            </MenuList>
+            </MenuList> */}
           </Menu>
 
           <InputGroup>
