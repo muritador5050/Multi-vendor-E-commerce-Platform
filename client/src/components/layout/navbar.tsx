@@ -236,46 +236,6 @@ function Navbar() {
                 </Box>
               ))}
             </MenuList>
-
-            {/* <MenuList>
-              <MenuItem>Accessories</MenuItem>
-              <MenuDivider />
-              <MenuItem>Art</MenuItem>
-              <MenuDivider />
-              <MenuItem>Audio</MenuItem>
-              <MenuDivider />
-              <MenuItem>Bikes</MenuItem>
-              <MenuDivider />
-              <MenuItem>Cameras</MenuItem>
-              <MenuDivider />
-              <MenuItem>Computer & Laptop</MenuItem>
-              <MenuDivider />
-              <MenuItem>Drill Machine</MenuItem>
-              <MenuDivider />
-              <MenuItem>Hand Tools</MenuItem>
-              <MenuDivider />
-              <MenuItem>Home Appliances</MenuItem>
-              <MenuDivider />
-              <MenuItem>Movies</MenuItem>
-              <MenuDivider />
-              <MenuItem>On Sale</MenuItem>
-              <MenuDivider />
-              <MenuItem>Smart Watch</MenuItem>
-              <MenuDivider />
-              <MenuItem>Smartphone</MenuItem>
-              <MenuDivider />
-              <MenuItem>Tool</MenuItem>
-              <MenuDivider />
-              <MenuItem>Tool Bag</MenuItem>
-              <MenuDivider />
-              <MenuItem>Tool Case</MenuItem>
-              <MenuDivider />
-              <MenuItem>Universal Tools</MenuItem>
-              <MenuDivider />
-              <MenuItem>Video Games</MenuItem>
-              <MenuDivider />
-              <MenuItem>Watches</MenuItem>
-            </MenuList> */}
           </Menu>
 
           <InputGroup>

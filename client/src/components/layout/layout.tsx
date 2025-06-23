@@ -12,20 +12,31 @@ import Footer from './footer';
 
 function Layout() {
   const location = useLocation();
+  const pathname = location.pathname;
 
   const isExcludedPage = () => {
     const excluded = ['/', '/store-manager'];
     return excluded.some((path) => {
-      if (path === '/') {
-        return location.pathname === '/';
-      }
-      return (
-        location.pathname === path || location.pathname.startsWith(path + '/')
-      );
+      if (path === '/') return pathname === '/';
+      return pathname === path || pathname.startsWith(path + '/');
     });
   };
+
+  const isCategoryPage = () => {
+    return pathname.startsWith('/category/');
+  };
+
+  const getCategoryName = () => {
+    const segments = pathname.split('/');
+    const name = segments[2] || ''; // 'category/[name]'
+    return name
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const getFormattedPathname = () => {
-    return location.pathname
+    return pathname
       .substring(1)
       .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -34,7 +45,7 @@ function Layout() {
 
   const getCurrentPageName = () => {
     if (isExcludedPage()) return '';
-    return getFormattedPathname();
+    return isCategoryPage() ? getCategoryName() : getFormattedPathname();
   };
 
   return (
@@ -42,18 +53,16 @@ function Layout() {
       <Navbar />
       <Stack gap={4} spacing={4} p={4}>
         {!isExcludedPage() && (
-          <Heading size='lg'>{getFormattedPathname()}</Heading>
+          <Heading size='lg'>{getCurrentPageName()}</Heading>
         )}
         <Flex gap={2} align='center'>
           {!isExcludedPage() && (
-            <Text>
-              <ChakraLink as={ReactRouterLink} to={'/'} color='blue.500'>
-                Home
-              </ChakraLink>
-            </Text>
-          )}
-          {getCurrentPageName() && (
             <>
+              <Text>
+                <ChakraLink as={ReactRouterLink} to='/' color='blue.500'>
+                  Home
+                </ChakraLink>
+              </Text>
               <Text>/</Text>
               <Text>{getCurrentPageName()}</Text>
             </>

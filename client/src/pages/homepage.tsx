@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link as ReactRouterLink } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -251,7 +252,14 @@ function HomePage() {
           rowGap={10}
         >
           {categories.map((category) => (
-            <GridItem key={category.id} textAlign='center'>
+            <GridItem
+              key={category.id}
+              as={ReactRouterLink}
+              to={`/category/${category.name
+                .toLowerCase()
+                .replace(/ & | /g, '-')}`}
+              textAlign='center'
+            >
               <IconButton
                 icon={category.icon}
                 aria-label={category.name}
