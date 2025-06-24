@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import { useLocation } from 'react-router-dom';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/context/UseContext';
 
 export default function ProductDetail(): React.ReactElement {
   const location = useLocation();
