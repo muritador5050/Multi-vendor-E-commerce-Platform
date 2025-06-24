@@ -7,9 +7,9 @@ import {
   Stack,
   Box,
 } from '@chakra-ui/react';
-import Login from './login';
-import SignUp from './signUp';
 import Logo from '../components/logo/Logo';
+import LoginForm from './LoginForm';
+import RegisterForm from './RegisterForm';
 
 // Account Component
 function AccountPage() {
@@ -34,10 +34,10 @@ function AccountPage() {
           </TabList>
           <TabPanels>
             <TabPanel>
-              <Login />
+              <LoginForm />
             </TabPanel>
             <TabPanel>
-              <SignUp />
+              <RegisterForm />
             </TabPanel>
           </TabPanels>
         </Tabs>

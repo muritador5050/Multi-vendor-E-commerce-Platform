@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react';
 import React from 'react';
 
-function Login() {
+export default function LoginForm() {
   return (
     <Stack spacing={7}>
       <Heading>Login</Heading>
@@ -31,5 +31,3 @@ function Login() {
     </Stack>
   );
 }
-
-export default Login;

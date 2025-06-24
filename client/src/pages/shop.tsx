@@ -141,6 +141,9 @@ export default function ShopPage() {
   const format = (val: number) => `$${val}`;
   const parse = (val: string) => val.replace(/^\$/, '');
   const [sliderValue, setSliderValue] = useState<number[]>([5, 650]);
+  const [selectedProduct, setSelectedProduct] = useState<
+    (typeof mockProducts)[0] | null
+  >(null);
 
   // Handle slider change
   const handleSliderChange = (val: number[]) => {
@@ -303,7 +306,11 @@ export default function ShopPage() {
                       borderRadius='lg'
                     />
                     <Button
-                      onClick={onOpen}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedProduct(product);
+                        onOpen();
+                      }}
                       position='absolute'
                       inset={0}
                       margin='auto'
@@ -320,30 +327,6 @@ export default function ShopPage() {
                     >
                       Quik View
                     </Button>
-                    {/**Quick View Modal */}
-                    <Modal
-                      isOpen={isOpen}
-                      onClose={onClose}
-                      size='5xl'
-                      motionPreset='slideInTop'
-                      isCentered
-                    >
-                      <ModalOverlay />
-                      <ModalContent>
-                        <ModalHeader>Modal Title</ModalHeader>
-                        <ModalCloseButton />
-                        <ModalBody>
-                          <Text>Hello wrld</Text>
-                        </ModalBody>
-
-                        <ModalFooter>
-                          <Button colorScheme='blue' mr={3} onClick={onClose}>
-                            Close
-                          </Button>
-                          <Button variant='ghost'>Secondary Action</Button>
-                        </ModalFooter>
-                      </ModalContent>
-                    </Modal>
                   </Box>
                   <Stack mt={3} textAlign='center'>
                     <Text fontWeight='medium' fontFamily='cursive'>
@@ -392,6 +375,67 @@ export default function ShopPage() {
               </Card>
             ))}
           </SimpleGrid>
+          {selectedProduct && (
+            <Modal
+              isOpen={isOpen}
+              onClose={onClose}
+              size='5xl'
+              motionPreset='slideInTop'
+              isCentered
+            >
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>{selectedProduct.name}</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
+                    <Image
+                      src={selectedProduct.image}
+                      alt={selectedProduct.name}
+                      borderRadius='md'
+                      maxW='300px'
+                    />
+                    <Stack spacing={4}>
+                      <Text fontWeight='bold' fontSize='lg'>
+                        {selectedProduct.name}
+                      </Text>
+                      <Text color='gray.600'>
+                        Store: {selectedProduct.store}
+                      </Text>
+                      <Text fontSize='xl' color='teal.600'>
+                        {selectedProduct.price}
+                      </Text>
+                      {selectedProduct.originalPrice && (
+                        <Text color='gray.400' as='s'>
+                          {selectedProduct.originalPrice}
+                        </Text>
+                      )}
+                      <Text>
+                        Rating: {selectedProduct.rating} ⭐ (
+                        {selectedProduct.reviews} reviews)
+                      </Text>
+
+                      {/* ✅ Add this block for quantity control */}
+                      <Flex align='center' gap={4}>
+                        <Text fontWeight='medium'>Quantity:</Text>
+                        <Button size='sm'>–</Button>
+                        <Text fontSize='lg'>{0}</Text>
+                        <Button size='sm'>+</Button>
+                      </Flex>
+                    </Stack>
+                  </Flex>
+                </ModalBody>
+                <ModalFooter>
+                  <Button colorScheme='blue' mr={3} onClick={onClose}>
+                    Close
+                  </Button>
+                  <Button variant='solid' colorScheme='teal'>
+                    Add to Cart
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+          )}
         </Stack>
       </Flex>
     </Box>

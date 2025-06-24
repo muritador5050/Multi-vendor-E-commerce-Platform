@@ -1,0 +1,137 @@
+import apiService from '@/api/ApiService';
+import type { User } from '@/utils/UserType';
+import { useEffect, useState, type ReactNode } from 'react';
+import { AuthContext } from './UseContext';
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  //Check auth status
+  const checkAuthStatus = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const response = await apiService.getProfile();
+        setUser(response.user);
+      }
+    } catch (err) {
+      localStorage.removeItem('accessToken');
+      console.log(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //Login
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiService.login(email, password);
+      if (response.accessToken) {
+        localStorage.setItem('accessToken', response.accessToken);
+        await checkAuthStatus();
+      }
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //register
+  const register = async (name: string, email: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await apiService.register(name, email, password);
+    } catch (err: any) {
+      setError(err.message || 'Registration failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //Logout
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await apiService.logout();
+      localStorage.removeItem('accessToken');
+      setUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //ForgotPassword
+  const forgotPassword = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await apiService.forgotPassword(email);
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //ResetPassword
+  const resetPassword = async (token: string, password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await apiService.resetPassword(token, password);
+    } catch (err: any) {
+      setError(err.message || 'Password reset failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //UpdateProfile
+  const updateProfile = async (data: Partial<User>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiService.updateProfile(data);
+      setUser(response.user);
+    } catch (err: any) {
+      setError(err.message || 'Profile update failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        error,
+        login,
+        register,
+        logout,
+        forgotPassword,
+        resetPassword,
+        updateProfile,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
