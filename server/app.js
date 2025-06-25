@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const { globalErrorHandler } = require('./utils/globalErrorHandler');
 const passport = require('passport');
 const { FRONTEND_URL, NODE_ENV } = require('./configs');
-const connectDB = require('./database/index');
+const { connectDB } = require('./database/index');
 const { specs, swaggerUi } = require('./swagger');
 const { generalLimiter } = require('./middlewares/rateLimiter');
 
@@ -27,7 +27,7 @@ app.use(passport.initialize());
 //middlewares
 app.use(
   cors({
-    origin: FRONTEND_URL || 'http://localhost:3000',
+    origin: FRONTEND_URL,
     credentials: true,
   })
 );

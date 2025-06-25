@@ -84,15 +84,15 @@ class UserController {
     }
 
     //Generate new tokens
-    const { accessToken, refreshToken: newRefrshToken } = user.generateToken();
+    const { accessToken, refreshToken: newRefreshToken } = user.generateToken();
 
     //Update refresh token in database
-    user.refreshToken = newRefrshToken;
+    user.refreshToken = newRefreshToken;
     await user.save();
 
     // Set new refresh token as cookie
     res
-      .cookie('refreshToken', newRefrshToken, {
+      .cookie('refreshToken', newRefreshToken, {
         httpOnly: true,
         secure: NODE_ENV === 'production',
         sameSite: 'strict',
