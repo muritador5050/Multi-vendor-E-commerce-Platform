@@ -9,9 +9,16 @@ import {
   Stack,
   Spacer,
   Heading,
+  IconButton,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  InputGroup,
+  InputLeftElement,
+  InputRightElement,
 } from '@chakra-ui/react';
 import { useAuth } from '@/context/UseContext';
-import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
 
 type LoginProps = {
   email: string;
@@ -25,7 +32,6 @@ export default function LoginForm() {
 
   const { login, error } = useAuth();
 
-  //HandleChange
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setUser((prev) => ({
@@ -34,7 +40,6 @@ export default function LoginForm() {
     }));
   };
 
-  //HandleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -48,57 +53,70 @@ export default function LoginForm() {
   };
 
   return (
-    <Stack spacing={7}>
+    <Stack spacing={7} position='relative'>
       <Heading>Login</Heading>
+
       {error && (
-        <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center'>
-          <AlertCircle className='h-5 w-5 text-red-500 mr-2' />
-          <span className='text-red-700 text-sm'>{error}</span>
-        </div>
+        <Alert status='error' borderRadius='md'>
+          <AlertIcon as={AlertCircle} />
+          <AlertDescription fontSize='sm'>{error}</AlertDescription>
+        </Alert>
       )}
+
       <form onSubmit={handleSubmit}>
-        <FormControl isRequired>
-          <FormLabel>Username or Email</FormLabel>
-          <Input
-            name='email'
-            type='email'
-            value={user.email}
-            onChange={handleOnchange}
-          />
-        </FormControl>
-        <FormControl isRequired>
-          <FormLabel>Password</FormLabel>
-          <Input
-            name='password'
-            type={showPassword ? 'text' : 'password'}
-            value={user.password}
-            onChange={handleOnchange}
-          />
-          <button
-            type='button'
-            onClick={() => setShowPassword(!showPassword)}
-            className='absolute right-3 top-3 text-gray-400 hover:text-gray-600'
-          >
-            {showPassword ? (
-              <EyeOff className='h-5 w-5' />
-            ) : (
-              <Eye className='h-5 w-5' />
-            )}
-          </button>
-        </FormControl>
+        <Stack spacing={5} position='relative'>
+          <FormControl isRequired>
+            <FormLabel>Email</FormLabel>
+            <InputGroup>
+              <InputLeftElement>
+                <Mail size={18} />
+              </InputLeftElement>
+              <Input
+                type='email'
+                name='email'
+                value={user.email}
+                onChange={handleOnchange}
+                pl='2rem'
+              />
+            </InputGroup>
+          </FormControl>
+
+          <FormControl isRequired position='relative'>
+            <FormLabel>Password</FormLabel>
+            <InputGroup>
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                name='password'
+                value={user.password}
+                onChange={handleOnchange}
+                pr='2.5rem'
+              />
+              <InputRightElement>
+                <IconButton
+                  aria-label='Toggle Password'
+                  icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  size='sm'
+                  variant='ghost'
+                  onClick={() => setShowPassword(!showPassword)}
+                />
+              </InputRightElement>
+            </InputGroup>
+          </FormControl>
+
+          <Flex>
+            <Button
+              type='submit'
+              colorScheme='teal'
+              isLoading={isSubmitting}
+              loadingText='Logging in'
+            >
+              Login
+            </Button>
+            <Spacer />
+            <Checkbox>Remember me</Checkbox>
+          </Flex>
+        </Stack>
       </form>
-      <Flex>
-        <Button type='submit' disabled={isSubmitting}>
-          {' '}
-          {isSubmitting ? (
-            <Loader2 className='h-5 w-5 animate-spin' />
-          ) : (
-            'Login'
-          )}
-        </Button>
-        <Spacer />
-        <Checkbox>Remember me</Checkbox>
-      </Flex>
     </Stack>
   );
 }

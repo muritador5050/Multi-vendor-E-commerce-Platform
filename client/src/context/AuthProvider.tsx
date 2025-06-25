@@ -38,8 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('accessToken', response.accessToken);
         await checkAuthStatus();
       }
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Login Failed');
+      } else {
+        setError('Login Failed');
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -52,8 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await apiService.register(name, email, password);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Registration failed');
+      } else {
+        setError('Registration failed');
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -80,8 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await apiService.forgotPassword(email);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reset email');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to send reset email');
+      } else {
+        setError('Failed to send reset email');
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -94,8 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await apiService.resetPassword(token, password);
-    } catch (err: any) {
-      setError(err.message || 'Password reset failed');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Password reset failed');
+      } else {
+        setError('Password reset failed');
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -109,8 +125,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiService.updateProfile(data);
       setUser(response.user);
-    } catch (err: any) {
-      setError(err.message || 'Profile update failed');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Profile update failed');
+      } else {
+        setError('Profile update failed');
+      }
       throw err;
     } finally {
       setLoading(false);

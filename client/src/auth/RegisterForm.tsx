@@ -6,16 +6,18 @@ import {
   Heading,
   Input,
   Stack,
+  Text,
+  Box,
+  IconButton,
+  Alert,
+  AlertIcon,
+  AlertDescription,
+  InputGroup,
+  InputLeftElement,
+  InputRightElement,
 } from '@chakra-ui/react';
 import { useAuth } from '@/context/UseContext';
-import {
-  AlertCircle,
-  CheckCircle,
-  Eye,
-  EyeOff,
-  Loader2,
-  Mail,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Mail } from 'lucide-react';
 
 type RegisterProps = {
   name: string;
@@ -32,17 +34,16 @@ export default function RegisterForm() {
     confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const { register, error } = useAuth();
 
-  //Handlechange
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setUser((prev) => ({ ...prev, [name]: value }));
   };
 
-  //HandleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -63,98 +64,131 @@ export default function RegisterForm() {
 
   if (success) {
     return (
-      <div className='max-w-md mx-auto bg-white rounded-lg shadow-md p-6'>
-        <div className='text-center'>
-          <CheckCircle className='mx-auto h-12 w-12 text-green-500' />
-          <h2 className='mt-2 text-2xl font-bold text-gray-900'>
-            Check Your Email
-          </h2>
-          <p className='mt-2 text-gray-600'>
-            We've sent a verification link to your email address. Please check
-            your inbox and click the link to verify your account.
-          </p>
-          <button
-            onClick={() => setSuccess(false)}
-            className='mt-4 text-blue-600 hover:text-blue-800'
-          >
-            Back to registration
-          </button>
-        </div>
-      </div>
+      <Box
+        maxW='md'
+        mx='auto'
+        bg='white'
+        _dark={{ bg: 'gray.800' }}
+        rounded='lg'
+        shadow='md'
+        p={6}
+        textAlign='center'
+      >
+        <CheckCircle size={48} color='green' style={{ margin: '0 auto' }} />
+        <Heading mt={4} fontSize='2xl'>
+          Check Your Email
+        </Heading>
+        <Text mt={2}>
+          We've sent a verification link to your email address. Please check
+          your inbox and click the link to verify your account.
+        </Text>
+        <Button
+          mt={4}
+          colorScheme='blue'
+          variant='link'
+          onClick={() => setSuccess(false)}
+        >
+          Back to registration
+        </Button>
+      </Box>
     );
   }
 
   return (
-    <Stack spacing={7}>
+    <Stack spacing={7} as='form' onSubmit={handleSubmit}>
       <Heading>Sign Up</Heading>
+
       {error && (
-        <div className='mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center'>
-          <AlertCircle className='h-5 w-5 text-red-500 mr-2' />
-          <span className='text-red-700 text-sm'>{error}</span>
-        </div>
+        <Alert status='error' borderRadius='md'>
+          <AlertIcon as={AlertCircle} />
+          <AlertDescription fontSize='sm'>{error}</AlertDescription>
+        </Alert>
       )}
-      <form onSubmit={handleSubmit}>
-        <FormControl isRequired>
-          <FormLabel>Name</FormLabel>
-          <Input
-            type='text'
-            name='name'
-            value={user.name}
-            onChange={handleOnchange}
-          />
-        </FormControl>
-        <FormControl isRequired>
-          <FormLabel>Email</FormLabel>
-          <Mail className='absolute left-3 top-3 h-5 w-5 text-gray-400' />
+
+      <FormControl isRequired>
+        <FormLabel>Name</FormLabel>
+        <Input
+          type='text'
+          name='name'
+          value={user.name}
+          onChange={handleOnchange}
+        />
+      </FormControl>
+
+      <FormControl isRequired>
+        <FormLabel>Email</FormLabel>
+        <InputGroup>
+          <InputLeftElement>
+            <Mail size={18} />
+          </InputLeftElement>
           <Input
             type='email'
             name='email'
             value={user.email}
             onChange={handleOnchange}
+            pl='2rem'
           />
-        </FormControl>
-        <FormControl isRequired>
-          <FormLabel>Password</FormLabel>
+        </InputGroup>
+      </FormControl>
+
+      <FormControl isRequired>
+        <FormLabel>Password</FormLabel>
+        <InputGroup>
           <Input
             type={showPassword ? 'text' : 'password'}
             name='password'
             value={user.password}
             onChange={handleOnchange}
+            pr='2.5rem'
           />
-          <button
-            type='button'
-            onClick={() => setShowPassword(!showPassword)}
-            className='absolute right-3 top-3 text-gray-400 hover:text-gray-600'
-          >
-            {showPassword ? (
-              <EyeOff className='h-5 w-5' />
-            ) : (
-              <Eye className='h-5 w-5' />
-            )}
-          </button>
-        </FormControl>
-        <FormControl isRequired>
-          <FormLabel>Confirm-Password</FormLabel>
+          <InputRightElement>
+            <IconButton
+              aria-label='Toggle Password'
+              icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              size='sm'
+              variant='ghost'
+              onClick={() => setShowPassword(!showPassword)}
+            />
+          </InputRightElement>
+        </InputGroup>
+      </FormControl>
+
+      <FormControl isRequired>
+        <FormLabel>Confirm Password</FormLabel>
+        <InputGroup>
           <Input
-            type={showPassword ? 'text' : 'password'}
+            type={showConfirmPassword ? 'text' : 'password'}
             name='confirmPassword'
             value={user.confirmPassword}
             onChange={handleOnchange}
+            pr='2.5rem'
           />
-          {user.password !== user.confirmPassword && user.confirmPassword && (
-            <p className='mt-1 text-sm text-red-600'>Passwords do not match</p>
-          )}
-        </FormControl>
-      </form>
+          <InputRightElement>
+            <IconButton
+              aria-label='Toggle Password'
+              icon={
+                showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />
+              }
+              size='sm'
+              variant='ghost'
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            />
+          </InputRightElement>
+        </InputGroup>
+        {user.password !== user.confirmPassword && user.confirmPassword && (
+          <Text mt={1} fontSize='sm' color='red.500'>
+            Passwords do not match
+          </Text>
+        )}
+      </FormControl>
       <Button
         type='submit'
-        disabled={isSubmitting || user.password !== user.confirmPassword}
+        colorScheme='teal'
+        isDisabled={isSubmitting || user.password !== user.confirmPassword}
+        isLoading={isSubmitting}
+        loadingText='Registering'
       >
-        {isSubmitting ? (
-          <Loader2 className='h-5 w-5 animate-spin' />
-        ) : (
-          'Register'
-        )}
+        Register
       </Button>
     </Stack>
   );

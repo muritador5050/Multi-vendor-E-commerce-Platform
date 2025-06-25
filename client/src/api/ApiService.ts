@@ -1,7 +1,7 @@
 import type { User } from '@/utils/UserType';
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:8000/api';
+export const apiBase = import.meta.env.VITE_API_URL;
 
 const apiService = {
   async request(endpoint: string, options: RequestInit = {}) {
@@ -17,11 +17,11 @@ const apiService = {
       credentials: 'include',
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const response = await fetch(`${apiBase}${endpoint}`, config);
 
     if (response.status === 401) {
       //Refresh token
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      const refreshResponse = await fetch(`${apiBase}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -35,7 +35,7 @@ const apiService = {
           ...config.headers,
           Authorization: `Bearer ${accessToken}`,
         };
-        return fetch(`${API_BASE_URL}${endpoint}`, config);
+        return fetch(`${apiBase}${endpoint}`, config);
       } else {
         localStorage.removeItem('accessToken');
         window.location.href = '/login';

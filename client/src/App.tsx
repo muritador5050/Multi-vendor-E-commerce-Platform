@@ -28,6 +28,7 @@ import Knowledgebase from './pages/dashboard/Knowledgebase';
 import Notices from './pages/dashboard/Notices';
 import CategoryPage from './pages/CategoryPage';
 import ProductDetail from './pages/ProductDetail';
+import OAuthCallback from './auth/OAuthCallback';
 
 //App
 function App() {
@@ -42,6 +43,8 @@ function App() {
             <Route path='category/:categoryName' element={<CategoryPage />} />
             <Route path='product/:id' element={<ProductDetail />} />
             <Route path='vendor-membership' element={<VendorMembership />} />
+            <Route path='/oauth/callback' element={<OAuthCallback />} />
+
             <Route path='store-manager' element={<StoreManagerDashboard />}>
               <Route index element={<DashboardHome />} />
               <Route path='media' element={<Media />} />
