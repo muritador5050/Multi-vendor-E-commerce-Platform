@@ -51,11 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Register
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    comfirmPassword: string
+  ) => {
     setLoading(true);
     setError(null);
     try {
-      await apiService.register(name, email, password);
+      await apiService.register(name, email, password, comfirmPassword);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || 'Registration failed');

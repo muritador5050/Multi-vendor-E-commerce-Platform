@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useAuth } from '@/context/UseContext';
 import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type LoginProps = {
   email: string;
@@ -29,9 +30,8 @@ export default function LoginForm() {
   const [user, setUser] = useState<LoginProps>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const { login, error } = useAuth();
-
+  const navigate = useNavigate();
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setUser((prev) => ({
@@ -45,6 +45,7 @@ export default function LoginForm() {
     setIsSubmitting(true);
     try {
       await login(user.email, user.password);
+      navigate('/store-manager', { replace: true });
     } catch (err) {
       console.log(err);
     } finally {

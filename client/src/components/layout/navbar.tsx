@@ -182,7 +182,7 @@ function Navbar() {
               />
             </ChakraLink>
 
-            <ChakraLink as={ReactRouterLink} to={'/account'}>
+            <ChakraLink as={ReactRouterLink} to={'/my-account'}>
               <IconButton
                 icon={<UserRound />}
                 aria-label='Account'

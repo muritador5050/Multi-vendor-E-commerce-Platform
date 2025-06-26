@@ -53,7 +53,12 @@ export default function RegisterForm() {
 
     setIsSubmitting(true);
     try {
-      await register(user.name, user.email, user.password);
+      await register(
+        user.name,
+        user.email,
+        user.password,
+        user.confirmPassword
+      );
       setSuccess(true);
     } catch (err) {
       console.log(err);

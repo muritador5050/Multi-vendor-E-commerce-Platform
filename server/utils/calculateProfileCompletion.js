@@ -1,24 +1,5 @@
-// function calculateProfileCompletion(userProfile) {
-//   const totalFields = Object.keys(userProfile).length;
-//   const completedFields = Object.values(userProfile).filter(
-//     (value) => value !== null && value !== undefined && value !== ''
-//   ).length;
-//   return Math.round((completedFields / totalFields) * 100);
-// }
-
-// utils/profileCompletion.js
 function calculateProfileCompletion(user) {
-  const fields = [
-    'fullName',
-    'email',
-    'phone',
-    'profilePhoto',
-    'address',
-    'gender',
-    'dateOfBirth',
-    'bio',
-    'socialMediaLinks',
-  ];
+  const fields = ['name', 'email', 'phone', 'avatar', 'address'];
 
   const totalFields = fields.length;
   let completed = 0;

@@ -127,24 +127,12 @@ class UserController {
     res.status(200).json({ message: 'Logout successful' });
   }
 
-  static async userProfile(req, res) {
-    const user = await User.findById(req.user.id).lean();
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    const completion = calculateProfileCompletion(user);
-    res.json({ user, profileCompletion: completion });
-  }
   // Get user profile
   static async getUserProfile(req, res) {
     const user = await User.findById(req.user.id, '-password -refreshToken');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json(
-      resSuccessObject({
-        message: 'Retrieved user',
-        results: user,
-      })
-    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const completion = calculateProfileCompletion(user);
+    res.json({ data: user, profileCompletion: completion });
   }
 
   //Email verification

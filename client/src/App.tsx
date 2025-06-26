@@ -29,6 +29,9 @@ import Notices from './pages/dashboard/Notices';
 import CategoryPage from './pages/CategoryPage';
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
+import ForgotPasswordForm from './auth/forgotPassword';
+import ProfilePage from './auth/ProfilePage';
+import ResetPasswordForm from './auth/ResetPassword';
 
 //App
 function App() {
@@ -67,8 +70,17 @@ function App() {
             <Route path='wishlist' element={<WishList />} />
             <Route path='vendor-register' element={<VendorRegistration />} />
             <Route path='*' element={<Box>404 Not Found</Box>} />
+            <Route path='my-account' element={<AccountPage />} />
+            <Route
+              path='auth/forgot-password'
+              element={<ForgotPasswordForm />}
+            />
+            <Route path='auth/profile' element={<ProfilePage />} />
+            <Route
+              path='auth/reset-password'
+              element={<ResetPasswordForm token='' />}
+            />
           </Route>
-          <Route path='account' element={<AccountPage />} />
         </Routes>
       </Stack>
     </Router>

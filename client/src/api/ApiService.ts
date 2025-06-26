@@ -37,7 +37,7 @@ interface AuthTokenResponse {
 }
 
 interface ProfileResponse {
-  results: User; // adjust to `data: User` if backend changes
+  results: User;
 }
 
 class ApiService {
@@ -79,7 +79,7 @@ class ApiService {
     } catch {
       localStorage.removeItem('accessToken');
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
+        window.location.href = '/account';
       }
       throw new ApiError('Session expired. Please login again.', 401);
     }
@@ -159,11 +159,12 @@ class ApiService {
   async register(
     name: string,
     email: string,
-    password: string
+    password: string,
+    confirmPassword: string
   ): Promise<ApiResponse<null>> {
     return this.request<ApiResponse<null>>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, confirmPassword }),
     });
   }
 
@@ -237,7 +238,7 @@ class ApiService {
     return this.request<ApiResponse<T>>(endpoint, {
       method: 'POST',
       body: formData,
-      headers: {}, // Remove Content-Type to let browser set it with boundary for FormData
+      headers: {},
     });
   }
 
