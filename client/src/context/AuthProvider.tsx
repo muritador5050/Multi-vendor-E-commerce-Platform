@@ -12,30 +12,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuthStatus();
   }, []);
 
-  //Check auth status
+  // Check auth status
   const checkAuthStatus = async () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (token) {
         const response = await apiService.getProfile();
-        setUser(response.user);
+        setUser(response.data?.results || null);
       }
     } catch (err) {
       localStorage.removeItem('accessToken');
-      console.log(err);
+      console.log('Auth check failed:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  //Login
+  // Login
   const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
     try {
       const response = await apiService.login(email, password);
-      if (response.accessToken) {
-        localStorage.setItem('accessToken', response.accessToken);
+      if (response.data?.accessToken) {
+        localStorage.setItem('accessToken', response.data.accessToken);
         await checkAuthStatus();
       }
     } catch (err: unknown) {
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  //register
+  // Register
   const register = async (name: string, email: string, password: string) => {
     setLoading(true);
     setError(null);
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  //Logout
+  // Logout
   const logout = async () => {
     setLoading(true);
     try {
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  //ForgotPassword
+  // Forgot Password
   const forgotPassword = async (email: string) => {
     setLoading(true);
     setError(null);
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  //ResetPassword
+  // Reset Password
   const resetPassword = async (token: string, password: string) => {
     setLoading(true);
     setError(null);
@@ -118,13 +118,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  //UpdateProfile
+  // Update Profile
   const updateProfile = async (data: Partial<User>) => {
     setLoading(true);
     setError(null);
     try {
       const response = await apiService.updateProfile(data);
-      setUser(response.user);
+      setUser(response.data?.results || null);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message || 'Profile update failed');

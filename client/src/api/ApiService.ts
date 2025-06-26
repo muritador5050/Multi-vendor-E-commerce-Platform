@@ -92,8 +92,9 @@ class ApiService {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
-        throw new ApiError(errorMessage, response.status, response);
+        // If JSON parsing fails, keep the original error message
       }
+      throw new ApiError(errorMessage, response.status, response);
     }
 
     try {
@@ -216,8 +217,10 @@ class ApiService {
     return this.request<ApiResponse<ProfileResponse>>('/auth/profile');
   }
 
-  async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
-    return this.request<ApiResponse<User>>('/auth/profile', {
+  async updateProfile(
+    data: Partial<User>
+  ): Promise<ApiResponse<ProfileResponse>> {
+    return this.request<ApiResponse<ProfileResponse>>('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -234,6 +237,7 @@ class ApiService {
     return this.request<ApiResponse<T>>(endpoint, {
       method: 'POST',
       body: formData,
+      headers: {}, // Remove Content-Type to let browser set it with boundary for FormData
     });
   }
 
