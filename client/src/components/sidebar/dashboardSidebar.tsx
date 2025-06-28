@@ -14,8 +14,8 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LinkItems } from './linkItems';
 import NavItem from './Navitem';
-import { useAuth } from '@/context/AuthContext';
 import { useRef } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
   isCollapsed: boolean;

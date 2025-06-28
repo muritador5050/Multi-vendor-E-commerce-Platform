@@ -27,6 +27,7 @@ import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
 import Cart from '@/pages/cart';
+import { useIsAuthenticated } from '@/hooks/useAuth';
 
 //NavLink Component
 function NavLink({
@@ -86,6 +87,7 @@ function NavLink({
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
+  const isAuthenticated = useIsAuthenticated();
 
   const categories = [
     'Accessories',
@@ -153,7 +155,9 @@ function Navbar() {
             <NavLink to='/'>Home</NavLink>
             <NavLink to='blog'>Blogs</NavLink>
             <NavLink to='shop'>Shop</NavLink>
-            <NavLink to='store-manager'>Store Manager</NavLink>
+            <NavLink to={isAuthenticated ? 'store-manager' : 'my-account'}>
+              Store Manager
+            </NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
             <NavLink to='store-list'>Store List</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
@@ -182,7 +186,7 @@ function Navbar() {
               />
             </ChakraLink>
 
-            <ChakraLink as={ReactRouterLink} to={'/my-account'}>
+            <ChakraLink as={ReactRouterLink} to={'my-account'}>
               <IconButton
                 icon={<UserRound />}
                 aria-label='Account'

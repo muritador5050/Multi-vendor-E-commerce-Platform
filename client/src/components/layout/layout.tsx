@@ -51,7 +51,7 @@ function Layout() {
   return (
     <Box bg='gray.100'>
       <Navbar />
-      <Stack gap={4} spacing={4} p={4}>
+      <Stack position='relative' gap={4} spacing={4} p={4}>
         {!isExcludedPage() && (
           <Heading size='lg'>{getCurrentPageName()}</Heading>
         )}
@@ -68,6 +68,9 @@ function Layout() {
             </>
           )}
         </Flex>
+        <Heading position='fixed' right={0} zIndex={3} bg='red' color='white'>
+          Hello
+        </Heading>
       </Stack>
       <Outlet />
       <Footer />

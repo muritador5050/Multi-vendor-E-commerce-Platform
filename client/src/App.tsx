@@ -29,10 +29,9 @@ import Notices from './pages/dashboard/Notices';
 import CategoryPage from './pages/CategoryPage';
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
-import ForgotPasswordForm from './auth/forgotPassword';
-import ProfilePage from './auth/ProfilePage';
 import ResetPasswordForm from './auth/ResetPassword';
 import { AuthProvider } from './context/AuthProvider';
+import ForgotPasswordForm from './auth/ForgotPassword';
 
 //App
 function App() {
@@ -76,7 +75,6 @@ function App() {
               path='auth/forgot-password'
               element={<ForgotPasswordForm />}
             />
-            <Route path='auth/profile' element={<ProfilePage />} />
             <Route
               path='auth/reset-password'
               element={<ResetPasswordForm token='' />}

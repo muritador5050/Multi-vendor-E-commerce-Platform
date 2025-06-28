@@ -19,10 +19,10 @@ export const validators = {
       { test: /\W/, msg: 'special character' },
     ];
 
-    const missing = checks.filter((check) => !check.test.test(password));
-    if (missing.length) {
-      return `Password must contain: ${missing.map((m) => m.msg).join(', ')}`;
-    }
+    // const missing = checks.filter((check) => !check.test.test(password));
+    // if (missing.length) {
+    //   return `Password must contain: ${missing.map((m) => m.msg).join(', ')}`;
+    // }
     return null;
   },
 

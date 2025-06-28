@@ -14,10 +14,13 @@ import {
 } from '@chakra-ui/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, useCurrentUser } from '@/hooks/useAuth';
 
 function ProfilePage() {
-  const { user, updateProfile, logout } = useAuth();
+  const { updateProfile, logout } = useAuth();
+  const user = useCurrentUser();
+
+  //Data
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -36,10 +39,14 @@ function ProfilePage() {
         duration: 3000,
         isClosable: true,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      let message = 'Something went wrong.';
+      if (err instanceof Error) {
+        message = err.message;
+      }
       toast({
         title: 'Update failed.',
-        description: err.message || 'Something went wrong.',
+        description: message,
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -71,7 +78,7 @@ function ProfilePage() {
         <Button
           colorScheme='red'
           variant='ghost'
-          onClick={logout}
+          onClick={() => logout()}
           leftIcon={<LogOut size={18} />}
         >
           Logout
@@ -79,18 +86,18 @@ function ProfilePage() {
       </Flex>
 
       <VStack spacing={6} align='stretch'>
-        {user.profileCompletion && (
+        {user.profilecompletion && (
           <Box bg='blue.50' _dark={{ bg: 'blue.900' }} p={4} rounded='md'>
             <Text
               color='blue.800'
               _dark={{ color: 'blue.100' }}
               fontWeight='medium'
             >
-              Profile Completion: {user.profileCompletion}%
+              Profile Completion: {user.profilecompletion}%
             </Text>
             <Progress
               mt={2}
-              value={user.profileCompletion}
+              value={user.profilecompletion}
               size='sm'
               colorScheme='blue'
               rounded='full'

@@ -5,6 +5,7 @@ export interface User {
   name: string;
   role: UserRole;
   emailVerified?: boolean;
+  profilecompletion?: number;
 }
 
 export const USER_ROLES = {

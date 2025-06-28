@@ -16,7 +16,7 @@ import {
   InputLeftElement,
   InputRightElement,
 } from '@chakra-ui/react';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Mail } from 'lucide-react';
 
 type RegisterProps = {

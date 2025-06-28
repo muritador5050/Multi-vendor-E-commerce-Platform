@@ -7,6 +7,7 @@ const {
   adminOrVendor,
   isVendor,
 } = require('../middlewares/authMiddleware');
+const checkRole = require('../middlewares/roleMiddleware');
 
 /**
  * @openapi
@@ -42,8 +43,12 @@ const {
  */
 router
   .route('/')
-  .get(asyncHandler(ProductsController.getAllProducts)) // Public: Get all products
-  .post(authenticate, isVendor, asyncHandler(ProductsController.createProduct)); // Vendor only: Create product
+  .get(asyncHandler(ProductsController.getAllProducts))
+  .post(
+    authenticate,
+    checkRole('vendor', 'create'),
+    asyncHandler(ProductsController.createProduct)
+  );
 
 /**
  * @openapi
@@ -65,9 +70,9 @@ router
   .route('/my-products')
   .get(
     authenticate,
-    isVendor,
+    checkRole('vendor', 'read'),
     asyncHandler(ProductsController.getVendorProducts)
-  ); // Vendor only: Get own products
+  );
 
 /**
  * @openapi
@@ -133,15 +138,15 @@ router
  * */
 router
   .route('/:id')
-  .get(asyncHandler(ProductsController.getProductById)) // Public: Get single product
+  .get(asyncHandler(ProductsController.getProductById))
   .put(
     authenticate,
-    adminOrVendor,
+    checkRole(['admin', 'vendor'], 'edit'),
     asyncHandler(ProductsController.updateProduct)
-  ) // Admin or Vendor: Update product
+  )
   .delete(
     authenticate,
-    adminOrVendor,
+    checkRole(['admin', 'vendor'], 'edit'),
     asyncHandler(ProductsController.deleteProduct)
   ); // Admin or Vendor: Delete product
 

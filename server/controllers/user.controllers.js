@@ -60,8 +60,10 @@ class UserController {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .json({
-        message: 'Login successful',
-        accessToken,
+        data: {
+          user,
+          accessToken,
+        },
       });
   }
 
@@ -130,9 +132,12 @@ class UserController {
   // Get user profile
   static async getUserProfile(req, res) {
     const user = await User.findById(req.user.id, '-password -refreshToken');
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
     const completion = calculateProfileCompletion(user);
-    res.json({ data: user, profileCompletion: completion });
+    res.json({ success: true, data: { user, profileCompletion: completion } });
   }
 
   //Email verification
@@ -303,7 +308,7 @@ class UserController {
       });
     }
 
-    res.status(200).json({ user });
+    res.status(200).json({ data: user });
   }
 
   //Update user
@@ -322,7 +327,7 @@ class UserController {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json({ user });
+    res.json({ data: user });
   }
 
   // Delete user (admin only)

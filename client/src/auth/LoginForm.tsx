@@ -17,8 +17,8 @@ import {
   InputLeftElement,
   InputRightElement,
 } from '@chakra-ui/react';
-import { useAuth } from '@/context/AuthContext';
 import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginForm() {
   const [user, setUser] = useState({ email: '', password: '' });

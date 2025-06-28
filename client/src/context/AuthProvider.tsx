@@ -588,7 +588,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'accessToken' && !e.newValue && state.user) {
         updateState({ user: null, isAuthenticated: false });
-        navigate('/shop', { replace: true });
+        navigate('/', { replace: true });
       }
     };
 
@@ -684,7 +684,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           loading: false,
         });
 
-        if (redirect) navigate('/login', { replace: true });
+        if (redirect) navigate('/', { replace: true });
       }
     },
     [updateState, navigate]
@@ -826,7 +826,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const url = message
         ? `/login?message=${encodeURIComponent(message)}`
-        : '/shop';
+        : '/';
       navigate(url, { replace: true });
     },
     [updateState, navigate]

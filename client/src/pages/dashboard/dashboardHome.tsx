@@ -29,8 +29,32 @@ import {
 } from 'lucide-react';
 import CustomLineChart from '@/components/charts/CustomLinechart';
 import CustomPieChart from '@/components/charts/CustomPiechart';
+import { useCurrentUser } from '@/hooks/useAuth';
 
 export default function DashboardHome() {
+  const user = useCurrentUser();
+
+  const formatLastLogin = (date: Date): string => {
+    const timeOptions: Intl.DateTimeFormatOptions = {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    };
+
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
+
+    const timePart = date
+      .toLocaleTimeString('en-US', timeOptions)
+      .toLowerCase();
+    const datePart = date.toLocaleDateString('en-US', dateOptions);
+
+    return `Last Login: ${timePart} (${datePart})`;
+  };
+
   return (
     <Box>
       <Flex
@@ -45,11 +69,13 @@ export default function DashboardHome() {
       >
         <Stack direction={{ base: 'column', md: 'row' }} align='center' gap={6}>
           <Avatar size='2xl' name='Vendor name' />
-          <Box p={0}>
-            <Text>Welcome to the multivendor-mania Dashboard</Text>
-            <Text textAlign='left'>Vendor Email</Text>
-            <Text>Login time</Text>
-          </Box>
+          <Stat>
+            <Text color='teal' fontSize='lg'>
+              Welcome to the multivendor-mania Dashboard
+            </Text>
+            <Text textAlign='left'>{user?.email}</Text>
+            <StatHelpText>{formatLastLogin(new Date())}</StatHelpText>
+          </Stat>
         </Stack>
         <Stack display={{ base: 'none', md: 'block' }}>
           <Text>Limit stat</Text>

@@ -10,9 +10,17 @@ import {
 import Logo from '../components/logo/Logo';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
+import { useIsAuthenticated } from '@/hooks/useAuth';
+import ProfilePage from './ProfilePage';
 
 // Account Component
 function AccountPage() {
+  const isAuthenticated = useIsAuthenticated();
+
+  if (isAuthenticated) {
+    return <ProfilePage />;
+  }
+
   return (
     <Box
       bg={'gray.400'}

@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { CheckCircle, Mail } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext'; // adjust path as needed
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState('');

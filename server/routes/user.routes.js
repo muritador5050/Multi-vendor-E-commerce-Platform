@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/user.controllers');
-const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
+const { authenticate } = require('../middlewares/authMiddleware');
+const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
@@ -140,7 +141,11 @@ router.post('/logout', asyncHandler(UserController.logOut));
  *               items:
  *                 $ref: '#/components/schemas/UserPublic'
  */
-router.get('/user', authenticate, asyncHandler(UserController.getUserProfile));
+router.get(
+  '/profile',
+  authenticate,
+  asyncHandler(UserController.getUserProfile)
+);
 
 /**
  * @openapi
@@ -252,6 +257,10 @@ router
   .route('/users/:id')
   .get(authenticate, asyncHandler(UserController.getUserById))
   .put(authenticate, asyncHandler(UserController.updateUser))
-  .delete(authenticate, isAdmin, asyncHandler(UserController.deleteUser));
+  .delete(
+    authenticate,
+    checkRole('admin', 'delete'),
+    asyncHandler(UserController.deleteUser)
+  );
 
 module.exports = router;

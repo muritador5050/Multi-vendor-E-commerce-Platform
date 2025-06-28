@@ -245,7 +245,7 @@ class ApiService {
     return this.request<ApiResponse<T>>(endpoint, {
       method: 'POST',
       body: formData,
-      headers: {}, // Remove Content-Type to let browser set boundary for FormData
+      headers: {},
     });
   }
 
