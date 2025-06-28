@@ -30,14 +30,14 @@ function OAuthCallback() {
         // Optional: log the user data
         console.log('OAuth login success:', decoded);
 
-        navigate('/profile');
+        navigate('auth/profile');
       } catch (err) {
         console.error('Invalid token received:', err);
-        navigate('/login');
+        navigate('/my-account');
       }
     } else if (error === 'oauth_failed') {
       console.error('OAuth failed');
-      navigate('/login');
+      navigate('/my-account');
     }
   }, [params, navigate]);
 

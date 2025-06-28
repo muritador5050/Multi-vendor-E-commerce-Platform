@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '@/context/UseContext';
+import { useAuth } from '@/context/AuthContext';
 
 function ProfilePage() {
   const { user, updateProfile, logout } = useAuth();

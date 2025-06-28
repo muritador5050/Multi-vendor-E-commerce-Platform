@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Button,
   Flex,
@@ -17,21 +17,25 @@ import {
   InputLeftElement,
   InputRightElement,
 } from '@chakra-ui/react';
-import { useAuth } from '@/context/UseContext';
+import { useAuth } from '@/context/AuthContext';
 import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-type LoginProps = {
-  email: string;
-  password: string;
-};
 
 export default function LoginForm() {
-  const [user, setUser] = useState<LoginProps>({ email: '', password: '' });
+  const [user, setUser] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, error } = useAuth();
-  const navigate = useNavigate();
+
+  // Consume context - get loading state from AuthProvider
+  const { login, error, loading } = useAuth();
+
+  // Clear error when component unmounts or user starts typing
+  useEffect(() => {
+    // Optional: Clear error when user starts typing again
+    return () => {
+      // Cleanup if needed
+    };
+  }, []);
+
+  // Handle input changes
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setUser((prev) => ({
@@ -40,16 +44,21 @@ export default function LoginForm() {
     }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+
+    // Basic validation
+    if (!user.email.trim() || !user.password.trim()) {
+      return;
+    }
+
     try {
-      await login(user.email, user.password);
-      navigate('/store-manager', { replace: true });
+      await login(user.email.trim(), user.password);
+      // Login success will be handled by AuthProvider (navigation, etc.)
     } catch (err) {
-      console.log(err);
-    } finally {
-      setIsSubmitting(false);
+      // Error is already handled by AuthProvider and stored in context
+      console.error('Login failed:', err);
     }
   };
 
@@ -77,7 +86,9 @@ export default function LoginForm() {
                 name='email'
                 value={user.email}
                 onChange={handleOnchange}
-                pl='2rem'
+                pl='2.5rem'
+                disabled={loading}
+                placeholder='Enter your email'
               />
             </InputGroup>
           </FormControl>
@@ -91,30 +102,35 @@ export default function LoginForm() {
                 value={user.password}
                 onChange={handleOnchange}
                 pr='2.5rem'
+                disabled={loading}
+                placeholder='Enter your password'
               />
               <InputRightElement>
                 <IconButton
-                  aria-label='Toggle Password'
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   size='sm'
                   variant='ghost'
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
                 />
               </InputRightElement>
             </InputGroup>
           </FormControl>
 
-          <Flex>
+          <Flex alignItems='center'>
             <Button
               type='submit'
               colorScheme='teal'
-              isLoading={isSubmitting}
-              loadingText='Logging in'
+              isLoading={loading}
+              loadingText='Logging in...'
+              disabled={!user.email.trim() || !user.password.trim() || loading}
+              minW='120px'
             >
               Login
             </Button>
             <Spacer />
-            <Checkbox>Remember me</Checkbox>
+            <Checkbox disabled={loading}>Remember me</Checkbox>
           </Flex>
         </Stack>
       </form>

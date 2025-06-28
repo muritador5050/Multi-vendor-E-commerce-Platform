@@ -10,7 +10,7 @@ import {
   FiStar,
   FiSettings,
 } from 'react-icons/fi';
-import { ChartPie } from 'lucide-react';
+import { ChartPie, LogOut } from 'lucide-react';
 
 export const LinkItems = [
   { name: 'Home', icon: FiHome, path: '/store-manager' },
@@ -24,4 +24,5 @@ export const LinkItems = [
   { name: 'Reviews', icon: FiStar, path: '/store-manager/review' },
   { name: 'Reports', icon: ChartPie, path: '/store-manager/reports' },
   { name: 'Settings', icon: FiSettings, path: '/store-manager/settings' },
+  { name: 'Logout', icon: LogOut, path: '', type: 'logout' },
 ];

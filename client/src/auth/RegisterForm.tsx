@@ -16,7 +16,7 @@ import {
   InputLeftElement,
   InputRightElement,
 } from '@chakra-ui/react';
-import { useAuth } from '@/context/UseContext';
+import { useAuth } from '@/context/AuthContext';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Mail } from 'lucide-react';
 
 type RegisterProps = {
@@ -59,6 +59,7 @@ export default function RegisterForm() {
         user.password,
         user.confirmPassword
       );
+
       setSuccess(true);
     } catch (err) {
       console.log(err);

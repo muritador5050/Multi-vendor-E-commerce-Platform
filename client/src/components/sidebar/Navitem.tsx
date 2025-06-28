@@ -6,6 +6,7 @@ interface NavItemProps {
   icon: React.ElementType;
   children: string;
   path: string;
+  isDisabled?: boolean;
   isActive: boolean;
   onClick: () => void;
 }

@@ -1,4 +1,4 @@
-import { Box, Stack } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
 import ShopPage from './pages/shop';
@@ -32,12 +32,13 @@ import OAuthCallback from './auth/OAuthCallback';
 import ForgotPasswordForm from './auth/forgotPassword';
 import ProfilePage from './auth/ProfilePage';
 import ResetPasswordForm from './auth/ResetPassword';
+import { AuthProvider } from './context/AuthProvider';
 
 //App
 function App() {
   return (
     <Router>
-      <Stack minH='100vh'>
+      <AuthProvider>
         <Routes>
           <Route path='/' element={<Layout />}>
             <Route index element={<HomePage />} />
@@ -82,7 +83,7 @@ function App() {
             />
           </Route>
         </Routes>
-      </Stack>
+      </AuthProvider>
     </Router>
   );
 }

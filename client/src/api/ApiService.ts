@@ -1,10 +1,34 @@
-import type { User } from '@/utils/UserType';
+// ApiService.ts
+import type { User } from '@/type/auth';
 
 // API Configuration
 export const apiBase = import.meta.env.VITE_API_URL;
 
-// Custom error
-class ApiError extends Error {
+// Generic API response type
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  errors?: string[];
+}
+
+// Auth-specific types
+interface AuthResponse {
+  user: User;
+  accessToken: string;
+}
+
+interface AuthTokenResponse {
+  accessToken: string;
+}
+
+interface ProfileResponse {
+  user: User;
+  profileCompletion?: number;
+}
+
+// Custom error classes
+export class ApiError extends Error {
   public status: number;
   public response?: Response;
 
@@ -16,28 +40,11 @@ class ApiError extends Error {
   }
 }
 
-class NetworkError extends Error {
+export class NetworkError extends Error {
   constructor(message: string = 'Network request failed') {
     super(message);
     this.name = 'NetworkError';
   }
-}
-
-// Generic API response type
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  errors?: string[];
-}
-
-// Auth-specific types
-interface AuthTokenResponse {
-  accessToken: string;
-}
-
-interface ProfileResponse {
-  results: User;
 }
 
 class ApiService {
@@ -171,8 +178,8 @@ class ApiService {
   async login(
     email: string,
     password: string
-  ): Promise<ApiResponse<AuthTokenResponse>> {
-    return this.request<ApiResponse<AuthTokenResponse>>('/auth/login', {
+  ): Promise<ApiResponse<AuthResponse>> {
+    return this.request<ApiResponse<AuthResponse>>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -238,12 +245,8 @@ class ApiService {
     return this.request<ApiResponse<T>>(endpoint, {
       method: 'POST',
       body: formData,
-      headers: {},
+      headers: {}, // Remove Content-Type to let browser set boundary for FormData
     });
-  }
-
-  async healthCheck(): Promise<{ status: string; timestamp: string }> {
-    return this.request('/health');
   }
 
   getCurrentToken(): string | null {
@@ -261,10 +264,6 @@ class ApiService {
 
 const apiService = new ApiService();
 export default apiService;
-export type {
-  ApiResponse,
-  AuthTokenResponse,
-  ProfileResponse,
-  ApiError,
-  NetworkError,
-};
+
+// Export types
+export type { ApiResponse, AuthResponse, AuthTokenResponse, ProfileResponse };

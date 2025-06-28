@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { Lock, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/context/UseContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [password, setPassword] = useState('');
