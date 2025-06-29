@@ -28,6 +28,24 @@ class UserController {
     });
   }
 
+  static async registerVendor(req, res) {
+    //Find existing user
+    const userExist = await User.findByEmail(req.body.email);
+
+    //Existing user
+    if (userExist) {
+      return res.status(400).json({ message: 'Email already exist' });
+    }
+
+    // Only include allowed fields
+    const user = await User.create({ ...req.body, role: 'vendor' });
+
+    res.status(201).json({
+      message:
+        'User created successfully. Please check your email for verification.',
+    });
+  }
+
   //Login user
   static async loginUser(req, res, next) {
     const { email, password } = req.body;

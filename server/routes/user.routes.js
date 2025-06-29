@@ -64,6 +64,12 @@ router.post(
   asyncHandler(UserController.createUser)
 );
 
+router.post(
+  '/vendor-register',
+  validation(register),
+  asyncHandler(UserController.registerVendor)
+);
+
 /**
  * @openapi
  * /api/auth/login:
