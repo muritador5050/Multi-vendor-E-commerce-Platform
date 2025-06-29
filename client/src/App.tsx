@@ -32,6 +32,7 @@ import OAuthCallback from './auth/OAuthCallback';
 import ResetPasswordForm from './auth/ResetPassword';
 import { AuthProvider } from './context/AuthProvider';
 import ForgotPasswordForm from './auth/ForgotPassword';
+import ProtectedRoute from './components/ProtectedRoute';
 
 //App
 function App() {
@@ -48,7 +49,14 @@ function App() {
             <Route path='vendor-membership' element={<VendorMembership />} />
             <Route path='/oauth/callback' element={<OAuthCallback />} />
 
-            <Route path='store-manager' element={<StoreManagerDashboard />}>
+            <Route
+              path='store-manager'
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <StoreManagerDashboard />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardHome />} />
               <Route path='media' element={<Media />} />
               <Route path='articles' element={<Articles />} />

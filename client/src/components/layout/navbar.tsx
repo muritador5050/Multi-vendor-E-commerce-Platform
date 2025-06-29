@@ -155,9 +155,10 @@ function Navbar() {
             <NavLink to='/'>Home</NavLink>
             <NavLink to='blog'>Blogs</NavLink>
             <NavLink to='shop'>Shop</NavLink>
-            <NavLink to={isAuthenticated ? 'store-manager' : 'my-account'}>
+            {/* <NavLink to={isAuthenticated ? 'store-manager' : 'my-account'}>
               Store Manager
-            </NavLink>
+            </NavLink> */}
+            <NavLink to={'store-manager'}>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
             <NavLink to='store-list'>Store List</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
