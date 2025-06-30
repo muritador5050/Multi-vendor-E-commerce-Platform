@@ -8,9 +8,9 @@ import CartProvider from './context/CartContext.tsx';
 const AppProviders = ({ children }: { children: React.ReactNode }) => (
   <Provider>
     <Router>
-      <AuthProvider>
-        <CartProvider>{children}</CartProvider>
-      </AuthProvider>
+      <CartProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </CartProvider>
     </Router>
   </Provider>
 );

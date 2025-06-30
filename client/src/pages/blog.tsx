@@ -1,4 +1,4 @@
-import ProductCard from '@/components/reuseable/productCard';
+import ProductCard from '@/components/reuseable/ProductComponentCard.tsx';
 import type { Product } from '@/type/product';
 import React from 'react';
 

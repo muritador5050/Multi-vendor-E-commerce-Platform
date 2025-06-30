@@ -15,10 +15,10 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import ProductCard from '@/components/reuseable/productCard';
 import { categories } from '@/components/reuseable/categories';
 import { Truck, DollarSign, Headset } from 'lucide-react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
+import ProductComponentCard from '@/components/reuseable/ProductComponentCard.tsx';
 
 const dummy = [
   {
@@ -173,7 +173,7 @@ function HomePage() {
                 w='fit-content'
                 bg='yellow.500'
                 color='white'
-                _hover='none'
+                _hover={{ bg: 'yellow.50' }}
               >
                 Shop Now
               </Button>
@@ -201,7 +201,7 @@ function HomePage() {
                 w='fit-content'
                 bg='yellow.500'
                 color='white'
-                _hover='none'
+                _hover={{ bg: 'yellow.50' }}
               >
                 Shop now
               </Button>
@@ -228,7 +228,7 @@ function HomePage() {
                 w='fit-content'
                 bg='yellow.500'
                 color='white'
-                _hover='none'
+                _hover={{ bg: 'yellow.50' }}
               >
                 Shop now
               </Button>
@@ -288,7 +288,7 @@ function HomePage() {
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
-            <ProductCard key={dm.id} product={dm} />
+            <ProductComponentCard key={dm.id} product={dm} />
           ))}
         </SimpleGrid>
       </Box>
@@ -309,7 +309,7 @@ function HomePage() {
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
-            <ProductCard key={dm.id} product={dm} />
+            <ProductComponentCard key={dm.id} product={dm} />
           ))}
         </SimpleGrid>
       </Box>
@@ -332,7 +332,7 @@ function HomePage() {
         </Flex>
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
-            <ProductCard key={dm.id} product={dm} />
+            <ProductComponentCard key={dm.id} product={dm} />
           ))}
         </SimpleGrid>
       </Box>
@@ -348,7 +348,7 @@ function HomePage() {
         </Flex>
         <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
-            <ProductCard key={dm.id} product={dm} />
+            <ProductComponentCard key={dm.id} product={dm} />
           ))}
         </SimpleGrid>
       </Box>
@@ -365,7 +365,7 @@ function HomePage() {
         </Flex>
         <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
           {dummy.map((dm) => (
-            <ProductCard key={dm.id} product={dm} />
+            <ProductComponentCard key={dm.id} product={dm} />
           ))}
         </SimpleGrid>
       </Box>

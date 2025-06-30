@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import type { Product } from '@/type/product';
-
+import Cookies from 'js-cookie';
 // Types
 interface CartItem {
   product: Product;
@@ -82,7 +82,7 @@ const apiBase = import.meta.env.VITE_API_URL;
 
 //API function
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem('accessToken');
+  const token = Cookies.get('accessToken');
 
   const response = await fetch(`${apiBase}/cart${endpoint}`, {
     headers: {

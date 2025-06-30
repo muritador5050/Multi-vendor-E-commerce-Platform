@@ -1,7 +1,6 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const { NODE_ENV, REFRESH_TOKEN, FRONTEND_URL } = require('../configs/index');
-const { resSuccessObject } = require('../utils/responseObject');
 const EmailService = require('../services/emailService');
 const passport = require('passport');
 const {
@@ -69,20 +68,21 @@ class UserController {
     user.refreshToken = refreshToken;
     await user.save();
 
+    // Cookie configuration
+    const cookieOptions = {
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    };
+
     // Set refresh token as httpOnly cookie
-    res
-      .cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      })
-      .json({
-        data: {
-          user,
-          accessToken,
-        },
-      });
+    res.cookie('refreshToken', refreshToken, cookieOptions).json({
+      data: {
+        user,
+        accessToken,
+      },
+    });
   }
 
   //Refresh Token
@@ -110,14 +110,17 @@ class UserController {
     user.refreshToken = newRefreshToken;
     await user.save();
 
+    // Cookie configuration
+    const cookieOptions = {
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+    };
+
     // Set new refresh token as cookie
     res
-      .cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
-      })
+      .cookie('refreshToken', newRefreshToken, cookieOptions)
       .json({ accessToken, message: 'Token refreshed successfully' });
   }
 
@@ -127,7 +130,11 @@ class UserController {
 
     if (!token) {
       // Clear cookie anyway and return success
-      res.clearCookie('refreshToken');
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: NODE_ENV === 'production',
+        sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+      });
       return res.status(200).json({ message: 'Logout successful' });
     }
 
@@ -137,13 +144,12 @@ class UserController {
       user.refreshToken = null;
       await user.save();
     }
-    // Clear the refresh token cookie
+    // Clear the refresh token cookie with same options as when set
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: NODE_ENV === 'production',
+      sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
     });
-
     res.status(200).json({ message: 'Logout successful' });
   }
 
