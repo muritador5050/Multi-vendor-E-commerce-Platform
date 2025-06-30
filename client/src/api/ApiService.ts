@@ -175,6 +175,18 @@ class ApiService {
     });
   }
 
+  async registerVendor(
+    name: string,
+    email: string,
+    password: string,
+    confirmPassword: string
+  ): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>('/auth/vendor-register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password, confirmPassword }),
+    });
+  }
+
   async login(
     email: string,
     password: string

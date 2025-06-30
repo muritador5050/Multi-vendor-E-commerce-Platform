@@ -10,6 +10,12 @@ interface AuthContextType extends AuthState {
     password: string,
     confirmPassword: string
   ) => Promise<void>;
+  registerVendor: (
+    name: string,
+    email: string,
+    password: string,
+    confirmPassword: string
+  ) => Promise<void>;
   logout: (redirect?: boolean) => Promise<void>;
 
   // Password methods

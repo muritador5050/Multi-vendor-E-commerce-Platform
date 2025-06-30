@@ -26,8 +26,7 @@ import {
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
-import Cart from '@/pages/cart';
-import { useIsAuthenticated } from '@/hooks/useAuth';
+import CartComponent from '@/pages/cart';
 
 //NavLink Component
 function NavLink({
@@ -87,7 +86,6 @@ function NavLink({
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
-  const isAuthenticated = useIsAuthenticated();
 
   const categories = [
     'Accessories',
@@ -155,9 +153,7 @@ function Navbar() {
             <NavLink to='/'>Home</NavLink>
             <NavLink to='blog'>Blogs</NavLink>
             <NavLink to='shop'>Shop</NavLink>
-            {/* <NavLink to={isAuthenticated ? 'store-manager' : 'my-account'}>
-              Store Manager
-            </NavLink> */}
+
             <NavLink to={'store-manager'}>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
             <NavLink to='store-list'>Store List</NavLink>
@@ -219,6 +215,7 @@ function Navbar() {
               w={64}
               display={{ base: 'none', md: 'inline-flex' }}
               bg='yellow.500'
+              _hover={{ bg: 'yellow.600' }}
               color='white'
               px={4}
               py={2}
@@ -262,6 +259,14 @@ function Navbar() {
             border='1px solid'
             borderColor='yellow.500'
             px={9}
+            bg='transparent'
+            _hover={{
+              bg: 'transparent',
+              borderColor: 'yellow.500',
+              color: 'white',
+            }}
+            _focus={{ boxShadow: 'none' }}
+            _active={{ bg: 'transparent' }}
           >
             <ChakraLink
               _hover={{ textDecoration: 'none' }}
@@ -312,11 +317,7 @@ function Navbar() {
           <DrawerCloseButton />
           <DrawerBody>
             <Flex direction='column' p={4} gap={2}>
-              <Cart />
-              <Button colorScheme='blue' mt={4}>
-                Login
-              </Button>
-              <Button colorScheme='blue'>Sign Up</Button>
+              <CartComponent />
             </Flex>
           </DrawerBody>
         </DrawerContent>

@@ -101,101 +101,103 @@ export default function RegisterForm() {
   }
 
   return (
-    <Stack spacing={7} as='form' onSubmit={handleSubmit}>
-      <Heading>Sign Up</Heading>
+    <form onSubmit={handleSubmit}>
+      <Stack spacing={7}>
+        <Heading>Sign Up</Heading>
 
-      {error && (
-        <Alert status='error' borderRadius='md'>
-          <AlertIcon as={AlertCircle} />
-          <AlertDescription fontSize='sm'>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <FormControl isRequired>
-        <FormLabel>Name</FormLabel>
-        <Input
-          type='text'
-          name='name'
-          value={user.name}
-          onChange={handleOnchange}
-        />
-      </FormControl>
-
-      <FormControl isRequired>
-        <FormLabel>Email</FormLabel>
-        <InputGroup>
-          <InputLeftElement>
-            <Mail size={18} />
-          </InputLeftElement>
-          <Input
-            type='email'
-            name='email'
-            value={user.email}
-            onChange={handleOnchange}
-            pl='2rem'
-          />
-        </InputGroup>
-      </FormControl>
-
-      <FormControl isRequired>
-        <FormLabel>Password</FormLabel>
-        <InputGroup>
-          <Input
-            type={showPassword ? 'text' : 'password'}
-            name='password'
-            value={user.password}
-            onChange={handleOnchange}
-            pr='2.5rem'
-          />
-          <InputRightElement>
-            <IconButton
-              aria-label='Toggle Password'
-              icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              size='sm'
-              variant='ghost'
-              onClick={() => setShowPassword(!showPassword)}
-            />
-          </InputRightElement>
-        </InputGroup>
-      </FormControl>
-
-      <FormControl isRequired>
-        <FormLabel>Confirm Password</FormLabel>
-        <InputGroup>
-          <Input
-            type={showConfirmPassword ? 'text' : 'password'}
-            name='confirmPassword'
-            value={user.confirmPassword}
-            onChange={handleOnchange}
-            pr='2.5rem'
-          />
-          <InputRightElement>
-            <IconButton
-              aria-label='Toggle Password'
-              icon={
-                showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />
-              }
-              size='sm'
-              variant='ghost'
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            />
-          </InputRightElement>
-        </InputGroup>
-        {user.password !== user.confirmPassword && user.confirmPassword && (
-          <Text mt={1} fontSize='sm' color='red.500'>
-            Passwords do not match
-          </Text>
+        {error && (
+          <Alert status='error' borderRadius='md'>
+            <AlertIcon as={AlertCircle} />
+            <AlertDescription fontSize='sm'>{error}</AlertDescription>
+          </Alert>
         )}
-      </FormControl>
-      <Button
-        type='submit'
-        colorScheme='teal'
-        isDisabled={isSubmitting || user.password !== user.confirmPassword}
-        isLoading={isSubmitting}
-        loadingText='Registering'
-      >
-        Register
-      </Button>
-    </Stack>
+
+        <FormControl isRequired>
+          <FormLabel>Name</FormLabel>
+          <Input
+            type='text'
+            name='name'
+            value={user.name}
+            onChange={handleOnchange}
+          />
+        </FormControl>
+
+        <FormControl isRequired>
+          <FormLabel>Email</FormLabel>
+          <InputGroup>
+            <InputLeftElement>
+              <Mail size={18} />
+            </InputLeftElement>
+            <Input
+              type='email'
+              name='email'
+              value={user.email}
+              onChange={handleOnchange}
+              pl='2rem'
+            />
+          </InputGroup>
+        </FormControl>
+
+        <FormControl isRequired>
+          <FormLabel>Password</FormLabel>
+          <InputGroup>
+            <Input
+              type={showPassword ? 'text' : 'password'}
+              name='password'
+              value={user.password}
+              onChange={handleOnchange}
+              pr='2.5rem'
+            />
+            <InputRightElement>
+              <IconButton
+                aria-label='Toggle Password'
+                icon={showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                size='sm'
+                variant='ghost'
+                onClick={() => setShowPassword(!showPassword)}
+              />
+            </InputRightElement>
+          </InputGroup>
+        </FormControl>
+
+        <FormControl isRequired>
+          <FormLabel>Confirm Password</FormLabel>
+          <InputGroup>
+            <Input
+              type={showConfirmPassword ? 'text' : 'password'}
+              name='confirmPassword'
+              value={user.confirmPassword}
+              onChange={handleOnchange}
+              pr='2.5rem'
+            />
+            <InputRightElement>
+              <IconButton
+                aria-label='Toggle Password'
+                icon={
+                  showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />
+                }
+                size='sm'
+                variant='ghost'
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
+            </InputRightElement>
+          </InputGroup>
+          {user.password !== user.confirmPassword && user.confirmPassword && (
+            <Text mt={1} fontSize='sm' color='red.500'>
+              Passwords do not match
+            </Text>
+          )}
+        </FormControl>
+        <Button
+          type='submit'
+          colorScheme='teal'
+          isDisabled={isSubmitting || user.password !== user.confirmPassword}
+          isLoading={isSubmitting}
+          loadingText='Registering'
+        >
+          Register
+        </Button>
+      </Stack>
+    </form>
   );
 }

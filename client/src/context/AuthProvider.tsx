@@ -184,6 +184,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [validateInputs, updateState, handleError]
   );
 
+  const registerVendor = useCallback(
+    async (
+      name: string,
+      email: string,
+      password: string,
+      confirmPassword: string
+    ) => {
+      validateInputs([
+        () => validators.name(name),
+        () => validators.email(email),
+        () => validators.password(password),
+        () => validators.passwordMatch(password, confirmPassword),
+      ]);
+
+      updateState({ loading: true, error: null });
+
+      try {
+        await apiService.registerVendor(
+          name.trim(),
+          email.trim().toLowerCase(),
+          password,
+          confirmPassword
+        );
+        updateState({ error: null, loading: false });
+      } catch (err) {
+        const errorMessage = handleError(err);
+        updateState({ error: errorMessage, loading: false });
+        throw new Error(errorMessage);
+      }
+    },
+    [validateInputs, updateState, handleError]
+  );
+
   const logout = useCallback(
     async (redirect = true) => {
       updateState({ loading: true });
@@ -411,6 +444,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...state,
     login,
     register,
+    registerVendor,
     logout,
     forgotPassword,
     resetPassword,

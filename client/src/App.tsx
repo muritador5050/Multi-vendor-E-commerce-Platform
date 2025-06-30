@@ -1,5 +1,5 @@
-import { Box } from '@chakra-ui/react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Box, Tooltip, IconButton, Stack } from '@chakra-ui/react';
+import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
 import ShopPage from './pages/shop';
 import Blog from './pages/blog';
@@ -30,70 +30,81 @@ import CategoryPage from './pages/CategoryPage';
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
 import ResetPasswordForm from './auth/ResetPassword';
-import { AuthProvider } from './context/AuthProvider';
 import ForgotPasswordForm from './auth/ForgotPassword';
 import ProtectedRoute from './components/ProtectedRoute';
+import { LogOut } from 'lucide-react';
+import { useAuth, useIsAuthenticated } from './hooks/useAuth';
 
 //App
 function App() {
+  const isAuthenticated = useIsAuthenticated();
+  const { logout } = useAuth();
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path='/' element={<Layout />}>
-            <Route index element={<HomePage />} />
-            <Route path='blog' element={<Blog />} />
-            <Route path='shop' element={<ShopPage />} />
-            <Route path='category/:categoryName' element={<CategoryPage />} />
-            <Route path='product/:id' element={<ProductDetail />} />
-            <Route path='vendor-membership' element={<VendorMembership />} />
-            <Route path='/oauth/callback' element={<OAuthCallback />} />
-
-            <Route
-              path='store-manager'
-              element={
-                <ProtectedRoute
-                  allowedRoles={['vendor']}
-                  showAccessDenied={true}
-                >
-                  <StoreManagerDashboard />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<DashboardHome />} />
-              <Route path='media' element={<Media />} />
-              <Route path='articles' element={<Articles />} />
-              <Route path='products' element={<Products />} />
-              <Route path='orders' element={<Orders />} />
-              <Route path='payments' element={<Payments />} />
-              <Route path='coupons' element={<Coupons />} />
-              <Route path='customers' element={<Customers />} />
-              <Route path='profile' element={<Profile />} />
-              <Route path='review' element={<Review />} />
-              <Route path='reports' element={<Reports />} />
-              <Route path='settings' element={<Setting />} />
-              <Route path='messages' element={<Messages />} />
-              <Route path='enquiry' element={<Enquiry />} />
-              <Route path='knowledgebase' element={<Knowledgebase />} />
-              <Route path='notices' element={<Notices />} />
-            </Route>
-            <Route path='contact-us' element={<ContactUs />} />
-            <Route path='wishlist' element={<WishList />} />
-            <Route path='vendor-register' element={<VendorRegistration />} />
-            <Route path='*' element={<Box>404 Not Found</Box>} />
-            <Route path='my-account' element={<AccountPage />} />
-            <Route
-              path='auth/forgot-password'
-              element={<ForgotPasswordForm />}
-            />
-            <Route
-              path='auth/reset-password'
-              element={<ResetPasswordForm token='' />}
-            />
+    <Stack position='relative'>
+      <Routes>
+        <Route path='/' element={<Layout />}>
+          <Route index element={<HomePage />} />
+          <Route path='blog' element={<Blog />} />
+          <Route path='shop' element={<ShopPage />} />
+          <Route path='category/:categoryName' element={<CategoryPage />} />
+          <Route path='product/:id' element={<ProductDetail />} />
+          <Route path='vendor-membership' element={<VendorMembership />} />
+          <Route path='/oauth/callback' element={<OAuthCallback />} />
+          <Route
+            path='store-manager'
+            element={
+              <ProtectedRoute
+                allowedRoles={['vendor', 'admin']}
+                showAccessDenied={true}
+              >
+                <StoreManagerDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DashboardHome />} />
+            <Route path='media' element={<Media />} />
+            <Route path='articles' element={<Articles />} />
+            <Route path='products' element={<Products />} />
+            <Route path='orders' element={<Orders />} />
+            <Route path='payments' element={<Payments />} />
+            <Route path='coupons' element={<Coupons />} />
+            <Route path='customers' element={<Customers />} />
+            <Route path='profile' element={<Profile />} />
+            <Route path='review' element={<Review />} />
+            <Route path='reports' element={<Reports />} />
+            <Route path='settings' element={<Setting />} />
+            <Route path='messages' element={<Messages />} />
+            <Route path='enquiry' element={<Enquiry />} />
+            <Route path='knowledgebase' element={<Knowledgebase />} />
+            <Route path='notices' element={<Notices />} />
           </Route>
-        </Routes>
-      </AuthProvider>
-    </Router>
+          <Route path='contact-us' element={<ContactUs />} />
+          <Route path='wishlist' element={<WishList />} />
+          <Route path='vendor-register' element={<VendorRegistration />} />
+          <Route path='*' element={<Box>404 Not Found</Box>} />
+          <Route path='my-account' element={<AccountPage />} />
+          <Route path='auth/forgot-password' element={<ForgotPasswordForm />} />
+          <Route
+            path='auth/reset-password'
+            element={<ResetPasswordForm token='' />}
+          />
+        </Route>
+      </Routes>
+
+      {isAuthenticated && (
+        <Box position='fixed' right={10} bottom={50}>
+          <Tooltip hasArrow label='logout' bg='white' color='teal'>
+            <IconButton
+              aria-label='logout-btn'
+              icon={<LogOut size={48} />}
+              colorScheme='teal'
+              size='lg'
+              onClick={() => logout()}
+            />
+          </Tooltip>
+        </Box>
+      )}
+    </Stack>
   );
 }
 
