@@ -8,10 +8,11 @@ import {
   CardBody,
   CardFooter,
   ButtonGroup,
+  useToast,
 } from '@chakra-ui/react';
 import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useCart } from '@/context/CartContext';
+import { useAddToCart } from '@/context/CartContext';
 import type { Product } from '@/type/product';
 
 interface ProductCardProps {
@@ -24,16 +25,33 @@ export default function ProductCard({
   onQuickView,
 }: ProductCardProps) {
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const toast = useToast();
+
+  const addToCartMutation = useAddToCart();
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await addToCart(product._id, 1);
-      alert('Product added to cart!');
+      addToCartMutation.mutate({
+        productId: product._id,
+        quantity: 1,
+      });
+      toast({
+        title: 'Product Added',
+        description: 'Product added to cart!',
+        status: 'success',
+        duration: 2000,
+        position: 'top',
+      });
     } catch (error) {
       console.log(error);
-      alert('Failed to add product to cart');
+      toast({
+        title: 'Failed operation',
+        description: 'Failed to add product to cart',
+        status: 'error',
+        duration: 2000,
+        position: 'top',
+      });
     }
   };
 
@@ -138,8 +156,13 @@ export default function ProductCard({
           w='100%'
           transition='transform 0.3s ease-in-out'
         >
-          <Button onClick={handleAddToCart} variant='solid' colorScheme='blue'>
-            Add to cart
+          <Button
+            onClick={handleAddToCart}
+            isDisabled={addToCartMutation.isPending}
+            variant='solid'
+            colorScheme='blue'
+          >
+            {addToCartMutation.isPending ? 'Adding...' : 'Add to Cart'}
           </Button>
           <Button variant='ghost' colorScheme='blue' leftIcon={<Heart />}>
             Wishlist

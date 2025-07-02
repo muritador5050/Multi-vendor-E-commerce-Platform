@@ -27,25 +27,29 @@ export interface Product {
   slug: string;
 }
 
-// API responses
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message?: string;
-  result?: T;
-  results?: T;
-  products?: Product[];
-  count?: number;
-  pagination?: {
-    total: number;
-    page: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-  error?: string;
+export interface Pagination {
+  total: number;
+  page: number;
+  pages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
-// Form data
+// Unified API response structure
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
+
+// Specific response types
+export type ProductResponse = ApiResponse<Product>;
+export type ProductListResponse = ApiResponse<{
+  products: Product[];
+  pagination: Pagination;
+}>;
+
+// Form and query interfaces
 export interface ProductFormData {
   name: string;
   description: string;
@@ -55,5 +59,16 @@ export interface ProductFormData {
   images: string[];
   categoryId: string;
   attributes?: Record<string, unknown>;
+  isActive?: boolean;
+}
+
+export interface ProductQueryParams {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
   isActive?: boolean;
 }

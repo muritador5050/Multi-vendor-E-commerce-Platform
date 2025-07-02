@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Product } from '@/type/product';
-import Cookies from 'js-cookie';
+import { useIsAuthenticated } from '@/hooks/useAuth';
+
 // Types
 interface CartItem {
   product: Product;
@@ -8,83 +9,37 @@ interface CartItem {
   _id?: string;
 }
 
-interface CartState {
+interface CartData {
   items: CartItem[];
   totalItems: number;
   totalAmount: number;
-  loading: boolean;
-  error: string | null;
 }
 
-interface CartContextType {
-  cart: CartState;
-  addToCart: (productId: string, quantity?: number) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
-  removeFromCart: (productId: string) => Promise<void>;
-  clearCart: () => Promise<void>;
-  refreshCart: () => Promise<void>;
+interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
 }
 
-// Initial state
-const initialState: CartState = {
-  items: [],
-  totalItems: 0,
-  totalAmount: 0,
-  loading: false,
-  error: null,
-};
-
-// Action types
-type CartAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | {
-      type: 'SET_CART';
-      payload: { items: CartItem[]; totalItems: number; totalAmount: number };
-    }
-  | { type: 'CLEAR_CART' };
-
-//Reducer
-const cartReducer = (state: CartState, action: CartAction) => {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, loading: false };
-    case 'SET_CART':
-      return {
-        ...state,
-        items: action.payload.items,
-        totalItems: action.payload.totalItems,
-        totalAmount: action.payload.totalAmount,
-        loading: false,
-        error: null,
-      };
-    case 'CLEAR_CART':
-      return {
-        ...state,
-        items: [],
-        totalItems: 0,
-        totalAmount: 0,
-        loading: false,
-        error: null,
-      };
-    default:
-      return state;
-  }
-};
-
-// Create context
-const CartContext = createContext<CartContextType | undefined>(undefined);
+type CartResponse = ApiResponse<CartData>;
 
 // API Configuration
 const apiBase = import.meta.env.VITE_API_URL;
 
-//API function
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const token = Cookies.get('accessToken');
+// Query Keys
+export const cartKeys = {
+  all: ['cart'] as const,
+  items: () => [...cartKeys.all, 'items'] as const,
+};
 
-  const response = await fetch(`${apiBase}/cart${endpoint}`, {
+// API Functions
+const apiRequest = async (
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<ApiResponse> => {
+  const token = localStorage.getItem('accessToken');
+
+  const response = await fetch(`${apiBase}/carts${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -92,6 +47,7 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
     },
     ...options,
   });
+
   if (!response.ok) {
     const errorData = await response
       .json()
@@ -104,154 +60,184 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   return response.json();
 };
 
-//Cart Provider Component
-export default function CartProvider({
-  children,
+const fetchCart = async (): Promise<CartData> => {
+  const response: CartResponse = await apiRequest('/items');
+
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to load cart');
+  }
+
+  return {
+    items: response.data?.items || [],
+    totalItems: response.data?.totalItems || 0,
+    totalAmount: response.data?.totalAmount || 0,
+  };
+};
+
+const addItemToCart = async ({
+  productId,
+  quantity = 1,
 }: {
-  children: React.ReactNode;
-}) {
-  const [cart, dispatch] = useReducer(cartReducer, initialState);
+  productId: string;
+  quantity?: number;
+}): Promise<CartData> => {
+  const response: CartResponse = await apiRequest('/items', {
+    method: 'POST',
+    body: JSON.stringify({ productId, quantity }),
+  });
 
-  // Load cart on mount
-  useEffect(() => {
-    refreshCart();
-  }, []);
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to add item to cart');
+  }
 
-  const refreshCart = async () => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await apiRequest('/items');
-
-      if (response.success) {
-        dispatch({
-          type: 'SET_CART',
-          payload: {
-            items: response.data.results.items || [],
-            totalItems: response.data.results.totalItems || 0,
-            totalAmount: response.data.results.totalAmount || 0,
-          },
-        });
-      }
-    } catch (error) {
-      dispatch({
-        type: 'SET_ERROR',
-        payload: error instanceof Error ? error.message : 'Failed to load cart',
-      });
-    }
+  return {
+    items: response.data?.items || [],
+    totalItems: response.data?.totalItems || 0,
+    totalAmount: response.data?.totalAmount || 0,
   };
+};
 
-  const addToCart = async (productId: string, quantity: number = 1) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await apiRequest('/items', {
-        method: 'POST',
-        body: JSON.stringify({ productId, quantity }),
-      });
+const updateCartItemQuantity = async ({
+  productId,
+  quantity,
+}: {
+  productId: string;
+  quantity: number;
+}): Promise<CartData> => {
+  const response: CartResponse = await apiRequest(`/items/${productId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ quantity }),
+  });
 
-      if (response.success) {
-        dispatch({
-          type: 'SET_CART',
-          payload: {
-            items: response.data.results.items,
-            totalItems: response.data.results.totalItems,
-            totalAmount: response.data.results.totalAmount,
-          },
-        });
-      }
-    } catch (error) {
-      dispatch({
-        type: 'SET_ERROR',
-        payload:
-          error instanceof Error ? error.message : 'Failed to add item to cart',
-      });
-      throw error; // Re-throw so calling component can handle it
-    }
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to update quantity');
+  }
+
+  return {
+    items: response.data?.items || [],
+    totalItems: response.data?.totalItems || 0,
+    totalAmount: response.data?.totalAmount || 0,
   };
+};
 
-  const updateQuantity = async (productId: string, quantity: number) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const response = await apiRequest(`/items/${productId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ quantity }),
-      });
+const removeCartItem = async (productId: string): Promise<void> => {
+  const response: ApiResponse = await apiRequest(`/items/${productId}`, {
+    method: 'DELETE',
+  });
 
-      if (response.success) {
-        dispatch({
-          type: 'SET_CART',
-          payload: {
-            items: response.data.results.items,
-            totalItems: response.data.results.totalItems,
-            totalAmount: response.data.results.totalAmount,
-          },
-        });
-      }
-    } catch (error) {
-      dispatch({
-        type: 'SET_ERROR',
-        payload:
-          error instanceof Error ? error.message : 'Failed to update quantity',
-      });
-      throw error;
-    }
-  };
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to remove item');
+  }
+};
 
-  const removeFromCart = async (productId: string) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      await apiRequest(`/items/${productId}`, {
-        method: 'DELETE',
-      });
+const clearCartItems = async (): Promise<void> => {
+  const response: ApiResponse = await apiRequest('/clear', {
+    method: 'DELETE',
+  });
 
-      // Refresh cart after removal
-      await refreshCart();
-    } catch (error) {
-      dispatch({
-        type: 'SET_ERROR',
-        payload:
-          error instanceof Error ? error.message : 'Failed to remove item',
-      });
-      throw error;
-    }
-  };
+  if (!response.success) {
+    throw new Error(response.message || 'Failed to clear cart');
+  }
+};
 
-  const clearCart = async () => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      await apiRequest('/clear', {
-        method: 'DELETE',
-      });
+// Custom Hooks
+export function useCart() {
+  const isAuthenticated = useIsAuthenticated();
 
-      dispatch({ type: 'CLEAR_CART' });
-    } catch (error) {
-      dispatch({
-        type: 'SET_ERROR',
-        payload:
-          error instanceof Error ? error.message : 'Failed to clear cart',
-      });
-      throw error;
-    }
-  };
-
-  const contextValue: CartContextType = {
-    cart,
-    addToCart,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-    refreshCart,
-  };
-
-  return (
-    <CartContext.Provider value={contextValue}>{children}</CartContext.Provider>
-  );
+  return useQuery({
+    queryKey: cartKeys.items(),
+    queryFn: fetchCart,
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: true,
+  });
 }
 
-// Custom hook to use cart context
-export function useCart(): CartContextType {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
+export function useAddToCart() {
+  const queryClient = useQueryClient();
+  const isAuthenticated = useIsAuthenticated();
+
+  return useMutation({
+    mutationFn: addItemToCart,
+    onSuccess: (data) => {
+      queryClient.setQueryData(cartKeys.items(), data);
+    },
+    onError: (error) => {
+      if (!isAuthenticated) {
+        throw new Error('Please login to add items to cart');
+      }
+      throw error;
+    },
+  });
+}
+
+export function useUpdateCartQuantity() {
+  const queryClient = useQueryClient();
+  const isAuthenticated = useIsAuthenticated();
+
+  return useMutation({
+    mutationFn: updateCartItemQuantity,
+    onSuccess: (data) => {
+      queryClient.setQueryData(cartKeys.items(), data);
+    },
+    retry: 3,
+    onError: (error) => {
+      if (!isAuthenticated) {
+        throw new Error('Please login to update cart');
+      }
+      throw error;
+    },
+  });
+}
+
+export function useRemoveFromCart() {
+  const queryClient = useQueryClient();
+  const isAuthenticated = useIsAuthenticated();
+
+  return useMutation({
+    mutationFn: removeCartItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.items() });
+    },
+    onError: (error) => {
+      if (!isAuthenticated) {
+        throw new Error('Please login to remove items from cart');
+      }
+      throw error;
+    },
+  });
+}
+
+export function useClearCart() {
+  const queryClient = useQueryClient();
+  const isAuthenticated = useIsAuthenticated();
+
+  return useMutation({
+    mutationFn: clearCartItems,
+    onSuccess: () => {
+      queryClient.setQueryData(cartKeys.items(), {
+        items: [],
+        totalItems: 0,
+        totalAmount: 0,
+      });
+    },
+    onError: (error) => {
+      if (!isAuthenticated) {
+        throw new Error('Please login to clear cart');
+      }
+      throw error;
+    },
+  });
+}
+
+// Hook to clear cart data on logout (use in your auth logic)
+export function useClearCartOnLogout() {
+  const queryClient = useQueryClient();
+
+  const clearCartData = () => {
+    queryClient.removeQueries({ queryKey: cartKeys.items() });
+  };
+
+  return clearCartData;
 }

@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Product = require('../models/product.model');
 const Category = require('../models/category.model');
-const { resSuccessObject } = require('../utils/responseObject');
 
 //Products
 class ProductsController {
@@ -23,12 +22,11 @@ class ProductsController {
       .populate('vendor', 'name email')
       .select('-categoryId');
 
-    res.json(
-      resSuccessObject({
-        message: 'Product created successfully',
-        results: populated,
-      })
-    );
+    return res.status(201).json({
+      success: true,
+      message: 'Product created successfully',
+      data: populated,
+    });
   }
 
   //Get all products (Public access)
@@ -46,7 +44,10 @@ class ProductsController {
 
     // Check for invalid page or limit values
     if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({ message: 'Invalid page or limit values.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid page or limit values.',
+      });
     }
 
     const filter = { isDeleted: false };
@@ -63,7 +64,20 @@ class ProductsController {
         filter.category = cat._id;
       } else {
         // No matching category — return empty result
-        return res.json({ message: 'No matching category' });
+        return res.status(404).json({
+          success: false,
+          message: 'No matching category found',
+          data: {
+            products: [],
+            pagination: {
+              total: 0,
+              page: parseInt(page),
+              pages: 0,
+              hasNext: false,
+              hasPrev: parseInt(page) > 1,
+            },
+          },
+        });
       }
     }
 
@@ -96,17 +110,19 @@ class ProductsController {
       .populate('vendor', 'name email')
       .lean();
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      count: products.length,
-      pagination: {
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
-        hasPrev: parseInt(page) > 1,
+      message: 'Products retrieved successfully',
+      data: {
+        products: products,
+        pagination: {
+          total,
+          page: parseInt(page),
+          pages: Math.ceil(total / parseInt(limit)),
+          hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
+          hasPrev: parseInt(page) > 1,
+        },
       },
-      products: products,
     });
   }
 
@@ -124,13 +140,14 @@ class ProductsController {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found',
+        message: 'Product not found',
       });
     }
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      result: product,
+      message: 'Product retrieved successfully',
+      data: product,
     });
   }
 
@@ -145,12 +162,12 @@ class ProductsController {
     }
 
     const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, isDeleted: false },
+      filter,
       { $set: req.body },
       { new: true, runValidators: true }
     )
       .select('-categoryId')
-      .populate('category', 'name slug, image')
+      .populate('category', 'name slug image')
       .populate('vendor', 'name email');
 
     if (!product) {
@@ -165,12 +182,11 @@ class ProductsController {
       });
     }
 
-    return res.json(
-      resSuccessObject({
-        message: 'Updated successfully.',
-        results: product,
-      })
-    );
+    return res.status(200).json({
+      success: true,
+      message: 'Product updated successfully',
+      data: product,
+    });
   }
 
   //Delete product (Admin can delete any, Vendor can delete own)
@@ -182,8 +198,8 @@ class ProductsController {
       filter.vendor = req.user.id;
     }
 
-    const product = await Product.findByIdAndUpdate(
-      { _id: req.params.id },
+    const product = await Product.findOneAndUpdate(
+      filter,
       { isDeleted: true, isActive: false },
       { new: true }
     );
@@ -199,9 +215,11 @@ class ProductsController {
         message,
       });
     }
-    return res
-      .status(200)
-      .json({ success: true, message: 'Product soft-deleted successfully' });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Product deleted successfully',
+    });
   }
 
   // Get vendor's own products (Vendor only)
@@ -210,7 +228,10 @@ class ProductsController {
 
     // Check for invalid page or limit values
     if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({ message: 'Invalid page or limit values.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid page or limit values.',
+      });
     }
 
     const filter = {
@@ -235,17 +256,19 @@ class ProductsController {
       .populate('category', 'name slug image')
       .lean();
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      count: products.length,
-      pagination: {
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
-        hasPrev: parseInt(page) > 1,
+      message: 'Vendor products retrieved successfully',
+      data: {
+        products: products,
+        pagination: {
+          total,
+          page: parseInt(page),
+          pages: Math.ceil(total / parseInt(limit)),
+          hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
+          hasPrev: parseInt(page) > 1,
+        },
       },
-      products: products,
     });
   }
 }

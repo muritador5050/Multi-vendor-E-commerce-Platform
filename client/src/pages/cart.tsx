@@ -1,62 +1,30 @@
-import React from 'react';
 import {
   Box,
   Button,
   Flex,
-  Heading,
+  HStack,
+  IconButton,
   Image,
   Spinner,
   Stack,
   Text,
-  useToast,
+  VStack,
 } from '@chakra-ui/react';
-import { useCart } from '@/context/CartContext';
+import {
+  useCart,
+  useRemoveFromCart,
+  useUpdateCartQuantity,
+  useClearCart,
+} from '@/context/CartContext';
+import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
 
 export default function CartComponent() {
-  const { cart, addToCart, updateQuantity, removeFromCart, clearCart } =
-    useCart();
-  const toast = useToast();
+  const { data: cart, isLoading, isError } = useCart();
+  const updateQuantity = useUpdateCartQuantity();
+  const removeItem = useRemoveFromCart();
+  const clearCartMutation = useClearCart();
 
-  const handleAddToCart = async (productId: string) => {
-    try {
-      await addToCart(productId, 1);
-      toast({
-        title: 'Item added to cart.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      toast({
-        title: 'Failed to add item to cart.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      console.error('Failed to add to cart:', error);
-    }
-  };
-
-  const handleQuantityChange = async (
-    productId: string,
-    newQuantity: number
-  ) => {
-    try {
-      await updateQuantity(productId, newQuantity);
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
-    }
-  };
-
-  const handleRemoveItem = async (productId: string) => {
-    try {
-      await removeFromCart(productId);
-    } catch (error) {
-      console.error('Failed to remove item:', error);
-    }
-  };
-
-  if (cart.loading) {
+  if (isLoading) {
     return (
       <Flex justify='center' align='center' minH='200px'>
         <Spinner size='lg' />
@@ -65,89 +33,123 @@ export default function CartComponent() {
     );
   }
 
-  if (cart.error) {
+  if (isError) {
     return (
       <Box color='red.500' p={4}>
-        Error: {cart.error}
+        Error: {isError}
       </Box>
     );
   }
 
   return (
-    <Box maxW='4xl' mx='auto' p={6}>
-      <Heading size='lg' mb={6}>
-        Shopping Cart
-      </Heading>
-
-      {cart.items.length === 0 ? (
+    <Box>
+      {cart?.items.length === 0 ? (
         <Text>Your cart is empty</Text>
       ) : (
         <>
           <Stack spacing={6}>
-            {cart.items.map((item) => (
-              <Flex
-                key={item.product._id}
-                p={4}
-                borderWidth='1px'
-                borderRadius='lg'
-                align='center'
-                gap={4}
-              >
-                <Image
-                  src={item.product.images[0]}
-                  alt={item.product.name}
-                  boxSize='80px'
-                  objectFit='cover'
-                  borderRadius='md'
-                />
-                <Box flex='1'>
-                  <Heading size='sm'>{item.product.name}</Heading>
-                  <Text>${item.product.price}</Text>
-                  <Flex mt={2} align='center' gap={2}>
-                    <Button
-                      size='sm'
-                      onClick={() =>
-                        handleQuantityChange(
-                          item.product._id,
-                          item.quantity - 1
-                        )
+            {cart?.items.map((item) => {
+              console.log('Cart item:', item); // Add this line
+              console.log('Product in cart:', item.product); // Add this line
+              console.log('Average rating:', item.product.averageRating);
+              return (
+                <VStack key={item.product._id} bg='white'>
+                  <Flex w='100%' align='center' justify='space-between' p={3}>
+                    <Image
+                      src={
+                        item.product.images?.length > 0
+                          ? item.product.images[0]
+                          : '/placeholder-image.jpg'
                       }
-                      disabled={item.quantity <= 1}
-                    >
-                      -
-                    </Button>
-                    <Text fontWeight='bold'>{item.quantity}</Text>
-                    <Button
-                      size='sm'
-                      onClick={() =>
-                        handleQuantityChange(
-                          item.product._id,
-                          item.quantity + 1
-                        )
-                      }
-                    >
-                      +
-                    </Button>
+                      alt={item.product.name}
+                      boxSize='70px'
+                      objectFit='cover'
+                      borderRadius='md'
+                      border='2px solid red'
+                    />
+
+                    <VStack spacing={2} flex={1} mx={3} align='flex-start'>
+                      <Text
+                        isTruncated
+                        fontSize='sm'
+                        maxW='120px'
+                        fontWeight='medium'
+                      >
+                        {item.product.name}
+                      </Text>
+
+                      <HStack spacing={1}>
+                        {Array(5)
+                          .fill('')
+                          .map((_, i) => {
+                            const rating =
+                              Number(item.product.averageRating) || 0;
+                            return (
+                              <StarIcon
+                                key={i}
+                                color={
+                                  i < Math.floor(rating)
+                                    ? 'yellow.400'
+                                    : 'gray.300'
+                                }
+                                boxSize={3}
+                              />
+                            );
+                          })}
+                      </HStack>
+                    </VStack>
+
+                    <IconButton
+                      aria-label='delete item'
+                      colorScheme='red'
+                      icon={<DeleteIcon />}
+                      size='xs'
+                      onClick={() => removeItem.mutate(item.product._id)}
+                    />
                   </Flex>
-                </Box>
-                <Button
-                  colorScheme='red'
-                  variant='outline'
-                  size='sm'
-                  onClick={() => handleRemoveItem(item.product._id)}
-                >
-                  Remove
-                </Button>
-              </Flex>
-            ))}
+                  <Box flex='1'>
+                    <Text>${item.product.price}</Text>
+                    <Flex mt={2} align='center' gap={2}>
+                      <Button
+                        size='sm'
+                        onClick={() =>
+                          updateQuantity.mutate({
+                            productId: item.product._id,
+                            quantity: item.quantity - 1,
+                          })
+                        }
+                        disabled={item.quantity <= 1}
+                      >
+                        -
+                      </Button>
+                      <Text fontWeight='bold'>{item.quantity}</Text>
+                      <Button
+                        size='sm'
+                        onClick={() =>
+                          updateQuantity.mutate({
+                            productId: item.product._id,
+                            quantity: item.quantity + 1,
+                          })
+                        }
+                      >
+                        +
+                      </Button>
+                    </Flex>
+                  </Box>
+                </VStack>
+              );
+            })}
           </Stack>
 
           <Box mt={8} borderTopWidth='1px' pt={4}>
-            <Text fontWeight='medium'>Total Items: {cart.totalItems}</Text>
+            <Text fontWeight='medium'>Total Items: {cart?.totalItems}</Text>
             <Text fontWeight='medium' mb={4}>
-              Total Amount: ${cart.totalAmount.toFixed(2)}
+              Total Amount: ${cart?.totalAmount.toFixed(2)}
             </Text>
-            <Button colorScheme='red' onClick={clearCart}>
+            <Button
+              colorScheme='red'
+              onClick={() => clearCartMutation.mutate()}
+            >
               Clear Cart
             </Button>
           </Box>

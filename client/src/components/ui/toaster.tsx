@@ -33,7 +33,7 @@ export const useToaster = () => {
 };
 
 // Example usage inside any component
-export const ExampleComponent = () => {
+const ExampleComponent = () => {
   const toast = useToast();
 
   const handleAction = () => {

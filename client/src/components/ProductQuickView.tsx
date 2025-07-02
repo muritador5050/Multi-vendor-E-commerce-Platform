@@ -75,7 +75,7 @@ export default function ProductQuickView({
         <ModalBody>
           <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
             <Image
-              src={product.images[0] || '/placeholder-image.jpg'}
+              src={product.images[0]}
               alt={product.name}
               borderRadius='md'
               maxW='300px'
@@ -84,7 +84,7 @@ export default function ProductQuickView({
               <Text fontWeight='bold' fontSize='lg'>
                 {product.name}
               </Text>
-              <Text color='gray.600'>Store: {product.vendor.name}</Text>
+              <Text color='gray.600'>Store: {product?.vendor?.name}</Text>
               <Flex align='center' gap={2}>
                 {product.discount > 0 && (
                   <Text color='gray.400' as='s'>

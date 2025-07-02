@@ -14,6 +14,8 @@
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@tanstack/react-query": "^5.81.5",
+    "@tanstack/react-query-devtools": "^5.81.5",
     "@tinymce/tinymce-react": "^6.2.1",
     "axios": "^1.10.0",
     "chakra-react-select": "^4.7.0",

@@ -22,11 +22,13 @@ import {
   MenuList,
   MenuItem,
   MenuDivider,
+  Heading,
+  Stack,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
-import CartComponent from '@/pages/cart';
+import CartComponent from '@/pages/Cart';
 
 //NavLink Component
 function NavLink({
@@ -313,12 +315,25 @@ function Navbar() {
         isOpen={rightDrawer.isOpen}
       >
         <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerBody>
-            <Flex direction='column' p={4} gap={2}>
-              <CartComponent />
+        <DrawerContent bg='gray.100' w={{ base: '90%', md: '500px' }}>
+          <Stack display='flex' flexDirection='row' bg='white' px={3} mb={6}>
+            <DrawerCloseButton position='relative' />
+            <Flex align='center' mt={1} mx='auto'>
+              <IconButton
+                icon={<ShoppingBag />}
+                aria-label='Cart'
+                variant='ghost'
+                colorScheme='white'
+              />
+              <Heading size='md' fontWeight='semibold'>
+                Cart
+              </Heading>
             </Flex>
+          </Stack>
+          <DrawerBody px={3} overflow='auto'>
+            {/* <Flex direction='column' p={4} gap={2}> */}
+            <CartComponent />
+            {/* </Flex> */}
           </DrawerBody>
         </DrawerContent>
       </Drawer>

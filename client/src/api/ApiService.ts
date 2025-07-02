@@ -81,9 +81,17 @@ class ApiService {
       }
 
       const data: AuthTokenResponse = await response.json();
-      localStorage.setItem('accessToken', data.accessToken);
+      // Store the new access token
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+        console.log(
+          '✅ New access token stored:',
+          data.accessToken.substring(0, 20) + '...'
+        );
+      }
       return data.accessToken;
-    } catch {
+    } catch (error) {
+      console.error('❌ Token refresh failed:', error);
       localStorage.removeItem('accessToken');
       if (typeof window !== 'undefined') {
         window.location.href = '/account';
@@ -124,6 +132,11 @@ class ApiService {
       credentials: 'include',
     };
 
+    console.log(`🔄 Making request to: ${endpoint}`);
+    console.log(
+      `🔑 Using token: ${token ? token.substring(0, 20) + '...' : 'None'}`
+    );
+
     try {
       const response = await fetch(`${apiBase}${endpoint}`, config);
 
@@ -131,6 +144,7 @@ class ApiService {
         response.status === 401 &&
         !endpoint.includes('/auth/refresh-token')
       ) {
+        console.log('🔄 401 detected, attempting token refresh...');
         try {
           const newToken = await this.refreshToken();
 
@@ -142,12 +156,14 @@ class ApiService {
             },
           };
 
+          console.log('🔄 Retrying request with new token...');
           const retryResponse = await fetch(
             `${apiBase}${endpoint}`,
             retryConfig
           );
           return this.handleResponse<T>(retryResponse);
-        } catch {
+        } catch (refreshError) {
+          console.error('❌ Token refresh and retry failed:', refreshError);
           throw new ApiError('Authentication failed', 401, response);
         }
       }
@@ -191,10 +207,29 @@ class ApiService {
     email: string,
     password: string
   ): Promise<ApiResponse<AuthResponse>> {
-    return this.request<ApiResponse<AuthResponse>>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await this.request<ApiResponse<AuthResponse>>(
+        '/auth/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        }
+      );
+
+      // Store access token after successful login
+      if (response.data?.accessToken) {
+        localStorage.setItem('accessToken', response.data.accessToken);
+        console.log('✅ Access token stored after login');
+        console.log(
+          '✅ Token preview:',
+          response.data.accessToken.substring(0, 20) + '...'
+        );
+      }
+      return response;
+    } catch (error) {
+      console.error('❌ Login failed:', error);
+      throw error;
+    }
   }
 
   async logout(): Promise<ApiResponse<null>> {
@@ -203,9 +238,14 @@ class ApiService {
         method: 'POST',
       });
       localStorage.removeItem('accessToken');
+      console.log('✅ Logged out and access token removed');
       return response;
     } catch (error) {
+      // Always clear token even if logout request fails
       localStorage.removeItem('accessToken');
+      console.log(
+        '✅ Access token removed (logout request failed but token cleared)'
+      );
       throw error;
     }
   }
@@ -266,11 +306,26 @@ class ApiService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.getCurrentToken();
+    const token = this.getCurrentToken();
+    console.log('🔍 Checking authentication:', !!token);
+    return !!token;
   }
 
   clearAuth(): void {
     localStorage.removeItem('accessToken');
+    console.log('🗑️ Auth cleared');
+  }
+
+  // Debug method to check token status
+  debugTokenStatus(): void {
+    const token = localStorage.getItem('accessToken');
+    console.log('=== TOKEN DEBUG ===');
+    console.log('Access Token exists:', !!token);
+    if (token) {
+      console.log('Token preview:', token.substring(0, 30) + '...');
+    }
+    console.log('Cookies available:', document.cookie);
+    console.log('==================');
   }
 }
 

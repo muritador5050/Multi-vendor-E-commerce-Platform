@@ -36,6 +36,29 @@ const SORT_OPTIONS: SortOption[] = [
   { value: '-averageRating', label: 'Top Rated' },
 ];
 
+const apiBase = import.meta.env.VITE_API_URL;
+
+const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+  const response = await fetch(`${apiBase}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: 'Network error' }));
+    throw new Error(
+      errorData.message || `HTTP error! status: ${response.status}`
+    );
+  }
+
+  return response.json();
+};
+
 export default function ShopPage() {
   // Modal state
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -58,7 +81,6 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
 
-  // Fetch products function
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
@@ -67,7 +89,7 @@ export default function ShopPage() {
       // Build query parameters
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '16',
+        limit: '10',
         sort: sortBy,
         minPrice: filters.priceRange[0].toString(),
         maxPrice: filters.priceRange[1].toString(),
@@ -80,12 +102,11 @@ export default function ShopPage() {
       }
 
       // Make API call
-      const response = await fetch(`/api/products?${params}`);
-      const data = await response.json();
+      const data = await apiRequest(`/products?${params}`);
 
-      if (data.success) {
-        setProducts(data.products || []);
-        setTotalResults(data.count || 0);
+      if (data.success && data.data) {
+        setProducts(data.data.products || []);
+        setTotalResults(data.data.pagination?.total || 0);
       } else {
         setError(data.message || 'Failed to fetch products');
       }
@@ -105,13 +126,13 @@ export default function ShopPage() {
   // Handle filter changes
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   // Handle sort change
   const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSortBy(event.target.value);
-    setCurrentPage(1); // Reset to first page when sort changes
+    setCurrentPage(1);
   };
 
   // Handle quick view
