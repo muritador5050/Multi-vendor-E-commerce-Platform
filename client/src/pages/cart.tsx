@@ -1,6 +1,8 @@
 import {
   Box,
   Button,
+  ButtonGroup,
+  Divider,
   Flex,
   HStack,
   IconButton,
@@ -16,7 +18,7 @@ import {
   useUpdateCartQuantity,
   useClearCart,
 } from '@/context/CartContext';
-import { DeleteIcon, StarIcon } from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon, MinusIcon, StarIcon } from '@chakra-ui/icons';
 
 export default function CartComponent() {
   const { data: cart, isLoading, isError } = useCart();
@@ -49,9 +51,6 @@ export default function CartComponent() {
         <>
           <Stack spacing={6}>
             {cart?.items.map((item) => {
-              console.log('Cart item:', item); // Add this line
-              console.log('Product in cart:', item.product); // Add this line
-              console.log('Average rating:', item.product.averageRating);
               return (
                 <VStack key={item.product._id} bg='white'>
                   <Flex w='100%' align='center' justify='space-between' p={3}>
@@ -104,14 +103,24 @@ export default function CartComponent() {
                       colorScheme='red'
                       icon={<DeleteIcon />}
                       size='xs'
+                      alignSelf='flex-start'
                       onClick={() => removeItem.mutate(item.product._id)}
                     />
                   </Flex>
-                  <Box flex='1'>
-                    <Text>${item.product.price}</Text>
-                    <Flex mt={2} align='center' gap={2}>
-                      <Button
-                        size='sm'
+                  <Divider />
+                  <Flex w='100%' align='center' justify='space-between' p={3}>
+                    <ButtonGroup
+                      size='xs'
+                      isAttached
+                      variant='outline'
+                      alignItems='center'
+                    >
+                      <Text fontSize='xs' fontWeight='light' mr={2}>
+                        Quantity
+                      </Text>
+                      <IconButton
+                        aria-label='Add quantity'
+                        icon={<MinusIcon />}
                         onClick={() =>
                           updateQuantity.mutate({
                             productId: item.product._id,
@@ -119,39 +128,88 @@ export default function CartComponent() {
                           })
                         }
                         disabled={item.quantity <= 1}
-                      >
-                        -
-                      </Button>
-                      <Text fontWeight='bold'>{item.quantity}</Text>
-                      <Button
-                        size='sm'
+                      />
+                      <Button size='xs'>{item.quantity}</Button>
+                      <IconButton
+                        aria-label='Add quantity'
+                        icon={<AddIcon />}
                         onClick={() =>
                           updateQuantity.mutate({
                             productId: item.product._id,
                             quantity: item.quantity + 1,
                           })
                         }
-                      >
-                        +
-                      </Button>
-                    </Flex>
-                  </Box>
+                      />
+                    </ButtonGroup>
+                    <Text fontWeight='extrabold' fontSize='xs'>
+                      ${item.product.price}
+                    </Text>
+                  </Flex>
                 </VStack>
               );
             })}
           </Stack>
 
-          <Box mt={8} borderTopWidth='1px' pt={4}>
-            <Text fontWeight='medium'>Total Items: {cart?.totalItems}</Text>
-            <Text fontWeight='medium' mb={4}>
-              Total Amount: ${cart?.totalAmount.toFixed(2)}
-            </Text>
+          <Divider />
+
+          <Flex
+            w='100%'
+            bg='white'
+            align='center'
+            justify='space-between'
+            mt={8}
+            p={3}
+          >
+            <Box>
+              <Text fontWeight='light' fontSize='xs'>
+                Total Items:
+                <Text
+                  as='span'
+                  fontWeight='bold'
+                  fontSize='xs'
+                  color='blue.600'
+                  ml={1}
+                >
+                  {cart?.totalItems}
+                </Text>
+              </Text>
+              <Text fontWeight='light' fontSize='xs'>
+                Sub Total:
+                <Text
+                  as='span'
+                  fontWeight='bold'
+                  fontSize='xs'
+                  color='red'
+                  ml={1}
+                >
+                  ${cart?.totalAmount.toFixed(2)}
+                </Text>
+              </Text>
+            </Box>
             <Button
               colorScheme='red'
+              size='xs'
               onClick={() => clearCartMutation.mutate()}
             >
               Clear Cart
             </Button>
+          </Flex>
+
+          <Divider />
+          <Box my={5}>
+            <Text textAlign='center' fontFamily='cursive' color='black' mb={3}>
+              Payment Details
+            </Text>
+            <Flex w='100%' bg='white' p={3}>
+              <ButtonGroup>
+                <Button variant='outline' fontSize='xs' px='30px'>
+                  View Cart
+                </Button>
+                <Button bg='black' color='white' fontSize='xs' px='30px'>
+                  Checkout
+                </Button>
+              </ButtonGroup>
+            </Flex>
           </Box>
         </>
       )}
