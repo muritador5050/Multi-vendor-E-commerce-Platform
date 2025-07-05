@@ -175,7 +175,7 @@ class CartController {
     res.json({
       success: true,
       message: 'Cart updated successfully',
-      results: {
+      data: {
         ...updatedCart.toObject(),
         totalItems,
         totalAmount,

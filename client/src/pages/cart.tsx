@@ -46,7 +46,14 @@ export default function CartComponent() {
   return (
     <Box>
       {cart?.items.length === 0 ? (
-        <Text>Your cart is empty</Text>
+        <Stack textAlign='center' spacing={6}>
+          <Text fontWeight='bold' fontSize='xl'>
+            Your cart is empty
+          </Text>
+          <Button bg='black' color='white' _hover={{ bg: 'black' }}>
+            Back To Shop
+          </Button>
+        </Stack>
       ) : (
         <>
           <Stack spacing={6}>

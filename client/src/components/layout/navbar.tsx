@@ -24,11 +24,13 @@ import {
   MenuDivider,
   Heading,
   Stack,
+  Badge,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
 import CartComponent from '@/pages/Cart';
+import { useCart } from '@/context/CartContext';
 
 //NavLink Component
 function NavLink({
@@ -88,6 +90,7 @@ function NavLink({
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
+  const { data: cart } = useCart();
 
   const categories = [
     'Accessories',
@@ -194,13 +197,35 @@ function Navbar() {
               />
             </ChakraLink>
 
-            <IconButton
-              icon={<ShoppingBag />}
-              aria-label='Cart'
-              variant='ghost'
-              colorScheme='white'
-              onClick={rightDrawer.onOpen}
-            />
+            <Flex>
+              <Box position='relative' display='inline-block'>
+                <IconButton
+                  icon={<ShoppingBag />}
+                  aria-label='Cart'
+                  variant='ghost'
+                  colorScheme='white'
+                  onClick={rightDrawer.onOpen}
+                />
+                {cart?.items.length !== 0 && (
+                  <Badge
+                    w='25px'
+                    h='25px'
+                    bg='yellow.400'
+                    borderRadius='full'
+                    position='absolute'
+                    top='-10px'
+                    right='-10px'
+                    display='grid'
+                    placeContent='center'
+                  >
+                    {cart?.items.length}
+                  </Badge>
+                )}
+              </Box>
+              <Text alignSelf='flex-end' fontWeight='bold' color='white'>
+                ${cart?.totalAmount}
+              </Text>
+            </Flex>
           </HStack>
         </Flex>
         <Flex
@@ -331,9 +356,7 @@ function Navbar() {
             </Flex>
           </Stack>
           <DrawerBody px={3} overflow='auto'>
-            {/* <Flex direction='column' p={4} gap={2}> */}
             <CartComponent />
-            {/* </Flex> */}
           </DrawerBody>
         </DrawerContent>
       </Drawer>

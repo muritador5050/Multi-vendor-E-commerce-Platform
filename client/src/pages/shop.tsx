@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Flex,
@@ -81,7 +81,7 @@ export default function ShopPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -116,12 +116,12 @@ export default function ShopPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, sortBy, currentPage]);
 
   // Fetch products when dependencies change
   useEffect(() => {
     fetchProducts();
-  }, [filters, sortBy, currentPage]);
+  }, [fetchProducts]);
 
   // Handle filter changes
   const handleFiltersChange = (newFilters: FilterState) => {

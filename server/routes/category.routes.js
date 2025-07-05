@@ -2,12 +2,8 @@ const express = require('express');
 const router = express.Router();
 const CategoryController = require('../controllers/category.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
-const {
-  authenticate,
-  isVendor,
-  isAdmin,
-  adminOrVendor,
-} = require('../middlewares/authMiddleware');
+const { authenticate } = require('../middlewares/authMiddleware');
+const checkRole = require('../middlewares/roleMiddleware');
 
 /**
  * @openapi
@@ -15,42 +11,58 @@ const {
  *   get:
  *     summary: Get all categories
  *     tags: [Categories]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for category names
  *     responses:
  *       '200':
  *         description: A list of categories
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Category'
+ *               $ref: '#/components/schemas/CategoriesListResponse'
  */
 router.get('/', asyncHandler(CategoryController.getAllCategories));
 
 /**
  * @openapi
- * /api/categories/search:
+ * /api/categories/slug/{slug}:
  *   get:
- *     summary: Search categories by name
+ *     summary: Get category by slug
  *     tags: [Categories]
  *     parameters:
- *       - in: query
- *         name: search
+ *       - in: path
+ *         name: slug
  *         schema:
  *           type: string
- *         required: false
- *         description: Search term for category names
+ *         required: true
+ *         description: Category slug
  *     responses:
  *       '200':
- *         description: A list of categories matching the search term
+ *         description: A single category
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Category'
+ *               $ref: '#/components/schemas/CategoryResponse'
+ *       '404':
+ *         description: Category not found
  */
-router.get('/:slug', asyncHandler(CategoryController.getCategoryBySlug));
+router.get('/slug/:slug', asyncHandler(CategoryController.getCategoryBySlug));
 
 /**
  * @openapi
@@ -58,36 +70,68 @@ router.get('/:slug', asyncHandler(CategoryController.getCategoryBySlug));
  *   post:
  *     summary: Create a new category
  *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Category'
+ *             $ref: '#/components/schemas/CategoryInput'
+ *     responses:
+ *       '201':
+ *         description: Category created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CategoryResponse'
+ *       '400':
+ *         description: Bad request
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
  */
 router.post(
   '/',
   authenticate,
-  isAdmin,
+  checkRole('admin', 'create'),
   asyncHandler(CategoryController.createCategory)
 );
 
 /**
  * @openapi
- * /api/categories/{id}:
- *   delete:
- *     summary: Delete a category by ID
+ * /api/categories/bulk:
+ *   post:
+ *     summary: Create multiple categories from predefined list
  *     tags: [Categories]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
- *       '204':
- *         description: Category deleted successfully
+ *       '201':
+ *         description: Categories created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Category'
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
  */
+router.post(
+  '/bulk',
+  authenticate,
+  checkRole('admin', 'create'),
+  asyncHandler(CategoryController.createBulkCategories)
+);
 
 /**
  * @openapi
@@ -95,69 +139,113 @@ router.post(
  *   get:
  *     summary: Get a single category by ID
  *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Category ID
  *     responses:
  *       '200':
  *         description: A single category
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Category'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Category'
+ *       '404':
+ *         description: Category not found
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
  *   put:
  *     summary: Update a category by ID
  *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Category ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Category'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Electronics"
+ *               image:
+ *                 type: string
+ *                 example: "https://example.com/image.jpg"
  *     responses:
  *       '200':
  *         description: Category updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Category'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Category'
+ *       '404':
+ *         description: Category not found
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
  *   delete:
  *     summary: Delete a category by ID
  *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
+ *         description: Category ID
  *     responses:
- *       '204':
+ *       '200':
  *         description: Category deleted successfully
+ *       '404':
+ *         description: Category not found
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
  */
 router
   .route('/:id')
   .get(
     authenticate,
-    adminOrVendor,
+    checkRole(['admin', 'vendor'], 'read'),
     asyncHandler(CategoryController.getCategoryById)
   )
   .put(
     authenticate,
-    adminOrVendor,
+    checkRole(['admin', 'vendor'], 'edit'),
     asyncHandler(CategoryController.updateCategory)
   )
   .delete(
     authenticate,
-    isAdmin,
+    checkRole('admin', 'delete'),
     asyncHandler(CategoryController.deleteCategory)
   );
 
