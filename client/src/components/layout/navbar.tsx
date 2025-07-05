@@ -31,6 +31,7 @@ import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
 import CartComponent from '@/pages/Cart';
 import { useCart } from '@/context/CartContext';
+import { useCategory } from '@/context/CategoryContext';
 
 //NavLink Component
 function NavLink({
@@ -91,29 +92,8 @@ function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
   const { data: cart } = useCart();
-
-  const categories = [
-    'Accessories',
-    'Art',
-    'Audio',
-    'Bikes',
-    'Cameras',
-    'Computer & Laptop',
-    'Drill Machine',
-    'Hand Tools',
-    'Home Appliances',
-    'Movies',
-    'On Sale',
-    'Smart Watch',
-    'Smartphone',
-    'Tool',
-    'Tool Bag',
-    'Tool Case',
-    'Universal Tools',
-    'Video Games',
-    'Watches',
-  ];
-
+  const { data: categoryResponse } = useCategory();
+  const categories = categoryResponse?.data || [];
   return (
     <>
       <Box bg='brand.300' boxShadow='md'>
@@ -251,15 +231,16 @@ function Navbar() {
               All Categories
             </MenuButton>
             <MenuList>
-              {categories.map((category, idx) => (
-                <Box key={category}>
+              {categories?.map((category, idx) => (
+                <Box key={category._id}>
                   <MenuItem
                     as={ReactRouterLink}
-                    to={`/category/${category
+                    to={`/category/${category.name
                       .toLowerCase()
-                      .replace(/ & | /g, '-')}`}
+                      .replace(/ & | /g, '-')}
+                      `}
                   >
-                    {category}
+                    {category.name}
                   </MenuItem>
                   {idx !== categories.length - 1 && <MenuDivider />}
                 </Box>

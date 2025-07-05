@@ -87,31 +87,12 @@ class CategoryController {
   }
 
   static async getAllCategories(req, res) {
-    const { page = 1, limit = 10, search } = req.query;
-
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-
-    if (pageNum < 1 || limitNum < 1 || limitNum > 100) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid page or limit values.',
-      });
-    }
-
-    // Use the static method from the schema
-    const result = await Category.getWithPagination({
-      page: pageNum,
-      limit: limitNum,
-      search,
-      sort: { name: 1 },
-    });
+    const categories = await Category.find({}).sort({ name: 1 });
 
     return res.json({
       success: true,
-      message: `We have ${result.categories.length} categories to choose from.`,
-      pagination: result.pagination,
-      categories: result.categories.map((cat) => cat.toPublicJSON()),
+      message: `Found ${categories.length} categories`,
+      data: categories,
     });
   }
 

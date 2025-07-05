@@ -10,27 +10,48 @@ import {
   Text,
   Alert,
   AlertIcon,
+  useToast,
   //   Spinner,
 } from '@chakra-ui/react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import { useLocation } from 'react-router-dom';
-import { useCart } from '@/context/CartContext';
+import { useAddToCart } from '../context/CartContext';
 
 export default function ProductDetail(): React.ReactElement {
   const location = useLocation();
-  const { addToCart } = useCart();
   const product = location.state?.product || null;
-
   const [quantity, setQuantity] = useState(1);
+  const toast = useToast();
+  const addToCartMutation = useAddToCart();
 
   const handleIncrease = () => setQuantity((prev) => prev + 1);
   const handleDecrease = () => {
     if (quantity > 1) setQuantity((prev) => prev - 1);
   };
 
-  const handleAddToCart = () => {
-    if (product) {
-      addToCart({ ...product, quantity });
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      addToCartMutation.mutate({
+        productId: product._id,
+        quantity: 1,
+      });
+      toast({
+        title: 'Product Added',
+        description: 'Product added to cart!',
+        status: 'success',
+        duration: 2000,
+        position: 'top',
+      });
+    } catch (error) {
+      console.log(error);
+      toast({
+        title: 'Failed operation',
+        description: 'Failed to add product to cart',
+        status: 'error',
+        duration: 2000,
+        position: 'top',
+      });
     }
   };
 
