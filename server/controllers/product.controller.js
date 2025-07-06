@@ -2,34 +2,63 @@ const mongoose = require('mongoose');
 const Product = require('../models/product.model');
 const Category = require('../models/category.model');
 
-//Products
 class ProductsController {
-  //Create new product(Vendor only)
+  // Create new product(s) - supports both single and bulk creation
   static async createProduct(req, res) {
-    if (req.body.categoryId) {
-      req.body.category = new mongoose.Types.ObjectId(req.body.categoryId);
+    const { body, user } = req;
+    const productsData = Array.isArray(body) ? body : [body];
+
+    // Validate categories exist
+    const categoryIds = productsData
+      .map((p) => p.categoryId)
+      .filter(Boolean)
+      .map((id) => new mongoose.Types.ObjectId(id));
+
+    if (categoryIds.length > 0) {
+      const existingCategories = await Category.find({
+        _id: { $in: categoryIds },
+      });
+      if (existingCategories.length !== categoryIds.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One or more categories do not exist',
+        });
+      }
     }
 
-    // Set vendor to the authenticated user
-    req.body.vendor = req.user.id;
+    // Process each product
+    const processedProducts = productsData.map((productData) => {
+      const processed = { ...productData };
 
-    // Create the product
-    const product = await Product.create({ ...req.body });
+      if (processed.categoryId) {
+        processed.category = new mongoose.Types.ObjectId(processed.categoryId);
+        delete processed.categoryId;
+      }
 
-    // Populate the created product with related data
-    const populated = await Product.findById(product._id)
+      processed.vendor = user.id;
+      return processed;
+    });
+
+    const createdProducts = await Product.create(processedProducts);
+    const productsArray = Array.isArray(createdProducts)
+      ? createdProducts
+      : [createdProducts];
+
+    // Populate created products
+    const populatedProducts = await Product.find({
+      _id: { $in: productsArray.map((p) => p._id) },
+    })
       .populate('category', 'name slug image')
-      .populate('vendor', 'name email')
-      .select('-categoryId');
+      .populate('vendor', 'name email');
 
     return res.status(201).json({
       success: true,
-      message: 'Product created successfully',
-      data: populated,
+      message: `${populatedProducts.length} product(s) created successfully`,
+      data: populatedProducts,
+      count: populatedProducts.length,
     });
   }
 
-  //Get all products (Public access)
   static async getAllProducts(req, res) {
     const {
       page = 1,
@@ -40,99 +69,172 @@ class ProductsController {
       maxPrice,
       search,
       isActive,
+      vendor,
     } = req.query;
 
-    // Check for invalid page or limit values
-    if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid page or limit values.',
-      });
-    }
+    // Validate pagination parameters
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
 
     const filter = { isDeleted: false };
 
-    // Apply isActive filter
+    // Active filter
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
 
     if (category) {
-      // Apply category filter
-      const cat = await Category.findOne({ slug: category }).select('_id');
-      if (cat) {
-        filter.category = cat._id;
+      let categoryFilter;
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        categoryFilter = await Category.findById(category);
       } else {
-        // No matching category — return empty result
+        categoryFilter = await Category.findOne({ slug: category });
+      }
+
+      if (categoryFilter) {
+        filter.category = categoryFilter._id;
+      } else {
         return res.status(404).json({
           success: false,
-          message: 'No matching category found',
+          message: 'Category not found',
           data: {
             products: [],
             pagination: {
               total: 0,
-              page: parseInt(page),
+              page: pageNum,
               pages: 0,
               hasNext: false,
-              hasPrev: parseInt(page) > 1,
+              hasPrev: pageNum > 1,
             },
           },
         });
       }
     }
 
-    // Apply price range filter
+    // Price range filter
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
 
-    // Apply text search
+    // Vendor filter
+    if (vendor) {
+      filter.vendor = vendor;
+    }
+
+    // Text search
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
         { slug: { $regex: search, $options: 'i' } },
       ];
     }
 
     const total = await Product.countDocuments(filter);
+    const skip = (pageNum - 1) * limitNum;
 
-    // Execute the main query with pagination and population
     const products = await Product.find(filter)
-      .select('-categoryId')
       .sort(sort)
-      .paginate({
-        page: parseInt(page),
-        limit: parseInt(limit),
-      })
+      .skip(skip)
+      .limit(limitNum)
       .populate('category', 'name slug image')
       .populate('vendor', 'name email')
       .lean();
+
+    const totalPages = Math.ceil(total / limitNum);
 
     return res.status(200).json({
       success: true,
       message: 'Products retrieved successfully',
       data: {
-        products: products,
+        products,
         pagination: {
           total,
-          page: parseInt(page),
-          pages: Math.ceil(total / parseInt(limit)),
-          hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
-          hasPrev: parseInt(page) > 1,
+          page: pageNum,
+          pages: totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1,
+          limit: limitNum,
         },
       },
     });
   }
 
-  //Get a single product (Public access)
+  //Get product by category slug
+  static async getProductsByCategorySlug(req, res) {
+    const { slug } = req.params;
+    const { page = 1, limit = 10, sort = '-createdAt' } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+
+    let selectedCategory;
+
+    if (mongoose.Types.ObjectId.isValid(slug)) {
+      selectedCategory = await Category.findById(slug);
+    } else {
+      selectedCategory = await Category.findOne({ slug: slug });
+    }
+    console.log('Selected Category:', selectedCategory);
+    if (!selectedCategory) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found',
+      });
+    }
+
+    const filter = {
+      category: selectedCategory._id,
+      isDeleted: false,
+    };
+
+    const total = await Product.countDocuments(filter);
+    const skip = (pageNum - 1) * limitNum;
+
+    const products = await Product.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum)
+      .populate('category', 'name slug image')
+      .populate('vendor', 'name email')
+      .lean();
+
+    const totalPages = Math.ceil(total / limitNum);
+
+    return res.status(200).json({
+      success: true,
+      message: `Products for category '${selectedCategory.name}' retrieved successfully`,
+      data: {
+        products,
+        pagination: {
+          total,
+          page: pageNum,
+          pages: totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1,
+          limit: limitNum,
+        },
+      },
+    });
+  }
+
+  // Get single product by ID
   static async getProductById(req, res) {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID format',
+      });
+    }
+
     const product = await Product.findOne({
-      _id: req.params.id,
+      _id: id,
       isDeleted: false,
     })
-      .select('-categoryId')
       .populate('category', 'name slug image')
       .populate('vendor', 'name email')
       .lean();
@@ -151,22 +253,43 @@ class ProductsController {
     });
   }
 
-  //Update product (Vendor can update own products, Admin can update any)
+  // Update product
   static async updateProduct(req, res) {
-    //Build the filter
-    const filter = { _id: req.params.id, isDeleted: false };
+    const { id } = req.params;
+    const updateData = { ...req.body };
 
-    // If user is not admin, they can only update their own products
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID format',
+      });
+    }
+
+    // Validate category if being updated
+    if (updateData.categoryId) {
+      const category = await Category.findById(updateData.categoryId);
+      if (!category) {
+        return res.status(400).json({
+          success: false,
+          message: 'Category does not exist',
+        });
+      }
+      updateData.category = updateData.categoryId;
+      delete updateData.categoryId;
+    }
+
+    const filter = { _id: id, isDeleted: false };
+
+    // Non-admin users can only update their own products
     if (req.user.role !== 'admin') {
       filter.vendor = req.user.id;
     }
 
     const product = await Product.findOneAndUpdate(
       filter,
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     )
-      .select('-categoryId')
       .populate('category', 'name slug image')
       .populate('vendor', 'name email');
 
@@ -189,11 +312,20 @@ class ProductsController {
     });
   }
 
-  //Delete product (Admin can delete any, Vendor can delete own)
+  // Soft delete product
   static async deleteProduct(req, res) {
-    const filter = { _id: req.params.id };
+    const { id } = req.params;
 
-    // If user is not admin, they can only delete their own products
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID format',
+      });
+    }
+
+    const filter = { _id: id, isDeleted: false };
+
+    // Non-admin users can only delete their own products
     if (req.user.role !== 'admin') {
       filter.vendor = req.user.id;
     }
@@ -207,7 +339,7 @@ class ProductsController {
     if (!product) {
       const message =
         req.user.role === 'admin'
-          ? 'Product not found'
+          ? 'Product not found or already deleted'
           : 'Product not found or you do not have permission to delete this product';
 
       return res.status(404).json({
@@ -222,51 +354,72 @@ class ProductsController {
     });
   }
 
-  // Get vendor's own products (Vendor only)
+  // Get vendor's products
   static async getVendorProducts(req, res) {
-    const { page = 1, limit = 10, sort = '-createdAt', isActive } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sort = '-createdAt',
+      isActive,
+      category,
+      search,
+    } = req.query;
 
-    // Check for invalid page or limit values
-    if (page < 1 || limit < 1 || limit > 100) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid page or limit values.',
-      });
-    }
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
 
     const filter = {
       vendor: req.user.id,
       isDeleted: false,
     };
 
-    // Apply isActive filter
+    // Active filter
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
 
+    // Category filter
+    if (category) {
+      const selectedCategory = await Category.findOne({
+        $or: [{ slug: category }, { _id: category }],
+      });
+      if (categoryDoc) {
+        filter.category = categoryDoc._id;
+      }
+    }
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+
     const total = await Product.countDocuments(filter);
+    const skip = (pageNum - 1) * limitNum;
 
     const products = await Product.find(filter)
-      .select('-categoryId')
       .sort(sort)
-      .paginate({
-        page: parseInt(page),
-        limit: parseInt(limit),
-      })
+      .skip(skip)
+      .limit(limitNum)
       .populate('category', 'name slug image')
       .lean();
+
+    const totalPages = Math.ceil(total / limitNum);
 
     return res.status(200).json({
       success: true,
       message: 'Vendor products retrieved successfully',
       data: {
-        products: products,
+        products,
         pagination: {
           total,
-          page: parseInt(page),
-          pages: Math.ceil(total / parseInt(limit)),
-          hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
-          hasPrev: parseInt(page) > 1,
+          page: pageNum,
+          pages: totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1,
+          limit: limitNum,
         },
       },
     });

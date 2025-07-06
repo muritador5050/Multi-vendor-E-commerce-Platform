@@ -13,22 +13,11 @@ const checkRole = require('../middlewares/roleMiddleware');
  *     tags: [Categories]
  *     parameters:
  *       - in: query
- *         name: page
+ *         name: includeProductCount
  *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of items per page
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Search term for category names
+ *           type: boolean
+ *           default: false
+ *         description: Include product count for each category
  *     responses:
  *       '200':
  *         description: A list of categories
@@ -52,9 +41,27 @@ router.get('/', asyncHandler(CategoryController.getAllCategories));
  *           type: string
  *         required: true
  *         description: Category slug
+ *       - in: query
+ *         name: includeProducts
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Include products in the category
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number (when includeProducts is true)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of products per page
  *     responses:
  *       '200':
- *         description: A single category
+ *         description: A single category with optional products
  *         content:
  *           application/json:
  *             schema:
@@ -107,6 +114,14 @@ router.post(
  *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               $ref: '#/components/schemas/CategoryInput'
  *     responses:
  *       '201':
  *         description: Categories created successfully
@@ -221,9 +236,17 @@ router.post(
  *         schema:
  *           type: string
  *         description: Category ID
+ *       - in: query
+ *         name: force
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Force delete even if category has products
  *     responses:
  *       '200':
  *         description: Category deleted successfully
+ *       '400':
+ *         description: Category has products (use force=true to delete anyway)
  *       '404':
  *         description: Category not found
  *       '401':

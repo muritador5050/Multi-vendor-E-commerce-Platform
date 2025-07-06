@@ -2,11 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ProductsController = require('../controllers/product.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
-const {
-  authenticate,
-  adminOrVendor,
-  isVendor,
-} = require('../middlewares/authMiddleware');
+const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 
 /**
@@ -66,13 +62,72 @@ router
  *               items:
  *                 $ref: '#/components/schemas/Product'
  */
-router
-  .route('/my-products')
-  .get(
-    authenticate,
-    checkRole('vendor', 'read'),
-    asyncHandler(ProductsController.getVendorProducts)
-  );
+router.get(
+  '/my-products',
+  authenticate,
+  checkRole('vendor', 'read'),
+  asyncHandler(ProductsController.getVendorProducts)
+);
+
+/**
+ * @openapi
+ * /api/products/category/{categorySlug}:
+ *   get:
+ *     summary: Get products by category slug
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: categorySlug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The slug of the category
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of products per page
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           default: '-createdAt'
+ *         description: Sort order for products
+ *     responses:
+ *       '200':
+ *         description: A list of products in the specified category
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Product'
+ *                     pagination:
+ *                       type: object
+ *       '404':
+ *         description: Category not found
+ */
+router.get(
+  '/category/:slug',
+  asyncHandler(ProductsController.getProductsByCategorySlug)
+);
 
 /**
  * @openapi

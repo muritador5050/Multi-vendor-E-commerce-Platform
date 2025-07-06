@@ -10,7 +10,7 @@ const slugify = require('slugify');
  *       required:
  *         - name
  *         - price
- *         - categoryId
+ *         - category
  *       properties:
  *         name:
  *           type: string
@@ -37,7 +37,7 @@ const slugify = require('slugify');
  *           items:
  *             type: string
  *             example: "https://example.com/image.jpg"
- *         categoryId:
+ *         category:
  *           type: string
  *           example: "60d5f484f1b2c8b8f8e4c8b8"
  *         attributes:
@@ -89,13 +89,10 @@ const productSchema = new mongoose.Schema(
         trim: true,
       },
     ],
-    categoryId: {
-      type: String,
-      required: true,
-    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
+      required: true,
     },
     attributes: {
       type: Map,
