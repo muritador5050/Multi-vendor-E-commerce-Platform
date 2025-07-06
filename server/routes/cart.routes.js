@@ -4,39 +4,38 @@ const router = express.Router();
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate } = require('../middlewares/authMiddleware');
 
-// Apply authentication to all cart routes
 router.use(authenticate);
 
+/**
+ * @openapi
+ * /api/cart:
+ *   get:
+ *     summary: Get the current user's cart
+ *     tags: [Cart]
+ *     responses:
+ *       '200':
+ *         description: The user's cart details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: string
+ *                   format: uuid
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       product:
+ *                         type: string
+ *                         format: uuid
+ *                       quantity:
+ *                         type: integer
+ */
 router
   .route('/items')
-  /**
-   * @openapi
-   * /api/cart:
-   *   get:
-   *     summary: Get the current user's cart
-   *     tags: [Cart]
-   *     responses:
-   *       '200':
-   *         description: The user's cart details
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 user:
-   *                   type: string
-   *                   format: uuid
-   *                 items:
-   *                   type: array
-   *                   items:
-   *                     type: object
-   *                     properties:
-   *                       product:
-   *                         type: string
-   *                         format: uuid
-   *                       quantity:
-   *                         type: integer
-   */
   .post(asyncHandler(CartController.addToCart))
   .get(asyncHandler(CartController.getCart));
 

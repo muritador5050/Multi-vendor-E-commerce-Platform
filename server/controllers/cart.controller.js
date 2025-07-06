@@ -75,6 +75,7 @@ class CartController {
     const cart = await Cart.findOne({ user: userId })
       .populate('items.product')
       .populate('user', 'name email');
+    console.log(cart);
 
     if (!cart) {
       return res.json({

@@ -7,11 +7,16 @@ import {
   Select,
   SimpleGrid,
   useDisclosure,
+  Button,
+  HStack,
+  // IconButton,
 } from '@chakra-ui/react';
+import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ProductCard from '../components/ProductCard';
 import ProductFilters from '../components/ProductFilters';
 import ProductQuickView from '../components/ProductQuickView';
 import type { Product } from '@/type/product';
+import { apiBase } from '@/api/ApiService';
 
 // Types for filters
 interface FilterState {
@@ -35,8 +40,6 @@ const SORT_OPTIONS: SortOption[] = [
   { value: '-createdAt', label: 'Newest First' },
   { value: '-averageRating', label: 'Top Rated' },
 ];
-
-const apiBase = import.meta.env.VITE_API_URL;
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const response = await fetch(`${apiBase}${endpoint}`, {
@@ -79,7 +82,16 @@ export default function ShopPage() {
   });
   const [sortBy, setSortBy] = useState<string>('-createdAt');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
+
+  // Pagination data from backend
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+    limit: 10,
+  });
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -89,7 +101,7 @@ export default function ShopPage() {
       // Build query parameters
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '10',
+        limit: pagination.limit.toString(),
         sort: sortBy,
         minPrice: filters.priceRange[0].toString(),
         maxPrice: filters.priceRange[1].toString(),
@@ -106,7 +118,16 @@ export default function ShopPage() {
 
       if (data.success && data.data) {
         setProducts(data.data.products || []);
-        setTotalResults(data.data.pagination?.total || 0);
+        setPagination(
+          data.data.pagination || {
+            total: 0,
+            page: 1,
+            pages: 0,
+            hasNext: false,
+            hasPrev: false,
+            limit: 10,
+          }
+        );
       } else {
         setError(data.message || 'Failed to fetch products');
       }
@@ -116,7 +137,7 @@ export default function ShopPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, sortBy, currentPage]);
+  }, [filters, sortBy, currentPage, pagination.limit]);
 
   // Fetch products when dependencies change
   useEffect(() => {
@@ -147,6 +168,24 @@ export default function ShopPage() {
     onClose();
   };
 
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPrev) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNext) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
   return (
     <Box bg='white'>
       <Flex direction={{ base: 'column', md: 'row' }} gap={5}>
@@ -171,7 +210,7 @@ export default function ShopPage() {
             <Text>
               {loading
                 ? 'Loading...'
-                : `Showing ${products.length} of ${totalResults} results`}
+                : `Showing ${products.length} of ${pagination.total} results`}
             </Text>
             <Select
               placeholder='Sort by'
@@ -217,6 +256,40 @@ export default function ShopPage() {
             <Text textAlign='center' color='gray.500' mt={8}>
               Loading products...
             </Text>
+          )}
+
+          {/* Pagination */}
+          {!loading && pagination.pages > 1 && (
+            <Flex justifyContent='center' mt={8}>
+              <HStack spacing={2}>
+                {/* Previous Button */}
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={handlePreviousPage}
+                  isDisabled={!pagination.hasPrev}
+                  leftIcon={<ChevronLeftIcon />}
+                >
+                  Previous
+                </Button>
+
+                {/* Current Page Info */}
+                <Text px={4} color='gray.600' fontSize='sm'>
+                  Page {pagination.page} of {pagination.pages}
+                </Text>
+
+                {/* Next Button */}
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={handleNextPage}
+                  isDisabled={!pagination.hasNext}
+                  rightIcon={<ChevronRightIcon />}
+                >
+                  Next
+                </Button>
+              </HStack>
+            </Flex>
           )}
         </Stack>
       </Flex>

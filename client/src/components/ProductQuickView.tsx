@@ -12,8 +12,9 @@ import {
   Stack,
   Text,
   Button,
+  useToast,
 } from '@chakra-ui/react';
-import { useCart } from '@/context/CartContext';
+import { useAddToCart } from '@/context/CartContext';
 import type { Product } from '@/type/product';
 
 interface ProductQuickViewProps {
@@ -28,18 +29,33 @@ export default function ProductQuickView({
   onClose,
 }: ProductQuickViewProps) {
   const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCart();
+  const addToCartMutation = useAddToCart();
+  const toast = useToast();
 
   if (!product) return null;
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      await addToCart(product._id, quantity);
-      alert('Product added to cart!');
-      onClose();
-    } catch (error) {
-      console.log(error);
-      alert('Failed to add product to cart');
+      addToCartMutation.mutate({
+        productId: product._id,
+        quantity: quantity,
+      });
+      toast({
+        title: 'Product Added',
+        description: 'Product added to cart!',
+        status: 'success',
+        duration: 2000,
+        position: 'top',
+      });
+    } catch {
+      toast({
+        title: 'Failed operation',
+        description: 'Failed to add product to cart',
+        status: 'error',
+        duration: 2000,
+        position: 'top',
+      });
     }
   };
 

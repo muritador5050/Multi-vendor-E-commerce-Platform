@@ -92,9 +92,16 @@ export default function ProductCard({
       <CardBody onClick={handleNavigateToProduct}>
         <Box position='relative'>
           <Image
-            src={product.images[0] || '/placeholder-image.jpg'}
+            src={
+              product.images && product.images.length > 0
+                ? product.images[0]
+                : product.images[1]
+            }
             alt={product.name}
             borderRadius='lg'
+            objectFit='cover'
+            width='100%'
+            height='250px'
           />
           <Button
             onClick={handleQuickView}

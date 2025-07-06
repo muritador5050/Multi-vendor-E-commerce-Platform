@@ -15,14 +15,14 @@ import {
 import {
   useCart,
   useRemoveFromCart,
-  useUpdateCartQuantity,
+  useUpdateQuantity,
   useClearCart,
 } from '@/context/CartContext';
 import { AddIcon, DeleteIcon, MinusIcon, StarIcon } from '@chakra-ui/icons';
 
 export default function CartComponent() {
   const { data: cart, isLoading, isError } = useCart();
-  const updateQuantity = useUpdateCartQuantity();
+  const updateQuantity = useUpdateQuantity();
   const removeItem = useRemoveFromCart();
   const clearCartMutation = useClearCart();
 
