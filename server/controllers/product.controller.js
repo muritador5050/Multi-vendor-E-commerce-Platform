@@ -96,7 +96,7 @@ class ProductsController {
       } else {
         return res.status(404).json({
           success: false,
-          message: 'Category not found',
+          message: 'Products not found',
           data: {
             products: [],
             pagination: {
@@ -130,6 +130,13 @@ class ProductsController {
         { description: { $regex: search, $options: 'i' } },
         { slug: { $regex: search, $options: 'i' } },
       ];
+    }
+
+    for (const [key, value] of Object.entries(req.query)) {
+      const knownAttributes = ['material', 'size', 'color'];
+      if (knownAttributes.includes(key)) {
+        filter[`attributes.${key}`] = { $regex: value, $options: 'i' };
+      }
     }
 
     const total = await Product.countDocuments(filter);
