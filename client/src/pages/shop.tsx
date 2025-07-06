@@ -9,23 +9,13 @@ import {
   useDisclosure,
   Button,
   HStack,
-  // IconButton,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ProductCard from '../components/ProductCard';
-import ProductFilters from '../components/ProductFilters';
+import ProductFilters, { type FilterState } from '../components/ProductFilters';
 import ProductQuickView from '../components/ProductQuickView';
 import type { Product } from '@/type/product';
 import { apiBase } from '@/api/ApiService';
-
-// Types for filters
-interface FilterState {
-  priceRange: [number, number];
-  stockStatus: string[];
-  frameSize: string[];
-  tyreSize: string[];
-  strapType: string[];
-}
 
 interface SortOption {
   value: string;
@@ -76,9 +66,11 @@ export default function ShopPage() {
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [5, 650],
     stockStatus: [],
-    frameSize: [],
-    tyreSize: [],
-    strapType: [],
+    attributes: {
+      material: [],
+      size: [],
+      color: [],
+    },
   });
   const [sortBy, setSortBy] = useState<string>('-createdAt');
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,7 +90,6 @@ export default function ShopPage() {
     setError(null);
 
     try {
-      // Build query parameters
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pagination.limit.toString(),
@@ -107,10 +98,18 @@ export default function ShopPage() {
         maxPrice: filters.priceRange[1].toString(),
       });
 
-      // Add filter parameters
       if (filters.stockStatus.length > 0) {
         const isInStock = filters.stockStatus.includes('in-stock');
         params.append('isActive', isInStock.toString());
+      }
+
+      // Add attribute filters
+      if (filters.attributes) {
+        Object.entries(filters.attributes).forEach(([key, values]) => {
+          if (values.length > 0) {
+            params.append(key, values.join(','));
+          }
+        });
       }
 
       // Make API call
@@ -139,7 +138,6 @@ export default function ShopPage() {
     }
   }, [filters, sortBy, currentPage, pagination.limit]);
 
-  // Fetch products when dependencies change
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);

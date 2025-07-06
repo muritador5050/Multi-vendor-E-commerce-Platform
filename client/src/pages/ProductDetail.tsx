@@ -274,6 +274,12 @@ export default function ProductDetail(): React.ReactElement {
           </Button>
           <Button colorScheme='orange'>Buy Now</Button>
         </Stack>
+        <Flex>
+          <Text fontWeight='bold'>Available Stock:</Text>
+          <Text ml={2} color='green.500'>
+            {product.quantityInStock > 0 ? 'In Stock' : 'Out of Stock'}
+          </Text>
+        </Flex>
       </Stack>
     </Flex>
   );

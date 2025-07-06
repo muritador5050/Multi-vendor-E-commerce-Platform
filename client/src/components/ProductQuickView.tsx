@@ -148,6 +148,12 @@ export default function ProductQuickView({
                   +
                 </Button>
               </Flex>
+              <Flex>
+                <Text fontWeight='bold'>Available Stock:</Text>
+                <Text ml={2} color='green.500'>
+                  {product.quantityInStock > 0 ? 'In Stock' : 'Out of Stock'}
+                </Text>
+              </Flex>
             </Stack>
           </Flex>
         </ModalBody>

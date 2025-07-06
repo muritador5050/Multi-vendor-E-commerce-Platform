@@ -14,25 +14,20 @@ import {
   Flex,
 } from '@chakra-ui/react';
 
-export interface FilterState {
+interface FilterState {
   priceRange: [number, number];
   stockStatus: string[];
-  attributes?: {
-    material?: string[];
-    color?: string[];
-    size?: string[];
-  };
 }
 
-interface ProductFiltersProps {
+interface CategoryFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
 }
 
-export default function ProductFilters({
+export default function CategoryFilters({
   filters,
   onFiltersChange,
-}: ProductFiltersProps) {
+}: CategoryFiltersProps) {
   const format = (val: number) => `$${val}`;
   const parse = (val: string) => val.replace(/^\$/, '');
 
@@ -72,20 +67,20 @@ export default function ProductFilters({
 
   // Handle checkbox changes
   const handleCheckboxChange = (
-    product: keyof FilterState,
+    category: keyof FilterState,
     value: string,
     checked: boolean
   ) => {
-    if (product === 'priceRange') return;
+    if (category === 'priceRange') return;
 
-    const currentValues = filters[product] as string[];
+    const currentValues = filters[category] as string[];
     const newValues = checked
       ? [...currentValues, value]
       : currentValues.filter((item) => item !== value);
 
     onFiltersChange({
       ...filters,
-      [product]: newValues,
+      [category]: newValues,
     });
   };
 
@@ -93,11 +88,6 @@ export default function ProductFilters({
     onFiltersChange({
       priceRange: [5, 650],
       stockStatus: [],
-      attributes: {
-        material: [],
-        color: [],
-        size: [],
-      },
     });
   };
 
@@ -179,114 +169,6 @@ export default function ProductFilters({
           >
             Out Stock
           </Checkbox>
-        </Stack>
-      </Box>
-
-      {/* Frame Size Filter */}
-      <Box>
-        <Text fontSize='xl' fontWeight='bold'>
-          FILTER BY MATERIAL
-        </Text>
-        <Stack direction='column'>
-          {[
-            'Leather',
-            'Cotton',
-            'Polyester',
-            'Leather Upper',
-            'Rubber Sole',
-          ].map((material) => (
-            <Checkbox
-              key={material}
-              isChecked={filters.attributes?.material?.includes(material)}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                const currentMaterials = filters.attributes?.material || [];
-                const newMaterials = checked
-                  ? [...currentMaterials, material]
-                  : currentMaterials.filter((item) => item !== material);
-                onFiltersChange({
-                  ...filters,
-                  attributes: {
-                    ...filters.attributes,
-                    material: newMaterials,
-                  },
-                });
-              }}
-            >
-              {material}
-            </Checkbox>
-          ))}
-        </Stack>
-      </Box>
-
-      {/*  Size Filter */}
-      <Box>
-        <Text fontSize='xl' fontWeight='bold'>
-          FILTER BY TYRE SIZE
-        </Text>
-        <Stack direction='column'>
-          {['S', 'M', 'L', 'XL', 'XXL', '32', '64'].map((size) => (
-            <Checkbox
-              key={size}
-              isChecked={filters.attributes?.size?.includes(size)}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                const currentSizes = filters.attributes?.size || [];
-                const newSizes = checked
-                  ? [...currentSizes, size]
-                  : currentSizes.filter((item) => item !== size);
-                onFiltersChange({
-                  ...filters,
-                  attributes: {
-                    ...filters.attributes,
-                    size: newSizes,
-                  },
-                });
-              }}
-            >
-              {size}
-            </Checkbox>
-          ))}
-        </Stack>
-      </Box>
-
-      {/*  Size Filter */}
-      <Box>
-        <Text fontSize='xl' fontWeight='bold'>
-          FILTER BY COLOR
-        </Text>
-        <Stack direction='column'>
-          {[
-            'Black',
-            'White',
-            'Gray',
-            'Navy',
-            'Brown',
-            'Cognac',
-            'Dark blue',
-            'Green',
-          ].map((cl) => (
-            <Checkbox
-              key={cl}
-              isChecked={filters.attributes?.color?.includes(cl)}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                const currentTypes = filters.attributes?.color || [];
-                const newTypes = checked
-                  ? [...currentTypes, cl]
-                  : currentTypes.filter((item) => item !== cl);
-                onFiltersChange({
-                  ...filters,
-                  attributes: {
-                    ...filters.attributes,
-                    color: newTypes,
-                  },
-                });
-              }}
-            >
-              {cl}
-            </Checkbox>
-          ))}
         </Stack>
       </Box>
     </Stack>
