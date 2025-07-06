@@ -52,6 +52,19 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   return response.json();
 };
 
+// Utility function to build query parameters
+const buildQueryParams = (params: Record<string, string | string[]>) => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((v) => query.append(key, v));
+    } else {
+      query.set(key, value);
+    }
+  });
+  return query.toString();
+};
+
 export default function ShopPage() {
   // Modal state
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -90,30 +103,35 @@ export default function ShopPage() {
     setError(null);
 
     try {
-      const params = new URLSearchParams({
+      // Build query parameters using the buildQueryParams function
+      const queryParams: Record<string, string | string[]> = {
         page: currentPage.toString(),
         limit: pagination.limit.toString(),
         sort: sortBy,
         minPrice: filters.priceRange[0].toString(),
         maxPrice: filters.priceRange[1].toString(),
-      });
+      };
 
+      // Add stock status filter
       if (filters.stockStatus.length > 0) {
         const isInStock = filters.stockStatus.includes('in-stock');
-        params.append('isActive', isInStock.toString());
+        queryParams.isActive = isInStock.toString();
       }
 
       // Add attribute filters
       if (filters.attributes) {
         Object.entries(filters.attributes).forEach(([key, values]) => {
           if (values.length > 0) {
-            params.append(key, values.join(','));
+            queryParams[key] = values; // Pass array directly
           }
         });
       }
 
+      // Use buildQueryParams to create the query string
+      const queryString = buildQueryParams(queryParams);
+
       // Make API call
-      const data = await apiRequest(`/products?${params}`);
+      const data = await apiRequest(`/products?${queryString}`);
 
       if (data.success && data.data) {
         setProducts(data.data.products || []);
