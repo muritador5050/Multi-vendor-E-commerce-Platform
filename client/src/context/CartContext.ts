@@ -62,7 +62,6 @@ const apiRequest = async (
 
 const fetchCart = async (): Promise<CartData> => {
   const response: CartResponse = await apiRequest('/items');
-  console.log('Fetching cart data:', response);
 
   if (!response.success) {
     throw new Error(response.message || 'Failed to load cart');

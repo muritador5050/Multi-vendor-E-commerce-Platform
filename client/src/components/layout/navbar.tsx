@@ -235,7 +235,7 @@ function Navbar() {
                 <Box key={category._id}>
                   <MenuItem
                     as={ReactRouterLink}
-                    to={`/category/${category.name
+                    to={`/products/category/${category.name
                       .toLowerCase()
                       .replace(/ & | /g, '-')}
                       `}

@@ -24,7 +24,7 @@ interface CategoryFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
 }
 
-export default function CategoryFilters({
+export default function ProductCategoryFilters({
   filters,
   onFiltersChange,
 }: CategoryFiltersProps) {

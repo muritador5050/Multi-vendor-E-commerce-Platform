@@ -26,7 +26,6 @@ import Messages from './pages/dashboard/Messages';
 import Enquiry from './pages/dashboard/Enquiry';
 import Knowledgebase from './pages/dashboard/Knowledgebase';
 import Notices from './pages/dashboard/Notices';
-import CategoryPage from './pages/CategoryPage';
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
 import ResetPasswordForm from './auth/ResetPassword';
@@ -34,6 +33,7 @@ import ForgotPasswordForm from './auth/ForgotPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import { LogOut } from 'lucide-react';
 import { useAuth, useIsAuthenticated } from './hooks/useAuth';
+import ProductCategoryPage from './pages/ProductCategoryPage';
 
 //App
 function App() {
@@ -46,7 +46,10 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path='blog' element={<Blog />} />
           <Route path='shop' element={<ShopPage />} />
-          <Route path='category/:categoryName' element={<CategoryPage />} />
+          <Route
+            path='products/category/:slug'
+            element={<ProductCategoryPage />}
+          />
           <Route path='product/:id' element={<ProductDetail />} />
           <Route path='vendor-membership' element={<VendorMembership />} />
           <Route path='/oauth/callback' element={<OAuthCallback />} />
