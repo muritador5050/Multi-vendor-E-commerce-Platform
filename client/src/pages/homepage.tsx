@@ -15,55 +15,87 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { categories } from '@/components/reuseable/categories';
-import { Truck, DollarSign, Headset } from 'lucide-react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
 import ProductComponentCard from '@/components/reuseable/ProductComponentCard.tsx';
+import { useCategory } from '@/context/CategoryContext';
+import type { Product } from '@/type/product';
+import {
+  Truck,
+  DollarSign,
+  Headset,
+  Star,
+  Bell,
+  Bike,
+  Camera,
+  Laptop,
+  Settings,
+  Wrench,
+  House,
+  TimerReset,
+  Smartphone,
+  Briefcase,
+  Gamepad2,
+  LetterText,
+  Footprints,
+  BanknoteArrowUp,
+  Shirt,
+} from 'lucide-react';
 
-const dummy = [
-  {
-    id: 1,
-    name: 'Aliquam erat volutpat',
-    price: 319.0,
-    image:
-      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop',
-    rating: 4.5,
-  },
-  {
-    id: 2,
-    name: 'Premium Headphones',
-    price: 199.0,
-    image:
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop',
-    rating: 4.8,
-  },
-  {
-    id: 3,
-    name: 'Smart Watch Pro',
-    price: 249.0,
-    image:
-      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&h=300&fit=crop',
-    rating: 4.3,
-  },
-  {
-    id: 4,
-    name: 'Wireless Speaker',
-    price: 129.0,
-    image:
-      'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=300&h=300&fit=crop',
-    rating: 4.6,
-  },
-  {
-    id: 5,
-    name: 'Gaming Mouse',
-    price: 79.0,
-    image:
-      'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=300&h=300&fit=crop',
-    rating: 4.7,
-  },
-];
+// Create a mapping function to match API categories with icons
+const getCategoryIcon = (categoryName: string) => {
+  const iconMap: Record<string, React.ElementType> = {
+    Accessories: Star,
+    Art: LetterText,
+    Audio: Bell,
+    Bike: Bike,
+    Cameras: Camera,
+    'Computer & Laptops': Laptop,
+    'Book & Media': Bell,
+    'Drill Machine': Settings,
+    'Hand Tool': Wrench,
+    'Health & Beauty': BanknoteArrowUp,
+    'Home & Garden': House,
+    'Clothing & Fashion': Shirt,
+    Smartphone: Smartphone,
+    Tool: Wrench,
+    'Tool Case': Briefcase,
+    'Video Games': Gamepad2,
+    'Sport & Outdoors': Footprints,
+    Watches: TimerReset,
+  };
+
+  return iconMap[categoryName] || Star;
+};
+
+// Get category color
+const getCategoryColor = (categoryName: string) => {
+  const colorMap: Record<string, string> = {
+    Accessories: 'red.500',
+    Art: 'green.500',
+    Audio: 'yellow.500',
+    Bikes: 'pink.500',
+    Camera: 'gray.500',
+    Laptop: 'blue.500',
+    'Drill Machine': 'red.500',
+    'Hand Tools': 'pink.500',
+    'Home Appliances': 'yellow.500',
+    Movies: 'pink.500',
+    'Smart Watches': 'gray.500',
+    Smartphone: 'black',
+    Tools: 'green.500',
+    'Tool Bag': 'yellow.700',
+    'Video Games': 'purple.500',
+    Headphone: 'yellow.700',
+  };
+
+  return colorMap[categoryName] || 'gray.500';
+};
 
 function HomePage() {
+  const { data: categoryResponse } = useCategory();
+  const categories = categoryResponse?.data || [];
+  const products: Product[] = [];
+
   return (
     <Box display='grid' gap={6} p={{ sm: 2, md: 6 }}>
       <Grid
@@ -174,6 +206,9 @@ function HomePage() {
                 bg='yellow.500'
                 color='white'
                 _hover={{ bg: 'yellow.50' }}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               >
                 Shop Now
               </Button>
@@ -202,6 +237,9 @@ function HomePage() {
                 bg='yellow.500'
                 color='white'
                 _hover={{ bg: 'yellow.50' }}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               >
                 Shop now
               </Button>
@@ -228,7 +266,10 @@ function HomePage() {
                 w='fit-content'
                 bg='yellow.500'
                 color='white'
-                _hover={{ bg: 'yellow.50' }}
+                _hover={{ colorScheme: 'yellow' }}
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               >
                 Shop now
               </Button>
@@ -251,24 +292,28 @@ function HomePage() {
           templateRows={{ base: 'repeat(8, 1fr)', md: 'repeat(2, 1fr)' }}
           rowGap={10}
         >
-          {categories.map((category) => (
-            <GridItem
-              key={category.id}
-              as={ReactRouterLink}
-              to={`/category/${category.name
-                .toLowerCase()
-                .replace(/ & | /g, '-')}`}
-              textAlign='center'
-            >
-              <IconButton
-                icon={category.icon}
-                aria-label={category.name}
-                variant='ghost'
-                color={category.color}
-              />
-              <Text>{category.name}</Text>
-            </GridItem>
-          ))}
+          {categories.map((category) => {
+            const CategoryIcon = getCategoryIcon(category.name);
+            const color = getCategoryColor(category.name);
+            return (
+              <GridItem
+                key={category._id}
+                as={ReactRouterLink}
+                to={`/products/category/${category.name
+                  .toLowerCase()
+                  .replace(/ & | /g, '-')}`}
+                textAlign='center'
+              >
+                <IconButton
+                  icon={<CategoryIcon />}
+                  aria-label={category.name}
+                  variant='ghost'
+                  color={color}
+                />
+                <Text>{category.name}</Text>
+              </GridItem>
+            );
+          })}
         </Grid>
       </Box>
       <Box bg='white' p={6}>
@@ -287,9 +332,13 @@ function HomePage() {
         </Flex>
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {dummy.map((dm) => (
-            <ProductComponentCard key={dm.id} product={dm} />
-          ))}
+          {products.length > 0 ? (
+            products.map((product) => (
+              <ProductComponentCard key={product._id} product={product} />
+            ))
+          ) : (
+            <Text>No products available</Text>
+          )}
         </SimpleGrid>
       </Box>
       <Box bg='white' p={6}>
@@ -308,9 +357,13 @@ function HomePage() {
         </Flex>
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {dummy.map((dm) => (
-            <ProductComponentCard key={dm.id} product={dm} />
-          ))}
+          {products.length > 0 ? (
+            products.map((product) => (
+              <ProductComponentCard key={product._id} product={product} />
+            ))
+          ) : (
+            <Text>No products available</Text>
+          )}
         </SimpleGrid>
       </Box>
       <Box>
@@ -331,9 +384,13 @@ function HomePage() {
           </Button>
         </Flex>
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {dummy.map((dm) => (
-            <ProductComponentCard key={dm.id} product={dm} />
-          ))}
+          {products.length > 0 ? (
+            products.map((product) => (
+              <ProductComponentCard key={product._id} product={product} />
+            ))
+          ) : (
+            <Text>No products available</Text>
+          )}
         </SimpleGrid>
       </Box>
       <Box bg='white' p={6}>
@@ -346,10 +403,14 @@ function HomePage() {
             View all
           </Button>
         </Flex>
-        <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
-          {dummy.map((dm) => (
-            <ProductComponentCard key={dm.id} product={dm} />
-          ))}
+        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+          {products.length > 0 ? (
+            products.map((product) => (
+              <ProductComponentCard key={product._id} product={product} />
+            ))
+          ) : (
+            <Text>No products available</Text>
+          )}
         </SimpleGrid>
       </Box>
 
@@ -364,8 +425,8 @@ function HomePage() {
           </Button>
         </Flex>
         <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
-          {dummy.map((dm) => (
-            <ProductComponentCard key={dm.id} product={dm} />
+          {products.map((product) => (
+            <ProductComponentCard key={product._id} product={product} />
           ))}
         </SimpleGrid>
       </Box>

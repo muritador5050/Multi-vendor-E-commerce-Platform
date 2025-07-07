@@ -367,9 +367,7 @@ export default function ProductCategoryPage() {
         const isInStock = filters.stockStatus.includes('in-stock');
         params.append('isActive', isInStock.toString());
       }
-      console.log('Fetching products with params:', params.toString());
       const data = await apiRequest(`/products/category/${slug}?${params}`);
-      console.log('Fetched products for category:', data);
 
       if (data.success && data.data) {
         setProducts(data.data.products || data.data || []);

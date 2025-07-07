@@ -122,7 +122,7 @@ export default function ShopPage() {
       if (filters.attributes) {
         Object.entries(filters.attributes).forEach(([key, values]) => {
           if (values.length > 0) {
-            queryParams[key] = values; // Pass array directly
+            queryParams[key] = values;
           }
         });
       }

@@ -1,23 +1,16 @@
+import type { Product } from '@/type/product';
 import { Box, Flex, IconButton, Image, Text, VStack } from '@chakra-ui/react';
 import { Heart, Eye, ShoppingCart } from 'lucide-react';
 
-type ProductList = {
-  id: string | number;
-  name: string;
-  image: string;
-  price: number;
-  rating?: string | number;
-};
-
 type ProductProps = {
-  product: ProductList;
+  product: Product;
 };
 
 export default function ProductComponentCard({ product }: ProductProps) {
   return (
     <Box p={4} textAlign='center' cursor='pointer' role='group'>
       <Image
-        src={product.image}
+        src={product.images[0]}
         alt={product.name}
         objectFit='cover'
         borderRadius='md'
@@ -83,9 +76,9 @@ export default function ProductComponentCard({ product }: ProductProps) {
         <Text fontSize='xl' fontWeight='bold' color='green.500'>
           ${product.price.toFixed(2)}
         </Text>
-        {product.rating && (
+        {product.averageRating && (
           <Text fontSize='sm' color='gray.600'>
-            {product.rating}
+            {product.averageRating}
           </Text>
         )}
       </VStack>
