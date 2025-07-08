@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import {
   Box,
   Button,
+  Center,
   Flex,
   Grid,
   GridItem,
@@ -13,12 +14,12 @@ import {
   Spacer,
   Stack,
   Text,
+  useDisclosure,
   VStack,
 } from '@chakra-ui/react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
 import ProductComponentCard from '@/components/reuseable/ProductComponentCard.tsx';
 import { useCategory } from '@/context/CategoryContext';
-import type { Product } from '@/type/product';
 import {
   Truck,
   DollarSign,
@@ -40,6 +41,10 @@ import {
   BanknoteArrowUp,
   Shirt,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useProducts, useProductsByCategory } from '@/context/ProductContext';
+import ProductQuickView from '@/components/ProductQuickView';
+import type { Product } from '@/type/product';
 
 // Create a mapping function to match API categories with icons
 const getCategoryIcon = (categoryName: string) => {
@@ -92,9 +97,44 @@ const getCategoryColor = (categoryName: string) => {
 };
 
 function HomePage() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { data: productsData } = useProducts();
+  const { data: bikeCategory } = useProductsByCategory('bike', {
+    limit: 5,
+  });
+  const { data: artCategory } = useProductsByCategory('art', {
+    limit: 5,
+  });
+  const { data: toolsCategory } = useProductsByCategory('drill-machine', {
+    limit: 5,
+  });
+
+  const { data: smartphoneCategory } = useProductsByCategory('smartphone', {
+    limit: 5,
+  });
+
   const { data: categoryResponse } = useCategory();
   const categories = categoryResponse?.data || [];
-  const products: Product[] = [];
+  const products = productsData?.products || [];
+  const bikeProducts = bikeCategory?.products || [];
+  const artProducts = artCategory?.products || [];
+  const toolsProducts = toolsCategory?.products || [];
+  const smartPhoneProducts = smartphoneCategory?.products || [];
+  // Create a motion component for Box
+  const MotionBox = motion.create(Box);
+
+  // Handle quick view
+  const handleQuickView = (product: Product) => {
+    setSelectedProduct(product);
+    onOpen();
+  };
+
+  // Close quick view
+  const handleCloseQuickView = () => {
+    setSelectedProduct(null);
+    onClose();
+  };
 
   return (
     <Box display='grid' gap={6} p={{ sm: 2, md: 6 }}>
@@ -283,38 +323,65 @@ function HomePage() {
         </GridItem>
       </Grid>
 
-      <Box bg='white' py={6} px={4} my={6}>
+      <Box bg='white' overflowX='hidden' py={6} px={4} my={6}>
         <Text mb={4} fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
           Shop by category
         </Text>
-        <Grid
-          templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(8, 1fr)' }}
-          templateRows={{ base: 'repeat(8, 1fr)', md: 'repeat(2, 1fr)' }}
-          rowGap={10}
-        >
-          {categories.map((category) => {
+        <Flex overflow='hidden' position='relative' gap={4}>
+          {categories.map((category, index) => {
             const CategoryIcon = getCategoryIcon(category.name);
             const color = getCategoryColor(category.name);
             return (
-              <GridItem
+              <MotionBox
                 key={category._id}
-                as={ReactRouterLink}
-                to={`/products/category/${category.name
-                  .toLowerCase()
-                  .replace(/ & | /g, '-')}`}
-                textAlign='center'
+                animate={{ x: ['100%', '-100%'] }}
+                transition={{
+                  duration: 10,
+                  delay: index * 0.5,
+                  repeat: Infinity,
+                  ease: 'linear',
+                }}
               >
-                <IconButton
-                  icon={<CategoryIcon />}
-                  aria-label={category.name}
-                  variant='ghost'
-                  color={color}
-                />
-                <Text>{category.name}</Text>
-              </GridItem>
+                <Stack
+                  key={category._id}
+                  as={ReactRouterLink}
+                  to={`/products/category/${category.name
+                    .toLowerCase()
+                    .replace(/ & | /g, '-')}`}
+                  borderRadius='xl'
+                  h={{ base: '150px', md: '250px' }}
+                  align='center'
+                  justify='center'
+                  flex='0 0 auto'
+                  minW={{ base: '50%', sm: '33.33%', md: '200px' }}
+                  border='1px solid'
+                  borderColor='gray.200'
+                  p={4}
+                  bg='gray.50'
+                  boxShadow='md'
+                >
+                  <Center
+                    w='80px'
+                    h='80px'
+                    borderRadius='full'
+                    border='2px solid green'
+                  >
+                    <IconButton
+                      icon={<CategoryIcon />}
+                      aria-label={category.name}
+                      variant='ghost'
+                      color={color}
+                      size='lg'
+                    />
+                  </Center>
+                  <Text fontSize='sm' fontWeight='medium'>
+                    {category.name}
+                  </Text>
+                </Stack>
+              </MotionBox>
             );
           })}
-        </Grid>
+        </Flex>
       </Box>
       <Box bg='white' p={6}>
         <Flex
@@ -332,13 +399,13 @@ function HomePage() {
         </Flex>
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {products.length > 0 ? (
-            products.map((product) => (
-              <ProductComponentCard key={product._id} product={product} />
-            ))
-          ) : (
-            <Text>No products available</Text>
-          )}
+          {bikeProducts.map((product) => (
+            <ProductComponentCard
+              key={product._id}
+              product={product}
+              onQuickView={handleQuickView}
+            />
+          ))}
         </SimpleGrid>
       </Box>
       <Box bg='white' p={6}>
@@ -357,13 +424,13 @@ function HomePage() {
         </Flex>
 
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {products.length > 0 ? (
-            products.map((product) => (
-              <ProductComponentCard key={product._id} product={product} />
-            ))
-          ) : (
-            <Text>No products available</Text>
-          )}
+          {toolsProducts.map((product) => (
+            <ProductComponentCard
+              key={product._id}
+              product={product}
+              onQuickView={handleQuickView}
+            />
+          ))}
         </SimpleGrid>
       </Box>
       <Box>
@@ -384,19 +451,19 @@ function HomePage() {
           </Button>
         </Flex>
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {products.length > 0 ? (
-            products.map((product) => (
-              <ProductComponentCard key={product._id} product={product} />
-            ))
-          ) : (
-            <Text>No products available</Text>
-          )}
+          {artProducts.map((product) => (
+            <ProductComponentCard
+              key={product._id}
+              product={product}
+              onQuickView={handleQuickView}
+            />
+          ))}
         </SimpleGrid>
       </Box>
       <Box bg='white' p={6}>
         <Flex>
           <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
-            Electronics Items
+            Smartphones and Electronics
           </Text>
           <Spacer />
           <Button bg='black' color='white'>
@@ -404,13 +471,13 @@ function HomePage() {
           </Button>
         </Flex>
         <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
-          {products.length > 0 ? (
-            products.map((product) => (
-              <ProductComponentCard key={product._id} product={product} />
-            ))
-          ) : (
-            <Text>No products available</Text>
-          )}
+          {smartPhoneProducts.map((product) => (
+            <ProductComponentCard
+              key={product._id}
+              product={product}
+              onQuickView={handleQuickView}
+            />
+          ))}
         </SimpleGrid>
       </Box>
 
@@ -426,7 +493,11 @@ function HomePage() {
         </Flex>
         <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
           {products.map((product) => (
-            <ProductComponentCard key={product._id} product={product} />
+            <ProductComponentCard
+              key={product._id}
+              product={product}
+              onQuickView={handleQuickView}
+            />
           ))}
         </SimpleGrid>
       </Box>
@@ -490,6 +561,12 @@ function HomePage() {
           </Text>
         </VStack>
       </SimpleGrid>
+      {/* Quick View Modal */}
+      <ProductQuickView
+        product={selectedProduct}
+        isOpen={isOpen}
+        onClose={handleCloseQuickView}
+      />
     </Box>
   );
 }

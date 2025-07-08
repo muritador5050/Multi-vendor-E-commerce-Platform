@@ -139,7 +139,7 @@ function Navbar() {
             <NavLink to='blog'>Blogs</NavLink>
             <NavLink to='shop'>Shop</NavLink>
 
-            <NavLink to={'store-manager'}>Store Manager</NavLink>
+            <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
             <NavLink to='store-list'>Store List</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
@@ -188,10 +188,10 @@ function Navbar() {
                 />
                 {cart?.items.length !== 0 && (
                   <Badge
-                    w='25px'
-                    h='25px'
-                    bg='yellow.400'
+                    w={{ base: '20px', sm: '25px' }}
+                    h={{ base: '20px', sm: '25px' }}
                     borderRadius='full'
+                    bg='yellow.400'
                     position='absolute'
                     top='-10px'
                     right='-10px'
@@ -202,8 +202,13 @@ function Navbar() {
                   </Badge>
                 )}
               </Box>
-              <Text alignSelf='flex-end' fontWeight='bold' color='white'>
-                ${cart?.totalAmount}
+              <Text
+                display={{ base: 'none', md: 'block' }}
+                alignSelf='flex-end'
+                fontWeight='bold'
+                color='white'
+              >
+                ${cart?.totalAmount.toFixed(2) || '0.00'}
               </Text>
             </Flex>
           </HStack>
