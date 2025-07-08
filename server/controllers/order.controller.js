@@ -1,10 +1,9 @@
 const Order = require('../models/order.model');
-const { resSuccessObject } = require('../utils/responseObject');
 const User = require('../models/user.model');
 
 class OrderController {
-  //Create new order
-  static async creatOrder(req, res) {
+  // Create new order
+  static async createOrder(req, res) {
     const {
       user,
       products,
@@ -18,13 +17,10 @@ class OrderController {
 
     // Validate required fields
     if (!user || !products || !paymentMethod || !totalPrice) {
-      return res.json(
-        resSuccessObject({
-          success: false,
-          message:
-            'Required fields: user, products, paymentMethod, totalPrice ',
-        })
-      );
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields: user, products, paymentMethod, totalPrice',
+      });
     }
 
     if (!products || products.length === 0) {
@@ -32,6 +28,16 @@ class OrderController {
         success: false,
         message: 'No products in the order',
       });
+    }
+
+    // Validate each product in the order
+    for (const item of products) {
+      if (!item.product || !item.quantity || !item.price) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each product must have product ID, quantity, and price',
+        });
+      }
     }
 
     const order = await Order.create({
@@ -44,18 +50,18 @@ class OrderController {
       shippingCost: shippingCost || 0,
       estimatedDelivery,
     });
+
     await order.populate('user', 'name email');
     await order.populate('products.product', 'name price');
 
-    return res.json(
-      resSuccessObject({
-        message: 'Order created successfully',
-        results: order,
-      })
-    );
+    return res.status(201).json({
+      success: true,
+      message: 'Order created successfully',
+      data: order,
+    });
   }
 
-  //Get all orders
+  // Get all orders
   static async getAllOrders(req, res) {
     const {
       page = 1,
@@ -86,12 +92,12 @@ class OrderController {
     if (search) {
       const searchRegex = { $regex: search.trim(), $options: 'i' };
 
-      //Find users matching the search term
+      // Find users matching the search term
       const matchingUsers = await User.find(
         {
           $or: [{ name: searchRegex }, { email: searchRegex }],
         },
-        { _id: 0 }
+        { _id: 1 } // Fix: should select _id, not exclude it
       ).lean();
 
       filter.$or = [
@@ -109,7 +115,7 @@ class OrderController {
         });
       }
 
-      // If search looks like ObjectId, also search by _id
+      // Check if search is a valid ObjectId
       if (search.match(/^[0-9a-fA-F]{24}$/)) {
         filter.$or.push({ _id: search });
       }
@@ -133,6 +139,8 @@ class OrderController {
 
     res.json({
       success: true,
+      message: 'Orders retrieved successfully',
+      data: orders,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / parseInt(limit)),
@@ -140,19 +148,22 @@ class OrderController {
         hasNextPage: skip + orders.length < total,
         hasPrevPage: parseInt(page) > 1,
       },
-      orders,
     });
   }
 
-  //Get a single  order
+  // Get a single order
   static async getOrderById(req, res) {
-    const order = await Order.findById({ _id: req.params.id, isDeleted: false })
+    const order = await Order.findOne({
+      _id: req.params.id,
+      isDeleted: false,
+    })
       .populate('user', 'name email')
       .populate('products.product', 'name price description');
 
     if (!order) {
-      return res.status(400).json({
-        message: `Order with this ID not found`,
+      return res.status(404).json({
+        success: false,
+        message: 'Order with this ID not found',
       });
     }
 
@@ -161,18 +172,20 @@ class OrderController {
       req.user.role !== 'admin' &&
       order.user._id.toString() !== req.user.id
     ) {
-      return res
-        .status(403)
-        .json({ message: 'Not authorized to view this order' });
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this order',
+      });
     }
-    res.json(
-      resSuccessObject({
-        results: order,
-      })
-    );
+
+    res.json({
+      success: true,
+      message: 'Order retrieved successfully',
+      data: order,
+    });
   }
 
-  //Update new order
+  // Update order status
   static async updateOrderStatus(req, res) {
     const { orderStatus, trackingNumber, deliveredAt } = req.body;
 
@@ -184,22 +197,39 @@ class OrderController {
     const order = await Order.findByIdAndUpdate(req.params.id, updateFields, {
       new: true,
       runValidators: true,
+    }).populate('user', 'name email');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Order updated successfully',
+      data: order,
     });
-
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-
-    res.json(resSuccessObject({ results: order }));
   }
 
-  //Delete new order
+  // Delete order (soft delete)
   static async deleteOrder(req, res) {
     const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found',
+      });
+    }
 
     order.isDeleted = true;
     await order.save();
 
-    res.status(200).json({ message: 'Order marked as deleted' });
+    res.status(200).json({
+      success: true,
+      message: 'Order marked as deleted',
+    });
   }
 
   // Get order statistics
@@ -247,14 +277,14 @@ class OrderController {
       { $limit: 12 },
     ]);
 
-    res.json(
-      resSuccessObject({
-        results: {
-          overview: stats[0] || {},
-          monthlyTrends: monthlyStats,
-        },
-      })
-    );
+    res.json({
+      success: true,
+      message: 'Order statistics retrieved successfully',
+      data: {
+        overview: stats[0] || {},
+        monthlyTrends: monthlyStats,
+      },
+    });
   }
 }
 

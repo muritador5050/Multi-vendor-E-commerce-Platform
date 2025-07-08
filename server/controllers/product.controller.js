@@ -172,7 +172,13 @@ class ProductsController {
   //Get product by category slug
   static async getProductsByCategorySlug(req, res) {
     const { slug } = req.params;
-    const { page = 1, limit = 10, sort = '-createdAt' } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sort = '-createdAt',
+      minPrice,
+      maxPrice,
+    } = req.query;
 
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
@@ -184,7 +190,6 @@ class ProductsController {
     } else {
       selectedCategory = await Category.findOne({ slug: slug });
     }
-    console.log('Selected Category:', selectedCategory);
     if (!selectedCategory) {
       return res.status(404).json({
         success: false,
@@ -196,6 +201,13 @@ class ProductsController {
       category: selectedCategory._id,
       isDeleted: false,
     };
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    }
 
     const total = await Product.countDocuments(filter);
     const skip = (pageNum - 1) * limitNum;

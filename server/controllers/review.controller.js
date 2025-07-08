@@ -1,13 +1,45 @@
 const Review = require('../models/review.model');
 const Product = require('../models/product.model');
 const mongoose = require('mongoose');
-const { resSuccessObject } = require('../utils/responseObject');
 
 class ReviewController {
   // Create a new review - AUTHENTICATED USERS ONLY
   static async createReview(req, res) {
     const { product, rating, comment } = req.body;
     const user = req.user.id;
+
+    // Validate required fields
+    if (!product || !rating) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required fields: product, rating',
+      });
+    }
+
+    // Validate rating range
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating must be between 1 and 5',
+      });
+    }
+
+    // Validate product ID format
+    if (!mongoose.Types.ObjectId.isValid(product)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID format',
+      });
+    }
+
+    // Verify product exists
+    const productExist = await Product.findById(product);
+    if (!productExist) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
 
     // Check if product is already reviewed by this user
     const existingReview = await Review.findOne({
@@ -18,27 +50,21 @@ class ReviewController {
 
     if (existingReview) {
       existingReview.rating = rating;
-      existingReview.comment = comment;
+      existingReview.comment = comment || '';
       existingReview.isApproved = false; // re-approval needed
 
-      //Save
       await existingReview.save();
 
-      //Response
-      return res.json(
-        resSuccessObject({
-          message: 'Review updated successfully',
-          results: existingReview,
-        })
-      );
-    }
+      // Populate user and product details for response
+      await existingReview.populate([
+        { path: 'user', select: 'name email' },
+        { path: 'product', select: 'name price' },
+      ]);
 
-    // Verify product exists
-    const productExist = await Product.findById(product);
-    if (!productExist) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product not found',
+      return res.json({
+        success: true,
+        message: 'Review updated successfully',
+        data: existingReview,
       });
     }
 
@@ -55,12 +81,11 @@ class ReviewController {
       { path: 'product', select: 'name price' },
     ]);
 
-    res.json(
-      resSuccessObject({
-        message: 'Review created successfully',
-        results: review,
-      })
-    );
+    res.status(201).json({
+      success: true,
+      message: 'Review created successfully',
+      data: review,
+    });
   }
 
   // Get reviews - PUBLIC ACCESS (no authentication required for viewing)
@@ -78,48 +103,83 @@ class ReviewController {
       sortOrder = 'desc',
     } = req.query;
 
+    // Validate pagination parameters
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10)); // Cap at 100
+
     // Build filter object
     const filter = { isDeleted: isDeleted === 'true' };
 
-    if (product) filter.product = product;
-    if (user) filter.user = user;
+    // Validate ObjectId fields
+    if (product) {
+      if (!mongoose.Types.ObjectId.isValid(product)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid product ID format',
+        });
+      }
+      filter.product = product;
+    }
+
+    if (user) {
+      if (!mongoose.Types.ObjectId.isValid(user)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid user ID format',
+        });
+      }
+      filter.user = user;
+    }
+
     if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
 
     if (minRating || maxRating) {
       filter.rating = {};
-      if (minRating) filter.rating.$gte = parseInt(minRating);
-      if (maxRating) filter.rating.$lte = parseInt(maxRating);
+      if (minRating) {
+        const minRatingNum = parseInt(minRating);
+        if (minRatingNum >= 1 && minRatingNum <= 5) {
+          filter.rating.$gte = minRatingNum;
+        }
+      }
+      if (maxRating) {
+        const maxRatingNum = parseInt(maxRating);
+        if (maxRatingNum >= 1 && maxRatingNum <= 5) {
+          filter.rating.$lte = maxRatingNum;
+        }
+      }
     }
 
-    // Build sort object
+    // Build sort object - validate sortBy field
+    const allowedSortFields = ['createdAt', 'updatedAt', 'rating'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
     const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    sort[sortField] = sortOrder === 'desc' ? -1 : 1;
 
-    // Calculate pagination - FIX: Missing parentheses
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    // Calculate pagination
+    const skip = (pageNum - 1) * limitNum;
 
     const [reviews, total] = await Promise.all([
       Review.find(filter)
         .populate([
-          { path: 'user', select: 'name email avater' },
-          { path: 'product', select: 'name price, images' },
+          { path: 'user', select: 'name email avatar' }, // Fixed typo: avater -> avatar
+          { path: 'product', select: 'name price images' },
         ])
         .sort(sort)
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(limitNum),
       Review.countDocuments(filter),
     ]);
 
-    const totalPages = Math.ceil(total / parseInt(limit));
-
     res.json({
-      reviews,
+      success: true,
+      message: 'Reviews retrieved successfully',
+      data: reviews,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages,
-        total,
-        hasNextPage: parseInt(page) < totalPages,
-        hasPrevPage: parseInt(page) > 1,
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalReviews: total,
+        hasNextPage: skip + reviews.length < total,
+        hasPrevPage: pageNum > 1,
       },
     });
   }
@@ -139,8 +199,8 @@ class ReviewController {
       _id: id,
       isDeleted: false,
     }).populate([
-      { path: 'user', select: 'name email avater' },
-      { path: 'product', select: 'name price, images' },
+      { path: 'user', select: 'name email avatar' }, // Fixed typo: avater -> avatar
+      { path: 'product', select: 'name price images' },
     ]);
 
     if (!review) {
@@ -150,13 +210,28 @@ class ReviewController {
       });
     }
 
-    res.json({ results: review });
+    res.json({
+      success: true,
+      message: 'Review retrieved successfully',
+      data: review,
+    });
   }
 
   // Approve or disapprove a review - ADMIN ONLY
   static async toggleReviewApproval(req, res) {
     const { id } = req.params;
-    const review = await Review.findById(id);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid review ID',
+      });
+    }
+
+    const review = await Review.findOne({
+      _id: id,
+      isDeleted: false, // Only allow approval of non-deleted reviews
+    });
 
     if (!review) {
       return res.status(404).json({
@@ -168,12 +243,13 @@ class ReviewController {
     review.isApproved = !review.isApproved;
     await review.save();
 
-    return res.json(
-      resSuccessObject({
-        message: `Review ${review.isApproved ? 'approved' : 'disapproved'}`,
-        results: review,
-      })
-    );
+    res.json({
+      success: true,
+      message: `Review ${
+        review.isApproved ? 'approved' : 'disapproved'
+      } successfully`,
+      data: review,
+    });
   }
 
   // Delete review - AUTHENTICATED USERS (own reviews) or ADMIN
@@ -189,12 +265,15 @@ class ReviewController {
       });
     }
 
-    const review = await Review.findById(id);
+    const review = await Review.findOne({
+      _id: id,
+      isDeleted: false, // Only find non-deleted reviews
+    });
 
-    if (!review || review.isDeleted) {
-      return res.status(400).json({
+    if (!review) {
+      return res.status(404).json({
         success: false,
-        message: 'Review not found or already deleted',
+        message: 'Review not found',
       });
     }
 
@@ -209,7 +288,10 @@ class ReviewController {
     review.isDeleted = true;
     await review.save();
 
-    return res.json({ message: 'Review deleted (soft delete)' });
+    res.json({
+      success: true,
+      message: 'Review deleted successfully',
+    });
   }
 
   // Get average rating for a product - PUBLIC ACCESS
@@ -236,13 +318,88 @@ class ReviewController {
           _id: '$product',
           avgRating: { $avg: '$rating' },
           totalReviews: { $sum: 1 },
+          ratingBreakdown: {
+            $push: '$rating',
+          },
+        },
+      },
+      {
+        $addFields: {
+          avgRating: { $round: ['$avgRating', 2] }, // Round to 2 decimal places
         },
       },
     ]);
 
     const result = stats[0] || { avgRating: 0, totalReviews: 0 };
 
-    res.json(resSuccessObject({ results: result }));
+    // Remove the ratingBreakdown from the final result if it exists
+    if (result.ratingBreakdown) {
+      delete result.ratingBreakdown;
+    }
+
+    res.json({
+      success: true,
+      message: 'Average rating retrieved successfully',
+      data: result,
+    });
+  }
+
+  // Get review statistics - ADMIN ACCESS
+  static async getReviewStats(req, res) {
+    const stats = await Review.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $group: {
+          _id: null,
+          totalReviews: { $sum: 1 },
+          approvedReviews: {
+            $sum: { $cond: [{ $eq: ['$isApproved', true] }, 1, 0] },
+          },
+          pendingReviews: {
+            $sum: { $cond: [{ $eq: ['$isApproved', false] }, 1, 0] },
+          },
+          averageRating: { $avg: '$rating' },
+          rating1: {
+            $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] },
+          },
+          rating2: {
+            $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] },
+          },
+          rating3: {
+            $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] },
+          },
+          rating4: {
+            $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] },
+          },
+          rating5: {
+            $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] },
+          },
+        },
+      },
+      {
+        $addFields: {
+          averageRating: { $round: ['$averageRating', 2] }, // Round to 2 decimal places
+        },
+      },
+    ]);
+
+    const result = stats[0] || {
+      totalReviews: 0,
+      approvedReviews: 0,
+      pendingReviews: 0,
+      averageRating: 0,
+      rating1: 0,
+      rating2: 0,
+      rating3: 0,
+      rating4: 0,
+      rating5: 0,
+    };
+
+    res.json({
+      success: true,
+      message: 'Review statistics retrieved successfully',
+      data: result,
+    });
   }
 }
 

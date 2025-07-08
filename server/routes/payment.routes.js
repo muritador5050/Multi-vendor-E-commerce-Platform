@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../utils/asyncHandler');
 const PaymentController = require('../controllers/payment.controller');
-const { authenticate, isAdmin } = require('../middlewares/authMiddleware');
+const { authenticate } = require('../middlewares/authMiddleware');
+const checkRole = require('../middlewares/roleMiddleware');
 
 // Webhook endpoint for payment providers (e.g., Stripe, PayPal)
 router.post(
@@ -112,7 +113,7 @@ router.get(
 router.get(
   '/',
   authenticate,
-  isAdmin,
+  checkRole('admin', 'read'),
   asyncHandler(PaymentController.getAllPayments)
 );
 
@@ -152,7 +153,7 @@ router.get(
 router.put(
   '/:id/status',
   authenticate,
-  isAdmin,
+  checkRole('admin', 'edit'),
   asyncHandler(PaymentController.updatePaymentStatus)
 );
 
@@ -180,7 +181,7 @@ router.put(
 router.delete(
   '/:id',
   authenticate,
-  isAdmin,
+  checkRole('admin', 'delete'),
   asyncHandler(PaymentController.deletePayment)
 );
 
@@ -201,7 +202,7 @@ router.delete(
 router.get(
   '/admin/analytics',
   authenticate,
-  isAdmin,
+  checkRole('admin', 'read'),
   asyncHandler(PaymentController.getPaymentAnalytics)
 );
 
