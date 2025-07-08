@@ -16,8 +16,8 @@ router.use('/api/reviews', require('./review.routes'));
 router.use('/api/orders', require('./order.routes'));
 router.use('/api/payments', require('./payment.routes'));
 router.use('/api/carts', require('./cart.routes'));
-router.use('/api/wishlist', require('./wishlist.routes'));
-router.use('/api/blog', require('./blog.routes'));
+router.use('/api/wishlists', require('./wishlist.routes'));
+router.use('/api/blogs', require('./blog.routes'));
 router.use('/api/upload', require('./imageUpload.route'));
 
 module.exports = router;

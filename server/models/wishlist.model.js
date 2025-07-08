@@ -18,9 +18,22 @@ const wishlistSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    // Add version key for optimistic concurrency control
+    versionKey: true,
+  }
 );
 
+// Compound index for unique user-product combination and efficient queries
 wishlistSchema.index({ user: 1, product: 1 }, { unique: true });
+
+// Additional index for user-based queries (getting user's wishlist)
+wishlistSchema.index({ user: 1, addedAt: -1 });
+
+// Static method for getting wishlist count (useful for pagination)
+wishlistSchema.statics.getUserWishlistCount = async function (userId) {
+  return await this.countDocuments({ user: userId });
+};
 
 module.exports = mongoose.model('Wishlist', wishlistSchema);

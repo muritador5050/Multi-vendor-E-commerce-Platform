@@ -1,4 +1,4 @@
-import { useAddToCart } from '@/context/CartContext';
+import { useAddToCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
 import {
   Box,

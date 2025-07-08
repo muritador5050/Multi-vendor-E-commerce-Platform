@@ -14,7 +14,7 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { useAddToCart } from '@/context/CartContext';
+import { useAddToCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
 
 interface ProductQuickViewProps {

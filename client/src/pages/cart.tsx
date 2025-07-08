@@ -17,7 +17,7 @@ import {
   useRemoveFromCart,
   useUpdateQuantity,
   useClearCart,
-} from '@/context/CartContext';
+} from '@/context/CartContextService';
 import { AddIcon, DeleteIcon, MinusIcon, StarIcon } from '@chakra-ui/icons';
 
 export default function CartComponent() {

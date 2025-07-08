@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAddToCart } from '@/context/CartContext';
+import { useAddToCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
 
 interface ProductCardProps {

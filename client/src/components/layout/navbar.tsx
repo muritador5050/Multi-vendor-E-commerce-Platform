@@ -30,8 +30,9 @@ import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
 import CartComponent from '@/pages/Cart';
-import { useCart } from '@/context/CartContext';
-import { useCategory } from '@/context/CategoryContext';
+import { useCart } from '@/context/CartContextService';
+import { useCategory } from '@/context/CategoryContextService';
+import { useIsAuthenticated } from '@/hooks/useAuth';
 
 //NavLink Component
 function NavLink({
@@ -91,6 +92,7 @@ function NavLink({
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
+  const isAuthenticated = useIsAuthenticated();
   const { data: cart } = useCart();
   const { data: categoryResponse } = useCategory();
   const categories = categoryResponse?.data || [];
@@ -186,7 +188,7 @@ function Navbar() {
                   colorScheme='white'
                   onClick={rightDrawer.onOpen}
                 />
-                {cart?.items.length !== 0 && (
+                {cart?.items.length !== 0 && isAuthenticated && (
                   <Badge
                     w={{ base: '20px', sm: '25px' }}
                     h={{ base: '20px', sm: '25px' }}
@@ -202,14 +204,16 @@ function Navbar() {
                   </Badge>
                 )}
               </Box>
-              <Text
-                display={{ base: 'none', md: 'block' }}
-                alignSelf='flex-end'
-                fontWeight='bold'
-                color='white'
-              >
-                ${cart?.totalAmount.toFixed(2) || '0.00'}
-              </Text>
+              {isAuthenticated && (
+                <Text
+                  display={{ base: 'none', md: 'block' }}
+                  alignSelf='flex-end'
+                  fontWeight='bold'
+                  color='white'
+                >
+                  ${cart?.totalAmount.toFixed(2) || '0.00'}
+                </Text>
+              )}
             </Flex>
           </HStack>
         </Flex>

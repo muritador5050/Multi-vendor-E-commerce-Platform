@@ -157,7 +157,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
 import { useLocation } from 'react-router-dom';
-import { useAddToCart } from '../context/CartContext';
+import { useAddToCart } from '../context/CartContextService';
 import type { Product } from '@/type/product';
 
 export default function ProductDetail(): React.ReactElement {

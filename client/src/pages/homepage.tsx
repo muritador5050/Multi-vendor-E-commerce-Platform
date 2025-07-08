@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
 import ProductComponentCard from '@/components/reuseable/ProductComponentCard.tsx';
-import { useCategory } from '@/context/CategoryContext';
+import { useCategory } from '@/context/CategoryContextService';
 import {
   Truck,
   DollarSign,
@@ -42,7 +42,10 @@ import {
   Shirt,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useProducts, useProductsByCategory } from '@/context/ProductContext';
+import {
+  useProducts,
+  useProductsByCategory,
+} from '@/context/ProductContextService';
 import ProductQuickView from '@/components/ProductQuickView';
 import type { Product } from '@/type/product';
 
