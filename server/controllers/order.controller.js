@@ -2,7 +2,6 @@ const Order = require('../models/order.model');
 const User = require('../models/user.model');
 
 class OrderController {
-  // Create new order
   static async createOrder(req, res) {
     const {
       user,
@@ -15,7 +14,6 @@ class OrderController {
       estimatedDelivery,
     } = req.body;
 
-    // Validate required fields
     if (!user || !products || !paymentMethod || !totalPrice) {
       return res.status(400).json({
         success: false,
@@ -30,7 +28,6 @@ class OrderController {
       });
     }
 
-    // Validate each product in the order
     for (const item of products) {
       if (!item.product || !item.quantity || !item.price) {
         return res.status(400).json({
@@ -61,7 +58,6 @@ class OrderController {
     });
   }
 
-  // Get all orders
   static async getAllOrders(req, res) {
     const {
       page = 1,
@@ -76,7 +72,6 @@ class OrderController {
       search,
     } = req.query;
 
-    // Build filter object
     const filter = { isDeleted: false };
 
     if (orderStatus) filter.orderStatus = orderStatus;
@@ -92,12 +87,11 @@ class OrderController {
     if (search) {
       const searchRegex = { $regex: search.trim(), $options: 'i' };
 
-      // Find users matching the search term
       const matchingUsers = await User.find(
         {
           $or: [{ name: searchRegex }, { email: searchRegex }],
-        },
-        { _id: 1 } // Fix: should select _id, not exclude it
+        }
+        // { _id: 1 }
       ).lean();
 
       filter.$or = [
@@ -115,17 +109,14 @@ class OrderController {
         });
       }
 
-      // Check if search is a valid ObjectId
       if (search.match(/^[0-9a-fA-F]{24}$/)) {
         filter.$or.push({ _id: search });
       }
     }
 
-    // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-    // Get orders with pagination
     const [orders, total] = await Promise.all([
       Order.find(filter)
         .populate('user', 'name email')

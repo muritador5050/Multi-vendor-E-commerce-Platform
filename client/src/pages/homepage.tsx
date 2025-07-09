@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
 import ProductComponentCard from '@/components/reuseable/ProductComponentCard.tsx';
-import { useCategory } from '@/context/CategoryContextService';
+import { useCategories } from '@/context/CategoryContextService';
 import {
   Truck,
   DollarSign,
@@ -49,7 +49,6 @@ import {
 import ProductQuickView from '@/components/ProductQuickView';
 import type { Product } from '@/type/product';
 
-// Create a mapping function to match API categories with icons
 const getCategoryIcon = (categoryName: string) => {
   const iconMap: Record<string, React.ElementType> = {
     Accessories: Star,
@@ -117,8 +116,8 @@ function HomePage() {
     limit: 5,
   });
 
-  const { data: categoryResponse } = useCategory();
-  const categories = categoryResponse?.data || [];
+  const { data: categoryResponse } = useCategories();
+  const categories = categoryResponse || [];
   const products = productsData?.products || [];
   const bikeProducts = bikeCategory?.products || [];
   const artProducts = artCategory?.products || [];

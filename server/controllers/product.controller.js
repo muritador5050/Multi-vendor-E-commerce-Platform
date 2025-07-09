@@ -3,12 +3,10 @@ const Product = require('../models/product.model');
 const Category = require('../models/category.model');
 
 class ProductsController {
-  // Create new product(s) - supports both single and bulk creation
   static async createProduct(req, res) {
     const { body, user } = req;
     const productsData = Array.isArray(body) ? body : [body];
 
-    // Validate categories exist
     const categoryIds = productsData
       .map((p) => p.categoryId)
       .filter(Boolean)
@@ -26,7 +24,6 @@ class ProductsController {
       }
     }
 
-    // Process each product
     const processedProducts = productsData.map((productData) => {
       const processed = { ...productData };
 
@@ -44,7 +41,6 @@ class ProductsController {
       ? createdProducts
       : [createdProducts];
 
-    // Populate created products
     const populatedProducts = await Product.find({
       _id: { $in: productsArray.map((p) => p._id) },
     })
@@ -70,15 +66,16 @@ class ProductsController {
       search,
       isActive,
       vendor,
+      material,
+      size,
+      color,
     } = req.query;
 
-    // Validate pagination parameters
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
 
     const filter = { isDeleted: false };
 
-    // Active filter
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
@@ -94,9 +91,9 @@ class ProductsController {
       if (categoryFilter) {
         filter.category = categoryFilter._id;
       } else {
-        return res.status(404).json({
-          success: false,
-          message: 'Products not found',
+        return res.status(200).json({
+          success: true,
+          message: 'Products retrieved successfully',
           data: {
             products: [],
             pagination: {
@@ -105,25 +102,23 @@ class ProductsController {
               pages: 0,
               hasNext: false,
               hasPrev: pageNum > 1,
+              limit: limitNum,
             },
           },
         });
       }
     }
 
-    // Price range filter
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
 
-    // Vendor filter
     if (vendor) {
       filter.vendor = vendor;
     }
 
-    // Text search
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -132,12 +127,15 @@ class ProductsController {
       ];
     }
 
-    for (const [key, value] of Object.entries(req.query)) {
-      const knownAttributes = ['material', 'size', 'color'];
-      if (knownAttributes.includes(key)) {
-        filter[`attributes.${key}`] = { $regex: value, $options: 'i' };
+    const knownAttributes = ['material', 'size', 'color'];
+    knownAttributes.forEach((attr) => {
+      if (req.query[attr]) {
+        filter[`attributes.${attr}`] = {
+          $regex: req.query[attr],
+          $options: 'i',
+        };
       }
-    }
+    });
 
     const total = await Product.countDocuments(filter);
     const skip = (pageNum - 1) * limitNum;
@@ -169,7 +167,6 @@ class ProductsController {
     });
   }
 
-  //Get product by category slug
   static async getProductsByCategorySlug(req, res) {
     const { slug } = req.params;
     const {
@@ -202,7 +199,6 @@ class ProductsController {
       isDeleted: false,
     };
 
-    // Price range filter
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
@@ -239,7 +235,6 @@ class ProductsController {
     });
   }
 
-  // Get single product by ID
   static async getProductById(req, res) {
     const { id } = req.params;
 
@@ -272,7 +267,6 @@ class ProductsController {
     });
   }
 
-  // Update product
   static async updateProduct(req, res) {
     const { id } = req.params;
     const updateData = { ...req.body };
@@ -284,7 +278,6 @@ class ProductsController {
       });
     }
 
-    // Validate category if being updated
     if (updateData.categoryId) {
       const category = await Category.findById(updateData.categoryId);
       if (!category) {
@@ -299,7 +292,6 @@ class ProductsController {
 
     const filter = { _id: id, isDeleted: false };
 
-    // Non-admin users can only update their own products
     if (req.user.role !== 'admin') {
       filter.vendor = req.user.id;
     }
@@ -331,7 +323,6 @@ class ProductsController {
     });
   }
 
-  // Soft delete product
   static async deleteProduct(req, res) {
     const { id } = req.params;
 
@@ -344,7 +335,6 @@ class ProductsController {
 
     const filter = { _id: id, isDeleted: false };
 
-    // Non-admin users can only delete their own products
     if (req.user.role !== 'admin') {
       filter.vendor = req.user.id;
     }
@@ -373,7 +363,6 @@ class ProductsController {
     });
   }
 
-  // Get vendor's products
   static async getVendorProducts(req, res) {
     const {
       page = 1,
@@ -392,22 +381,19 @@ class ProductsController {
       isDeleted: false,
     };
 
-    // Active filter
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
     }
 
-    // Category filter
     if (category) {
       const selectedCategory = await Category.findOne({
         $or: [{ slug: category }, { _id: category }],
       });
-      if (categoryDoc) {
-        filter.category = categoryDoc._id;
+      if (selectedCategory) {
+        filter.category = selectedCategory._id;
       }
     }
 
-    // Search filter
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },

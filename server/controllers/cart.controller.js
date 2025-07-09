@@ -44,7 +44,6 @@ class CartController {
     cart.updatedAt = new Date();
     await cart.save();
 
-    //Populate and return updated cart
     const updatedCart = await Cart.findOne({ user: req.user.id }).populate(
       'items.product'
     );
@@ -109,7 +108,6 @@ class CartController {
     });
   }
 
-  //Update item quantity in cart
   static async updateProductQuantity(req, res) {
     const userId = req.user.id;
     const productId = req.params.id;
@@ -140,7 +138,6 @@ class CartController {
       (item) => item.product.toString() === productId
     );
 
-    // Check if the item exists in the cart
     if (itemIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -149,17 +146,14 @@ class CartController {
     }
 
     if (quantity === 0) {
-      // Remove item if quantity is 0
       cart.items.splice(itemIndex, 1);
     } else {
-      // Update quantity
       cart.items[itemIndex].quantity = quantity;
     }
 
     cart.updatedAt = new Date();
     await cart.save();
 
-    // Populate and return updated cart
     const updatedCart = await Cart.findOne({ user: userId }).populate(
       'items.product'
     );

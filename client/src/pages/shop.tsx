@@ -70,7 +70,6 @@ export default function ShopPage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  // Data state
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +102,6 @@ export default function ShopPage() {
     setError(null);
 
     try {
-      // Build query parameters using the buildQueryParams function
       const queryParams: Record<string, string | string[]> = {
         page: currentPage.toString(),
         limit: pagination.limit.toString(),

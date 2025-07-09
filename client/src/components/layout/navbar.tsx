@@ -29,9 +29,9 @@ import {
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
-import CartComponent from '@/pages/Cart';
+import CartComponent from '@/pages/CartComponent';
 import { useCart } from '@/context/CartContextService';
-import { useCategory } from '@/context/CategoryContextService';
+import { useCategories } from '@/context/CategoryContextService';
 import { useIsAuthenticated } from '@/hooks/useAuth';
 
 //NavLink Component
@@ -94,8 +94,7 @@ function Navbar() {
   const rightDrawer = useDisclosure();
   const isAuthenticated = useIsAuthenticated();
   const { data: cart } = useCart();
-  const { data: categoryResponse } = useCategory();
-  const categories = categoryResponse?.data || [];
+  const { data: categories } = useCategories();
   return (
     <>
       <Box bg='brand.300' boxShadow='md'>

@@ -9,10 +9,11 @@ import {
   CardFooter,
   ButtonGroup,
   useToast,
+  Flex,
 } from '@chakra-ui/react';
-import { Heart } from 'lucide-react';
+import { Heart, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAddToCart } from '@/context/CartContextService';
+import { useAddToCart, useIsInCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
 
 interface ProductCardProps {
@@ -28,6 +29,7 @@ export default function ProductCard({
   const toast = useToast();
 
   const addToCartMutation = useAddToCart();
+  const isInCart = useIsInCart(product._id);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -41,16 +43,15 @@ export default function ProductCard({
         description: 'Product added to cart!',
         status: 'success',
         duration: 2000,
-        position: 'top',
+        position: 'top-right',
       });
-    } catch (error) {
-      console.log(error);
+    } catch {
       toast({
         title: 'Failed operation',
         description: 'Failed to add product to cart',
         status: 'error',
         duration: 2000,
-        position: 'top',
+        position: 'top-right',
       });
     }
   };
@@ -169,7 +170,10 @@ export default function ProductCard({
             variant='solid'
             colorScheme='blue'
           >
-            {addToCartMutation.isPending ? 'Adding...' : 'Add to Cart'}
+            <Flex as='span' align='center' gap={4} fontSize='sm'>
+              {addToCartMutation.isPending ? 'Adding...' : 'Add to Cart'}{' '}
+              {isInCart && <Check />}
+            </Flex>
           </Button>
           <Button variant='ghost' colorScheme='blue' leftIcon={<Heart />}>
             Wishlist

@@ -3,11 +3,9 @@ const Product = require('../models/product.model');
 const slugify = require('slugify');
 
 class CategoryController {
-  // Create a new category
   static async createCategory(req, res) {
     const { name, image } = req.body;
 
-    // Validate required fields
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -15,7 +13,6 @@ class CategoryController {
       });
     }
 
-    // Check if category already exists
     const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
       return res.status(400).json({
@@ -24,23 +21,19 @@ class CategoryController {
       });
     }
 
-    // Create category with auto-generated slug
-    const categoryData = {
+    const category = await Category.create({
       name,
       image,
       slug: slugify(name, { lower: true, strict: true }),
-    };
-
-    const category = await Category.create(categoryData);
+    });
 
     return res.status(201).json({
       success: true,
-      data: category,
       message: 'Category created successfully',
+      data: category,
     });
   }
 
-  // Bulk create categories from predefined list
   static async createBulkCategories(req, res) {
     const categories = req.body;
 
@@ -51,13 +44,8 @@ class CategoryController {
       });
     }
 
-    // Validate each category
     for (const category of categories) {
-      if (
-        !category.name ||
-        typeof category.name !== 'string' ||
-        category.name.trim() === ''
-      ) {
+      if (!category.name?.trim()) {
         return res.status(400).json({
           success: false,
           message: 'Each category must have a valid name',
@@ -65,7 +53,6 @@ class CategoryController {
       }
     }
 
-    // Check for existing categories
     const categoryNames = categories.map((c) => c.name);
     const existingCategories = await Category.find({
       name: { $in: categoryNames },
@@ -80,55 +67,49 @@ class CategoryController {
       });
     }
 
-    // Add slug field to each category
-    const categoriesWithSlugs = categories.map((c) => ({
-      ...c,
-      slug: slugify(c.name, { lower: true, strict: true }),
-    }));
-
-    const createdCategories = await Category.insertMany(categoriesWithSlugs);
+    const createdCategories = await Category.insertMany(
+      categories.map((c) => ({
+        ...c,
+        slug: slugify(c.name, { lower: true, strict: true }),
+      }))
+    );
 
     return res.status(201).json({
       success: true,
-      data: createdCategories,
       message: `${createdCategories.length} categories created successfully`,
+      data: createdCategories,
     });
   }
 
-  // Get all categories with optional product count
   static async getAllCategories(req, res) {
-    const { includeProductCount = false } = req.query;
+    const { includeProductCount } = req.query;
 
-    let categories;
-
-    if (includeProductCount === 'true') {
-      // Aggregate to include product count
-      categories = await Category.aggregate([
-        {
-          $lookup: {
-            from: 'products',
-            localField: '_id',
-            foreignField: 'category',
-            as: 'products',
-          },
-        },
-        {
-          $addFields: {
-            productCount: { $size: '$products' },
-          },
-        },
-        {
-          $project: {
-            products: 0, // Remove the products array, keep only count
-          },
-        },
-        {
-          $sort: { name: 1 },
-        },
-      ]);
-    } else {
-      categories = await Category.find({}).sort({ name: 1 });
-    }
+    const categories =
+      includeProductCount === 'true'
+        ? await Category.aggregate([
+            {
+              $lookup: {
+                from: 'products',
+                localField: '_id',
+                foreignField: 'category',
+                as: 'products',
+              },
+            },
+            {
+              $addFields: {
+                productCount: { $size: '$products' },
+              },
+            },
+            {
+              $project: {
+                products: 0,
+              },
+            },
+            {
+              $sort: { name: 1 },
+            },
+          ])
+        : await Category.find({}).sort({ name: 1 });
 
     return res.json({
       success: true,
@@ -137,10 +118,9 @@ class CategoryController {
     });
   }
 
-  // Get category by slug with optional products
   static async getCategoryBySlug(req, res) {
     const { slug } = req.params;
-    const { includeProducts = false, page = 1, limit = 10 } = req.query;
+    const { includeProducts, page = 1, limit = 10 } = req.query;
 
     if (!slug) {
       return res.status(400).json({
@@ -150,7 +130,6 @@ class CategoryController {
     }
 
     const category = await Category.findOne({ slug });
-
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -160,34 +139,35 @@ class CategoryController {
 
     let responseData = category.toObject();
 
-    // Include products if requested
     if (includeProducts === 'true') {
       const skip = (parseInt(page) - 1) * parseInt(limit);
+      const parsedLimit = parseInt(limit);
 
-      const products = await Product.find({
-        category: category._id,
-        isDeleted: false,
-        isActive: true,
-      })
-        .sort('-createdAt')
-        .skip(skip)
-        .limit(parseInt(limit))
-        .populate('vendor', 'name')
-        .lean();
-
-      const totalProducts = await Product.countDocuments({
-        category: category._id,
-        isDeleted: false,
-        isActive: true,
-      });
+      const [products, totalProducts] = await Promise.all([
+        Product.find({
+          category: category._id,
+          isDeleted: false,
+          isActive: true,
+        })
+          .sort('-createdAt')
+          .skip(skip)
+          .limit(parsedLimit)
+          .populate('vendor', 'name')
+          .lean(),
+        Product.countDocuments({
+          category: category._id,
+          isDeleted: false,
+          isActive: true,
+        }),
+      ]);
 
       responseData.products = products;
       responseData.productCount = totalProducts;
       responseData.pagination = {
         page: parseInt(page),
-        limit: parseInt(limit),
+        limit: parsedLimit,
         total: totalProducts,
-        pages: Math.ceil(totalProducts / parseInt(limit)),
+        pages: Math.ceil(totalProducts / parsedLimit),
       };
     }
 
@@ -198,10 +178,14 @@ class CategoryController {
     });
   }
 
+  static isValidObjectId(id) {
+    return /^[0-9a-fA-F]{24}$/.test(id);
+  }
+
   static async getCategoryById(req, res) {
     const { id } = req.params;
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    if (!this.isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid category ID format',
@@ -209,7 +193,6 @@ class CategoryController {
     }
 
     const category = await Category.findById(id);
-
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -226,7 +209,7 @@ class CategoryController {
   static async updateCategory(req, res) {
     const { id } = req.params;
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    if (!this.isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid category ID format',
@@ -241,7 +224,6 @@ class CategoryController {
       });
     }
 
-    // Check for name uniqueness if name is being updated
     if (req.body.name && req.body.name !== category.name) {
       const existingCategory = await Category.findOne({
         name: req.body.name,
@@ -253,7 +235,6 @@ class CategoryController {
           message: 'Category name already exists',
         });
       }
-      // Auto-generate slug if name changes
       req.body.slug = slugify(req.body.name, { lower: true, strict: true });
     }
 
@@ -269,12 +250,11 @@ class CategoryController {
     });
   }
 
-  // Delete category with safety check
   static async deleteCategory(req, res) {
     const { id } = req.params;
-    const { force = false } = req.query;
+    const { force } = req.query;
 
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    if (!this.isValidObjectId(id)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid category ID format',
@@ -289,7 +269,6 @@ class CategoryController {
       });
     }
 
-    // Check if category has products
     const productCount = await Product.countDocuments({
       category: id,
       isDeleted: false,
@@ -303,7 +282,6 @@ class CategoryController {
       });
     }
 
-    // If force delete, update products to remove category reference
     if (force === 'true' && productCount > 0) {
       await Product.updateMany({ category: id }, { $unset: { category: 1 } });
     }
