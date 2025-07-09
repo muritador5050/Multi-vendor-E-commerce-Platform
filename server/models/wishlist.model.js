@@ -20,8 +20,6 @@ const wishlistSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    // Add version key for optimistic concurrency control
-    versionKey: true,
   }
 );
 
