@@ -13,7 +13,6 @@ interface Category {
   name: string;
   slug: string;
   image?: string;
-  productCount?: number;
 }
 
 const apiRequest = async <T = unknown>(
@@ -50,12 +49,11 @@ const categoryKeys = {
   bySlug: (slug: string) => [...categoryKeys.all, 'bySlug', slug] as const,
 };
 
-//Get all categories
 export const useCategories = () => {
   return useQuery({
     queryKey: categoryKeys.list(),
     queryFn: async (): Promise<Category[]> => {
-      const response = await apiRequest<Category[]>('/');
+      const response = await apiRequest<Category[]>('');
       if (!response.success) {
         throw new Error(response.message || 'Failed to load categories');
       }
