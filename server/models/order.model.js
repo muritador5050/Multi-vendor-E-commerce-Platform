@@ -144,7 +144,6 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes for better query performance
 orderSchema.index({ user: 1, orderStatus: 1 });
 orderSchema.index({ trackingNumber: 1 });
 orderSchema.index({ createdAt: -1 });

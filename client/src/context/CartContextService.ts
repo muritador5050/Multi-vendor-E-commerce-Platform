@@ -15,18 +15,16 @@ interface CartData {
   totalAmount: number;
 }
 
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
 }
 
-type CartResponse = ApiResponse<CartData>;
-
-const apiRequest = async (
+const apiRequest = async <T = unknown>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<ApiResponse> => {
+): Promise<ApiResponse<T>> => {
   const token = localStorage.getItem('accessToken');
 
   const response = await fetch(`${apiBase}/carts${endpoint}`, {
@@ -51,7 +49,7 @@ const apiRequest = async (
 };
 
 const fetchCart = async (): Promise<CartData> => {
-  const response: CartResponse = await apiRequest('/items');
+  const response = await apiRequest<CartData>('/items');
 
   if (!response.success) {
     throw new Error(response.message || 'Failed to load cart');
@@ -71,7 +69,7 @@ const addItemToCart = async ({
   productId: string;
   quantity?: number;
 }): Promise<CartData> => {
-  const response: CartResponse = await apiRequest('/items', {
+  const response = await apiRequest<CartData>('/items', {
     method: 'POST',
     body: JSON.stringify({ productId, quantity }),
   });
@@ -100,7 +98,7 @@ const updateItemQuantity = async ({
   productId: string;
   quantity: number;
 }): Promise<CartData> => {
-  const response: CartResponse = await apiRequest(`/items/${productId}`, {
+  const response = await apiRequest<CartData>(`/items/${productId}`, {
     method: 'PUT',
     body: JSON.stringify({ quantity }),
   });
@@ -117,7 +115,7 @@ const updateItemQuantity = async ({
 };
 
 const removeCartItem = async (productId: string): Promise<void> => {
-  const response: ApiResponse = await apiRequest(`/items/${productId}`, {
+  const response = await apiRequest<void>(`/items/${productId}`, {
     method: 'DELETE',
   });
 
@@ -127,7 +125,7 @@ const removeCartItem = async (productId: string): Promise<void> => {
 };
 
 const clearCartItems = async (): Promise<void> => {
-  const response: ApiResponse = await apiRequest('/clear', {
+  const response = await apiRequest<void>('/clear', {
     method: 'DELETE',
   });
 
@@ -211,7 +209,9 @@ export function useUpdateQuantity() {
   return useMutation({
     mutationFn: updateItemQuantity,
     onMutate: async ({ productId, quantity }) => {
-      await queryClient.cancelQueries({ queryKey: cartKeys.items() });
+      await queryClient.cancelQueries({
+        queryKey: cartKeys.items(),
+      });
 
       const previousCart = queryClient.getQueryData<CartData>(cartKeys.items());
 

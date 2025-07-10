@@ -1,10 +1,7 @@
 const Cart = require('../models/cart.model');
 const Product = require('../models/product.model');
-const { resSuccessObject } = require('../utils/responseObject');
 
-//Controller
 class CartController {
-  //Add product to cart
   static async addToCart(req, res) {
     const { productId, quantity = 1 } = req.body;
 
@@ -67,7 +64,6 @@ class CartController {
     });
   }
 
-  //Get cart
   static async getCart(req, res) {
     const userId = req.user.id;
 

@@ -6,34 +6,84 @@ interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
-  count?: number;
+}
+type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
+type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+type PaymentMethod = 'card' | 'paypal' | 'stripe' | 'bank_transfer' | string;
+
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
 }
 
-interface PaginatedResponse<T> {
-  products: T[];
-  pagination: {
-    total: number;
-    page: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-    limit: number;
-  };
+interface Order {
+  _id: string;
+  user: string;
+  products: Product[];
+  shippingAddress?: Address;
+  billingAddress?: Address;
+  paymentMethod: PaymentMethod;
+  totalPrice: number;
+  shippingCost?: number;
+  estimatedDelivery?: string;
+  orderStatus?: string;
+  paymentStatus?: PaymentStatus;
+  trackingNumber?: string;
+  deliveredAt?: string;
 }
 
-interface ProductQueryParams {
+interface OrderParams {
   page?: number;
   limit?: number;
-  sort?: string;
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
+  orderStatus?: string;
+  paymentStatus?: string;
+  user?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
   search?: string;
-  isActive?: boolean;
-  vendor?: string;
-  material?: string;
-  size?: string;
-  color?: string;
+}
+
+interface UpdateOrderStatus {
+  orderStatus?: OrderStatus;
+  trackingNumber?: string;
+  deliveredAt?: string;
+}
+export interface UseUpdateOrderStatusParams extends UpdateOrderStatus {
+  id: string;
+}
+interface OrderStats {
+  totalOrders: number;
+  totalRevenue: number;
+  averageOrderValue: number;
+  pendingOrders: number;
+  processingOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+}
+
+interface MonthlyStats {
+  _id: {
+    year: number;
+    month: number;
+  };
+  ordersCount: number;
+  revenue: number;
+}
+
+interface OrderStatsResponse {
+  overview: OrderStats;
+  monthlyTrends: MonthlyStats[];
 }
 
 const getAuthHeaders = (): Record<string, string> => {
@@ -41,7 +91,7 @@ const getAuthHeaders = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const buildQueryString = (params: ProductQueryParams): string => {
+const buildQueryString = (params: OrderParams): string => {
   const searchParams = new URLSearchParams();
 
   for (const [key, value] of Object.entries(params)) {
@@ -82,89 +132,133 @@ const apiRequest = async <T = unknown>(
   return response.json();
 };
 
+// Query Keys
 const orderKeys = {
-  all: ['orders'],
-  lists: () => [...orderKeys.all, 'list'],
-  list: (params: Record<string, string>) => [...orderKeys.lists(), params],
-  details: (id: string) => [...orderKeys.all, 'details', id],
+  all: ['orders'] as const,
+  lists: () => [...orderKeys.all, 'list'] as const,
+  list: (params: OrderParams) => [...orderKeys.lists(), params] as const,
+  details: (id: string) => [...orderKeys.all, 'details', id] as const,
+  stats: () => [...orderKeys.all, 'stats'] as const,
 };
 
-export const useOrders = (params: Record<string, string>) => {
-  return useQuery<ApiResponse<PaginatedResponse<Product>>>({
+// API Functions
+const orderApi = {
+  getOrders: async (
+    params: OrderParams = {}
+  ): Promise<ApiResponse<Order[]>> => {
+    const queryString = buildQueryString(params);
+    const endpoint = queryString ? `?${queryString}` : '';
+    return apiRequest<Order[]>(endpoint);
+  },
+
+  // Get single order by ID
+  getOrderById: async (id: string): Promise<ApiResponse<Order>> => {
+    return apiRequest<Order>(`/${id}`);
+  },
+
+  // Create new order
+  createOrder: async (
+    orderData: Omit<Order, '_id'>
+  ): Promise<ApiResponse<Order>> => {
+    return apiRequest<Order>('', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  },
+
+  // Update order status
+  updateOrderStatus: async ({
+    id,
+    ...statusData
+  }: UseUpdateOrderStatusParams): Promise<ApiResponse<Order>> => {
+    return apiRequest<Order>(`/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    });
+  },
+
+  // Delete order
+  deleteOrder: async (id: string): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get order statistics
+  getOrderStats: async (): Promise<ApiResponse<OrderStatsResponse>> => {
+    return apiRequest<OrderStatsResponse>('/stats');
+  },
+};
+
+// Custom Hooks
+const useOrders = (params: OrderParams = {}) => {
+  return useQuery({
     queryKey: orderKeys.list(params),
-    queryFn: () =>
-      apiRequest<PaginatedResponse<Product>>(`?${new URLSearchParams(params)}`),
-    staleTime: 1000 * 60 * 5,
+    queryFn: () => orderApi.getOrders(params),
+    placeholderData: (prev) => prev,
+    staleTime: 30 * 1000,
   });
 };
 
-export const useOrderDetails = (id: string) => {
-  return useQuery<ApiResponse<Product>>({
+const useOrderById = (id: string) => {
+  return useQuery({
     queryKey: orderKeys.details(id),
-    queryFn: () => apiRequest<Product>(`/${id}`),
-    staleTime: 1000 * 60 * 5,
+    queryFn: () => orderApi.getOrderById(id),
+    enabled: !!id,
   });
 };
 
-export const useCreateOrder = () => {
+const useOrderStats = () => {
+  return useQuery({
+    queryKey: orderKeys.stats(),
+    queryFn: orderApi.getOrderStats,
+  });
+};
+
+const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<Product>, Error, Partial<Product>>({
-    mutationFn: async (orderData) => {
-      const response = await apiRequest<Product>('/', {
-        method: 'POST',
-        body: JSON.stringify(orderData),
-      });
-      return response;
-    },
+  return useMutation({
+    mutationFn: orderApi.createOrder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
     },
   });
 };
 
-export const useUpdateOrder = () => {
+const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    ApiResponse<Product>,
-    Error,
-    { id: string; data: Partial<Product> }
-  >({
-    mutationFn: async ({ id, data }) => {
-      const response = await apiRequest<Product>(`/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-      return response;
-    },
-    onSuccess: () => {
+  return useMutation({
+    mutationFn: orderApi.updateOrderStatus,
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: orderKeys.details(variables.id),
+      });
+      queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
     },
   });
 };
 
-export const useDeleteOrder = () => {
+const useDeleteOrder = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<ApiResponse<null>, Error, string>({
-    mutationFn: async (id) => {
-      const response = await apiRequest<null>(`/${id}`, {
-        method: 'DELETE',
-      });
-      return response;
-    },
+  return useMutation({
+    mutationFn: orderApi.deleteOrder,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
     },
   });
 };
 
-export const useOrderSearch = (params: ProductQueryParams) => {
-  return useQuery<ApiResponse<PaginatedResponse<Product>>>({
-    queryKey: orderKeys.list(params),
-    queryFn: () =>
-      apiRequest<PaginatedResponse<Product>>(`?${buildQueryString(params)}`),
-    staleTime: 1000 * 60 * 5,
-  });
+export {
+  useOrders,
+  useOrderById,
+  useOrderStats,
+  useCreateOrder,
+  useUpdateOrderStatus,
+  useDeleteOrder,
 };

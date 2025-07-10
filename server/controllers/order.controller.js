@@ -142,7 +142,6 @@ class OrderController {
     });
   }
 
-  // Get a single order
   static async getOrderById(req, res) {
     const order = await Order.findOne({
       _id: req.params.id,
@@ -158,7 +157,6 @@ class OrderController {
       });
     }
 
-    // Allow user to access only their own orders
     if (
       req.user.role !== 'admin' &&
       order.user._id.toString() !== req.user.id
@@ -176,7 +174,6 @@ class OrderController {
     });
   }
 
-  // Update order status
   static async updateOrderStatus(req, res) {
     const { orderStatus, trackingNumber, deliveredAt } = req.body;
 
@@ -204,7 +201,6 @@ class OrderController {
     });
   }
 
-  // Delete order (soft delete)
   static async deleteOrder(req, res) {
     const order = await Order.findById(req.params.id);
     if (!order) {
@@ -223,7 +219,6 @@ class OrderController {
     });
   }
 
-  // Get order statistics
   static async getOrderStats(req, res) {
     const stats = await Order.aggregate([
       { $match: { isDeleted: false } },
