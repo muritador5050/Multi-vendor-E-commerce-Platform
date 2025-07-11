@@ -199,7 +199,7 @@ class ReviewController {
       _id: id,
       isDeleted: false,
     }).populate([
-      { path: 'user', select: 'name email avatar' }, // Fixed typo: avater -> avatar
+      { path: 'user', select: 'name email avatar' },
       { path: 'product', select: 'name price images' },
     ]);
 

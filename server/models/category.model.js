@@ -165,7 +165,6 @@ categorySchema.query.searchByText = function (search) {
   return this;
 };
 
-// Virtual for ID (to match frontend expectations)
 categorySchema.virtual('id').get(function () {
   return this._id.toHexString();
 });
@@ -175,12 +174,10 @@ categorySchema.pre('save', async function (next) {
   if (this.isModified('name') || this.isNew) {
     let baseSlug = slugify(this.name, { lower: true, strict: true });
 
-    // Handle potential slug conflicts
     if (this.isNew || this.slug !== baseSlug) {
       let slug = baseSlug;
       let counter = 1;
 
-      // Keep checking until we find a unique slug
       while (
         await mongoose
           .model('Category')
@@ -196,9 +193,7 @@ categorySchema.pre('save', async function (next) {
   next();
 });
 
-// Pre-save validation
 categorySchema.pre('save', function (next) {
-  // Ensure name is trimmed
   if (this.name) {
     this.name = this.name.trim();
   }

@@ -6,16 +6,18 @@ class BlogController {
     const { title, content, image, author, tags, published = false } = req.body;
 
     if (!title || !content || !author) {
-      res.status(400);
-      throw new Error('Title, content, and author are required');
+      return res
+        .status(400)
+        .json({ error: 'Title, content, and author are required' });
     }
 
     const slug = slugify(title, { lower: true, strict: true });
     const existingBlog = await Blog.findOne({ slug });
 
     if (existingBlog) {
-      res.status(409);
-      throw new Error('A blog with this title already exists');
+      return res
+        .status(409)
+        .json({ error: 'A blog with this title already exists' });
     }
 
     const blog = new Blog({
@@ -51,7 +53,7 @@ class BlogController {
       ];
     }
 
-    const skip = (page - 1) * limit;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const blogs = await Blog.find(query)
       .sort({ createdAt: -1 })
@@ -67,7 +69,7 @@ class BlogController {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / parseInt(limit)),
       },
     });
   }
@@ -81,8 +83,7 @@ class BlogController {
     );
 
     if (!blog) {
-      res.status(404);
-      throw new Error('Blog not found');
+      return res.status(404).json({ error: 'Blog not found' });
     }
 
     blog.views += 1;
@@ -97,8 +98,7 @@ class BlogController {
     const deletedBlog = await Blog.findOneAndDelete({ slug });
 
     if (!deletedBlog) {
-      res.status(404);
-      throw new Error('Blog not found');
+      return res.status(404).json({ error: 'Blog not found' });
     }
 
     res.status(200).json({
@@ -126,8 +126,9 @@ class BlogController {
     if (updateData.slug && updateData.slug !== slug) {
       const existingBlog = await Blog.findOne({ slug: updateData.slug });
       if (existingBlog) {
-        res.status(409);
-        throw new Error('A blog with this title already exists');
+        return res
+          .status(409)
+          .json({ error: 'A blog with this title already exists' });
       }
     }
 
@@ -137,8 +138,7 @@ class BlogController {
     }).populate('relatedProducts', 'name price image');
 
     if (!updatedBlog) {
-      res.status(404);
-      throw new Error('Blog not found');
+      return res.status(404).json({ error: 'Blog not found' });
     }
 
     res.status(200).json({
@@ -151,7 +151,7 @@ class BlogController {
     const { author } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
-    const skip = (page - 1) * limit;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const blogs = await Blog.find({ author })
       .sort({ createdAt: -1 })
@@ -162,8 +162,7 @@ class BlogController {
     const total = await Blog.countDocuments({ author });
 
     if (!blogs.length) {
-      res.status(404);
-      throw new Error('No blogs found for this author');
+      return res.status(404).json({ error: 'No blogs found for this author' });
     }
 
     res.status(200).json({
@@ -172,7 +171,7 @@ class BlogController {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit),
+        pages: Math.ceil(total / parseInt(limit)),
       },
     });
   }
@@ -183,8 +182,7 @@ class BlogController {
     const blog = await Blog.findOne({ slug });
 
     if (!blog) {
-      res.status(404);
-      throw new Error('Blog not found');
+      return res.status(404).json({ error: 'Blog not found' });
     }
 
     blog.published = !blog.published;

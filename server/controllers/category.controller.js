@@ -82,34 +82,14 @@ class CategoryController {
   }
 
   static async getAllCategories(req, res) {
-    const { includeProductCount } = req.query;
+    const categories = await Category.find({}).sort({ name: 1 });
 
-    const categories =
-      includeProductCount === 'true'
-        ? await Category.aggregate([
-            {
-              $lookup: {
-                from: 'products',
-                localField: '_id',
-                foreignField: 'category',
-                as: 'products',
-              },
-            },
-            {
-              $addFields: {
-                productCount: { $size: '$products' },
-              },
-            },
-            {
-              $project: {
-                products: 0,
-              },
-            },
-            {
-              $sort: { name: 1 },
-            },
-          ])
-        : await Category.find({}).sort({ name: 1 });
+    if (!categories) {
+      res.json({
+        success: false,
+        message: 'Error in fetching categories',
+      });
+    }
 
     return res.json({
       success: true,

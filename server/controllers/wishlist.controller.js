@@ -48,7 +48,7 @@ class WishlistController {
 
   // Get all products in the user's wishlist
   static async getWishlist(req, res) {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { page = 1, limit = 10, sort = 'addedAt' } = req.query;
 
     const pageNum = Math.max(1, parseInt(page));
@@ -82,7 +82,7 @@ class WishlistController {
   // Remove a product from the wishlist
   static async removeFromWishlist(req, res) {
     const { productId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       res.status(400);
@@ -106,7 +106,7 @@ class WishlistController {
 
   // Get wishlist count for a user
   static async getWishlistCount(req, res) {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const count = await Wishlist.getUserWishlistCount(userId);
 
     res.status(200).json({ count });
@@ -115,7 +115,7 @@ class WishlistController {
   // Check if a product is in user's wishlist
   static async checkWishlistStatus(req, res) {
     const { productId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       res.status(400);
