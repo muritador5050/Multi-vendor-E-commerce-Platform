@@ -10,22 +10,22 @@ import Layout from './components/layout/layout';
 import AccountPage from './auth/accountPage';
 import WishList from './pages/wishList';
 import VendorRegistration from './auth/vendorRegistration';
-import DashboardHome from './pages/dashboard/dashboardHome';
-import Media from './pages/dashboard/media';
-import Articles from './pages/dashboard/articles';
-import Products from './pages/dashboard/VendorProduct';
-import Orders from './pages/dashboard/orders';
-import Payments from './pages/dashboard/payments';
-import Coupons from './pages/dashboard/coupons';
-import Customers from './pages/dashboard/customers';
-import Review from './pages/dashboard/review';
-import Setting from './pages/dashboard/setting';
-import Reports from './pages/dashboard/reports';
-import Profile from './pages/dashboard/Profile';
-import Messages from './pages/dashboard/Messages';
-import Enquiry from './pages/dashboard/Enquiry';
-import Knowledgebase from './pages/dashboard/Knowledgebase';
-import Notices from './pages/dashboard/Notices';
+import DashboardHome from './pages/vendorDashboard/dashboardHome';
+import Media from './pages/vendorDashboard/media';
+import Articles from './pages/vendorDashboard/articles';
+import Products from './pages/vendorDashboard/VendorProduct';
+import Orders from './pages/vendorDashboard/orders';
+import Payments from './pages/vendorDashboard/payments';
+import Coupons from './pages/vendorDashboard/coupons';
+import Customers from './pages/vendorDashboard/customers';
+import Review from './pages/vendorDashboard/review';
+import Setting from './pages/vendorDashboard/setting';
+import Reports from './pages/vendorDashboard/reports';
+import Profile from './pages/vendorDashboard/Profile';
+import Messages from './pages/vendorDashboard/Messages';
+import Enquiry from './pages/vendorDashboard/Enquiry';
+import Knowledgebase from './pages/vendorDashboard/Knowledgebase';
+import Notices from './pages/vendorDashboard/Notices';
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
 import ResetPasswordForm from './auth/ResetPassword';
@@ -34,6 +34,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { LogOut } from 'lucide-react';
 import { useAuth, useIsAuthenticated } from './hooks/useAuth';
 import ProductCategoryPage from './pages/ProductCategoryPage';
+import AdminHomePage from './pages/adminDashboard/AdminHomePage';
 
 //App
 function App() {
@@ -53,6 +54,15 @@ function App() {
           <Route path='product/:id' element={<ProductDetail />} />
           <Route path='vendor-membership' element={<VendorMembership />} />
           <Route path='/oauth/callback' element={<OAuthCallback />} />
+          <Route
+            path='/adminDashboard'
+            element={
+              <ProtectedRoute allowedRoles={['admin']} showAccessDenied={true}>
+                <AdminHomePage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path='store-manager'
             element={

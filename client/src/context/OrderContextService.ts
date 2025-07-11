@@ -7,12 +7,7 @@ interface ApiResponse<T = unknown> {
   message: string;
   data?: T;
 }
-type OrderStatus =
-  | 'pending'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled';
+
 type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 type PaymentMethod = 'card' | 'paypal' | 'stripe' | 'bank_transfer' | string;
 
@@ -39,6 +34,14 @@ interface Order {
   trackingNumber?: string;
   deliveredAt?: string;
 }
+interface PaginationResponse<T> {
+  order: T[];
+  currentPage: number;
+  totalPages: number;
+  totalOrders: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
 
 interface OrderParams {
   page?: number;
@@ -53,14 +56,6 @@ interface OrderParams {
   search?: string;
 }
 
-interface UpdateOrderStatus {
-  orderStatus?: OrderStatus;
-  trackingNumber?: string;
-  deliveredAt?: string;
-}
-export interface UseUpdateOrderStatusParams extends UpdateOrderStatus {
-  id: string;
-}
 interface OrderStats {
   totalOrders: number;
   totalRevenue: number;
@@ -132,31 +127,20 @@ const apiRequest = async <T = unknown>(
   return response.json();
 };
 
-// Query Keys
-const orderKeys = {
-  all: ['orders'] as const,
-  lists: () => [...orderKeys.all, 'list'] as const,
-  list: (params: OrderParams) => [...orderKeys.lists(), params] as const,
-  details: (id: string) => [...orderKeys.all, 'details', id] as const,
-  stats: () => [...orderKeys.all, 'stats'] as const,
-};
-
 // API Functions
 const orderApi = {
   getOrders: async (
     params: OrderParams = {}
-  ): Promise<ApiResponse<Order[]>> => {
+  ): Promise<ApiResponse<PaginationResponse<Order>>> => {
     const queryString = buildQueryString(params);
     const endpoint = queryString ? `?${queryString}` : '';
-    return apiRequest<Order[]>(endpoint);
+    return apiRequest<PaginationResponse<Order>>(endpoint);
   },
 
-  // Get single order by ID
   getOrderById: async (id: string): Promise<ApiResponse<Order>> => {
     return apiRequest<Order>(`/${id}`);
   },
 
-  // Create new order
   createOrder: async (
     orderData: Omit<Order, '_id'>
   ): Promise<ApiResponse<Order>> => {
@@ -166,11 +150,12 @@ const orderApi = {
     });
   },
 
-  // Update order status
-  updateOrderStatus: async ({
-    id,
-    ...statusData
-  }: UseUpdateOrderStatusParams): Promise<ApiResponse<Order>> => {
+  updateOrderStatus: async (
+    id: string,
+    statusData: Partial<
+      Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
+    >
+  ): Promise<ApiResponse<Order>> => {
     return apiRequest<Order>(`/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify(statusData),
@@ -188,6 +173,15 @@ const orderApi = {
   getOrderStats: async (): Promise<ApiResponse<OrderStatsResponse>> => {
     return apiRequest<OrderStatsResponse>('/stats');
   },
+};
+
+// Query Keys
+const orderKeys = {
+  all: ['orders'] as const,
+  lists: () => [...orderKeys.all, 'list'] as const,
+  list: (params: OrderParams) => [...orderKeys.lists(), params] as const,
+  details: (id: string) => [...orderKeys.all, 'details', id] as const,
+  stats: () => [...orderKeys.all, 'stats'] as const,
 };
 
 // Custom Hooks
@@ -227,15 +221,19 @@ const useCreateOrder = () => {
   });
 };
 
-const useUpdateOrderStatus = () => {
+const useUpdateOrderStatus = (id: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: orderApi.updateOrderStatus,
-    onSuccess: (_data, variables) => {
+    mutationFn: (
+      statusData: Partial<
+        Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
+      >
+    ) => orderApi.updateOrderStatus(id, statusData),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: orderKeys.details(variables.id),
+        queryKey: orderKeys.details(id),
       });
       queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
     },

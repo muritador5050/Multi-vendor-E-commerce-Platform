@@ -142,7 +142,7 @@ function Navbar() {
 
             <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-            <NavLink to='store-list'>Store List</NavLink>
+            <NavLink to='adminDashboard'>Admin Dashboard</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
           </HStack>
 
@@ -311,7 +311,8 @@ function Navbar() {
               <NavLink to='shop'>Shop</NavLink>
               <NavLink to='store-manager'>Store Manager</NavLink>
               <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-              <NavLink to='store-list'>Store List</NavLink>
+
+              <NavLink to='adminDashboard'>Admin-Dashboard</NavLink>
               <NavLink to='contact-us'>Contact Us</NavLink>
               <Button colorScheme='blue' mt={4}>
                 Login
