@@ -8,7 +8,6 @@ interface DecodedUser {
   name: string;
   email: string;
   role?: string;
-  [key: string]: any;
 }
 
 function OAuthCallback() {

@@ -18,21 +18,15 @@ import {
   InputRightElement,
 } from '@chakra-ui/react';
 import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useLogin } from '@/context/AuthContextService';
 
 export default function LoginForm() {
   const [user, setUser] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const login = useLogin();
 
-  // Consume context - get loading state from AuthProvider
-  const { login, error, loading } = useAuth();
-
-  // Clear error when component unmounts or user starts typing
   useEffect(() => {
-    // Optional: Clear error when user starts typing again
-    return () => {
-      // Cleanup if needed
-    };
+    return () => {};
   }, []);
 
   // Handle input changes
@@ -54,10 +48,11 @@ export default function LoginForm() {
     }
 
     try {
-      await login(user.email.trim(), user.password);
-      // Login success will be handled by AuthProvider (navigation, etc.)
+      await login.mutateAsync({
+        email: user.email.trim(),
+        password: user.password,
+      });
     } catch (err) {
-      // Error is already handled by AuthProvider and stored in context
       console.error('Login failed:', err);
     }
   };
@@ -66,10 +61,12 @@ export default function LoginForm() {
     <Stack spacing={7} position='relative'>
       <Heading>Login</Heading>
 
-      {error && (
+      {login.error && (
         <Alert status='error' borderRadius='md'>
           <AlertIcon as={AlertCircle} />
-          <AlertDescription fontSize='sm'>{error}</AlertDescription>
+          <AlertDescription fontSize='sm'>
+            {login.error.message}
+          </AlertDescription>
         </Alert>
       )}
 
@@ -87,7 +84,7 @@ export default function LoginForm() {
                 value={user.email}
                 onChange={handleOnchange}
                 pl='2.5rem'
-                disabled={loading}
+                disabled={login.isPending}
                 placeholder='Enter your email'
               />
             </InputGroup>
@@ -102,7 +99,7 @@ export default function LoginForm() {
                 value={user.password}
                 onChange={handleOnchange}
                 pr='2.5rem'
-                disabled={loading}
+                disabled={login.isPending}
                 placeholder='Enter your password'
               />
               <InputRightElement>
@@ -112,7 +109,7 @@ export default function LoginForm() {
                   size='sm'
                   variant='ghost'
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
+                  disabled={login.isPending}
                 />
               </InputRightElement>
             </InputGroup>
@@ -122,15 +119,17 @@ export default function LoginForm() {
             <Button
               type='submit'
               colorScheme='teal'
-              isLoading={loading}
+              isLoading={login.isPending}
               loadingText='Logging in...'
-              disabled={!user.email.trim() || !user.password.trim() || loading}
+              disabled={
+                !user.email.trim() || !user.password.trim() || login.isPending
+              }
               minW='120px'
             >
               Login
             </Button>
             <Spacer />
-            <Checkbox disabled={loading}>Remember me</Checkbox>
+            <Checkbox disabled={login.isPending}>Remember me</Checkbox>
           </Flex>
         </Stack>
       </form>

@@ -1,9 +1,12 @@
 import React from 'react';
-import { useAuth, useCurrentUser, useIsAuthenticated } from '@/hooks/useAuth';
 import { Center, Spinner, Text, VStack, Button } from '@chakra-ui/react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { UserRole } from '@/type/auth';
 import { permissionUtils } from '@/utils/Permission';
+import {
+  useCurrentUser,
+  useIsAuthenticated,
+} from '@/context/AuthContextService';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -46,14 +49,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo,
   showAccessDenied = false,
 }) => {
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated, isLoading } = useIsAuthenticated();
   const user = useCurrentUser();
-  const { loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  if (isLoading) {
     return (
       <Center h='100vh'>
         <VStack spacing={4}>
@@ -94,7 +95,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           />
         );
       }
-      // Default redirect to user's appropriate dashboard
       const defaultRoute = user?.role
         ? permissionUtils.getDefaultRoute(user.role)
         : '/my-account';

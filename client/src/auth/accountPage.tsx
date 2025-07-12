@@ -10,10 +10,9 @@ import {
 import Logo from '../components/logo/Logo';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
-import { useIsAuthenticated } from '@/hooks/useAuth';
 import ProfilePage from './ProfilePage';
+import { useIsAuthenticated } from '@/context/AuthContextService';
 
-// Account Component
 function AccountPage() {
   const isAuthenticated = useIsAuthenticated();
 

@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
+import { useRegisterVendor } from '@/context/AuthContextService';
 import {
   Box,
   FormControl,
@@ -37,9 +37,7 @@ function VendorRegistration() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { registerVendor, error } = useAuth();
+  const registerVendor = useRegisterVendor();
 
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -52,17 +50,13 @@ function VendorRegistration() {
     if (user.password !== user.confirmPassword) {
       return;
     }
-
-    setIsSubmitting(true);
     try {
-      await registerVendor(
-        user.name,
-        user.email,
-        user.password,
-        user.confirmPassword
-      );
-
-      setSuccess(true);
+      await registerVendor.mutateAsync({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        confirmPassword: user.confirmPassword,
+      });
       setUser({
         name: '',
         email: '',
@@ -71,12 +65,10 @@ function VendorRegistration() {
       });
     } catch (err) {
       console.log(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  if (success) {
+  if (registerVendor.isSuccess) {
     return (
       <Box
         maxW='md'
@@ -100,7 +92,7 @@ function VendorRegistration() {
           mt={4}
           colorScheme='blue'
           variant='link'
-          onClick={() => setSuccess(false)}
+          onClick={() => !registerVendor.isSuccess}
         >
           Back to registration
         </Button>
@@ -124,10 +116,12 @@ function VendorRegistration() {
         my={5}
       >
         <Text fontSize='2xl'>Vendor Registration</Text>
-        {error && (
+        {registerVendor.error && (
           <Alert status='error' borderRadius='md'>
             <AlertIcon as={AlertCircle} />
-            <AlertDescription fontSize='sm'>{error}</AlertDescription>
+            <AlertDescription fontSize='sm'>
+              {registerVendor.error?.message}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -250,10 +244,11 @@ function VendorRegistration() {
                 type='submit'
                 py='7'
                 bg='teal.600'
-                isLoading={isSubmitting}
+                isLoading={registerVendor.isPending}
                 loadingText='Registering...'
                 isDisabled={
-                  isSubmitting || user.password !== user.confirmPassword
+                  registerVendor.isPending ||
+                  user.password !== user.confirmPassword
                 }
                 _hover={{ bg: 'teal.700' }}
               >

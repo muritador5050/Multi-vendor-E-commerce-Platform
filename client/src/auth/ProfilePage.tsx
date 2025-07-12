@@ -1,4 +1,9 @@
 import {
+  useCurrentUser,
+  useLogout,
+  useUpdateProfile,
+} from '@/context/AuthContextService';
+import {
   Box,
   Button,
   Flex,
@@ -14,24 +19,22 @@ import {
 } from '@chakra-ui/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth, useCurrentUser } from '@/hooks/useAuth';
 
 function ProfilePage() {
-  const { updateProfile, logout } = useAuth();
-  const user = useCurrentUser();
+  const updateProfile = useUpdateProfile();
+  const logout = useLogout();
+  const currentUser = useCurrentUser();
 
   //Data
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(currentUser?.name || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     try {
-      await updateProfile({ name, email });
+      await updateProfile.mutateAsync({ name, email });
       setIsEditing(false);
       toast({
         title: 'Profile updated.',
@@ -51,12 +54,10 @@ function ProfilePage() {
         duration: 3000,
         isClosable: true,
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  if (!user)
+  if (!currentUser)
     return (
       <Flex justify='center' mt={10}>
         <Spinner />
@@ -78,7 +79,7 @@ function ProfilePage() {
         <Button
           colorScheme='red'
           variant='ghost'
-          onClick={() => logout()}
+          onClick={() => logout.mutateAsync()}
           leftIcon={<LogOut size={18} />}
         >
           Logout
@@ -86,18 +87,18 @@ function ProfilePage() {
       </Flex>
 
       <VStack spacing={6} align='stretch'>
-        {user.profilecompletion && (
+        {currentUser.profilecompletion && (
           <Box bg='blue.50' _dark={{ bg: 'blue.900' }} p={4} rounded='md'>
             <Text
               color='blue.800'
               _dark={{ color: 'blue.100' }}
               fontWeight='medium'
             >
-              Profile Completion: {user.profilecompletion}%
+              Profile Completion: {currentUser.profilecompletion}%
             </Text>
             <Progress
               mt={2}
-              value={user.profilecompletion}
+              value={currentUser.profilecompletion}
               size='sm'
               colorScheme='blue'
               rounded='full'
@@ -131,8 +132,8 @@ function ProfilePage() {
                 <Button
                   variant='outline'
                   onClick={() => {
-                    setName(user.name);
-                    setEmail(user.email);
+                    setName(currentUser.name);
+                    setEmail(currentUser.email);
                     setIsEditing(false);
                   }}
                 >
@@ -141,7 +142,7 @@ function ProfilePage() {
                 <Button
                   colorScheme='blue'
                   type='submit'
-                  isLoading={isSubmitting}
+                  isLoading={updateProfile.isPending}
                 >
                   Save Changes
                 </Button>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useIsAuthenticated } from '@/hooks/useAuth';
 import { apiBase } from '@/api/ApiService';
+import { useIsAuthenticated } from './AuthContextService';
 
 interface ApiResponse<T = unknown> {
   success: boolean;

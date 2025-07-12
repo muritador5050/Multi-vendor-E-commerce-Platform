@@ -2,7 +2,6 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from '@/components/ui/provider.tsx';
 import App from './App.tsx';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContextService.tsx';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -19,12 +18,10 @@ const queryClient = new QueryClient({
 const AppProviders = ({ children }: { children: React.ReactNode }) => (
   <Provider>
     <Router>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          {children}
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     </Router>
   </Provider>
 );

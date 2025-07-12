@@ -32,14 +32,14 @@ import ResetPasswordForm from './auth/ResetPassword';
 import ForgotPasswordForm from './auth/ForgotPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import { LogOut } from 'lucide-react';
-import { useAuth, useIsAuthenticated } from './hooks/useAuth';
 import ProductCategoryPage from './pages/ProductCategoryPage';
 import AdminHomePage from './pages/adminDashboard/AdminHomePage';
+import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 
 //App
 function App() {
-  const isAuthenticated = useIsAuthenticated();
-  const { logout } = useAuth();
+  const { isAuthenticated } = useIsAuthenticated();
+  const logout = useLogout();
   return (
     <Stack position='relative'>
       <Routes>
@@ -66,12 +66,12 @@ function App() {
           <Route
             path='store-manager'
             element={
-              <ProtectedRoute
-                allowedRoles={['vendor', 'admin']}
-                showAccessDenied={true}
-              >
-                <StoreManagerDashboard />
-              </ProtectedRoute>
+              // <ProtectedRoute
+              //   allowedRoles={['vendor', 'admin']}
+              //   showAccessDenied={true}
+              // >
+              <StoreManagerDashboard />
+              // </ProtectedRoute>
             }
           >
             <Route index element={<DashboardHome />} />
@@ -112,7 +112,7 @@ function App() {
               icon={<LogOut size={48} />}
               colorScheme='teal'
               size='lg'
-              onClick={() => logout()}
+              onClick={() => logout.mutateAsync()}
             />
           </Tooltip>
         </Box>

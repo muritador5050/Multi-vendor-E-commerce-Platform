@@ -17,33 +17,26 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { Lock, CheckCircle, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useResetPassword } from '@/context/AuthContextService';
 
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { resetPassword, error } = useAuth();
+  const resetPassword = useResetPassword();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) return;
 
-    setIsSubmitting(true);
     try {
-      await resetPassword(token, password);
-      setSuccess(true);
+      await resetPassword.mutateAsync({ token, password });
     } catch (err) {
-      // Error handled in context
       console.log(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  if (success) {
+  if (resetPassword.isSuccess) {
     return (
       <Box maxW='md' mx='auto' bg='white' rounded='lg' shadow='md' p={6}>
         <Flex direction='column' align='center' textAlign='center'>
@@ -81,10 +74,10 @@ export default function ResetPasswordForm({ token }: { token: string }) {
         </Text>
       </Flex>
 
-      {error && (
+      {resetPassword.error && (
         <Alert status='error' mb={4} borderRadius='md'>
           <AlertIcon as={AlertCircle} />
-          <AlertTitle fontSize='sm'>{error}</AlertTitle>
+          <AlertTitle fontSize='sm'>{resetPassword.error.message}</AlertTitle>
         </Alert>
       )}
 
@@ -160,10 +153,12 @@ export default function ResetPasswordForm({ token }: { token: string }) {
             type='submit'
             colorScheme='blue'
             width='full'
-            isDisabled={isSubmitting || password !== confirmPassword}
-            leftIcon={isSubmitting ? <Spinner size='sm' /> : undefined}
+            isDisabled={resetPassword.isPending || password !== confirmPassword}
+            leftIcon={
+              resetPassword.isPending ? <Spinner size='sm' /> : undefined
+            }
           >
-            {isSubmitting ? 'Resetting...' : 'Reset Password'}
+            {resetPassword.isPending ? 'Resetting...' : 'Reset Password'}
           </Button>
         </VStack>
       </form>

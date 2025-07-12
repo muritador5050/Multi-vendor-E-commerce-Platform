@@ -1,10 +1,7 @@
-// ApiService.ts
 import type { User } from '@/type/auth';
 
-// API Configuration
 export const apiBase = import.meta.env.VITE_API_URL;
 
-// Generic API response type
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -12,7 +9,6 @@ interface ApiResponse<T> {
   errors?: string[];
 }
 
-// Auth-specific types
 interface AuthResponse {
   user: User;
   accessToken: string;
@@ -27,7 +23,6 @@ interface ProfileResponse {
   profileCompletion?: number;
 }
 
-// Custom error classes
 export class ApiError extends Error {
   public status: number;
   public response?: Response;
@@ -37,13 +32,6 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.response = response;
-  }
-}
-
-export class NetworkError extends Error {
-  constructor(message: string = 'Network request failed') {
-    super(message);
-    this.name = 'NetworkError';
   }
 }
 
@@ -69,35 +57,21 @@ class ApiService {
   }
 
   private async _performRefresh(): Promise<string> {
-    try {
-      const response = await fetch(`${apiBase}/auth/refresh-token`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const response = await fetch(`${apiBase}/auth/refresh-token`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-      if (!response.ok) {
-        throw new ApiError('Token refresh failed', response.status, response);
-      }
-
-      const data: AuthTokenResponse = await response.json();
-      // Store the new access token
-      if (data.accessToken) {
-        localStorage.setItem('accessToken', data.accessToken);
-        console.log(
-          '✅ New access token stored:',
-          data.accessToken.substring(0, 20) + '...'
-        );
-      }
-      return data.accessToken;
-    } catch (error) {
-      console.error('❌ Token refresh failed:', error);
+    if (!response.ok) {
       localStorage.removeItem('accessToken');
-      if (typeof window !== 'undefined') {
-        window.location.href = '/account';
-      }
+      window.location.href = '/account';
       throw new ApiError('Session expired. Please login again.', 401);
     }
+
+    const data: AuthTokenResponse = await response.json();
+    localStorage.setItem('accessToken', data.accessToken);
+    return data.accessToken;
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
@@ -107,16 +81,12 @@ class ApiService {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch {
-        // If JSON parsing fails, keep the original error message
+        // Keep original error message if JSON parsing fails
       }
       throw new ApiError(errorMessage, response.status, response);
     }
 
-    try {
-      return await response.json();
-    } catch {
-      throw new ApiError('Invalid JSON response', 500, response);
-    }
+    return response.json();
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -132,11 +102,6 @@ class ApiService {
       credentials: 'include',
     };
 
-    console.log(`🔄 Making request to: ${endpoint}`);
-    console.log(
-      `🔑 Using token: ${token ? token.substring(0, 20) + '...' : 'None'}`
-    );
-
     try {
       const response = await fetch(`${apiBase}${endpoint}`, config);
 
@@ -144,41 +109,26 @@ class ApiService {
         response.status === 401 &&
         !endpoint.includes('/auth/refresh-token')
       ) {
-        console.log('🔄 401 detected, attempting token refresh...');
-        try {
-          const newToken = await this.refreshToken();
+        const newToken = await this.refreshToken();
+        const retryConfig: RequestInit = {
+          ...config,
+          headers: {
+            ...config.headers,
+            Authorization: `Bearer ${newToken}`,
+          },
+        };
 
-          const retryConfig: RequestInit = {
-            ...config,
-            headers: {
-              ...config.headers,
-              Authorization: `Bearer ${newToken}`,
-            },
-          };
-
-          console.log('🔄 Retrying request with new token...');
-          const retryResponse = await fetch(
-            `${apiBase}${endpoint}`,
-            retryConfig
-          );
-          return this.handleResponse<T>(retryResponse);
-        } catch (refreshError) {
-          console.error('❌ Token refresh and retry failed:', refreshError);
-          throw new ApiError('Authentication failed', 401, response);
-        }
+        const retryResponse = await fetch(`${apiBase}${endpoint}`, retryConfig);
+        return this.handleResponse<T>(retryResponse);
       }
 
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new NetworkError('Unable to connect to server');
-      }
-      throw new ApiError('An unexpected error occurred', 500);
+      throw new ApiError('Network error', 500);
     }
   }
 
-  // Auth methods
   async register(
     name: string,
     email: string,
@@ -207,29 +157,18 @@ class ApiService {
     email: string,
     password: string
   ): Promise<ApiResponse<AuthResponse>> {
-    try {
-      const response = await this.request<ApiResponse<AuthResponse>>(
-        '/auth/login',
-        {
-          method: 'POST',
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      // Store access token after successful login
-      if (response.data?.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
-        console.log('✅ Access token stored after login');
-        console.log(
-          '✅ Token preview:',
-          response.data.accessToken.substring(0, 20) + '...'
-        );
+    const response = await this.request<ApiResponse<AuthResponse>>(
+      '/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
       }
-      return response;
-    } catch (error) {
-      console.error('❌ Login failed:', error);
-      throw error;
+    );
+
+    if (response.data?.accessToken) {
+      localStorage.setItem('accessToken', response.data.accessToken);
     }
+    return response;
   }
 
   async logout(): Promise<ApiResponse<null>> {
@@ -238,14 +177,9 @@ class ApiService {
         method: 'POST',
       });
       localStorage.removeItem('accessToken');
-      console.log('✅ Logged out and access token removed');
       return response;
     } catch (error) {
-      // Always clear token even if logout request fails
       localStorage.removeItem('accessToken');
-      console.log(
-        '✅ Access token removed (logout request failed but token cleared)'
-      );
       throw error;
     }
   }
@@ -286,7 +220,6 @@ class ApiService {
     });
   }
 
-  // Utility
   async uploadFile<T = unknown>(
     file: File,
     endpoint: string = '/upload'
@@ -301,36 +234,16 @@ class ApiService {
     });
   }
 
-  getCurrentToken(): string | null {
-    return localStorage.getItem('accessToken');
-  }
-
   isAuthenticated(): boolean {
-    const token = this.getCurrentToken();
-    console.log('🔍 Checking authentication:', !!token);
-    return !!token;
+    return !!localStorage.getItem('accessToken');
   }
 
   clearAuth(): void {
     localStorage.removeItem('accessToken');
-    console.log('🗑️ Auth cleared');
-  }
-
-  // Debug method to check token status
-  debugTokenStatus(): void {
-    const token = localStorage.getItem('accessToken');
-    console.log('=== TOKEN DEBUG ===');
-    console.log('Access Token exists:', !!token);
-    if (token) {
-      console.log('Token preview:', token.substring(0, 30) + '...');
-    }
-    console.log('Cookies available:', document.cookie);
-    console.log('==================');
   }
 }
 
 const apiService = new ApiService();
 export default apiService;
 
-// Export types
 export type { ApiResponse, AuthResponse, AuthTokenResponse, ProfileResponse };

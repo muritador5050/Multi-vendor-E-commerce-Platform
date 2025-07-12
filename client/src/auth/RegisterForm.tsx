@@ -16,8 +16,8 @@ import {
   InputLeftElement,
   InputRightElement,
 } from '@chakra-ui/react';
-import { useAuth } from '@/hooks/useAuth';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Mail } from 'lucide-react';
+import { useRegister } from '@/context/AuthContextService';
 
 type RegisterProps = {
   name: string;
@@ -35,9 +35,8 @@ export default function RegisterForm() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { register, error } = useAuth();
+
+  const register = useRegister();
 
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -46,29 +45,22 @@ export default function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (user.password !== user.confirmPassword) {
       return;
     }
-
-    setIsSubmitting(true);
     try {
-      await register(
-        user.name,
-        user.email,
-        user.password,
-        user.confirmPassword
-      );
-
-      setSuccess(true);
+      await register.mutateAsync({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        confirmPassword: user.confirmPassword,
+      });
     } catch (err) {
       console.log(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  if (success) {
+  if (register.isSuccess) {
     return (
       <Box
         maxW='md'
@@ -92,7 +84,7 @@ export default function RegisterForm() {
           mt={4}
           colorScheme='blue'
           variant='link'
-          onClick={() => setSuccess(false)}
+          onClick={() => !register.isSuccess}
         >
           Back to registration
         </Button>
@@ -105,10 +97,12 @@ export default function RegisterForm() {
       <Stack spacing={7}>
         <Heading>Sign Up</Heading>
 
-        {error && (
+        {register.error && (
           <Alert status='error' borderRadius='md'>
             <AlertIcon as={AlertCircle} />
-            <AlertDescription fontSize='sm'>{error}</AlertDescription>
+            <AlertDescription fontSize='sm'>
+              {register.error.message}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -191,11 +185,13 @@ export default function RegisterForm() {
         <Button
           type='submit'
           colorScheme='teal'
-          isDisabled={isSubmitting || user.password !== user.confirmPassword}
-          isLoading={isSubmitting}
+          isDisabled={
+            register.isPending || user.password !== user.confirmPassword
+          }
+          isLoading={register.isPending}
           loadingText='Registering'
         >
-          Register
+          Register as Vendor
         </Button>
       </Stack>
     </form>

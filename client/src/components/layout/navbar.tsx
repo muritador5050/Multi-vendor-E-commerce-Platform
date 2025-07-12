@@ -32,7 +32,7 @@ import Logo from '../logo/Logo';
 import CartComponent from '@/pages/CartComponent';
 import { useCart } from '@/context/CartContextService';
 import { useCategories } from '@/context/CategoryContextService';
-import { useIsAuthenticated } from '@/hooks/useAuth';
+import { useIsAuthenticated } from '@/context/AuthContextService';
 
 //NavLink Component
 function NavLink({
@@ -92,7 +92,7 @@ function NavLink({
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
   const { data: cart } = useCart();
   const { data: categories } = useCategories();
   return (

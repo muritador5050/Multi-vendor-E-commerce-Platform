@@ -15,7 +15,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LinkItems } from './linkItems';
 import NavItem from './Navitem';
 import { useRef } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useIsAuthenticated, useLogout } from '@/context/AuthContextService';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -27,7 +27,8 @@ export default function DashboardSidebar({
   onClose,
 }: SidebarProps) {
   const navigate = useNavigate();
-  const { loading, logout } = useAuth();
+  const { isLoading } = useIsAuthenticated();
+  const logout = useLogout();
   const location = useLocation();
   const isDesktop = useBreakpointValue({ base: false, md: true });
 
@@ -40,7 +41,7 @@ export default function DashboardSidebar({
   };
 
   const confirmLogout = async () => {
-    await logout();
+    await logout.mutateAsync();
     closeDialog();
     navigate('/');
   };
@@ -77,7 +78,7 @@ export default function DashboardSidebar({
                 onClose();
               }
             }}
-            isDisabled={loading && link.type === 'logout'}
+            isDisabled={isLoading && link.type === 'logout'}
           >
             {isCollapsed ? '' : link.name}
           </NavItem>
@@ -106,7 +107,7 @@ export default function DashboardSidebar({
                 colorScheme='red'
                 onClick={confirmLogout}
                 ml={3}
-                isLoading={loading}
+                isLoading={isLoading}
               >
                 Logout
               </Button>

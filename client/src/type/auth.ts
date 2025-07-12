@@ -1,4 +1,3 @@
-// auth.ts - Centralized auth types and constants
 export interface User {
   id: string;
   email: string;
@@ -23,10 +22,3 @@ export const ACTIONS = {
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
 export type Action = (typeof ACTIONS)[keyof typeof ACTIONS];
-
-export interface AuthState {
-  user: User | null;
-  loading: boolean;
-  error: string | null;
-  isAuthenticated: boolean;
-}

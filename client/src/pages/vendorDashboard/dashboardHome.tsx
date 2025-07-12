@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import CustomLineChart from '@/components/charts/CustomLinechart';
 import CustomPieChart from '@/components/charts/CustomPiechart';
-import { useCurrentUser } from '@/hooks/useAuth';
+import { useCurrentUser } from '@/context/AuthContextService';
 
 export default function DashboardHome() {
   const user = useCurrentUser();
