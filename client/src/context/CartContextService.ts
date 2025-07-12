@@ -141,7 +141,7 @@ const cartKeys = {
 };
 
 export function useCart() {
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
   return useQuery({
     queryKey: cartKeys.items(),
     queryFn: fetchCart,

@@ -96,7 +96,7 @@ export const useCategoryBySlug = (slug: string) => {
 
 export const useCreateCategory = () => {
   const queryClient = useQueryClient();
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
     mutationFn: async (category: Omit<Category, '_id'>) => {
@@ -120,7 +120,7 @@ export const useCreateCategory = () => {
 
 export const useCreateBulkCategories = () => {
   const queryClient = useQueryClient();
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
     mutationFn: async (categories: Omit<Category, '_id'>[]) => {
@@ -144,7 +144,7 @@ export const useCreateBulkCategories = () => {
 
 export const useUpdateCategory = (id: string) => {
   const queryClient = useQueryClient();
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
     mutationFn: async (category: Partial<Category>) => {
@@ -169,7 +169,7 @@ export const useUpdateCategory = (id: string) => {
 
 export const useDeleteCategory = () => {
   const queryClient = useQueryClient();
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
     mutationFn: async (data: { id: string; force?: boolean }) => {

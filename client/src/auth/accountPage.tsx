@@ -14,7 +14,7 @@ import ProfilePage from './ProfilePage';
 import { useIsAuthenticated } from '@/context/AuthContextService';
 
 function AccountPage() {
-  const isAuthenticated = useIsAuthenticated();
+  const { isAuthenticated } = useIsAuthenticated();
 
   if (isAuthenticated) {
     return <ProfilePage />;
