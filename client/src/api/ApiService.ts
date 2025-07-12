@@ -65,7 +65,7 @@ class ApiService {
 
     if (!response.ok) {
       localStorage.removeItem('accessToken');
-      window.location.href = '/account';
+      window.location.href = '/my-account';
       throw new ApiError('Session expired. Please login again.', 401);
     }
 

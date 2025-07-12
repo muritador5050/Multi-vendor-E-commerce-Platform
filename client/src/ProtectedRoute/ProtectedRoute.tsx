@@ -27,8 +27,8 @@ const AccessDeniedFallback: React.FC<{
         Access Denied
       </Text>
       <Text fontSize='md' color='gray.600' maxW='md'>
-        You don't have the necessary permissions to access this page.
-        {userRole && ` Your current role: ${userRole}`}
+        You don't have permission to access this page.
+        {userRole && ` Your role: ${userRole}`}
       </Text>
       <VStack spacing={2}>
         <Button onClick={onGoBack} variant='outline'>
@@ -54,6 +54,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Show loading spinner while checking auth
   if (isLoading) {
     return (
       <Center h='100vh'>
@@ -65,41 +66,42 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If authentication is required and user is not authenticated
+  // Redirect to login if auth is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
     return <Navigate to='/my-account' state={{ from: location }} replace />;
   }
 
-  if (allowedRoles.length > 0) {
-    const hasRequiredRole = permissionUtils.hasAnyRole(
-      user?.role,
-      allowedRoles
-    );
-
-    if (!hasRequiredRole) {
-      if (redirectTo) {
-        return <Navigate to={redirectTo} replace />;
-      }
-
-      if (showAccessDenied) {
-        return (
-          <AccessDeniedFallback
-            userRole={user?.role}
-            onGoBack={() => navigate(-1)}
-            onGoHome={() => {
-              const defaultRoute = user?.role
-                ? permissionUtils.getDefaultRoute(user?.role)
-                : '/';
-              navigate(defaultRoute);
-            }}
-          />
-        );
-      }
-      const defaultRoute = user?.role
-        ? permissionUtils.getDefaultRoute(user.role)
-        : '/my-account';
-      return <Navigate to={defaultRoute} replace />;
+  // Check role permissions if roles are specified
+  if (
+    allowedRoles.length > 0 &&
+    !permissionUtils.hasAnyRole(user?.role, allowedRoles)
+  ) {
+    // Use custom redirect if provided
+    if (redirectTo) {
+      return <Navigate to={redirectTo} replace />;
     }
+
+    // Show access denied page if requested
+    if (showAccessDenied) {
+      return (
+        <AccessDeniedFallback
+          userRole={user?.role}
+          onGoBack={() => navigate(-1)}
+          onGoHome={() => {
+            const defaultRoute = user?.role
+              ? permissionUtils.getDefaultRoute(user.role)
+              : '/';
+            navigate(defaultRoute);
+          }}
+        />
+      );
+    }
+
+    // Default: redirect to user's default route
+    const defaultRoute = user?.role
+      ? permissionUtils.getDefaultRoute(user.role)
+      : '/my-account';
+    return <Navigate to={defaultRoute} replace />;
   }
 
   return <>{children}</>;

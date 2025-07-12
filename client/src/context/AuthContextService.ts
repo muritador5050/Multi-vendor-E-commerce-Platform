@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import apiService from '@/api/ApiService';
 import { validators } from '@/utils/Validation';
 import { permissionUtils } from '@/utils/Permission';
-import type { User, UserRole, Action } from '@/type/auth';
+import { type User, type UserRole, type Action } from '@/type/auth';
 
 // Query keys
 export const authKeys = {
@@ -22,6 +22,26 @@ export const useProfile = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
+};
+
+// Validation helper
+const validateRegistration = (
+  name: string,
+  email: string,
+  password: string,
+  confirmPassword: string
+) => {
+  const nameError = validators.name(name);
+  if (nameError) throw new Error(nameError);
+
+  const emailError = validators.email(email);
+  if (emailError) throw new Error(emailError);
+
+  const passwordError = validators.password(password);
+  if (passwordError) throw new Error(passwordError);
+
+  const matchError = validators.passwordMatch(password, confirmPassword);
+  if (matchError) throw new Error(matchError);
 };
 
 // Auth mutations
@@ -73,17 +93,7 @@ export const useRegister = () => {
       password: string;
       confirmPassword: string;
     }) => {
-      const nameError = validators.name(name);
-      if (nameError) throw new Error(nameError);
-
-      const emailError = validators.email(email);
-      if (emailError) throw new Error(emailError);
-
-      const passwordError = validators.password(password);
-      if (passwordError) throw new Error(passwordError);
-
-      const matchError = validators.passwordMatch(password, confirmPassword);
-      if (matchError) throw new Error(matchError);
+      validateRegistration(name, email, password, confirmPassword);
 
       return apiService.register(
         name.trim(),
@@ -108,17 +118,7 @@ export const useRegisterVendor = () => {
       password: string;
       confirmPassword: string;
     }) => {
-      const nameError = validators.name(name);
-      if (nameError) throw new Error(nameError);
-
-      const emailError = validators.email(email);
-      if (emailError) throw new Error(emailError);
-
-      const passwordError = validators.password(password);
-      if (passwordError) throw new Error(passwordError);
-
-      const matchError = validators.passwordMatch(password, confirmPassword);
-      if (matchError) throw new Error(matchError);
+      validateRegistration(name, email, password, confirmPassword);
 
       return apiService.registerVendor(
         name.trim(),
@@ -183,9 +183,12 @@ export const useResetPassword = () => {
       return apiService.resetPassword(token, password);
     },
     onSuccess: () => {
-      navigate('/login?message=Password reset successful. Please log in.', {
-        replace: true,
-      });
+      navigate(
+        '/auth/login?message=Password reset successful. Please log in.',
+        {
+          replace: true,
+        }
+      );
     },
   });
 };
@@ -246,7 +249,7 @@ export const useUploadFile = () => {
   });
 };
 
-// Utility hooks
+// Essential utility hooks only
 export const useCurrentUser = () => {
   const { data: user } = useProfile();
   return user;
@@ -262,31 +265,6 @@ export const useCanPerformAction = (action: Action) => {
   return permissionUtils.canPerformAction(user?.role, action);
 };
 
-export const useCanCreate = () => {
-  const user = useCurrentUser();
-  return permissionUtils.canCreate(user?.role);
-};
-
-export const useCanEdit = () => {
-  const user = useCurrentUser();
-  return permissionUtils.canEdit(user?.role);
-};
-
-export const useCanDelete = () => {
-  const user = useCurrentUser();
-  return permissionUtils.canDelete(user?.role);
-};
-
-export const useCanRead = () => {
-  const user = useCurrentUser();
-  return permissionUtils.canRead(user?.role);
-};
-
-export const useHasRole = (role: UserRole) => {
-  const user = useCurrentUser();
-  return permissionUtils.hasRole(user?.role, role);
-};
-
 export const useHasAnyRole = (roles: UserRole[]) => {
   const user = useCurrentUser();
   return permissionUtils.hasAnyRole(user?.role, roles);
@@ -295,21 +273,6 @@ export const useHasAnyRole = (roles: UserRole[]) => {
 export const useIsAdmin = () => {
   const user = useCurrentUser();
   return permissionUtils.isAdmin(user?.role);
-};
-
-export const useIsVendor = () => {
-  const user = useCurrentUser();
-  return permissionUtils.isVendor(user?.role);
-};
-
-export const useIsCustomer = () => {
-  const user = useCurrentUser();
-  return permissionUtils.isCustomer(user?.role);
-};
-
-export const useUserPermissions = () => {
-  const user = useCurrentUser();
-  return permissionUtils.getRolePermissions(user?.role);
 };
 
 export const useForceLogout = () => {

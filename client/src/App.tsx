@@ -10,27 +10,12 @@ import Layout from './components/layout/layout';
 import AccountPage from './auth/accountPage';
 import WishList from './pages/wishList';
 import VendorRegistration from './auth/vendorRegistration';
-import DashboardHome from './pages/vendorDashboard/dashboardHome';
-import Media from './pages/vendorDashboard/media';
-import Articles from './pages/vendorDashboard/articles';
-import Products from './pages/vendorDashboard/VendorProduct';
-import Orders from './pages/vendorDashboard/orders';
-import Payments from './pages/vendorDashboard/payments';
-import Coupons from './pages/vendorDashboard/coupons';
-import Customers from './pages/vendorDashboard/customers';
-import Review from './pages/vendorDashboard/review';
-import Setting from './pages/vendorDashboard/setting';
-import Reports from './pages/vendorDashboard/reports';
-import Profile from './pages/vendorDashboard/Profile';
-import Messages from './pages/vendorDashboard/Messages';
-import Enquiry from './pages/vendorDashboard/Enquiry';
-import Knowledgebase from './pages/vendorDashboard/Knowledgebase';
-import Notices from './pages/vendorDashboard/Notices';
+
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
 import ResetPasswordForm from './auth/ResetPassword';
 import ForgotPasswordForm from './auth/ForgotPassword';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
 import { LogOut } from 'lucide-react';
 import ProductCategoryPage from './pages/ProductCategoryPage';
 import AdminHomePage from './pages/adminDashboard/AdminHomePage';
@@ -55,42 +40,24 @@ function App() {
           <Route path='vendor-membership' element={<VendorMembership />} />
           <Route path='/oauth/callback' element={<OAuthCallback />} />
           <Route
-            path='/adminDashboard'
+            path='adminDashboard/*'
             element={
               <ProtectedRoute allowedRoles={['admin']} showAccessDenied={true}>
                 <AdminHomePage />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path='store-manager'
+            path='store-manager/*'
             element={
-              // <ProtectedRoute
-              //   allowedRoles={['vendor', 'admin']}
-              //   showAccessDenied={true}
-              // >
-              <StoreManagerDashboard />
-              // </ProtectedRoute>
+              <ProtectedRoute
+                allowedRoles={['vendor', 'admin']}
+                showAccessDenied={true}
+              >
+                <StoreManagerDashboard />
+              </ProtectedRoute>
             }
-          >
-            <Route index element={<DashboardHome />} />
-            <Route path='media' element={<Media />} />
-            <Route path='articles' element={<Articles />} />
-            <Route path='products' element={<Products />} />
-            <Route path='orders' element={<Orders />} />
-            <Route path='payments' element={<Payments />} />
-            <Route path='coupons' element={<Coupons />} />
-            <Route path='customers' element={<Customers />} />
-            <Route path='profile' element={<Profile />} />
-            <Route path='review' element={<Review />} />
-            <Route path='reports' element={<Reports />} />
-            <Route path='settings' element={<Setting />} />
-            <Route path='messages' element={<Messages />} />
-            <Route path='enquiry' element={<Enquiry />} />
-            <Route path='knowledgebase' element={<Knowledgebase />} />
-            <Route path='notices' element={<Notices />} />
-          </Route>
+          />
           <Route path='contact-us' element={<ContactUs />} />
           <Route path='wishlist' element={<WishList />} />
           <Route path='vendor-register' element={<VendorRegistration />} />

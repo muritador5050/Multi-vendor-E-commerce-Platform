@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Box, Container } from '@chakra-ui/react';
 import DashboardSidebar from '@/components/sidebar/dashboardSidebar';
 import DashboardNavbar from '@/components/navbar/dashboardNavbar';
+import DashboardHome from './vendorDashboard/dashboardHome';
+import Media from './vendorDashboard/media';
+import Articles from './vendorDashboard/articles';
+import Orders from './vendorDashboard/orders';
+import Payments from './vendorDashboard/payments';
+import Coupons from './vendorDashboard/coupons';
+import Customers from './vendorDashboard/customers';
+import Profile from './vendorDashboard/Profile';
+import Review from './vendorDashboard/review';
+import Reports from './vendorDashboard/reports';
+import Setting from './vendorDashboard/setting';
+import Messages from './vendorDashboard/Messages';
+import Enquiry from './vendorDashboard/Enquiry';
+import Knowledgebase from './vendorDashboard/Knowledgebase';
+import Notices from './vendorDashboard/Notices';
+import Products from './vendorDashboard/Products';
 
 export default function StoreManagerDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -22,7 +38,25 @@ export default function StoreManagerDashboard() {
         />
         <Box ml={0} flex='1' transition='margin-left 0.3s ease-in'>
           <Container maxW='7xl' py={4}>
-            <Outlet />
+            {/* <Outlet /> */}
+            <Routes>
+              <Route index element={<DashboardHome />} />
+              <Route path='media' element={<Media />} />
+              <Route path='articles' element={<Articles />} />
+              <Route path='products' element={<Products />} />
+              <Route path='orders' element={<Orders />} />
+              <Route path='payments' element={<Payments />} />
+              <Route path='coupons' element={<Coupons />} />
+              <Route path='customers' element={<Customers />} />
+              <Route path='profile' element={<Profile />} />
+              <Route path='review' element={<Review />} />
+              <Route path='reports' element={<Reports />} />
+              <Route path='settings' element={<Setting />} />
+              <Route path='messages' element={<Messages />} />
+              <Route path='enquiry' element={<Enquiry />} />
+              <Route path='knowledgebase' element={<Knowledgebase />} />
+              <Route path='notices' element={<Notices />} />
+            </Routes>
           </Container>
         </Box>
       </Box>
