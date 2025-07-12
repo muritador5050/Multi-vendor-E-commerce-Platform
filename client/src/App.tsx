@@ -18,8 +18,8 @@ import ForgotPasswordForm from './auth/ForgotPassword';
 import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
 import { LogOut } from 'lucide-react';
 import ProductCategoryPage from './pages/ProductCategoryPage';
-import AdminHomePage from './pages/adminDashboard/AdminHomePage';
 import { useIsAuthenticated, useLogout } from './context/AuthContextService';
+import AdminDashboard from './pages/adminDashboard/AdminHomePage';
 
 //App
 function App() {
@@ -43,7 +43,7 @@ function App() {
             path='adminDashboard/*'
             element={
               <ProtectedRoute allowedRoles={['admin']} showAccessDenied={true}>
-                <AdminHomePage />
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

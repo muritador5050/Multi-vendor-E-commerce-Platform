@@ -15,16 +15,18 @@ import {
   Megaphone,
   NotebookTabs,
 } from 'lucide-react';
-import { LinkItems } from '../sidebar/linkItems';
+import { LinkItems } from './DashboardNavlink/linkItems';
 import { useLocation } from 'react-router-dom';
-import { Tooltip } from '../ui/tooltip';
+import { Tooltip } from '../../components/ui/tooltip';
+import { useCurrentUser } from '@/context/AuthContextService';
 
 interface ToggleProp {
   onToggle: () => void;
 }
 
-export default function DashboardNavbar({ onToggle }: ToggleProp) {
+export default function StoreNavbar({ onToggle }: ToggleProp) {
   const location = useLocation();
+  const currentUser = useCurrentUser();
   return (
     <Flex
       bg='#203a43'
@@ -39,11 +41,15 @@ export default function DashboardNavbar({ onToggle }: ToggleProp) {
     >
       <HStack spacing={2}>
         <Avatar
-          display={{ base: 'none', md: 'flex' }}
+          display={{ base: 'none', md: 'block' }}
           size='sm'
           name='Store Owner'
-          src='https://images.unsplash.com/photo-1619946794135-5bc917a27793'
+          src={currentUser?.avatar}
         />
+
+        <Text fontWeight='bold' mr={{ md: '7em' }}>
+          My Store
+        </Text>
         <Tooltip
           bg='white'
           color='black'
@@ -117,11 +123,7 @@ export default function DashboardNavbar({ onToggle }: ToggleProp) {
           />
         </ChakraLink>
         <ChakraLink as={ReactRouterLink} to={'/store-manager/profile'}>
-          <Avatar
-            size='sm'
-            name='Store Owner'
-            src='https://images.unsplash.com/photo-1619946794135-5bc917a27793'
-          />
+          <Avatar size='sm' name='Store Owner' src={currentUser?.avatar} />
         </ChakraLink>
       </HStack>
     </Flex>

@@ -1,5 +1,5 @@
 import { Button, Flex, Icon, Text } from '@chakra-ui/react';
-import { Tooltip } from '../ui/tooltip';
+import { Tooltip } from '../../../components/ui/tooltip';
 import { useState } from 'react';
 
 interface NavItemProps {

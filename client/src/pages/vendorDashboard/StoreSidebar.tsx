@@ -12,8 +12,8 @@ import {
   Button,
 } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LinkItems } from './linkItems';
-import NavItem from './Navitem';
+import { LinkItems } from './DashboardNavlink/linkItems';
+import NavItem from './DashboardNavlink/Navitem';
 import { useRef } from 'react';
 import { useIsAuthenticated, useLogout } from '@/context/AuthContextService';
 
@@ -22,10 +22,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function DashboardSidebar({
-  isCollapsed,
-  onClose,
-}: SidebarProps) {
+export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const { isLoading } = useIsAuthenticated();
   const logout = useLogout();

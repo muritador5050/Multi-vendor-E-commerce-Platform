@@ -68,12 +68,12 @@ export default function DashboardHome() {
         p={6}
       >
         <Stack direction={{ base: 'column', md: 'row' }} align='center' gap={6}>
-          <Avatar size='2xl' name='Vendor name' />
+          <Avatar size='2xl' name='Vendor name' src={user?.avatar} />
           <Stat>
             <Text color='teal' fontSize='lg'>
               Welcome to the multivendor-mania Dashboard
             </Text>
-            <Text textAlign='left'>{user?.email}</Text>
+            <Text textAlign='left'>{user?.name}</Text>
             <StatHelpText>{formatLastLogin(new Date())}</StatHelpText>
           </Stat>
         </Stack>
