@@ -1,10 +1,31 @@
+export interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
 export interface User {
-  id: string;
-  email: string;
+  _id?: string;
   name: string;
+  email: string;
+  password?: string;
   role: UserRole;
+  phone?: string;
+  address?: Address;
+  googleId?: string;
+  facebookId?: string;
   avatar?: string;
-  emailVerified?: boolean;
+  isEmailVerified: boolean;
+  profileCompletion?: number;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  refreshToken?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const USER_ROLES = {

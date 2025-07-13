@@ -10,9 +10,9 @@ router.use(
   // authLimiter,
   require('./user.routes')
 );
+router.use('/api/vendors', require('./vendor.routes'));
 router.use('/api/products', cache('10 minutes'), require('./products.routes'));
 router.use('/api/categories', cache('4 hours'), require('./category.routes'));
-router.use('/api/vendors', require('./vendor.routes'));
 router.use('/api/reviews', require('./review.routes'));
 router.use('/api/orders', require('./order.routes'));
 router.use('/api/payments', require('./payment.routes'));

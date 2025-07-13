@@ -4,8 +4,10 @@ import { MdPhotoLibrary } from 'react-icons/md';
 
 export default function GalleryFileUpload({
   onFileChange,
+  multiple = false,
 }: {
-  onFileChange: (file: File) => void;
+  onFileChange: (files: File[] | File) => void;
+  multiple?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -14,9 +16,13 @@ export default function GalleryFileUpload({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onFileChange(file);
+    const files = e.target.files;
+    if (!files) return;
+
+    if (multiple) {
+      onFileChange(Array.from(files)); // send array of files
+    } else {
+      onFileChange(files[0]); // send single file
     }
   };
 
@@ -29,6 +35,7 @@ export default function GalleryFileUpload({
         onChange={handleFileChange}
         display='none'
         accept='image/*'
+        multiple={multiple}
       />
 
       {/* Custom styled box acting like a button */}

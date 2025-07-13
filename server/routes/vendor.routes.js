@@ -10,35 +10,35 @@ router
   .route('/profile')
   .get(
     authenticate,
-    checkRole('vendor'),
+    checkRole(['vendor'], 'read'),
     asyncHandler(VendorController.getVendorProfile)
   )
   .post(
     authenticate,
-    checkRole('vendor'),
+    checkRole('vendor', 'create'),
     asyncHandler(VendorController.upsertVendorProfile)
   )
   .put(
     authenticate,
-    checkRole('vendor'),
+    checkRole('vendor', 'edit'),
     asyncHandler(VendorController.upsertVendorProfile)
   );
 
 // === PUBLIC VENDOR ROUTES ===
 router.get('/', asyncHandler(VendorController.getAllVendors));
-router.get('/:identifier', asyncHandler(VendorController.getVendor)); // Works for both ID and slug
+router.get('/:identifier', asyncHandler(VendorController.getVendor));
 
 // === DOCUMENT MANAGEMENT ===
 router
-  .route('/documents/:documentId?')
+  .route('/documents/:documentId')
   .post(
     authenticate,
-    checkRole('vendor'),
+    checkRole('vendor', 'create'),
     asyncHandler(VendorController.manageDocuments)
   )
   .delete(
     authenticate,
-    checkRole('vendor'),
+    checkRole('vendor', 'delete'),
     asyncHandler(VendorController.manageDocuments)
   );
 
@@ -46,7 +46,7 @@ router
 router.put(
   '/settings/:settingType',
   authenticate,
-  checkRole('vendor'),
+  checkRole('vendor', 'edit'),
   asyncHandler(VendorController.updateSettings)
 );
 
@@ -54,7 +54,7 @@ router.put(
 router.put(
   '/toggle-status',
   authenticate,
-  checkRole('vendor'),
+  checkRole('vendor', 'edit'),
   asyncHandler(VendorController.toggleAccountStatus)
 );
 
@@ -64,7 +64,7 @@ router.get(
   authenticate,
   (req, res, next) => {
     const requiredRole = req.params.type === 'admin' ? 'admin' : 'vendor';
-    checkRole(requiredRole)(req, res, next);
+    checkRole(requiredRole, 'read')(req, res, next);
   },
   asyncHandler(VendorController.getStatistics)
 );
@@ -73,14 +73,14 @@ router.get(
 router.get(
   '/admin/list',
   authenticate,
-  checkRole('admin'),
+  checkRole('admin', 'read'),
   asyncHandler(VendorController.getVendorsForAdmin)
 );
 
 router.put(
   '/admin/:id/verify',
   authenticate,
-  checkRole('admin'),
+  checkRole('admin', 'edit'),
   asyncHandler(VendorController.updateVerificationStatus)
 );
 

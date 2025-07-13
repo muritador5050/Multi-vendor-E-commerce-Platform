@@ -8,7 +8,6 @@ class VendorController {
     try {
       const userId = req.user.id;
 
-      // Check if user exists and has vendor role
       const user = await User.findById(userId);
       if (!user || user.role !== 'vendor') {
         return res.status(403).json({

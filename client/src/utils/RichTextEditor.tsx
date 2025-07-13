@@ -1,10 +1,20 @@
 import { Editor } from '@tinymce/tinymce-react';
 
-export default function RichTextEditor() {
+interface RichTextEditorProps {
+  value: string;
+  onChange: (content: string) => void;
+}
+
+export default function RichTextEditor({
+  value,
+  onChange,
+}: RichTextEditorProps) {
   const apiKey = import.meta.env.VITE_RICH_EDITOR_API_KEY;
+
   return (
     <Editor
       apiKey={apiKey}
+      value={value}
       init={{
         height: 300,
         menubar: false,
@@ -30,7 +40,7 @@ export default function RichTextEditor() {
         toolbar:
           'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
       }}
-      // onEditorChange={(content) => console.log(content)}
+      onEditorChange={(content) => onChange(content)}
     />
   );
 }
