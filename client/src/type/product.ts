@@ -27,6 +27,21 @@ export interface Product {
   slug: string;
 }
 
+export interface ProductQueryParams {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  isActive?: boolean;
+  vendor?: string;
+  material?: string;
+  size?: string;
+  color?: string;
+}
+
 export interface Pagination {
   total: number;
   page: number;
@@ -35,8 +50,7 @@ export interface Pagination {
   hasPrev: boolean;
 }
 
-// Unified API response structure
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;
@@ -59,16 +73,5 @@ export interface ProductFormData {
   images: string[];
   categoryId: string;
   attributes?: Record<string, unknown>;
-  isActive?: boolean;
-}
-
-export interface ProductQueryParams {
-  page?: number;
-  limit?: number;
-  sort?: string;
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  search?: string;
   isActive?: boolean;
 }

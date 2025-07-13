@@ -1,5 +1,5 @@
 import { apiBase } from '@/api/ApiService';
-import type { Product } from '@/type/product';
+import type { Product, ProductQueryParams } from '@/type/product';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ApiResponse<T = unknown> {
@@ -18,21 +18,6 @@ interface PaginatedResponse<T> {
     hasPrev: boolean;
     limit: number;
   };
-}
-
-interface ProductQueryParams {
-  page?: number;
-  limit?: number;
-  sort?: string;
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  search?: string;
-  isActive?: boolean;
-  vendor?: string;
-  material?: string;
-  size?: string;
-  color?: string;
 }
 
 const getAuthHeaders = (): Record<string, string> => {

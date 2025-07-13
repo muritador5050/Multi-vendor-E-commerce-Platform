@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Flex,
@@ -14,8 +14,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ProductCard from '../components/ProductCard';
 import ProductFilters, { type FilterState } from '../components/ProductFilters';
 import ProductQuickView from '../components/ProductQuickView';
-import type { Product } from '@/type/product';
-import { apiBase } from '@/api/ApiService';
+import type { Product, ProductQueryParams } from '@/type/product';
+import { useProducts } from '@/context/ProductContextService';
 
 interface SortOption {
   value: string;
@@ -31,50 +31,11 @@ const SORT_OPTIONS: SortOption[] = [
   { value: '-averageRating', label: 'Top Rated' },
 ];
 
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const response = await fetch(`${apiBase}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: 'Network error' }));
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-  }
-
-  return response.json();
-};
-
-// Utility function to build query parameters
-const buildQueryParams = (params: Record<string, string | string[]>) => {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      value.forEach((v) => query.append(key, v));
-    } else {
-      query.set(key, value);
-    }
-  });
-  return query.toString();
-};
-
 export default function ShopPage() {
   // Modal state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Filter and sort state
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [5, 650],
     stockStatus: [],
@@ -87,76 +48,36 @@ export default function ShopPage() {
   const [sortBy, setSortBy] = useState<string>('-createdAt');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Pagination data from backend
-  const [pagination, setPagination] = useState({
+  const { material = [], size = [], color = [] } = filters.attributes || {};
+
+  const queryParams: ProductQueryParams = {
+    page: currentPage,
+    limit: 10,
+    sort: sortBy,
+    minPrice: filters.priceRange[0],
+    maxPrice: filters.priceRange[1],
+
+    ...(filters.stockStatus?.length > 0 && {
+      isActive: filters.stockStatus.includes('in-stock'),
+    }),
+
+    ...(material.length > 0 && { material: material.join(',') }),
+    ...(size.length > 0 && { size: size.join(',') }),
+    ...(color.length > 0 && { color: color.join(',') }),
+  };
+
+  // Use React Query hook
+  const { data, isLoading, error } = useProducts(queryParams);
+
+  const products = data?.products || [];
+  const pagination = data?.pagination || {
     total: 0,
     page: 1,
     pages: 0,
     hasNext: false,
     hasPrev: false,
     limit: 10,
-  });
-
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const queryParams: Record<string, string | string[]> = {
-        page: currentPage.toString(),
-        limit: pagination.limit.toString(),
-        sort: sortBy,
-        minPrice: filters.priceRange[0].toString(),
-        maxPrice: filters.priceRange[1].toString(),
-      };
-
-      // Add stock status filter
-      if (filters.stockStatus.length > 0) {
-        const isInStock = filters.stockStatus.includes('in-stock');
-        queryParams.isActive = isInStock.toString();
-      }
-
-      // Add attribute filters
-      if (filters.attributes) {
-        Object.entries(filters.attributes).forEach(([key, values]) => {
-          if (values.length > 0) {
-            queryParams[key] = values;
-          }
-        });
-      }
-
-      // Use buildQueryParams to create the query string
-      const queryString = buildQueryParams(queryParams);
-
-      // Make API call
-      const data = await apiRequest(`/products?${queryString}`);
-
-      if (data.success && data.data) {
-        setProducts(data.data.products || []);
-        setPagination(
-          data.data.pagination || {
-            total: 0,
-            page: 1,
-            pages: 0,
-            hasNext: false,
-            hasPrev: false,
-            limit: 10,
-          }
-        );
-      } else {
-        setError(data.message || 'Failed to fetch products');
-      }
-    } catch (err) {
-      setError('Failed to fetch products');
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, sortBy, currentPage, pagination.limit]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  };
 
   // Handle filter changes
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -222,7 +143,7 @@ export default function ShopPage() {
           {/* Results Header */}
           <Flex justifyContent='space-between' alignItems='center'>
             <Text>
-              {loading
+              {isLoading
                 ? 'Loading...'
                 : `Showing ${products.length} of ${pagination.total} results`}
             </Text>
@@ -243,7 +164,7 @@ export default function ShopPage() {
           {/* Error Message */}
           {error && (
             <Text color='red.500' textAlign='center'>
-              {error}
+              {error instanceof Error ? error.message : 'An error occurred'}
             </Text>
           )}
 
@@ -259,21 +180,21 @@ export default function ShopPage() {
           </SimpleGrid>
 
           {/* Empty State */}
-          {!loading && products.length === 0 && !error && (
+          {!isLoading && products.length === 0 && !error && (
             <Text textAlign='center' color='gray.500' mt={8}>
               No products found matching your criteria.
             </Text>
           )}
 
           {/* Loading State */}
-          {loading && (
+          {isLoading && (
             <Text textAlign='center' color='gray.500' mt={8}>
               Loading products...
             </Text>
           )}
 
           {/* Pagination */}
-          {!loading && pagination.pages > 1 && (
+          {!isLoading && pagination.pages > 1 && (
             <Flex justifyContent='center' mt={8}>
               <HStack spacing={2}>
                 {/* Previous Button */}

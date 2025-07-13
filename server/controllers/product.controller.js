@@ -66,9 +66,6 @@ class ProductsController {
       search,
       isActive,
       vendor,
-      material,
-      size,
-      color,
     } = req.query;
 
     const pageNum = Math.max(1, parseInt(page));
