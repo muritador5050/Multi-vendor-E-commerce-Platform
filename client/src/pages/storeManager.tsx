@@ -19,6 +19,7 @@ import Notices from './vendorDashboard/Notices';
 import Products from './vendorDashboard/Products';
 import StoreNavbar from './vendorDashboard/StoreNavbar';
 import StoreSidebar from './vendorDashboard/StoreSidebar';
+import CreateProductPage from './vendorDashboard/AddProduct';
 
 export default function StoreManagerDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -43,6 +44,7 @@ export default function StoreManagerDashboard() {
               <Route path='media' element={<Media />} />
               <Route path='articles' element={<Articles />} />
               <Route path='products' element={<Products />} />
+              <Route path='create-product' element={<CreateProductPage />} />
               <Route path='orders' element={<Orders />} />
               <Route path='payments' element={<Payments />} />
               <Route path='coupons' element={<Coupons />} />

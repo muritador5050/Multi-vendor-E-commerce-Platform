@@ -1,4 +1,22 @@
-import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  useColorModeValue,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Button,
+  Select,
+  Badge,
+  IconButton,
+  Stack,
+  Text,
+  useBreakpointValue,
+} from '@chakra-ui/react';
 import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { getStatusColor } from '../Utils';
 
@@ -19,115 +37,180 @@ type ProductsContentProps = {
 
 export const ProductsContent = ({ data, onAction }: ProductsContentProps) => {
   const cardBg = useColorModeValue('white', 'gray.800');
+  const isMobile = useBreakpointValue({ base: true, md: false });
+
+  const getStatusColorScheme = (status: string) => {
+    return getStatusColor(status) === 'green' ? 'green' : 'red';
+  };
+
+  // Mobile card view
+  const MobileProductCard = ({ product }: { product: Product }) => (
+    <Box
+      bg={cardBg}
+      p={4}
+      borderRadius='lg'
+      boxShadow='sm'
+      border='1px solid'
+      borderColor={useColorModeValue('gray.200', 'gray.600')}
+      mb={4}
+    >
+      <Stack spacing={3}>
+        <Flex justify='space-between' align='center'>
+          <Text fontWeight='bold' fontSize='lg'>
+            {product.name}
+          </Text>
+          <Badge colorScheme={getStatusColorScheme(product.status)}>
+            {product.status}
+          </Badge>
+        </Flex>
+
+        <Stack spacing={2}>
+          <Flex justify='space-between'>
+            <Text color='gray.500'>Vendor:</Text>
+            <Text>{product.vendor}</Text>
+          </Flex>
+          <Flex justify='space-between'>
+            <Text color='gray.500'>Price:</Text>
+            <Text>{product.price}</Text>
+          </Flex>
+          <Flex justify='space-between'>
+            <Text color='gray.500'>Stock:</Text>
+            <Text>{product.stock}</Text>
+          </Flex>
+          <Flex justify='space-between'>
+            <Text color='gray.500'>Category:</Text>
+            <Text>{product.category}</Text>
+          </Flex>
+        </Stack>
+
+        <Flex justify='flex-end' gap={2}>
+          <IconButton
+            aria-label='View product'
+            icon={<Eye size={16} />}
+            size='sm'
+            variant='ghost'
+            onClick={() => onAction('view', product.name)}
+          />
+          <IconButton
+            aria-label='Edit product'
+            icon={<Edit size={16} />}
+            size='sm'
+            variant='ghost'
+            onClick={() => onAction('edit', product.name)}
+          />
+          <IconButton
+            aria-label='Delete product'
+            icon={<Trash2 size={16} />}
+            size='sm'
+            variant='ghost'
+            colorScheme='red'
+            onClick={() => onAction('delete', product.name)}
+          />
+        </Flex>
+      </Stack>
+    </Box>
+  );
 
   return (
     <Box>
-      <Flex justify='space-between' align='center' mb={6}>
-        <Box fontSize='xl' fontWeight='bold'>
+      <Flex
+        justify='space-between'
+        align='center'
+        mb={6}
+        direction={{ base: 'column', sm: 'row' }}
+        gap={4}
+      >
+        <Text fontSize='xl' fontWeight='bold'>
           Products Management
-        </Box>
-        <Flex gap={4}>
-          <select
-            style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-            }}
+        </Text>
+        <Flex gap={4} direction={{ base: 'column', sm: 'row' }}>
+          <Select
+            placeholder='All Categories'
+            w={{ base: 'full', sm: '200px' }}
           >
-            <option>All Categories</option>
-            <option>Electronics</option>
-            <option>Fashion</option>
-            <option>Home</option>
-            <option>Sports</option>
-          </select>
-          <button
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#3182ce',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
+            <option value='electronics'>Electronics</option>
+            <option value='fashion'>Fashion</option>
+            <option value='home'>Home</option>
+            <option value='sports'>Sports</option>
+          </Select>
+          <Button
+            leftIcon={<Plus size={16} />}
+            colorScheme='blue'
+            size='md'
+            w={{ base: 'full', sm: 'auto' }}
           >
-            <Plus size={16} />
-          </button>
+            Add Product
+          </Button>
         </Flex>
       </Flex>
 
-      <Box bg={cardBg} p={6} borderRadius='lg' boxShadow='sm'>
-        <Box overflowX='auto'>
-          <table style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Product</th>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Vendor</th>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Price</th>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Stock</th>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Category</th>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Status</th>
-                <th style={{ textAlign: 'left', padding: '12px' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.products.map((product) => (
-                <tr key={product.id}>
-                  <td style={{ padding: '12px' }}>{product.name}</td>
-                  <td style={{ padding: '12px' }}>{product.vendor}</td>
-                  <td style={{ padding: '12px' }}>{product.price}</td>
-                  <td style={{ padding: '12px' }}>{product.stock}</td>
-                  <td style={{ padding: '12px' }}>{product.category}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        backgroundColor:
-                          getStatusColor(product.status) === 'green'
-                            ? '#c6f6d5'
-                            : '#fed7d7',
-                        color:
-                          getStatusColor(product.status) === 'green'
-                            ? '#2f855a'
-                            : '#c53030',
-                      }}
-                    >
-                      {product.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <Flex gap={2}>
-                      <button
-                        onClick={() => onAction('view', product.name)}
-                        style={{ padding: '4px', cursor: 'pointer' }}
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        onClick={() => onAction('edit', product.name)}
-                        style={{ padding: '4px', cursor: 'pointer' }}
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => onAction('delete', product.name)}
-                        style={{
-                          padding: '4px',
-                          cursor: 'pointer',
-                          color: 'red',
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </Flex>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isMobile ? (
+        // Mobile view - card layout
+        <Box>
+          {data.products.map((product) => (
+            <MobileProductCard key={product.id} product={product} />
+          ))}
         </Box>
-      </Box>
+      ) : (
+        // Desktop view - table layout
+        <TableContainer bg={cardBg} borderRadius='lg' boxShadow='sm'>
+          <Table variant='simple' size='md'>
+            <Thead>
+              <Tr>
+                <Th>Product</Th>
+                <Th>Vendor</Th>
+                <Th>Price</Th>
+                <Th>Stock</Th>
+                <Th>Category</Th>
+                <Th>Status</Th>
+                <Th>Actions</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {data.products.map((product) => (
+                <Tr key={product.id}>
+                  <Td fontWeight='medium'>{product.name}</Td>
+                  <Td>{product.vendor}</Td>
+                  <Td>{product.price}</Td>
+                  <Td>{product.stock}</Td>
+                  <Td>{product.category}</Td>
+                  <Td>
+                    <Badge colorScheme={getStatusColorScheme(product.status)}>
+                      {product.status}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <Flex gap={1}>
+                      <IconButton
+                        aria-label='View product'
+                        icon={<Eye size={16} />}
+                        size='sm'
+                        variant='ghost'
+                        onClick={() => onAction('view', product.name)}
+                      />
+                      <IconButton
+                        aria-label='Edit product'
+                        icon={<Edit size={16} />}
+                        size='sm'
+                        variant='ghost'
+                        onClick={() => onAction('edit', product.name)}
+                      />
+                      <IconButton
+                        aria-label='Delete product'
+                        icon={<Trash2 size={16} />}
+                        size='sm'
+                        variant='ghost'
+                        colorScheme='red'
+                        onClick={() => onAction('delete', product.name)}
+                      />
+                    </Flex>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
 };
