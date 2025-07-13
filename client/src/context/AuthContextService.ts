@@ -16,7 +16,7 @@ export const useProfile = () => {
     queryKey: authKeys.profile,
     queryFn: async () => {
       const response = await apiService.getProfile();
-      return response.data?.user || null;
+      return response.data || undefined;
     },
     enabled: apiService.isAuthenticated(),
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -251,8 +251,13 @@ export const useUploadFile = () => {
 
 // Essential utility hooks only
 export const useCurrentUser = () => {
-  const { data: user } = useProfile();
-  return user;
+  const { data } = useProfile();
+  return data?.user;
+};
+
+export const usePercentageComplete = () => {
+  const { data } = useProfile();
+  return data?.profileCompletion;
 };
 
 export const useIsAuthenticated = () => {

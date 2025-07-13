@@ -18,9 +18,19 @@ interface AuthTokenResponse {
   accessToken: string;
 }
 
+export interface ProfileCompletion {
+  percent: number;
+  completed: number;
+  totalFields: number;
+}
+
+export interface ProfileData {
+  user: User;
+  profileCompletion: ProfileCompletion;
+}
+
 interface ProfileResponse {
   user: User;
-  profileCompletion?: number;
 }
 
 export class ApiError extends Error {
@@ -207,8 +217,8 @@ class ApiService {
     });
   }
 
-  async getProfile(): Promise<ApiResponse<ProfileResponse>> {
-    return this.request<ApiResponse<ProfileResponse>>('/auth/profile');
+  async getProfile(): Promise<ApiResponse<ProfileData>> {
+    return this.request<ApiResponse<ProfileData>>('/auth/profile');
   }
 
   async updateProfile(

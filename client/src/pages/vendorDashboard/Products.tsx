@@ -51,7 +51,7 @@ import {
 } from '@chakra-ui/react';
 import { Eye, Edit, Trash2, Package, Star, User } from 'lucide-react';
 import type { Product } from '@/type/product';
-import { replace, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Products() {
   const { data } = useProducts();
@@ -498,7 +498,9 @@ export default function Products() {
               colorScheme='blue'
               onClick={() => {
                 onViewClose();
-                selectedProduct && handleEdit(selectedProduct);
+                if (selectedProduct) {
+                  handleEdit(selectedProduct);
+                }
               }}
             >
               Edit Product

@@ -34,6 +34,7 @@ import SEOSetting from '@/components/StoreSettings/SEOSetting';
 import StorePolicies from '@/components/StoreSettings/StorePolicies';
 import CustomerSupport from '@/components/StoreSettings/CustomerSupport';
 import StoreHours from '@/components/StoreSettings/StoreHours';
+import { usePercentageComplete } from '@/context/AuthContextService';
 
 const tabName = [
   { name: 'Store', icon: ShoppingBasket },
@@ -48,6 +49,8 @@ const tabName = [
 
 export default function Setting() {
   const [activeTab, setActiveTab] = useState(0);
+  const percentageComplete = usePercentageComplete();
+
   return (
     <Box>
       <Flex bg='white' align='center' justify='space-between' h={20} p={3}>
@@ -63,7 +66,11 @@ export default function Setting() {
           Social
         </Button>
       </Flex>
-      <ProfileProgress percentage={17} remainingFields={[]} />
+
+      <ProfileProgress
+        percentage={percentageComplete?.percent}
+        remainingFields={[]}
+      />
 
       <Stack>
         <Tabs
