@@ -1,55 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Product } from '@/type/product';
-import { apiBase } from '@/api/ApiService';
 import { useIsAuthenticated } from './AuthContextService';
-
-interface CartItem {
-  _id?: string;
-  product: Product;
-  quantity: number;
-}
-
-interface CartData {
-  items: CartItem[];
-  totalItems: number;
-  totalAmount: number;
-}
-
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-const apiRequest = async <T = unknown>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> => {
-  const token = localStorage.getItem('accessToken');
-
-  const response = await fetch(`${apiBase}/carts${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: 'Network error' }));
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-  }
-
-  return response.json();
-};
+import type { CartData } from '@/type/Cart';
+import { apiClient } from '@/utils/Api';
+import type { ApiResponse } from '@/type/ApiResponse';
 
 const fetchCart = async (): Promise<CartData> => {
-  const response = await apiRequest<CartData>('/items');
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<CartData>
+  >('/carts/items');
 
   if (!response.success) {
     throw new Error(response.message || 'Failed to load cart');
@@ -69,16 +28,18 @@ const addItemToCart = async ({
   productId: string;
   quantity?: number;
 }): Promise<CartData> => {
-  const response = await apiRequest<CartData>('/items', {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<CartData>
+  >('/carts/items', {
     method: 'POST',
     body: JSON.stringify({ productId, quantity }),
   });
 
   if (!response.success) {
-    if (response.message.includes('stock')) {
+    if (response.message?.includes('stock')) {
       throw new Error('Sorry, this item is out of stock');
     }
-    if (response.message.includes('limit')) {
+    if (response.message?.includes('limit')) {
       throw new Error("You've reached the maximum quantity for this item");
     }
     throw new Error(response.message || 'Failed to add item to cart');
@@ -98,7 +59,9 @@ const updateItemQuantity = async ({
   productId: string;
   quantity: number;
 }): Promise<CartData> => {
-  const response = await apiRequest<CartData>(`/items/${productId}`, {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<CartData>
+  >(`/carts/items/${productId}`, {
     method: 'PUT',
     body: JSON.stringify({ quantity }),
   });
@@ -115,9 +78,12 @@ const updateItemQuantity = async ({
 };
 
 const removeCartItem = async (productId: string): Promise<void> => {
-  const response = await apiRequest<void>(`/items/${productId}`, {
-    method: 'DELETE',
-  });
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<void>>(
+    `/carts/items/${productId}`,
+    {
+      method: 'DELETE',
+    }
+  );
 
   if (!response.success) {
     throw new Error(response.message || 'Failed to remove item');
@@ -125,9 +91,12 @@ const removeCartItem = async (productId: string): Promise<void> => {
 };
 
 const clearCartItems = async (): Promise<void> => {
-  const response = await apiRequest<void>('/clear', {
-    method: 'DELETE',
-  });
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<void>>(
+    '/carts/clear',
+    {
+      method: 'DELETE',
+    }
+  );
 
   if (!response.success) {
     throw new Error(response.message || 'Failed to clear cart');
@@ -233,6 +202,12 @@ export function useUpdateQuantity() {
             0
           );
 
+          // Fix: Calculate totalAmount in optimistic update
+          updatedCart.totalAmount = updatedCart.items.reduce(
+            (sum, item) => sum + (item.product.price || 0) * item.quantity,
+            0
+          );
+
           queryClient.setQueryData(cartKeys.items(), updatedCart);
         }
       }
@@ -246,6 +221,9 @@ export function useUpdateQuantity() {
       if (context?.previousCart) {
         queryClient.setQueryData(cartKeys.items(), context.previousCart);
       }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: cartKeys.items() });
     },
     retry: 1,
   });
@@ -274,7 +252,7 @@ export function useRemoveFromCart() {
           0
         );
         updatedCart.totalAmount = updatedCart.items.reduce(
-          (sum, item) => sum + item.product.price * item.quantity,
+          (sum, item) => sum + (item.product.price || 0) * item.quantity,
           0
         );
 
@@ -338,7 +316,7 @@ export function useClearCartOnLogout() {
 }
 
 export function useCartLoading() {
-  const cart = useQuery({ queryKey: cartKeys.items() });
+  const cart = useCart();
   const addToCart = useAddToCart();
   const updateQuantity = useUpdateQuantity();
   const removeFromCart = useRemoveFromCart();

@@ -1,82 +1,23 @@
-import { apiBase } from '@/api/ApiService';
+import type { ApiResponse } from '@/type/ApiResponse';
 import type {
   CreateProductData,
   Product,
+  ProductPaginatedResponse,
   ProductQueryParams,
 } from '@/type/product';
+import { apiClient } from '@/utils/Api';
+import { buildQueryString } from '@/utils/QueryString';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-interface PaginatedResponse<T> {
-  products: T[];
-  pagination: {
-    total: number;
-    page: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-    limit: number;
-  };
-}
-
-const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('accessToken');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
-const apiRequest = async <T = unknown>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> => {
-  const response = await fetch(`${apiBase}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: 'Network error' }));
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-  }
-
-  return response.json();
-};
-
-const buildQueryString = (params: ProductQueryParams): string => {
-  const searchParams = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') {
-      if (Array.isArray(value)) {
-        value.forEach((v) => searchParams.append(key, v.toString()));
-      } else {
-        searchParams.set(key, value.toString());
-      }
-    }
-  }
-
-  return searchParams.toString();
-};
 
 const fetchProducts = async (
   params: ProductQueryParams = {}
-): Promise<PaginatedResponse<Product>> => {
+): Promise<ProductPaginatedResponse<Product>> => {
   const queryString = buildQueryString(params);
   const url = `/products${queryString ? `?${queryString}` : ''}`;
 
-  const response = await apiRequest<PaginatedResponse<Product>>(url);
+  const response = await apiClient.publicApiRequest<
+    ApiResponse<ProductPaginatedResponse<Product>>
+  >(url);
 
   return (
     response.data || {
@@ -94,20 +35,24 @@ const fetchProducts = async (
 };
 
 const fetchProductById = async (id: string): Promise<Product | null> => {
-  const response = await apiRequest<Product>(`/products/${id}`);
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<Product>
+  >(`/products/${id}`);
   return response.data || null;
 };
 
 const fetchProductsByCategory = async (
   categorySlug: string,
   params: Omit<ProductQueryParams, 'category'> = {}
-): Promise<PaginatedResponse<Product>> => {
+): Promise<ProductPaginatedResponse<Product>> => {
   const queryString = buildQueryString(params);
   const url = `/products/category/${categorySlug}${
     queryString ? `?${queryString}` : ''
   }`;
 
-  const response = await apiRequest<PaginatedResponse<Product>>(url);
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<ProductPaginatedResponse<Product>>
+  >(url);
 
   return (
     response.data || {
@@ -127,13 +72,15 @@ const fetchProductsByCategory = async (
 const fetchProductByVendor = async (
   vendorId: string,
   params: Omit<ProductQueryParams, 'vendor'> = {}
-): Promise<PaginatedResponse<Product>> => {
+): Promise<ProductPaginatedResponse<Product>> => {
   const queryString = buildQueryString(params);
   const url = `/products/vendor/${vendorId}${
     queryString ? `?${queryString}` : ''
   }`;
 
-  const response = await apiRequest<PaginatedResponse<Product>>(url);
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<ProductPaginatedResponse<Product>>
+  >(url);
 
   return (
     response.data || {
@@ -152,13 +99,15 @@ const fetchProductByVendor = async (
 
 const fetchVendorProducts = async (
   params: Omit<ProductQueryParams, 'vendor'> = {}
-): Promise<PaginatedResponse<Product>> => {
+): Promise<ProductPaginatedResponse<Product>> => {
   const queryString = buildQueryString(params);
   const url = `/products/vendor/my-products${
     queryString ? `?${queryString}` : ''
   }`;
 
-  const response = await apiRequest<PaginatedResponse<Product>>(url);
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<ProductPaginatedResponse<Product>>
+  >(url);
 
   return (
     response.data || {
@@ -188,7 +137,9 @@ const createProduct = async (
       throw new Error('Product name and price are required');
     }
   }
-  const response = await apiRequest<Product[]>('/products', {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<Product[]>
+  >('/products', {
     method: 'POST',
     body: JSON.stringify(productData),
   });
@@ -209,7 +160,9 @@ const toggleProductActive = async (id: string): Promise<Product> => {
     throw new Error('Product ID is null or undefined');
   }
 
-  const response = await apiRequest<Product>(`/products/${id}/toggle-active`, {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<Product>
+  >(`/products/${id}/toggle-active`, {
     method: 'PATCH',
   });
 
@@ -232,7 +185,9 @@ const updateProduct = async (
     throw new Error('Product data is required');
   }
 
-  const response = await apiRequest<Product>(`/products/${id}`, {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<Product>
+  >(`/products/${id}`, {
     method: 'PUT',
     body: JSON.stringify(product),
   });
@@ -249,9 +204,12 @@ const deleteProduct = async (id: string): Promise<void> => {
     throw new Error('Product ID is required');
   }
 
-  const response = await apiRequest<null>(`/products/${id}`, {
-    method: 'DELETE',
-  });
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<null>>(
+    `/products/${id}`,
+    {
+      method: 'DELETE',
+    }
+  );
 
   if (!response.success) {
     throw new Error(response.message || 'Failed to delete product');
@@ -338,7 +296,7 @@ const useToggleProductActive = () => {
     Product,
     Error,
     string,
-    { previousProduct: Product | undefined }
+    { previousProduct: Product | null }
   >({
     mutationFn: toggleProductActive,
 
@@ -358,7 +316,7 @@ const useToggleProductActive = () => {
         });
       }
 
-      return { previousProduct };
+      return { previousProduct: previousProduct || null };
     },
 
     onError: (_error, productId, context) => {
@@ -380,24 +338,15 @@ const useToggleProductActive = () => {
         queryKey: productKeys.vendorProducts(),
       });
 
-      // Debug: Log the keys being invalidated
-      console.log('Keys being invalidated:', {
-        item: productKeys.item(productId),
-        items: productKeys.items(),
-        vendorProducts: productKeys.vendorProducts(),
-      });
-
-      if (data) {
-        if (data.category) {
-          queryClient.invalidateQueries({
-            queryKey: productKeys.category(data.category._id),
-          });
-        }
-        if (data.vendor) {
-          queryClient.invalidateQueries({
-            queryKey: productKeys.vendor(data.vendor._id),
-          });
-        }
+      if (data?.category) {
+        queryClient.invalidateQueries({
+          queryKey: productKeys.category(data.category._id),
+        });
+      }
+      if (data?.vendor) {
+        queryClient.invalidateQueries({
+          queryKey: productKeys.vendor(data.vendor._id),
+        });
       }
     },
   });
@@ -420,12 +369,12 @@ const useUpdateProduct = () => {
       queryClient.invalidateQueries({ queryKey: productKeys.items() });
       queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
 
-      if (data.category) {
+      if (data?.category) {
         queryClient.invalidateQueries({
           queryKey: productKeys.category(data.category._id),
         });
       }
-      if (data.vendor) {
+      if (data?.vendor) {
         queryClient.invalidateQueries({
           queryKey: productKeys.vendor(data.vendor._id),
         });
@@ -464,5 +413,3 @@ export {
   useUpdateProduct,
   useDeleteProduct,
 };
-
-export type { ProductQueryParams, PaginatedResponse };

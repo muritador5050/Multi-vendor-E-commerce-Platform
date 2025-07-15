@@ -1,109 +1,93 @@
-import { apiBase } from '@/api/ApiService';
+import type { ApiResponse } from '@/type/ApiResponse';
+import type {
+  Blog,
+  BlogFilters,
+  BlogsResponse,
+  CreateBlogData,
+  UpdateBlogData,
+} from '@/type/Blog';
+import { apiClient } from '@/utils/Api';
+import { buildQueryString } from '@/utils/QueryString';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-interface Blog {
-  _id: string;
-  title: string;
-  slug: string;
-  content: string;
-  image?: string;
-  author: string;
-  tags: string[];
-  published: boolean;
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-  relatedProducts?: any[];
-}
-
-interface BlogsResponse {
-  data: Blog[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
-  };
-}
-
-interface BlogFilters {
-  published?: boolean;
-  author?: string;
-  tags?: string;
-  page?: number;
-  limit?: number;
-  search?: string;
-}
-
-interface CreateBlogData {
-  title: string;
-  content: string;
-  image?: string;
-  author: string;
-  tags?: string[];
-  published?: boolean;
-}
-
-interface UpdateBlogData {
-  title?: string;
-  content?: string;
-  image?: string;
-  author?: string;
-  tags?: string[];
-  published?: boolean;
-}
-
-// Utility functions
-const getAuthHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem('accessToken');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+const getBlogs = async (filters: BlogFilters = {}): Promise<BlogsResponse> => {
+  const queryString = buildQueryString(filters);
+  const endpoint = `/blogs${queryString ? `?${queryString}` : ''}`;
+  const response = await apiClient.publicApiRequest<ApiResponse<BlogsResponse>>(
+    endpoint
+  );
+  return response.data!;
 };
 
-const buildQueryString = (params: Record<string, any>): string => {
-  const searchParams = new URLSearchParams();
+const getBlogBySlug = async (slug: string): Promise<Blog> => {
+  const response = await apiClient.publicApiRequest<ApiResponse<Blog>>(
+    `/blogs/${slug}`
+  );
+  return response.data!;
+};
 
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') {
-      if (Array.isArray(value)) {
-        value.forEach((v) => searchParams.append(key, v.toString()));
-      } else {
-        searchParams.set(key, value.toString());
-      }
+const getBlogsByAuthor = async (
+  author: string,
+  page = 1,
+  limit = 10
+): Promise<BlogsResponse> => {
+  const queryString = buildQueryString({ page, limit });
+  const endpoint = `/blogs/author/${author}${
+    queryString ? `?${queryString}` : ''
+  }`;
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<BlogsResponse>
+  >(endpoint);
+  return response.data!;
+};
+
+// Create new blog
+const createBlog = async (data: CreateBlogData): Promise<Blog> => {
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<Blog>>(
+    '/blogs',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
     }
-  }
-
-  return searchParams.toString();
+  );
+  return response.data!;
 };
 
-const apiRequest = async <T = unknown>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> => {
-  const response = await fetch(`${apiBase}/blogs${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...options.headers,
-    },
-    ...options,
-  });
+// Update blog
+const updateBlog = async (
+  slug: string,
+  data: UpdateBlogData
+): Promise<Blog> => {
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<Blog>>(
+    `/blogs/${slug}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+  return response.data!;
+};
 
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: 'Network error' }));
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-  }
+// Delete blog
+const deleteBlog = async (slug: string): Promise<Blog> => {
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<Blog>>(
+    `/blogs/${slug}`,
+    {
+      method: 'DELETE',
+    }
+  );
+  return response.data!;
+};
 
-  return response.json();
+// Toggle publish status
+const togglePublish = async (slug: string): Promise<Blog> => {
+  const response = await apiClient.authenticatedApiRequest<ApiResponse<Blog>>(
+    `/blogs/${slug}/publish`,
+    {
+      method: 'PATCH',
+    }
+  );
+  return response.data!;
 };
 
 // Query Keys
@@ -113,79 +97,14 @@ const BLOG_KEYS = {
   list: (filters: BlogFilters) => [...BLOG_KEYS.lists(), filters] as const,
   details: () => [...BLOG_KEYS.all, 'detail'] as const,
   detail: (slug: string) => [...BLOG_KEYS.details(), slug] as const,
-  author: (author: string) => [...BLOG_KEYS.all, 'author', author] as const,
+  author: (author: string, page: number, limit: number) =>
+    [...BLOG_KEYS.all, 'author', author, page, limit] as const,
 };
 
-// API Functions
-const blogApi = {
-  // Get all blogs with filters
-  getBlogs: async (filters: BlogFilters = {}): Promise<BlogsResponse> => {
-    const queryString = buildQueryString(filters);
-    const endpoint = queryString ? `?${queryString}` : '';
-    const response = await apiRequest<BlogsResponse>(endpoint);
-    return response.data!;
-  },
-
-  // Get single blog by slug
-  getBlogBySlug: async (slug: string): Promise<Blog> => {
-    const response = await apiRequest<Blog>(`/${slug}`);
-    return response.data!;
-  },
-
-  // Get blogs by author
-  getBlogsByAuthor: async (
-    author: string,
-    page = 1,
-    limit = 10
-  ): Promise<BlogsResponse> => {
-    const queryString = buildQueryString({ page, limit });
-    const endpoint = `/author/${author}${queryString ? `?${queryString}` : ''}`;
-    const response = await apiRequest<BlogsResponse>(endpoint);
-    return response.data!;
-  },
-
-  // Create new blog
-  createBlog: async (data: CreateBlogData): Promise<Blog> => {
-    const response = await apiRequest<Blog>('', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    return response.data!;
-  },
-
-  // Update blog
-  updateBlog: async (slug: string, data: UpdateBlogData): Promise<Blog> => {
-    const response = await apiRequest<Blog>(`/${slug}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    return response.data!;
-  },
-
-  // Delete blog
-  deleteBlog: async (slug: string): Promise<Blog> => {
-    const response = await apiRequest<Blog>(`/${slug}`, {
-      method: 'DELETE',
-    });
-    return response.data!;
-  },
-
-  // Toggle publish status
-  togglePublish: async (slug: string): Promise<Blog> => {
-    const response = await apiRequest<Blog>(`/${slug}/publish`, {
-      method: 'PATCH',
-    });
-    return response.data!;
-  },
-};
-
-// Custom Hooks
-
-// Get blogs with filters
 export const useBlogs = (filters: BlogFilters = {}) => {
   return useQuery({
     queryKey: BLOG_KEYS.list(filters),
-    queryFn: () => blogApi.getBlogs(filters),
+    queryFn: () => getBlogs(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -194,7 +113,7 @@ export const useBlogs = (filters: BlogFilters = {}) => {
 export const useBlog = (slug: string) => {
   return useQuery({
     queryKey: BLOG_KEYS.detail(slug),
-    queryFn: () => blogApi.getBlogBySlug(slug),
+    queryFn: () => getBlogBySlug(slug),
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
   });
@@ -203,8 +122,8 @@ export const useBlog = (slug: string) => {
 // Get blogs by author
 export const useBlogsByAuthor = (author: string, page = 1, limit = 10) => {
   return useQuery({
-    queryKey: BLOG_KEYS.author(author),
-    queryFn: () => blogApi.getBlogsByAuthor(author, page, limit),
+    queryKey: BLOG_KEYS.author(author, page, limit),
+    queryFn: () => getBlogsByAuthor(author, page, limit),
     enabled: !!author,
     staleTime: 5 * 60 * 1000,
   });
@@ -215,7 +134,7 @@ export const useCreateBlog = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: blogApi.createBlog,
+    mutationFn: createBlog,
     onSuccess: (data) => {
       // Invalidate and refetch blogs list
       queryClient.invalidateQueries({ queryKey: BLOG_KEYS.lists() });
@@ -231,7 +150,7 @@ export const useUpdateBlog = () => {
 
   return useMutation({
     mutationFn: ({ slug, data }: { slug: string; data: UpdateBlogData }) =>
-      blogApi.updateBlog(slug, data),
+      updateBlog(slug, data),
     onSuccess: (data, variables) => {
       // Update the specific blog in cache
       queryClient.setQueryData(BLOG_KEYS.detail(data.slug), data);
@@ -252,7 +171,7 @@ export const useDeleteBlog = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: blogApi.deleteBlog,
+    mutationFn: deleteBlog,
     onSuccess: (data) => {
       // Remove from cache
       queryClient.removeQueries({ queryKey: BLOG_KEYS.detail(data.slug) });
@@ -267,7 +186,7 @@ export const useTogglePublish = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: blogApi.togglePublish,
+    mutationFn: togglePublish,
     onSuccess: (data) => {
       // Update the blog in cache
       queryClient.setQueryData(BLOG_KEYS.detail(data.slug), data);
@@ -276,6 +195,3 @@ export const useTogglePublish = () => {
     },
   });
 };
-
-// Export the API functions for direct use if needed
-export { blogApi };

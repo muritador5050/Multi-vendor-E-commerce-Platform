@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import apiService from '@/api/ApiService';
 import { validators } from '@/utils/Validation';
-import type { ApiResponse } from '@/api/ApiService';
 import type {
   VendorDocument,
   BusinessHours,
@@ -18,172 +16,179 @@ import type {
   DocumentUpload,
   AccountStatusToggle,
   SettingsUpdate,
+  SettingsResponse,
 } from '../type/vendor';
+import type { ApiResponse } from '@/type/ApiResponse';
+import { apiClient } from '@/utils/Api';
 
-interface NotificationSettings {
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  orderNotifications: boolean;
-  marketingEmails: boolean;
+async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile'
+  );
 }
 
-interface SocialMediaSettings {
-  facebook?: string;
-  instagram?: string;
-  twitter?: string;
-  linkedin?: string;
-  website?: string;
-}
-
-type SettingsResponse =
-  | NotificationSettings
-  | BusinessHours
-  | SocialMediaSettings;
-
-// === API SERVICE EXTENSIONS ===
-class VendorApiService {
-  // === VENDOR PROFILE ===
-  async getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
-    return apiService.request<ApiResponse<VendorProfile>>('/vendors/profile');
-  }
-
-  async upsertVendorProfile(
-    data: VendorProfileUpdate
-  ): Promise<ApiResponse<VendorProfile>> {
-    return apiService.request<ApiResponse<VendorProfile>>('/vendors/profile', {
+async function upsertVendorProfile(
+  data: VendorProfileUpdate
+): Promise<ApiResponse<VendorProfile>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile',
+    {
       method: 'POST',
       body: JSON.stringify(data),
-    });
-  }
-
-  async updateVendorProfile(
-    data: VendorProfileUpdate
-  ): Promise<ApiResponse<VendorProfile>> {
-    return apiService.request<ApiResponse<VendorProfile>>('/vendors/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // === PUBLIC VENDOR ROUTES ===
-  async getAllVendors(
-    filters: VendorFilters = {}
-  ): Promise<ApiResponse<VendorListResponse>> {
-    const params = new URLSearchParams();
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
-    if (filters.search) params.append('search', filters.search);
-    if (filters.businessType)
-      params.append('businessType', filters.businessType);
-
-    const queryString = params.toString();
-    const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
-
-    return apiService.request<ApiResponse<VendorListResponse>>(endpoint);
-  }
-
-  async getVendor(identifier: string): Promise<ApiResponse<PublicVendor>> {
-    return apiService.request<ApiResponse<PublicVendor>>(
-      `/vendors/${identifier}`
-    );
-  }
-
-  // === DOCUMENT MANAGEMENT ===
-  async uploadDocuments(
-    data: DocumentUpload
-  ): Promise<ApiResponse<VendorDocument[]>> {
-    return apiService.request<ApiResponse<VendorDocument[]>>(
-      '/vendors/documents/',
-      {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }
-    );
-  }
-
-  async deleteDocument(
-    documentId: string
-  ): Promise<ApiResponse<VendorDocument[]>> {
-    return apiService.request<ApiResponse<VendorDocument[]>>(
-      `/vendors/documents/${documentId}`,
-      {
-        method: 'DELETE',
-      }
-    );
-  }
-
-  // === VENDOR SETTINGS ===
-  async updateSettings<T extends SettingsResponse>(
-    settingType: 'notifications' | 'businessHours' | 'socialMedia',
-    data: SettingsUpdate
-  ): Promise<ApiResponse<T>> {
-    return apiService.request<ApiResponse<T>>(
-      `/vendors/settings/${settingType}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }
-    );
-  }
-
-  // === ACCOUNT STATUS ===
-  async toggleAccountStatus(
-    data: AccountStatusToggle
-  ): Promise<ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>> {
-    return apiService.request<
-      ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>
-    >('/vendors/toggle-status', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // === STATISTICS ===
-  async getVendorStats(): Promise<ApiResponse<VendorStats>> {
-    return apiService.request<ApiResponse<VendorStats>>(
-      '/vendors/stats/vendor'
-    );
-  }
-
-  async getAdminStats(): Promise<ApiResponse<AdminVendorStats>> {
-    return apiService.request<ApiResponse<AdminVendorStats>>(
-      '/vendors/stats/admin'
-    );
-  }
-
-  // === ADMIN ROUTES ===
-  async getVendorsForAdmin(
-    filters: VendorFilters = {}
-  ): Promise<ApiResponse<VendorAdminListResponse>> {
-    const params = new URLSearchParams();
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
-    if (filters.search) params.append('search', filters.search);
-    if (filters.status) params.append('status', filters.status);
-
-    const queryString = params.toString();
-    const endpoint = queryString
-      ? `/vendors/admin/list?${queryString}`
-      : '/vendors/admin/list';
-
-    return apiService.request<ApiResponse<VendorAdminListResponse>>(endpoint);
-  }
-
-  async updateVerificationStatus(
-    vendorId: string,
-    data: VerificationStatusUpdate
-  ): Promise<ApiResponse<Vendor>> {
-    return apiService.request<ApiResponse<Vendor>>(
-      `/vendors/admin/${vendorId}/verify`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }
-    );
-  }
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 }
 
-const vendorApiService = new VendorApiService();
+async function updateVendorProfile(
+  data: VendorProfileUpdate
+): Promise<ApiResponse<VendorProfile>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile',
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+}
+
+// === PUBLIC VENDOR ROUTES ===
+async function getAllVendors(
+  filters: VendorFilters = {}
+): Promise<ApiResponse<VendorListResponse>> {
+  const params = new URLSearchParams();
+  if (filters.page) params.append('page', filters.page.toString());
+  if (filters.limit) params.append('limit', filters.limit.toString());
+  if (filters.search) params.append('search', filters.search);
+  if (filters.businessType) params.append('businessType', filters.businessType);
+  if (filters.status) params.append('status', filters.status);
+
+  const queryString = params.toString();
+  const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
+
+  return apiClient.publicApiRequest<ApiResponse<VendorListResponse>>(endpoint);
+}
+
+async function getVendor(
+  identifier: string
+): Promise<ApiResponse<PublicVendor>> {
+  return apiClient.publicApiRequest<ApiResponse<PublicVendor>>(
+    `/vendors/${identifier}`
+  );
+}
+
+// === DOCUMENT MANAGEMENT ===
+async function uploadDocuments(
+  data: DocumentUpload
+): Promise<ApiResponse<VendorDocument[]>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
+    '/vendors/documents/',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+}
+
+async function deleteDocument(
+  documentId: string
+): Promise<ApiResponse<VendorDocument[]>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
+    `/vendors/documents/${documentId}`,
+    {
+      method: 'DELETE',
+    }
+  );
+}
+
+// === VENDOR SETTINGS ===
+async function updateSettings<T extends SettingsResponse>(
+  settingType: 'notifications' | 'businessHours' | 'socialMedia',
+  data: SettingsUpdate
+): Promise<ApiResponse<T>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<T>>(
+    `/vendors/settings/${settingType}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+}
+
+// === ACCOUNT STATUS ===
+async function toggleAccountStatus(
+  data: AccountStatusToggle
+): Promise<ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>> {
+  return apiClient.authenticatedApiRequest<
+    ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>
+  >('/vendors/toggle-status', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+// === STATISTICS ===
+async function getVendorStats(): Promise<ApiResponse<VendorStats>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorStats>>(
+    '/vendors/stats/vendor'
+  );
+}
+
+async function getAdminStats(): Promise<ApiResponse<AdminVendorStats>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<AdminVendorStats>>(
+    '/vendors/stats/admin'
+  );
+}
+
+// === ADMIN ROUTES ===
+async function getVendorsForAdmin(
+  filters: VendorFilters = {}
+): Promise<ApiResponse<VendorAdminListResponse>> {
+  const params = new URLSearchParams();
+  if (filters.page) params.append('page', filters.page.toString());
+  if (filters.limit) params.append('limit', filters.limit.toString());
+  if (filters.search) params.append('search', filters.search);
+  if (filters.status) params.append('status', filters.status);
+
+  const queryString = params.toString();
+  const endpoint = queryString
+    ? `/vendors/admin/list?${queryString}`
+    : '/vendors/admin/list';
+
+  return apiClient.authenticatedApiRequest<
+    ApiResponse<VendorAdminListResponse>
+  >(endpoint);
+}
+
+async function updateVerificationStatus(
+  vendorId: string,
+  data: VerificationStatusUpdate
+): Promise<ApiResponse<Vendor>> {
+  return apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
+    `/vendors/admin/${vendorId}/verify`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+}
 
 // === QUERY KEYS ===
 export const vendorKeys = {
@@ -203,10 +208,10 @@ export const useVendorProfile = () => {
   return useQuery({
     queryKey: vendorKeys.profile,
     queryFn: async () => {
-      const response = await vendorApiService.getVendorProfile();
+      const response = await getVendorProfile();
       return response.data;
     },
-    enabled: apiService.isAuthenticated(),
+    enabled: apiClient.isAuthenticated(),
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
   });
@@ -217,18 +222,14 @@ export const useUpsertVendorProfile = () => {
 
   return useMutation({
     mutationFn: async (data: VendorProfileUpdate) => {
-      if (data.businessEmail) {
-        const emailError = validators.email(data.businessEmail);
-        if (emailError) throw new Error(emailError);
-      }
-      if (data.businessName && !data.businessName.trim()) {
-        throw new Error('Business name is required');
-      }
-      if (data.storeName && !data.storeName.trim()) {
-        throw new Error('Store name is required');
+      // Validate before API call
+      const validationErrors = validateVendorProfile(data);
+      if (validationErrors) {
+        const firstError = Object.values(validationErrors)[0];
+        throw new Error(firstError);
       }
 
-      const response = await vendorApiService.upsertVendorProfile(data);
+      const response = await upsertVendorProfile(data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -243,12 +244,14 @@ export const useUpdateVendorProfile = () => {
 
   return useMutation({
     mutationFn: async (data: VendorProfileUpdate) => {
-      if (data.businessEmail) {
-        const emailError = validators.email(data.businessEmail);
-        if (emailError) throw new Error(emailError);
+      // Validate before API call
+      const validationErrors = validateVendorProfile(data);
+      if (validationErrors) {
+        const firstError = Object.values(validationErrors)[0];
+        throw new Error(firstError);
       }
 
-      const response = await vendorApiService.updateVendorProfile(data);
+      const response = await updateVendorProfile(data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -263,7 +266,7 @@ export const useVendors = (filters: VendorFilters = {}) => {
   return useQuery({
     queryKey: vendorKeys.list(filters),
     queryFn: async () => {
-      const response = await vendorApiService.getAllVendors(filters);
+      const response = await getAllVendors(filters);
       return response.data;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -275,10 +278,10 @@ export const useVendor = (identifier: string) => {
   return useQuery({
     queryKey: vendorKeys.detail(identifier),
     queryFn: async () => {
-      const response = await vendorApiService.getVendor(identifier);
+      const response = await getVendor(identifier);
       return response.data;
     },
-    enabled: !!identifier,
+    enabled: Boolean(identifier?.trim()),
     staleTime: 5 * 60 * 1000,
   });
 };
@@ -293,7 +296,7 @@ export const useUploadDocuments = () => {
         throw new Error('At least one document is required');
       }
 
-      const response = await vendorApiService.uploadDocuments(data);
+      const response = await uploadDocuments(data);
       return response.data;
     },
     onSuccess: () => {
@@ -311,7 +314,7 @@ export const useDeleteDocument = () => {
         throw new Error('Document ID is required');
       }
 
-      const response = await vendorApiService.deleteDocument(documentId);
+      const response = await deleteDocument(documentId);
       return response.data;
     },
     onSuccess: () => {
@@ -339,10 +342,16 @@ export const useUpdateSettings = <
         throw new Error('Invalid setting type');
       }
 
-      const response = await vendorApiService.updateSettings<T>(
-        settingType,
-        data
-      );
+      // Validate business hours if that's the setting being updated
+      if (settingType === 'businessHours' && data) {
+        const validationErrors = validateBusinessHours(data as BusinessHours);
+        if (validationErrors) {
+          const firstError = Object.values(validationErrors)[0];
+          throw new Error(firstError);
+        }
+      }
+
+      const response = await updateSettings<T>(settingType, data);
       return response.data;
     },
     onSuccess: () => {
@@ -357,7 +366,11 @@ export const useToggleAccountStatus = () => {
 
   return useMutation({
     mutationFn: async (data: AccountStatusToggle) => {
-      const response = await vendorApiService.toggleAccountStatus(data);
+      if (typeof data.reason !== 'boolean') {
+        throw new Error('isActive must be a boolean value');
+      }
+
+      const response = await toggleAccountStatus(data);
       return response.data;
     },
     onSuccess: () => {
@@ -371,10 +384,10 @@ export const useVendorStats = () => {
   return useQuery({
     queryKey: vendorKeys.stats('vendor'),
     queryFn: async () => {
-      const response = await vendorApiService.getVendorStats();
+      const response = await getVendorStats();
       return response.data;
     },
-    enabled: apiService.isAuthenticated(),
+    enabled: apiClient.isAuthenticated(),
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
@@ -383,10 +396,10 @@ export const useAdminStats = () => {
   return useQuery({
     queryKey: vendorKeys.stats('admin'),
     queryFn: async () => {
-      const response = await vendorApiService.getAdminStats();
+      const response = await getAdminStats();
       return response.data;
     },
-    enabled: apiService.isAuthenticated(),
+    enabled: apiClient.isAuthenticated(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -396,10 +409,10 @@ export const useVendorsForAdmin = (filters: VendorFilters = {}) => {
   return useQuery({
     queryKey: vendorKeys.adminList(filters),
     queryFn: async () => {
-      const response = await vendorApiService.getVendorsForAdmin(filters);
+      const response = await getVendorsForAdmin(filters);
       return response.data;
     },
-    enabled: apiService.isAuthenticated(),
+    enabled: apiClient.isAuthenticated(),
     staleTime: 2 * 60 * 1000, // 2 minutes
     placeholderData: (previousData) => previousData,
   });
@@ -428,10 +441,7 @@ export const useUpdateVerificationStatus = () => {
         throw new Error('Invalid status');
       }
 
-      const response = await vendorApiService.updateVerificationStatus(
-        vendorId,
-        data
-      );
+      const response = await updateVerificationStatus(vendorId, data);
       return response.data;
     },
     onSuccess: () => {
@@ -457,10 +467,19 @@ export const useIsVendorActive = () => {
   return vendor?.isActive === true;
 };
 
-// Note: These hooks are referenced but not defined in the original code
-// You'll need to implement them based on your auth/permission system
-declare function useCanPerformAction(action: string): boolean;
-declare function useHasAnyRole(roles: string[]): boolean;
+// === PERMISSION HOOKS ===
+// These hooks need to be implemented based on your auth/permission system
+export const useCanPerformAction = (action: string): boolean => {
+  // Placeholder implementation - replace with actual permission logic
+  console.warn(`useCanPerformAction not implemented for action: ${action}`);
+  return false;
+};
+
+export const useHasAnyRole = (roles: string[]): boolean => {
+  // Placeholder implementation - replace with actual role checking logic
+  console.warn(`useHasAnyRole not implemented for roles: ${roles.join(', ')}`);
+  return false;
+};
 
 export const useCanManageVendor = () => {
   return useCanPerformAction('manage_vendors');
@@ -474,11 +493,11 @@ export const useIsVendorRole = () => {
 export const validateVendorProfile = (data: VendorProfileUpdate) => {
   const errors: Record<string, string> = {};
 
-  if (data.businessName && !data.businessName.trim()) {
+  if (data.businessName !== undefined && !data.businessName.trim()) {
     errors.businessName = 'Business name is required';
   }
 
-  if (data.storeName && !data.storeName.trim()) {
+  if (data.storeName !== undefined && !data.storeName.trim()) {
     errors.storeName = 'Store name is required';
   }
 
@@ -487,7 +506,7 @@ export const validateVendorProfile = (data: VendorProfileUpdate) => {
     if (emailError) errors.businessEmail = emailError;
   }
 
-  if (data.businessPhone && data.businessPhone.length < 10) {
+  if (data.businessPhone && data.businessPhone.trim().length < 10) {
     errors.businessPhone = 'Please enter a valid phone number';
   }
 
@@ -513,12 +532,10 @@ export const validateBusinessHours = (businessHours: BusinessHours) => {
 
   days.forEach((day) => {
     const dayHours = businessHours[day as keyof BusinessHours];
-    if (!dayHours.isClosed && (!dayHours.open || !dayHours.close)) {
+    if (dayHours && !dayHours.isClosed && (!dayHours.open || !dayHours.close)) {
       errors[day] = 'Open and close times are required for open days';
     }
   });
 
   return Object.keys(errors).length > 0 ? errors : null;
 };
-
-export default vendorApiService;

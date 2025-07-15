@@ -1,48 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiBase } from '@/api/ApiService';
 import { useIsAuthenticated } from './AuthContextService';
+import type { ApiResponse } from '@/type/ApiResponse';
+import type { Category } from '@/type/Category';
+import { apiClient } from '@/utils/Api';
 
-interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-interface Category {
-  _id: string;
-  name: string;
-  slug: string;
-  image?: string;
-}
-
-const apiRequest = async <T = unknown>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> => {
-  const token = localStorage.getItem('accessToken');
-
-  const response = await fetch(`${apiBase}/categories${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: 'Network error' }));
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-  }
-
-  return response.json();
-};
-
-const categoryKeys = {
+export const categoryKeys = {
   all: ['categories'] as const,
   list: () => [...categoryKeys.all, 'list'] as const,
   byId: (id: string) => [...categoryKeys.all, 'byId', id] as const,
@@ -53,7 +15,9 @@ export const useCategories = () => {
   return useQuery({
     queryKey: categoryKeys.list(),
     queryFn: async (): Promise<Category[]> => {
-      const response = await apiRequest<Category[]>('');
+      const response = await apiClient.publicApiRequest<
+        ApiResponse<Category[]>
+      >('/categories');
       if (!response.success) {
         throw new Error(response.message || 'Failed to load categories');
       }
@@ -67,30 +31,36 @@ export const useCategories = () => {
 export const useCategoryById = (id: string) => {
   return useQuery({
     queryKey: categoryKeys.byId(id),
-    queryFn: async () => {
-      const response = await apiRequest<Category>(`/${id}`);
+    queryFn: async (): Promise<Category> => {
+      const response = await apiClient.publicApiRequest<ApiResponse<Category>>(
+        `/categories/${id}`
+      );
       if (!response.success) {
         throw new Error(response.message || 'Failed to load category');
       }
-      return response.data! || {};
+      return response.data!;
     },
     staleTime: 1000 * 60 * 5,
     retry: 1,
+    enabled: !!id,
   });
 };
 
 export const useCategoryBySlug = (slug: string) => {
   return useQuery({
     queryKey: categoryKeys.bySlug(slug),
-    queryFn: async () => {
-      const response = await apiRequest<Category>(`/slug/${slug}`);
+    queryFn: async (): Promise<Category> => {
+      const response = await apiClient.publicApiRequest<ApiResponse<Category>>(
+        `/categories/slug/${slug}`
+      );
       if (!response.success) {
         throw new Error(response.message || 'Failed to load category');
       }
-      return response.data! || {};
+      return response.data!;
     },
     staleTime: 1000 * 60 * 5,
     retry: 1,
+    enabled: !!slug,
   });
 };
 
@@ -99,11 +69,13 @@ export const useCreateCategory = () => {
   const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
-    mutationFn: async (category: Omit<Category, '_id'>) => {
+    mutationFn: async (category: Omit<Category, '_id'>): Promise<Category> => {
       if (!isAuthenticated) {
         throw new Error('User not authenticated');
       }
-      const response = await apiRequest<Category>('/', {
+      const response = await apiClient.authenticatedApiRequest<
+        ApiResponse<Category>
+      >('/categories', {
         method: 'POST',
         body: JSON.stringify(category),
       });
@@ -123,11 +95,15 @@ export const useCreateBulkCategories = () => {
   const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
-    mutationFn: async (categories: Omit<Category, '_id'>[]) => {
+    mutationFn: async (
+      categories: Omit<Category, '_id'>[]
+    ): Promise<Category[]> => {
       if (!isAuthenticated) {
         throw new Error('User not authenticated');
       }
-      const response = await apiRequest<Category[]>('/bulk', {
+      const response = await apiClient.authenticatedApiRequest<
+        ApiResponse<Category[]>
+      >('/categories/bulk', {
         method: 'POST',
         body: JSON.stringify(categories),
       });
@@ -147,11 +123,13 @@ export const useUpdateCategory = (id: string) => {
   const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
-    mutationFn: async (category: Partial<Category>) => {
+    mutationFn: async (category: Partial<Category>): Promise<Category> => {
       if (!isAuthenticated) {
         throw new Error('User not authenticated');
       }
-      const response = await apiRequest<Category>(`/${id}`, {
+      const response = await apiClient.authenticatedApiRequest<
+        ApiResponse<Category>
+      >(`/categories/${id}`, {
         method: 'PUT',
         body: JSON.stringify(category),
       });
@@ -172,59 +150,30 @@ export const useDeleteCategory = () => {
   const { isAuthenticated } = useIsAuthenticated();
 
   return useMutation({
-    mutationFn: async (data: { id: string; force?: boolean }) => {
+    mutationFn: async (data: {
+      id: string;
+      force?: boolean;
+    }): Promise<string> => {
       if (!isAuthenticated) {
         throw new Error('Please login to delete categories');
       }
 
       const { id, force = false } = data;
-      const response = await apiRequest<null>(
-        `/${id}${force ? '?force=true' : ''}`
-      );
+      const response = await apiClient.authenticatedApiRequest<
+        ApiResponse<null>
+      >(`/categories/${id}${force ? '?force=true' : ''}`, {
+        method: 'DELETE',
+      });
 
       if (!response.success) {
         throw new Error(response.message);
       }
 
-      return response.message;
+      return response.message || 'Category deleted successfully';
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: categoryKeys.all });
       queryClient.removeQueries({ queryKey: categoryKeys.byId(variables.id) });
     },
   });
-};
-
-// Combined actions hook
-export const useCategoryActions = () => {
-  const createCategory = useCreateCategory();
-  const createBulkCategories = useCreateBulkCategories();
-  const updateCategory = useUpdateCategory('');
-  const deleteCategory = useDeleteCategory();
-
-  return {
-    // Actions
-    createCategory: createCategory.mutate,
-    createBulkCategories: createBulkCategories.mutate,
-    updateCategory: updateCategory.mutate,
-    deleteCategory: deleteCategory.mutate,
-
-    // Loading states
-    isCreating: createCategory.isPending,
-    isBulkCreating: createBulkCategories.isPending,
-    isUpdating: updateCategory.isPending,
-    isDeleting: deleteCategory.isPending,
-
-    // Errors
-    createError: createCategory.error,
-    bulkCreateError: createBulkCategories.error,
-    updateError: updateCategory.error,
-    deleteError: deleteCategory.error,
-
-    // Reset functions
-    resetCreateError: createCategory.reset,
-    resetBulkCreateError: createBulkCategories.reset,
-    resetUpdateError: updateCategory.reset,
-    resetDeleteError: deleteCategory.reset,
-  };
 };

@@ -34,6 +34,19 @@ export interface NotificationSettings {
   marketingNotifications: boolean;
 }
 
+export interface SocialMediaSettings {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  website?: string;
+}
+
+export type SettingsResponse =
+  | NotificationSettings
+  | BusinessHours
+  | SocialMediaSettings;
+
 export interface Vendor {
   _id: string;
   userId: string;

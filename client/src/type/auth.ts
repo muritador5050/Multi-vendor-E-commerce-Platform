@@ -1,3 +1,19 @@
+export interface AuthResponse {
+  user: User;
+  accessToken: string;
+}
+
+export interface ProfileCompletion {
+  percent: number;
+  completed: number;
+  totalFields: number;
+}
+
+export interface ProfileData {
+  user: User;
+  profileCompletion: ProfileCompletion;
+}
+
 export interface Address {
   street?: string;
   city?: string;

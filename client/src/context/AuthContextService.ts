@@ -2,32 +2,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { validators } from '@/utils/Validation';
 import { permissionUtils } from '@/utils/Permission';
-import { type User, type UserRole, type Action } from '@/type/auth';
+import {
+  type User,
+  type UserRole,
+  type Action,
+  type AuthResponse,
+  type ProfileData,
+} from '@/type/auth';
 import { apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  errors?: string[];
-}
-
-interface AuthResponse {
-  user: User;
-  accessToken: string;
-}
-
-export interface ProfileCompletion {
-  percent: number;
-  completed: number;
-  totalFields: number;
-}
-
-export interface ProfileData {
-  user: User;
-  profileCompletion: ProfileCompletion;
-}
+import type { ApiResponse } from '@/type/ApiResponse';
 
 // API functions
 async function register(

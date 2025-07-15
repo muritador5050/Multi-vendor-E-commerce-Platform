@@ -1,3 +1,5 @@
+import type { ApiResponse } from './ApiResponse';
+
 export interface CreateProductData {
   name: string;
   description: string;
@@ -59,12 +61,6 @@ export interface Pagination {
   hasPrev: boolean;
 }
 
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
 // Specific response types
 export type ProductResponse = ApiResponse<Product>;
 export type ProductListResponse = ApiResponse<{
@@ -83,4 +79,16 @@ export interface ProductFormData {
   categoryId: string;
   attributes?: Record<string, unknown>;
   isActive?: boolean;
+}
+
+export interface ProductPaginatedResponse<T> {
+  products: T[];
+  pagination: {
+    total: number;
+    page: number;
+    pages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+    limit: number;
+  };
 }
