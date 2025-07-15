@@ -10,15 +10,14 @@ const labelStyles = {
   minWidth: { md: '150px' },
 };
 
+const fields = [
+  { name: 'name', label: 'Name', isRequired: false },
+  { name: 'address', label: 'Address', isRequired: false },
+  { name: 'country', label: 'Country', isRequired: true },
+  { name: 'city', label: 'City/Town', isRequired: false },
+  { name: 'postalCode', label: 'Postal/Code', isRequired: false },
+];
 export default function Address() {
-  const fields = [
-    { label: 'Name', isRequired: false },
-    { label: 'Address', isRequired: false },
-    { label: 'Country', isRequired: true },
-    { label: 'City/Town', isRequired: false },
-    { label: 'Postal/Code', isRequired: false },
-  ];
-
   return (
     <Stack spacing={4}>
       <Text fontSize='2xl' color='teal.700'>
@@ -34,7 +33,7 @@ export default function Address() {
           gap={4}
         >
           <FormLabel {...labelStyles}>{field.label}</FormLabel>
-          <Input flex='1' maxW={{ md: '60%' }} />
+          <Input flex='1' maxW={{ md: '60%' }} name={field.name} />
         </FormControl>
       ))}
     </Stack>

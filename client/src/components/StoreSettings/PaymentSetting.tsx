@@ -9,6 +9,39 @@ import {
   Input,
 } from '@chakra-ui/react';
 
+type BankFormField = {
+  name: string;
+  label: string;
+  placeholder: string;
+};
+
+const bankFields: BankFormField[] = [
+  {
+    name: 'accountName',
+    label: 'Account Name',
+    placeholder: 'Your bank account name',
+  },
+  {
+    name: 'accountNumber',
+    label: 'Account Number',
+    placeholder: 'Your bank account number',
+  },
+  { name: 'bankName', label: 'Bank Name', placeholder: 'Name of Bank' },
+  {
+    name: 'bankAddress',
+    label: 'Bank address',
+    placeholder: 'Address of your bank',
+  },
+  {
+    name: 'routingNumber',
+    label: 'Routing Number',
+    placeholder: 'Routing Number',
+  },
+  { name: 'iban', label: 'IBAN', placeholder: 'IBAN' },
+  { name: 'swiftCode', label: 'Swift Code', placeholder: 'Swift code' },
+  { name: 'ifscCode', label: 'IFSC Code', placeholder: 'IFSC code' },
+];
+
 const styles = {
   fontFamily: 'mono',
   fontWeight: 'semibold',
@@ -20,6 +53,15 @@ const styles = {
 
 export default function PaymentSetting() {
   const [bannerType, setBannerType] = useState('');
+  const [formData, setFormData] = useState<Record<string, string>>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setBannerType(e.target.value);
@@ -59,86 +101,25 @@ export default function PaymentSetting() {
             <Text fontSize='2xl' color='teal.700'>
               Bank Details
             </Text>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>Account Name</FormLabel>
-              <Input
-                flex='1'
-                placeholder='Your bank account name'
-                maxW={{ md: '60%' }}
-              />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>Account Number</FormLabel>
-              <Input
-                flex='1'
-                placeholder='Your bank account number'
-                maxW={{ md: '60%' }}
-              />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>Bank Name</FormLabel>
-              <Input flex='1' placeholder='Name of Bank' maxW={{ md: '60%' }} />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>Bank address</FormLabel>
-              <Input
-                flex='1'
-                placeholder='Address of your bank'
-                maxW={{ md: '60%' }}
-              />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>Routing Number</FormLabel>
-              <Input
-                flex='1'
-                placeholder='Routing Number'
-                maxW={{ md: '60%' }}
-              />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>IBAN</FormLabel>
-              <Input flex='1' placeholder='IBAN' maxW={{ md: '60%' }} />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>Swift Code</FormLabel>
-              <Input flex='1' placeholder='Swift code' maxW={{ md: '60%' }} />
-            </FormControl>
-            <FormControl
-              display={{ base: 'block', md: 'flex' }}
-              alignItems={{ md: 'center' }}
-              gap={{ base: 4, md: 44 }}
-            >
-              <FormLabel {...styles}>IFSC Code</FormLabel>
-              <Input flex='1' placeholder='IFSC code' maxW={{ md: '60%' }} />
-            </FormControl>
+
+            {bankFields.map((field) => (
+              <FormControl
+                key={field.name}
+                display={{ base: 'block', md: 'flex' }}
+                alignItems={{ md: 'center' }}
+                gap={{ base: 4, md: 44 }}
+              >
+                <FormLabel {...styles}>{field.label}</FormLabel>
+                <Input
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  value={formData[field.name] || ''}
+                  onChange={handleInputChange}
+                  flex='1'
+                  maxW={{ md: '60%' }}
+                />
+              </FormControl>
+            ))}
           </Stack>
         )}
       </Box>

@@ -1,5 +1,13 @@
 import React from 'react';
-import { Center, Spinner, Text, VStack, Button } from '@chakra-ui/react';
+import {
+  Center,
+  Spinner,
+  Text,
+  VStack,
+  Button,
+  Flex,
+  Box,
+} from '@chakra-ui/react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import type { UserRole } from '@/type/auth';
 import { permissionUtils } from '@/utils/Permission';
@@ -26,10 +34,18 @@ const AccessDeniedFallback: React.FC<{
       <Text fontSize='2xl' fontWeight='bold' color='red.500'>
         Access Denied
       </Text>
-      <Text fontSize='md' color='gray.600' maxW='md'>
+      <Box fontSize='md' color='gray.600' maxW='md'>
         You don't have permission to access this page.
-        {userRole && ` Your role: ${userRole}`}
-      </Text>
+        <br />
+        {userRole && (
+          <Flex justify={'center'}>
+            Your role:
+            <Text color='teal' fontWeight='bold'>
+              {userRole}
+            </Text>
+          </Flex>
+        )}
+      </Box>
       <VStack spacing={2}>
         <Button onClick={onGoBack} variant='outline'>
           Go Back
@@ -50,12 +66,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   showAccessDenied = false,
 }) => {
   const { isAuthenticated, isLoading } = useIsAuthenticated();
-  const user = useCurrentUser();
+  const currentUser = useCurrentUser();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Show loading spinner while checking auth
-  if (isLoading) {
+  if (isLoading || (requireAuth && !currentUser)) {
     return (
       <Center h='100vh'>
         <VStack spacing={4}>
@@ -74,7 +89,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check role permissions if roles are specified
   if (
     allowedRoles.length > 0 &&
-    !permissionUtils.hasAnyRole(user?.role, allowedRoles)
+    !permissionUtils.hasAnyRole(currentUser?.role, allowedRoles)
   ) {
     // Use custom redirect if provided
     if (redirectTo) {
@@ -85,11 +100,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (showAccessDenied) {
       return (
         <AccessDeniedFallback
-          userRole={user?.role}
+          userRole={currentUser?.role}
           onGoBack={() => navigate(-1)}
           onGoHome={() => {
-            const defaultRoute = user?.role
-              ? permissionUtils.getDefaultRoute(user.role)
+            const defaultRoute = currentUser?.role
+              ? permissionUtils.getDefaultRoute(currentUser.role)
               : '/';
             navigate(defaultRoute);
           }}
@@ -97,9 +112,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       );
     }
 
-    // Default: redirect to user's default route
-    const defaultRoute = user?.role
-      ? permissionUtils.getDefaultRoute(user.role)
+    const defaultRoute = currentUser?.role
+      ? permissionUtils.getDefaultRoute(currentUser.role)
       : '/my-account';
     return <Navigate to={defaultRoute} replace />;
   }

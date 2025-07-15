@@ -37,6 +37,21 @@ const formLabelStyle = {
   minWidth: { md: '150px' },
 };
 
+const fields = [
+  { name: 'street', label: 'Street', placeholder: 'Street address' },
+  {
+    name: 'street2',
+    label: 'Street 2',
+    placeholder: 'Apartment, suite, unit etc. (optional)',
+  },
+  { name: 'city', label: 'City/Town', placeholder: 'Town / City' },
+  {
+    name: 'PostalCodeZIP',
+    label: 'Postalcode/ZIP',
+    placeholder: 'Postal Code / ZIP',
+  },
+];
+
 export default function StoreLocation() {
   const [countries, setCountries] = useState<ICountry[]>([]);
   const [states, setStates] = useState<IState[]>([]);
@@ -60,48 +75,21 @@ export default function StoreLocation() {
       <Text fontSize='2xl' color='teal.700'>
         Store Address
       </Text>
-
-      {/**Street Address 1*/}
-      <FormControl
-        display={{ base: 'block', md: 'flex' }}
-        alignItems={{ md: 'center' }}
-        gap={{ base: 4, md: 44 }}
-      >
-        <FormLabel {...formLabelStyle}>Street</FormLabel>
-        <Input placeholder='Street address' flex='1' maxW={{ md: '60%' }} />
-      </FormControl>
-
-      {/**Street Address 2 */}
-      <FormControl
-        display={{ base: 'block', md: 'flex' }}
-        alignItems={{ md: 'center' }}
-        gap={{ base: 4, md: 44 }}
-      >
-        <FormLabel {...formLabelStyle}>Street 2</FormLabel>
-        <Input
-          placeholder='Apartment, suite, unit etc. (optional)'
-          flex='1'
-          maxW={{ md: '60%' }}
-        />
-      </FormControl>
-
-      <FormControl
-        display={{ base: 'block', md: 'flex' }}
-        alignItems={{ md: 'center' }}
-        gap={{ base: 4, md: 44 }}
-      >
-        <FormLabel {...formLabelStyle}>City/Town</FormLabel>
-        <Input placeholder='Town / City' flex='1' maxW={{ md: '60%' }} />
-      </FormControl>
-
-      <FormControl
-        display={{ base: 'block', md: 'flex' }}
-        alignItems={{ md: 'center' }}
-        gap={{ base: 4, md: 44 }}
-      >
-        <FormLabel {...formLabelStyle}>Postalcode/ZIP</FormLabel>
-        <Input placeholder='Postal Code / ZIP' flex='1' maxW={{ md: '60%' }} />
-      </FormControl>
+      {fields.map((field, idx) => (
+        <FormControl
+          key={idx}
+          display={{ base: 'block', md: 'flex' }}
+          alignItems={{ md: 'center' }}
+          gap={{ base: 4, md: 44 }}
+        >
+          <FormLabel {...formLabelStyle}>{field.label}</FormLabel>
+          <Input
+            placeholder={field.placeholder}
+            flex='1'
+            maxW={{ md: '60%' }}
+          />
+        </FormControl>
+      ))}
 
       <FormControl
         display={{ base: 'block', md: 'flex' }}

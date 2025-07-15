@@ -1,17 +1,9 @@
+import { ApiError } from './ApiError';
+
 const apiBase = import.meta.env.VITE_API_URL;
 const REQUEST_TIMEOUT = 10000; // 10 seconds
-
-class ApiError extends Error {
-  public status: number;
-  public response?: Response;
-
-  constructor(message: string, status: number, response?: Response) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.response = response;
-  }
-}
+const MAX_REFRESH_ATTEMPTS = 3;
+const TOKEN_REFRESH_BUFFER = 30000; // 30 seconds
 
 class ApiClient {
   private defaultOptions: RequestInit = {
@@ -21,8 +13,11 @@ class ApiClient {
 
   private isRefreshing = false;
   private refreshPromise: Promise<string> | null = null;
-  private csrfToken: string | null = null;
+  private refreshAttempts = 0;
 
+  /**
+   * Fetch with timeout and abort controller
+   */
   private async fetchWithTimeout(
     url: string,
     options: RequestInit
@@ -41,6 +36,22 @@ class ApiClient {
     }
   }
 
+  /**
+   * Validate JWT token expiration
+   */
+  private isTokenValid(token: string | null): boolean {
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 > Date.now() + TOKEN_REFRESH_BUFFER;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Refresh access token with retry logic
+   */
   private async refreshToken(): Promise<string> {
     if (this.isRefreshing && this.refreshPromise) {
       return this.refreshPromise;
@@ -51,6 +62,7 @@ class ApiClient {
 
     try {
       const token = await this.refreshPromise;
+      this.refreshAttempts = 0; // Reset on success
       return token;
     } finally {
       this.isRefreshing = false;
@@ -58,7 +70,18 @@ class ApiClient {
     }
   }
 
+  /**
+   * Perform the actual token refresh
+   */
   private async _performRefresh(): Promise<string> {
+    // Check if we've exceeded max attempts
+    if (this.refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+      this.clearAuthAndRedirect();
+      throw new ApiError('Max refresh attempts exceeded', 401);
+    }
+
+    this.refreshAttempts++;
+
     try {
       const response = await this.fetchWithTimeout(
         `${apiBase}/auth/refresh-token`,
@@ -70,32 +93,53 @@ class ApiClient {
       );
 
       if (!response.ok) {
-        localStorage.removeItem('accessToken');
-        window.location.href = '/my-account';
-        throw new ApiError('Session expired. Please login again.', 401);
+        // If it's a 401/403, clear auth immediately
+        if (response.status === 401 || response.status === 403) {
+          this.clearAuthAndRedirect();
+        }
+        throw new ApiError(
+          'Session expired. Please login again.',
+          response.status
+        );
       }
 
       const data: { accessToken: string } = await response.json();
+
+      // Validate the token exists
+      if (!data.accessToken) {
+        throw new ApiError('Invalid token response', 401);
+      }
+
       localStorage.setItem('accessToken', data.accessToken);
       return data.accessToken;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw new ApiError('Request timeout. Please try again.', 408);
       }
-      throw error;
+      // On API errors, rethrow
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      // On network errors, don't clear auth immediately
+      throw new ApiError('Network error during token refresh', 500);
     }
   }
 
-  private isTokenValid(token: string | null): boolean {
-    if (!token) return false;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 > Date.now() + 30000; // 30s buffer
-    } catch {
-      return false;
+  /**
+   * Clear authentication and redirect to login
+   */
+  private clearAuthAndRedirect(): void {
+    localStorage.removeItem('accessToken');
+    this.refreshAttempts = 0;
+    // Only redirect if not already on login page
+    if (!window.location.pathname.includes('/my-account')) {
+      window.location.href = '/my-account';
     }
   }
 
+  /**
+   * Handle response and extract data
+   */
   private async handleResponse<T>(response: Response): Promise<T> {
     // Rate limiting handling
     if (response.status === 429) {
@@ -118,35 +162,34 @@ class ApiClient {
       throw new ApiError(errorMessage, response.status, response);
     }
 
-    return response.json();
-  }
-
-  public async initializeCSRF(): Promise<void> {
-    try {
-      const response = await this.publicApiRequest<{ csrfToken: string }>(
-        '/csrf-token'
-      );
-      this.csrfToken = response.csrfToken;
-    } catch (error) {
-      console.error('CSRF token initialization failed:', error);
+    // Handle empty responses gracefully
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
     }
+
+    // For non-JSON responses, return as text or empty object
+    const text = await response.text();
+    return (text ? text : {}) as T;
   }
 
+  /**
+   * Public API request (no authentication required)
+   */
   public async publicApiRequest<T = unknown>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const startTime = Date.now();
-    try {
-      const config: RequestInit = {
-        ...this.defaultOptions,
-        ...options,
-        headers: {
-          ...this.defaultOptions.headers,
-          ...options.headers,
-        },
-      };
+    const config: RequestInit = {
+      ...this.defaultOptions,
+      ...options,
+      headers: {
+        ...this.defaultOptions.headers,
+        ...options.headers,
+      },
+    };
 
+    try {
       const response = await this.fetchWithTimeout(
         `${apiBase}${endpoint}`,
         config
@@ -154,15 +197,20 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof ApiError) throw error;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new ApiError('Request timeout. Please try again.', 408);
+      }
       throw new ApiError('Network error', 500);
     }
   }
 
+  /**
+   * Authenticated API request with token refresh handling
+   */
   public async authenticatedApiRequest<T = unknown>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const startTime = Date.now();
     try {
       let token = localStorage.getItem('accessToken');
 
@@ -171,19 +219,11 @@ class ApiClient {
         token = await this.refreshToken();
       }
 
-      const headers: Record<string, string> = {
+      const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       };
-
-      // Add CSRF token for modifying requests
-      if (
-        this.csrfToken &&
-        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || '')
-      ) {
-        headers['X-CSRF-Token'] = this.csrfToken;
-      }
 
       const config: RequestInit = {
         ...options,
@@ -196,6 +236,7 @@ class ApiClient {
         config
       );
 
+      // Handle 401 with token refresh
       if (
         response.status === 401 &&
         !endpoint.includes('/auth/refresh-token')
@@ -223,6 +264,29 @@ class ApiClient {
       }
       throw new ApiError('Network error', 500);
     }
+  }
+
+  /**
+   * Utility method to check if user is authenticated
+   */
+  public isAuthenticated(): boolean {
+    const token = localStorage.getItem('accessToken');
+    return this.isTokenValid(token);
+  }
+
+  /**
+   * Method to manually clear auth (for logout)
+   */
+  public clearAuth(): void {
+    localStorage.removeItem('accessToken');
+    this.refreshAttempts = 0;
+  }
+
+  /**
+   * Check if client is currently refreshing token
+   */
+  public isTokenRefreshing(): boolean {
+    return this.isRefreshing;
   }
 }
 

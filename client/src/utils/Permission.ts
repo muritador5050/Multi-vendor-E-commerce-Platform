@@ -96,7 +96,6 @@ const defaultRoutes: Record<UserRole, string> = {
 };
 
 export const permissionUtils = {
-  // Check if user can perform specific action
   canPerformAction: (
     userRole: UserRole | undefined,
     action: Action
@@ -105,7 +104,6 @@ export const permissionUtils = {
     return rolePermissions[userRole]?.includes(action) || false;
   },
 
-  // Check if user has any of the specified roles
   hasAnyRole: (userRole: UserRole | undefined, roles: UserRole[]): boolean =>
     userRole ? roles.includes(userRole) : false,
 

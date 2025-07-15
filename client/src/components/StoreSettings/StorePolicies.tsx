@@ -33,15 +33,15 @@ export default function StorePolicies() {
       </FormControl>
       <Flex direction='column' gap={6} mt={6}>
         <Text {...styles}>Shipping Policy</Text>
-        <RichTextEditor />
+        <RichTextEditor value='' onChange={() => {}} />
       </Flex>
       <Flex direction='column' gap={6} mt={6}>
         <Text {...styles}>Refund Policy</Text>
-        <RichTextEditor />
+        <RichTextEditor value='' onChange={() => {}} />
       </Flex>
       <Flex direction='column' gap={6} mt={6}>
         <Text {...styles}>Cancellation/Return/Exchange Policy</Text>
-        <RichTextEditor />
+        <RichTextEditor value='' onChange={() => {}} />
       </Flex>
     </Stack>
   );

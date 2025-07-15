@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { useProducts } from '@/context/ProductContextService';
+import {
+  useToggleProductActive,
+  useVendorProducts,
+} from '@/context/ProductContextService';
 import {
   Box,
   Image,
@@ -10,7 +13,6 @@ import {
   CardBody,
   Badge,
   Flex,
-  useColorModeValue,
   Heading,
   Button,
   IconButton,
@@ -49,16 +51,40 @@ import {
   Divider,
   Tag,
 } from '@chakra-ui/react';
-import { Eye, Edit, Trash2, Package, Star, User } from 'lucide-react';
+import {
+  Eye,
+  Edit,
+  Trash2,
+  Package,
+  Star,
+  User,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from 'lucide-react';
 import type { Product } from '@/type/product';
 import { useNavigate } from 'react-router-dom';
 
 export default function Products() {
-  const { data } = useProducts();
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { data, isLoading } = useVendorProducts({
+    page: currentPage,
+    limit: 10,
+  });
+  const toggleMutation = useToggleProductActive();
+
+  const pagination = data?.pagination || {
+    total: 0,
+    page: 1,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+    limit: 10,
+  };
   const {
     isOpen: isViewOpen,
     onOpen: onViewOpen,
@@ -75,9 +101,6 @@ export default function Products() {
     onClose: onDeleteClose,
   } = useDisclosure();
 
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const textColor = useColorModeValue('gray.600', 'gray.400');
   const columns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
   const toast = useToast();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -95,6 +118,20 @@ export default function Products() {
   const handleDelete = (product: Product) => {
     setProductToDelete(product);
     onDeleteOpen();
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPrev) {
+      setCurrentPage(() => currentPage - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNext) {
+      setCurrentPage(() => currentPage + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleSaveEdit = () => {
@@ -122,16 +159,14 @@ export default function Products() {
   };
 
   const handleToggleStatus = (product: Product) => {
-    const newStatus = product.isActive ? 'inactive' : 'active';
-    // Implement status toggle logic
-    toast({
-      title: 'Status updated',
-      description: `${product.name} is now ${newStatus}.`,
-      status: 'info',
-      duration: 2000,
-      isClosable: true,
+    setLoadingProductId(product._id);
+    toggleMutation.mutate(product._id, {
+      onSettled: () => setLoadingProductId(null),
     });
   };
+
+  const isLoadingActive = (productId: string) =>
+    toggleMutation.isPending && loadingProductId === productId;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -173,12 +208,14 @@ export default function Products() {
             color={i < Math.floor(rating) ? '#F6AD55' : '#CBD5E0'}
           />
         ))}
-        <Text fontSize='xs' color={textColor}>
+        <Text fontSize='xs' color={'gray.300'}>
           ({rating.toFixed(1)})
         </Text>
       </HStack>
     );
   };
+
+  if (isLoading) return <Text textAlign='center'>Loading please wait...</Text>;
 
   return (
     <Box>
@@ -211,8 +248,8 @@ export default function Products() {
           return (
             <Card
               key={product._id}
-              bg={cardBg}
-              borderColor={borderColor}
+              bg={'teal.800'}
+              borderColor={'gray.200'}
               borderWidth='1px'
               borderRadius='lg'
               overflow='hidden'
@@ -258,7 +295,7 @@ export default function Products() {
                 </Badge>
               </Box>
 
-              <CardBody>
+              <CardBody color='white'>
                 <Stack spacing={3}>
                   <Box>
                     <Heading size='md' noOfLines={2} mb={1}>
@@ -269,28 +306,21 @@ export default function Products() {
                     </Tag>
                   </Box>
 
-                  <Text
-                    color={textColor}
-                    fontSize='sm'
-                    noOfLines={2}
-                    minH='40px'
-                  >
+                  <Text fontSize='sm' noOfLines={2} minH='40px'>
                     {product.description}
                   </Text>
 
                   <HStack justify='space-between'>
                     <VStack align='start' spacing={1}>
-                      <Text fontSize='xs' color={textColor}>
-                        Stock
+                      <Text fontSize='xs' color={stockStatus.color}>
+                        {stockStatus.text}
                       </Text>
                       <Badge colorScheme={stockStatus.color} size='sm'>
                         {product.quantityInStock}
                       </Badge>
                     </VStack>
                     <VStack align='end' spacing={1}>
-                      <Text fontSize='xs' color={textColor}>
-                        Reviews
-                      </Text>
+                      <Text fontSize='xs'>Reviews</Text>
                       <Text fontSize='sm' fontWeight='medium'>
                         {product.totalReviews}
                       </Text>
@@ -317,11 +347,7 @@ export default function Products() {
                               )
                             )}
                           </Text>
-                          <Text
-                            fontSize='sm'
-                            textDecoration='line-through'
-                            color={textColor}
-                          >
+                          <Text fontSize='sm' textDecoration='line-through'>
                             {formatPrice(product.price)}
                           </Text>
                         </>
@@ -336,7 +362,7 @@ export default function Products() {
                   <Box>
                     <HStack spacing={2}>
                       <User size={12} />
-                      <Text fontSize='xs' color={textColor}>
+                      <Text fontSize='xs' color={'gray.400'}>
                         {product.vendor.name}
                       </Text>
                     </HStack>
@@ -345,9 +371,14 @@ export default function Products() {
                   <Flex justify='space-between' align='center' pt={2}>
                     <Button
                       size='sm'
+                      isDisabled={isLoadingActive(product._id)}
                       colorScheme={product.isActive ? 'red' : 'green'}
                       variant='outline'
                       onClick={() => handleToggleStatus(product)}
+                      isLoading={isLoadingActive(product._id)}
+                      loadingText={
+                        product.isActive ? 'Deactivating...' : 'Activating...'
+                      }
                     >
                       {product.isActive ? 'Deactivate' : 'Activate'}
                     </Button>
@@ -385,7 +416,7 @@ export default function Products() {
       </SimpleGrid>
 
       {(!data?.products || data.products.length === 0) && (
-        <Box textAlign='center' py={10} color={textColor}>
+        <Box textAlign='center' py={10} color={'gray.400'}>
           <Text fontSize='lg'>No products found</Text>
         </Box>
       )}
@@ -413,7 +444,7 @@ export default function Products() {
                   borderRadius='md'
                 />
                 <Heading size='md'>{selectedProduct.name}</Heading>
-                <Text color={textColor}>{selectedProduct.description}</Text>
+                <Text color={'gray.400'}>{selectedProduct.description}</Text>
 
                 <Divider />
 
@@ -461,7 +492,7 @@ export default function Products() {
                   <Text fontWeight='medium'>Vendor:</Text>
                   <VStack spacing={0} align='end'>
                     <Text fontSize='sm'>{selectedProduct.vendor.name}</Text>
-                    <Text fontSize='xs' color={textColor}>
+                    <Text fontSize='xs' color={'gray.400'}>
                       {selectedProduct.vendor.email}
                     </Text>
                   </VStack>
@@ -610,10 +641,10 @@ export default function Products() {
 
                 <FormControl>
                   <FormLabel>Category</FormLabel>
-                  <Text fontSize='sm' color={textColor}>
+                  <Text fontSize='sm' color={'gray.400'}>
                     {editingProduct.category.name}
                   </Text>
-                  <Text fontSize='xs' color={textColor}>
+                  <Text fontSize='xs' color={'gray.400'}>
                     Category changes require separate API call
                   </Text>
                 </FormControl>
@@ -657,6 +688,38 @@ export default function Products() {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+      {!isLoading && pagination.pages > 1 && (
+        <Flex justifyContent='center' mt={8}>
+          <HStack spacing={2}>
+            {/* Previous Button */}
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={handlePreviousPage}
+              isDisabled={!pagination.hasPrev}
+              leftIcon={<ChevronLeftIcon />}
+            >
+              Previous
+            </Button>
+
+            {/* Current Page Info */}
+            <Text px={4} color='gray.600' fontSize='sm'>
+              Page {pagination.page} of {pagination.pages}
+            </Text>
+
+            {/* Next Button */}
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={handleNextPage}
+              isDisabled={!pagination.hasNext}
+              rightIcon={<ChevronRightIcon />}
+            >
+              Next
+            </Button>
+          </HStack>
+        </Flex>
+      )}
     </Box>
   );
 }

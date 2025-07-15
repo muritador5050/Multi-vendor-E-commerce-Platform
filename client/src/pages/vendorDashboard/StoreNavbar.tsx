@@ -47,7 +47,11 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
           src={currentUser?.avatar}
         />
 
-        <Text fontWeight='bold' mr={{ md: '7em' }}>
+        <Text
+          display={{ base: 'none', md: 'block' }}
+          fontWeight='bold'
+          mr={{ md: '7em' }}
+        >
           My Store
         </Text>
         <Tooltip

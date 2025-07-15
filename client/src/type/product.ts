@@ -1,4 +1,13 @@
-// Core data models
+export interface CreateProductData {
+  name: string;
+  description: string;
+  price: number;
+  discount: number;
+  quantityInStock: number;
+  images: string[];
+  categoryId: string;
+  attributes: Record<string, unknown>;
+}
 export interface Product {
   _id: string;
   name: string;

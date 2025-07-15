@@ -1,9 +1,179 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import apiService from '@/api/ApiService';
 import { validators } from '@/utils/Validation';
 import { permissionUtils } from '@/utils/Permission';
 import { type User, type UserRole, type Action } from '@/type/auth';
+import { apiClient } from '@/utils/Api';
+import { ApiError } from '@/utils/ApiError';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  errors?: string[];
+}
+
+interface AuthResponse {
+  user: User;
+  accessToken: string;
+}
+
+export interface ProfileCompletion {
+  percent: number;
+  completed: number;
+  totalFields: number;
+}
+
+export interface ProfileData {
+  user: User;
+  profileCompletion: ProfileCompletion;
+}
+
+// API functions
+async function register(
+  name: string,
+  email: string,
+  password: string,
+  confirmPassword: string
+) {
+  return apiClient.publicApiRequest<ApiResponse<null>>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password, confirmPassword }),
+  });
+}
+
+async function registerVendor(
+  name: string,
+  email: string,
+  password: string,
+  confirmPassword: string
+) {
+  return apiClient.publicApiRequest<ApiResponse<null>>(
+    '/auth/vendor-register',
+    {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password, confirmPassword }),
+    }
+  );
+}
+
+async function login(email: string, password: string) {
+  const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
+    '/auth/login',
+    {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }
+  );
+
+  if (response.data?.accessToken) {
+    localStorage.setItem('accessToken', response.data.accessToken);
+  }
+  return response;
+}
+
+async function logout() {
+  try {
+    const response = await apiClient.authenticatedApiRequest<ApiResponse<null>>(
+      '/auth/logout',
+      {
+        method: 'POST',
+      }
+    );
+    apiClient.clearAuth();
+    return response;
+  } catch (error) {
+    apiClient.clearAuth();
+    throw error;
+  }
+}
+
+async function forgotPassword(email: string) {
+  return apiClient.publicApiRequest<ApiResponse<null>>(
+    '/auth/forgot-password',
+    {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }
+  );
+}
+
+async function resetPassword(token: string, password: string) {
+  return apiClient.publicApiRequest<ApiResponse<null>>(
+    `/auth/reset-password/${token}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }
+  );
+}
+
+async function verifyEmail(token: string) {
+  return apiClient.publicApiRequest<ApiResponse<null>>(
+    `/auth/verify/${token}`,
+    {
+      method: 'GET',
+    }
+  );
+}
+
+async function getProfile() {
+  return apiClient.authenticatedApiRequest<ApiResponse<ProfileData>>(
+    '/auth/profile'
+  );
+}
+
+async function updateProfile(data: Partial<User>) {
+  return apiClient.authenticatedApiRequest<ApiResponse<{ user: User }>>(
+    '/auth/profile',
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+async function uploadFile<T = unknown>(
+  file: File,
+  endpoint: string = '/upload'
+) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiClient.authenticatedApiRequest<ApiResponse<T>>(endpoint, {
+    method: 'POST',
+    body: formData,
+    headers: {},
+  });
+}
+
+// Utility functions
+function isAuthenticated(): boolean {
+  return apiClient.isAuthenticated();
+}
+
+function clearAuth(): void {
+  apiClient.clearAuth();
+}
+
+function validateRegistration(
+  name: string,
+  email: string,
+  password: string,
+  confirmPassword: string
+) {
+  const nameError = validators.name(name);
+  if (nameError) throw new ApiError(nameError, 400);
+
+  const emailError = validators.email(email);
+  if (emailError) throw new ApiError(emailError, 400);
+
+  const passwordError = validators.password(password);
+  if (passwordError) throw new ApiError(passwordError, 400);
+
+  const matchError = validators.passwordMatch(password, confirmPassword);
+  if (matchError) throw new ApiError(matchError, 400);
+}
 
 // Query keys
 export const authKeys = {
@@ -15,33 +185,26 @@ export const useProfile = () => {
   return useQuery({
     queryKey: authKeys.profile,
     queryFn: async () => {
-      const response = await apiService.getProfile();
-      return response.data || undefined;
+      const response = await getProfile();
+      if (!response.success) {
+        throw new ApiError(response.message || 'Failed to fetch profile', 500);
+      }
+      return response.data;
     },
-    enabled: apiService.isAuthenticated(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: false,
+    enabled: isAuthenticated(),
+    staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      // Don't retry on client errors (4xx)
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
-};
-
-// Validation helper
-const validateRegistration = (
-  name: string,
-  email: string,
-  password: string,
-  confirmPassword: string
-) => {
-  const nameError = validators.name(name);
-  if (nameError) throw new Error(nameError);
-
-  const emailError = validators.email(email);
-  if (emailError) throw new Error(emailError);
-
-  const passwordError = validators.password(password);
-  if (passwordError) throw new Error(passwordError);
-
-  const matchError = validators.passwordMatch(password, confirmPassword);
-  if (matchError) throw new Error(matchError);
 };
 
 // Auth mutations
@@ -58,20 +221,20 @@ export const useLogin = () => {
       password: string;
     }) => {
       const emailError = validators.email(email);
-      if (emailError) throw new Error(emailError);
+      if (emailError) throw new ApiError(emailError, 400);
 
       const passwordError = validators.password(password);
-      if (passwordError) throw new Error(passwordError);
+      if (passwordError) throw new ApiError(passwordError, 400);
 
-      const response = await apiService.login(
-        email.trim().toLowerCase(),
-        password
-      );
+      const response = await login(email.trim().toLowerCase(), password);
+      if (!response.success) {
+        throw new ApiError(response.message || 'Login failed', 401);
+      }
       return response.data;
     },
     onSuccess: (data) => {
       if (data?.user) {
-        queryClient.setQueryData(authKeys.profile, data.user);
+        queryClient.invalidateQueries({ queryKey: authKeys.profile });
         navigate(permissionUtils.getDefaultRoute(data.user.role), {
           replace: true,
         });
@@ -94,13 +257,16 @@ export const useRegister = () => {
       confirmPassword: string;
     }) => {
       validateRegistration(name, email, password, confirmPassword);
-
-      return apiService.register(
+      const response = await register(
         name.trim(),
         email.trim().toLowerCase(),
         password,
         confirmPassword
       );
+      if (!response.success) {
+        throw new ApiError(response.message || 'Registration failed', 400);
+      }
+      return response;
     },
   });
 };
@@ -119,13 +285,19 @@ export const useRegisterVendor = () => {
       confirmPassword: string;
     }) => {
       validateRegistration(name, email, password, confirmPassword);
-
-      return apiService.registerVendor(
+      const response = await registerVendor(
         name.trim(),
         email.trim().toLowerCase(),
         password,
         confirmPassword
       );
+      if (!response.success) {
+        throw new ApiError(
+          response.message || 'Vendor registration failed',
+          400
+        );
+      }
+      return response;
     },
   });
 };
@@ -135,11 +307,8 @@ export const useLogout = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
-      await apiService.logout();
-    },
+    mutationFn: logout,
     onSettled: () => {
-      queryClient.setQueryData(authKeys.profile, null);
       queryClient.clear();
       navigate('/', { replace: true });
     },
@@ -150,9 +319,16 @@ export const useForgotPassword = () => {
   return useMutation({
     mutationFn: async (email: string) => {
       const emailError = validators.email(email);
-      if (emailError) throw new Error(emailError);
+      if (emailError) throw new ApiError(emailError, 400);
 
-      return apiService.forgotPassword(email.trim().toLowerCase());
+      const response = await forgotPassword(email.trim().toLowerCase());
+      if (!response.success) {
+        throw new ApiError(
+          response.message || 'Failed to send reset email',
+          400
+        );
+      }
+      return response;
     },
   });
 };
@@ -170,24 +346,26 @@ export const useResetPassword = () => {
       password: string;
       confirmPassword?: string;
     }) => {
-      if (!token?.trim()) throw new Error('Invalid reset token');
+      if (!token?.trim()) throw new ApiError('Invalid reset token', 400);
 
       const passwordError = validators.password(password);
-      if (passwordError) throw new Error(passwordError);
+      if (passwordError) throw new ApiError(passwordError, 400);
 
       if (confirmPassword) {
         const matchError = validators.passwordMatch(password, confirmPassword);
-        if (matchError) throw new Error(matchError);
+        if (matchError) throw new ApiError(matchError, 400);
       }
 
-      return apiService.resetPassword(token, password);
+      const response = await resetPassword(token, password);
+      if (!response.success) {
+        throw new ApiError(response.message || 'Password reset failed', 400);
+      }
+      return response;
     },
     onSuccess: () => {
       navigate(
         '/auth/login?message=Password reset successful. Please log in.',
-        {
-          replace: true,
-        }
+        { replace: true }
       );
     },
   });
@@ -200,20 +378,21 @@ export const useUpdateProfile = () => {
     mutationFn: async (updates: Partial<User>) => {
       if (updates.email) {
         const emailError = validators.email(updates.email);
-        if (emailError) throw new Error(emailError);
+        if (emailError) throw new ApiError(emailError, 400);
       }
       if (updates.name) {
         const nameError = validators.name(updates.name);
-        if (nameError) throw new Error(nameError);
+        if (nameError) throw new ApiError(nameError, 400);
       }
 
-      const response = await apiService.updateProfile(updates);
+      const response = await updateProfile(updates);
+      if (!response.success) {
+        throw new ApiError(response.message || 'Profile update failed', 400);
+      }
       return response.data?.user;
     },
-    onSuccess: (updatedUser) => {
-      if (updatedUser) {
-        queryClient.setQueryData(authKeys.profile, updatedUser);
-      }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.profile });
     },
   });
 };
@@ -223,8 +402,16 @@ export const useVerifyEmail = () => {
 
   return useMutation({
     mutationFn: async (token: string) => {
-      if (!token?.trim()) throw new Error('Invalid verification token');
-      return apiService.verifyEmail(token);
+      if (!token?.trim()) throw new ApiError('Invalid verification token', 400);
+
+      const response = await verifyEmail(token);
+      if (!response.success) {
+        throw new ApiError(
+          response.message || 'Email verification failed',
+          400
+        );
+      }
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.profile });
@@ -241,28 +428,32 @@ export const useUploadFile = () => {
       file: File;
       endpoint?: string;
     }) => {
-      if (!apiService.isAuthenticated())
-        throw new Error('Authentication required');
-      const response = await apiService.uploadFile(file, endpoint);
+      if (!isAuthenticated())
+        throw new ApiError('Authentication required', 401);
+
+      const response = await uploadFile(file, endpoint);
+      if (!response.success) {
+        throw new ApiError(response.message || 'File upload failed', 400);
+      }
       return response.data;
     },
   });
 };
 
-// Essential utility hooks only
+// Utility hooks
 export const useCurrentUser = () => {
   const { data } = useProfile();
   return data?.user;
 };
 
-export const usePercentageComplete = () => {
+export const useProfileCompletion = () => {
   const { data } = useProfile();
   return data?.profileCompletion;
 };
 
 export const useIsAuthenticated = () => {
-  const { data: user, isLoading } = useProfile();
-  return { isAuthenticated: !!user, isLoading };
+  const { data, isLoading } = useProfile();
+  return { isAuthenticated: !!data?.user, isLoading };
 };
 
 export const useCanPerformAction = (action: Action) => {
@@ -285,10 +476,8 @@ export const useForceLogout = () => {
   const queryClient = useQueryClient();
 
   return (message?: string) => {
-    apiService.clearAuth();
-    queryClient.setQueryData(authKeys.profile, null);
+    clearAuth();
     queryClient.clear();
-
     const url = message ? `/login?message=${encodeURIComponent(message)}` : '/';
     navigate(url, { replace: true });
   };

@@ -1,5 +1,9 @@
 import { apiBase } from '@/api/ApiService';
-import type { Product, ProductQueryParams } from '@/type/product';
+import type {
+  CreateProductData,
+  Product,
+  ProductQueryParams,
+} from '@/type/product';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ApiResponse<T = unknown> {
@@ -32,6 +36,7 @@ const apiRequest = async <T = unknown>(
   const response = await fetch(`${apiBase}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...options.headers,
     },
     ...options,
@@ -123,12 +128,10 @@ const fetchProductByVendor = async (
   vendorId: string,
   params: Omit<ProductQueryParams, 'vendor'> = {}
 ): Promise<PaginatedResponse<Product>> => {
-  const allParams = {
-    ...params,
-    vendor: vendorId,
-  };
-  const queryString = buildQueryString(allParams);
-  const url = `/products${queryString ? `?${queryString}` : ''}`;
+  const queryString = buildQueryString(params);
+  const url = `/products/vendor/${vendorId}${
+    queryString ? `?${queryString}` : ''
+  }`;
 
   const response = await apiRequest<PaginatedResponse<Product>>(url);
 
@@ -151,13 +154,11 @@ const fetchVendorProducts = async (
   params: Omit<ProductQueryParams, 'vendor'> = {}
 ): Promise<PaginatedResponse<Product>> => {
   const queryString = buildQueryString(params);
-  const url = `/products/vendor/me${queryString ? `?${queryString}` : ''}`;
+  const url = `/products/vendor/my-products${
+    queryString ? `?${queryString}` : ''
+  }`;
 
-  const response = await apiRequest<PaginatedResponse<Product>>(url, {
-    headers: {
-      ...getAuthHeaders(),
-    },
-  });
+  const response = await apiRequest<PaginatedResponse<Product>>(url);
 
   return (
     response.data || {
@@ -175,29 +176,64 @@ const fetchVendorProducts = async (
 };
 
 const createProduct = async (
-  product:
-    | Omit<Product, '_id' | 'createdAt' | 'updatedAt'>
-    | Omit<Product, '_id' | 'createdAt' | 'updatedAt'>[]
+  product: CreateProductData | CreateProductData[]
 ): Promise<Product[]> => {
+  if (!product) {
+    throw new Error('Product data is required');
+  }
+
+  const productData = Array.isArray(product) ? product : [product];
+  for (const prod of productData) {
+    if (!prod.name || !prod.price) {
+      throw new Error('Product name and price are required');
+    }
+  }
   const response = await apiRequest<Product[]>('/products', {
     method: 'POST',
-    headers: {
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(product),
+    body: JSON.stringify(productData),
   });
-  return response.data || [];
+
+  if (response.data) {
+    return Array.isArray(response.data) ? response.data : [response.data];
+  }
+
+  if (response.success) {
+    return [];
+  }
+
+  throw new Error(response.message || 'Failed to create product');
+};
+
+const toggleProductActive = async (id: string): Promise<Product> => {
+  if (!id) {
+    throw new Error('Product ID is null or undefined');
+  }
+
+  const response = await apiRequest<Product>(`/products/${id}/toggle-active`, {
+    method: 'PATCH',
+  });
+
+  if (!response.data) {
+    throw new Error('No data returned from toggle product active');
+  }
+
+  return response.data;
 };
 
 const updateProduct = async (
   id: string,
   product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>
 ): Promise<Product> => {
+  if (!id) {
+    throw new Error('Product ID is required');
+  }
+
+  if (!product || Object.keys(product).length === 0) {
+    throw new Error('Product data is required');
+  }
+
   const response = await apiRequest<Product>(`/products/${id}`, {
     method: 'PUT',
-    headers: {
-      ...getAuthHeaders(),
-    },
     body: JSON.stringify(product),
   });
 
@@ -209,11 +245,12 @@ const updateProduct = async (
 };
 
 const deleteProduct = async (id: string): Promise<void> => {
+  if (!id) {
+    throw new Error('Product ID is required');
+  }
+
   const response = await apiRequest<null>(`/products/${id}`, {
     method: 'DELETE',
-    headers: {
-      ...getAuthHeaders(),
-    },
   });
 
   if (!response.success) {
@@ -288,20 +325,114 @@ const useCreateProduct = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
+    onError: (error) => {
+      console.error('Create product error:', error);
+    },
   });
 };
 
-const useUpdateProduct = (id: string) => {
+const useToggleProductActive = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (
-      product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>
-    ) => updateProduct(id, product),
-    onSuccess: (data) => {
-      queryClient.setQueryData(productKeys.item(id), data);
+  return useMutation<
+    Product,
+    Error,
+    string,
+    { previousProduct: Product | undefined }
+  >({
+    mutationFn: toggleProductActive,
+
+    onMutate: async (productId) => {
+      await queryClient.cancelQueries({
+        queryKey: productKeys.item(productId),
+      });
+
+      const previousProduct = queryClient.getQueryData<Product>(
+        productKeys.item(productId)
+      );
+
+      if (previousProduct) {
+        queryClient.setQueryData<Product>(productKeys.item(productId), {
+          ...previousProduct,
+          isActive: !previousProduct.isActive,
+        });
+      }
+
+      return { previousProduct };
+    },
+
+    onError: (_error, productId, context) => {
+      if (context?.previousProduct) {
+        queryClient.setQueryData<Product>(
+          productKeys.item(productId),
+          context.previousProduct
+        );
+      }
+    },
+    onSettled: (data, _error, productId) => {
+      queryClient.invalidateQueries({
+        queryKey: productKeys.item(productId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: productKeys.items(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: productKeys.vendorProducts(),
+      });
+
+      // Debug: Log the keys being invalidated
+      console.log('Keys being invalidated:', {
+        item: productKeys.item(productId),
+        items: productKeys.items(),
+        vendorProducts: productKeys.vendorProducts(),
+      });
+
+      if (data) {
+        if (data.category) {
+          queryClient.invalidateQueries({
+            queryKey: productKeys.category(data.category._id),
+          });
+        }
+        if (data.vendor) {
+          queryClient.invalidateQueries({
+            queryKey: productKeys.vendor(data.vendor._id),
+          });
+        }
+      }
+    },
+  });
+};
+
+const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Product,
+    Error,
+    {
+      id: string;
+      product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>;
+    }
+  >({
+    mutationFn: ({ id, product }) => updateProduct(id, product),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(productKeys.item(variables.id), data);
       queryClient.invalidateQueries({ queryKey: productKeys.items() });
       queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+
+      if (data.category) {
+        queryClient.invalidateQueries({
+          queryKey: productKeys.category(data.category._id),
+        });
+      }
+      if (data.vendor) {
+        queryClient.invalidateQueries({
+          queryKey: productKeys.vendor(data.vendor._id),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Update product error:', error);
     },
   });
 };
@@ -309,12 +440,15 @@ const useUpdateProduct = (id: string) => {
 const useDeleteProduct = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<void, Error, string>({
     mutationFn: deleteProduct,
     onSuccess: (_, deletedId) => {
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
       queryClient.invalidateQueries({ queryKey: productKeys.items() });
       queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+    },
+    onError: (error) => {
+      console.error('Delete product error:', error);
     },
   });
 };
@@ -324,6 +458,7 @@ export {
   useProductById,
   useProductsByCategory,
   useProductByVendor,
+  useToggleProductActive,
   useVendorProducts,
   useCreateProduct,
   useUpdateProduct,

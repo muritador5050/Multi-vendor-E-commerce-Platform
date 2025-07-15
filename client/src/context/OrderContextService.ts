@@ -81,6 +81,26 @@ interface OrderStatsResponse {
   monthlyTrends: MonthlyStats[];
 }
 
+// Analytics Types
+interface DailySalesReport {
+  _id: string; // Date in YYYY-MM-DD format
+  totalSales: number;
+  orders: number;
+}
+
+interface ProductSalesReport {
+  productId: string;
+  name: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+interface VendorSalesAnalytics {
+  totalSales: number;
+  totalOrders: number;
+  totalProductsSold: number;
+}
+
 const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('accessToken');
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -173,6 +193,20 @@ const orderApi = {
   getOrderStats: async (): Promise<ApiResponse<OrderStatsResponse>> => {
     return apiRequest<OrderStatsResponse>('/stats');
   },
+
+  getDailySalesReport: async (): Promise<ApiResponse<DailySalesReport[]>> => {
+    return apiRequest<DailySalesReport[]>('/analytics/sales-by-date');
+  },
+
+  getSalesByProduct: async (): Promise<ApiResponse<ProductSalesReport[]>> => {
+    return apiRequest<ProductSalesReport[]>('/analytics/sales-by-product');
+  },
+
+  getVendorSalesAnalytics: async (): Promise<
+    ApiResponse<VendorSalesAnalytics>
+  > => {
+    return apiRequest<VendorSalesAnalytics>('/analytics/vendor-sales-report');
+  },
 };
 
 // Query Keys
@@ -182,6 +216,9 @@ const orderKeys = {
   list: (params: OrderParams) => [...orderKeys.lists(), params] as const,
   details: (id: string) => [...orderKeys.all, 'details', id] as const,
   stats: () => [...orderKeys.all, 'stats'] as const,
+  dailySales: () => [...orderKeys.all, 'daily-sales'] as const,
+  productSales: () => [...orderKeys.all, 'product-sales'] as const,
+  vendorSales: () => [...orderKeys.all, 'vendor-sales'] as const,
 };
 
 // Custom Hooks
@@ -252,6 +289,30 @@ const useDeleteOrder = () => {
   });
 };
 
+const useDailySalesReport = () => {
+  return useQuery({
+    queryKey: orderKeys.dailySales(),
+    queryFn: orderApi.getDailySalesReport,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+const useProductSalesReport = () => {
+  return useQuery({
+    queryKey: orderKeys.productSales(),
+    queryFn: orderApi.getSalesByProduct,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+const useVendorSalesAnalytics = () => {
+  return useQuery({
+    queryKey: orderKeys.vendorSales(),
+    queryFn: orderApi.getVendorSalesAnalytics,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
 export {
   useOrders,
   useOrderById,
@@ -259,4 +320,7 @@ export {
   useCreateOrder,
   useUpdateOrderStatus,
   useDeleteOrder,
+  useDailySalesReport,
+  useProductSalesReport,
+  useVendorSalesAnalytics,
 };

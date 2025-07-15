@@ -139,16 +139,12 @@ function Navbar() {
             <NavLink to='/'>Home</NavLink>
             <NavLink to='blog'>Blogs</NavLink>
             <NavLink to='shop'>Shop</NavLink>
-
             <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
             <NavLink to='adminDashboard'>Admin Dashboard</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
           </HStack>
-
           <Spacer />
-
-          {/* User Icons */}
           <HStack ml={4} color='white'>
             {/* Mobile Menu Button */}
             <IconButton
@@ -159,7 +155,6 @@ function Navbar() {
               variant='ghost'
               colorScheme='white'
             />
-
             <ChakraLink as={ReactRouterLink} to={'/wishlist'}>
               <IconButton
                 icon={<Heart />}
