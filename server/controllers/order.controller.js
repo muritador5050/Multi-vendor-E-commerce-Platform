@@ -1,5 +1,6 @@
 const Order = require('../models/order.model');
 const User = require('../models/user.model');
+const mongoose = require('mongoose');
 
 class OrderController {
   static async createOrder(req, res) {
@@ -269,6 +270,133 @@ class OrderController {
       data: {
         overview: stats[0] || {},
         monthlyTrends: monthlyStats,
+      },
+    });
+  }
+
+  static async getDailySalesReport(req, res) {
+    const stats = await Order.aggregate([
+      { $match: { isDeleted: false, paymentStatus: 'pending' } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          totalSales: { $sum: '$totalPrice' },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Daily sales report generated successfully',
+      data: stats,
+    });
+  }
+
+  static async getSalesByProduct(req, res) {
+    const vendorId = req.user.id;
+
+    // Validate vendorId
+    if (!vendorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vendor ID is required',
+      });
+    }
+
+    const stats = await Order.aggregate([
+      { $match: { isDeleted: false, paymentStatus: 'pending' } },
+      { $unwind: '$products' },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'products.product',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      { $unwind: '$product' },
+      {
+        $match: {
+          'product.vendor': new mongoose.Types.ObjectId(vendorId),
+        },
+      },
+      {
+        $group: {
+          _id: '$products.product',
+          totalQuantity: { $sum: '$products.quantity' },
+          totalRevenue: {
+            $sum: { $multiply: ['$products.price', '$products.quantity'] },
+          },
+          productName: { $first: '$product.name' },
+          productId: { $first: '$product._id' },
+        },
+      },
+      { $sort: { totalRevenue: -1 } },
+      { $limit: 10 },
+      {
+        $project: {
+          _id: 0,
+          productId: 1,
+          name: '$productName',
+          totalQuantity: 1,
+          totalRevenue: 1,
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Top products sales report for vendor generated successfully',
+      data: stats,
+    });
+  }
+
+  static async getVendorSalesAnalytics(req, res) {
+    const vendorId = req.user.id;
+
+    const stats = await Order.aggregate([
+      { $match: { isDeleted: false, paymentStatus: 'paid' } },
+      { $unwind: '$products' },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'products.product',
+          foreignField: '_id',
+          as: 'productInfo',
+        },
+      },
+      { $unwind: '$productInfo' },
+      {
+        $match: { 'productInfo.vendor': new mongoose.Types.ObjectId(vendorId) },
+      },
+      {
+        $group: {
+          _id: null,
+          totalSales: {
+            $sum: { $multiply: ['$products.quantity', '$products.price'] },
+          },
+          totalOrders: { $addToSet: '$_id' },
+          totalProductsSold: { $sum: '$products.quantity' },
+        },
+      },
+      {
+        $project: {
+          totalSales: 1,
+          totalOrders: { $size: '$totalOrders' },
+          totalProductsSold: 1,
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Vendor analytics generated successfully',
+      data: stats[0] || {
+        totalSales: 0,
+        totalOrders: 0,
+        totalProductsSold: 0,
       },
     });
   }

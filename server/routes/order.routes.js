@@ -217,6 +217,26 @@ router
     asyncHandler(OrderController.getAllOrders)
   );
 
+router.get(
+  '/analytics/sales-by-date',
+  authenticate,
+  checkRole('vendor', 'read'),
+  asyncHandler(OrderController.getDailySalesReport)
+);
+
+router.get(
+  '/analytics/sales-by-product',
+  authenticate,
+  checkRole('vendor', 'read'),
+  asyncHandler(OrderController.getSalesByProduct)
+);
+
+router.get(
+  '/analytics/vendor-sales-report',
+  authenticate,
+  checkRole('vendor', 'read'),
+  asyncHandler(OrderController.getVendorSalesAnalytics)
+);
 /**
  * @openapi
  * /api/orders/stats:

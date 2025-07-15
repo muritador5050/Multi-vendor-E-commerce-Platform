@@ -63,7 +63,7 @@ router
  *                 $ref: '#/components/schemas/Product'
  */
 router.get(
-  '/my-products',
+  '/vendor/my-products',
   authenticate,
   checkRole('vendor', 'read'),
   asyncHandler(ProductsController.getVendorProducts)
@@ -127,6 +127,13 @@ router.get(
 router.get(
   '/category/:slug',
   asyncHandler(ProductsController.getProductsByCategorySlug)
+);
+
+router.patch(
+  '/:id/toggle-active',
+  authenticate,
+  checkRole(['admin', 'vendor'], 'edit'),
+  asyncHandler(ProductsController.toggleProductActive)
 );
 
 /**

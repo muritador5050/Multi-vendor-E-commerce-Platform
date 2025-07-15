@@ -264,6 +264,33 @@ class ProductsController {
     });
   }
 
+  static async toggleProductActive(req, res) {
+    const { id } = req.params;
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { isActive: !product.isActive },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Product ${
+        updatedProduct.isActive ? 'activated' : 'deactivated'
+      }`,
+      data: updatedProduct,
+    });
+  }
+
   static async updateProduct(req, res) {
     const { id } = req.params;
     const updateData = { ...req.body };
