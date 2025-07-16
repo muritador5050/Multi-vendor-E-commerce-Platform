@@ -28,7 +28,7 @@ class EmailService {
   }
 
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -133,7 +133,7 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(user, token) {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -182,7 +182,7 @@ class EmailService {
   }
 
   async sendVendorVerificationEmail(user, status, notes = null) {
-    const dashboardUrl = `${process.env.FRONTEND_URL}/vendor/dashboard`;
+    const dashboardUrl = `${process.env.FRONTEND_URL}/store-manager`;
 
     let html, text, subject;
 

@@ -191,19 +191,34 @@ class UserController {
 
   // Request password reset
   static async forgotPassword(req, res) {
-    //Find user by email
-    const user = await User.findOne({ email: req.body.email });
+    // 1. Validate email exists in request
+    if (!req.body.email) {
+      return res.status(400).json({
+        message: 'Please provide an email address',
+      });
+    }
 
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await User.findOne({
+      email: req.body.email.toLowerCase().trim(),
+    });
 
-    // Generate reset token
+    if (!user) {
+      return res.status(200).json({
+        message:
+          'If this email is registered, you will receive a password reset link shortly. Check your inbox and spam folder.',
+      });
+    }
+
+    // 4. Generate token and send email
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
     await EmailService.sendPasswordResetEmail(user, resetToken);
 
-    // 5. Respond to client
-    res.json({ message: 'Password reset email sent' });
+    res.status(200).json({
+      message:
+        'If this email is registered, you will receive a password reset link shortly. Check your inbox and spam folder.',
+    });
   }
 
   // Reset password
