@@ -10,16 +10,17 @@ import {
   Flex,
   Button,
   ButtonGroup,
-  Heading,
   Alert,
   AlertIcon,
   AlertDescription,
   InputGroup,
   InputRightElement,
   IconButton,
+  useToast,
 } from '@chakra-ui/react';
-import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 type RegisterProps = {
   name: string;
@@ -29,6 +30,8 @@ type RegisterProps = {
 };
 
 function VendorRegistration() {
+  const toast = useToast();
+  const navigate = useNavigate();
   const [user, setUser] = useState<RegisterProps>({
     name: '',
     email: '',
@@ -37,7 +40,25 @@ function VendorRegistration() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const registerVendor = useRegisterVendor();
+  const registerVendor = useRegisterVendor({
+    onSuccess: () => {
+      toast({
+        title: 'Registration successful!',
+        description: 'Check your email for a verification link.',
+        status: 'success',
+        position: 'top',
+        duration: 6000,
+        isClosable: true,
+      });
+      setTimeout(() => navigate('/my-account'), 3000);
+      setUser({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+    },
+  });
 
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -46,7 +67,6 @@ function VendorRegistration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (user.password !== user.confirmPassword) {
       return;
     }
@@ -57,48 +77,10 @@ function VendorRegistration() {
         password: user.password,
         confirmPassword: user.confirmPassword,
       });
-      setUser({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-      });
     } catch (err) {
       console.log(err);
     }
   };
-
-  if (registerVendor.isSuccess) {
-    return (
-      <Box
-        maxW='md'
-        mx='auto'
-        bg='white'
-        _dark={{ bg: 'gray.800' }}
-        rounded='lg'
-        shadow='md'
-        p={6}
-        textAlign='center'
-      >
-        <CheckCircle size={48} color='green' style={{ margin: '0 auto' }} />
-        <Heading mt={4} fontSize='2xl'>
-          Check Your Email
-        </Heading>
-        <Text mt={2}>
-          We've sent a verification link to your email address. Please check
-          your inbox and click the link to verify your account.
-        </Text>
-        <Button
-          mt={4}
-          colorScheme='blue'
-          variant='link'
-          onClick={() => !registerVendor.isSuccess}
-        >
-          Back to registration
-        </Button>
-      </Box>
-    );
-  }
 
   return (
     <Box

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Button,
   Flex,
@@ -23,11 +24,7 @@ import { useLogin } from '@/context/AuthContextService';
 export default function LoginForm() {
   const [user, setUser] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const login = useLogin();
-
-  useEffect(() => {
-    return () => {};
-  }, []);
+  const loginMutation = useLogin();
 
   // Handle input changes
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,22 +35,23 @@ export default function LoginForm() {
     }));
   };
 
-  // Handle form submission
+  // Handle form submission with enhanced debugging
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Basic validation
     if (!user.email.trim() || !user.password.trim()) {
+      console.log('Validation failed: Email or password is empty');
       return;
     }
 
     try {
-      await login.mutateAsync({
+      await loginMutation.mutateAsync({
         email: user.email.trim(),
         password: user.password,
       });
     } catch (err) {
-      console.error('Login failed:', err);
+      console.log(err);
     }
   };
 
@@ -61,11 +59,11 @@ export default function LoginForm() {
     <Stack spacing={7} position='relative'>
       <Heading>Login</Heading>
 
-      {login.error && (
+      {loginMutation.error && (
         <Alert status='error' borderRadius='md'>
           <AlertIcon as={AlertCircle} />
           <AlertDescription fontSize='sm'>
-            {login.error.message}
+            {loginMutation.error.message || 'An unexpected error occurred'}
           </AlertDescription>
         </Alert>
       )}
@@ -84,8 +82,9 @@ export default function LoginForm() {
                 value={user.email}
                 onChange={handleOnchange}
                 pl='2.5rem'
-                disabled={login.isPending}
+                disabled={loginMutation.isPending}
                 placeholder='Enter your email'
+                autoComplete='email'
               />
             </InputGroup>
           </FormControl>
@@ -99,8 +98,9 @@ export default function LoginForm() {
                 value={user.password}
                 onChange={handleOnchange}
                 pr='2.5rem'
-                disabled={login.isPending}
+                disabled={loginMutation.isPending}
                 placeholder='Enter your password'
+                autoComplete='current-password'
               />
               <InputRightElement>
                 <IconButton
@@ -109,27 +109,37 @@ export default function LoginForm() {
                   size='sm'
                   variant='ghost'
                   onClick={() => setShowPassword(!showPassword)}
-                  disabled={login.isPending}
+                  disabled={loginMutation.isPending}
                 />
               </InputRightElement>
             </InputGroup>
           </FormControl>
-
+          <Button
+            as={RouterLink}
+            to='/auth/forgot-password'
+            variant='link'
+            size='sm'
+            colorScheme='teal'
+          >
+            Forgot password?
+          </Button>
           <Flex alignItems='center'>
             <Button
               type='submit'
               colorScheme='teal'
-              isLoading={login.isPending}
+              isLoading={loginMutation.isPending}
               loadingText='Logging in...'
               disabled={
-                !user.email.trim() || !user.password.trim() || login.isPending
+                !user.email.trim() ||
+                !user.password.trim() ||
+                loginMutation.isPending
               }
               minW='120px'
             >
-              Login
+              LOGIN
             </Button>
             <Spacer />
-            <Checkbox disabled={login.isPending}>Remember me</Checkbox>
+            <Checkbox disabled={loginMutation.isPending}>Remember me</Checkbox>
           </Flex>
         </Stack>
       </form>

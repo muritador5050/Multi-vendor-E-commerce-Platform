@@ -1,4 +1,5 @@
 import { useForgotPassword } from '@/context/AuthContextService';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -12,16 +13,29 @@ import {
   Alert,
   AlertIcon,
   AlertTitle,
-  Link,
   Heading,
   Spinner,
+  useToast,
 } from '@chakra-ui/react';
-import { CheckCircle, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ForgotPasswordForm() {
+  const toast = useToast();
   const [email, setEmail] = useState('');
-  const forgotPassword = useForgotPassword();
+  const forgotPassword = useForgotPassword({
+    onSuccess: () => {
+      toast({
+        title: 'Password reset link',
+        description:
+          "If this email is registered, you'll receive a reset link shortly.",
+        status: 'success',
+        position: 'top',
+        duration: 6000,
+        isClosable: true,
+      });
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,38 +46,14 @@ export default function ForgotPasswordForm() {
     }
   };
 
-  if (forgotPassword.isSuccess) {
-    return (
-      <Box maxW='md' mx='auto' bg='white' rounded='lg' shadow='md' p={6}>
-        <Flex direction='column' align='center' textAlign='center'>
-          <Icon as={CheckCircle} boxSize={12} color='green.500' />
-          <Heading mt={2} fontSize='2xl'>
-            Check Your Email
-          </Heading>
-          <Text mt={2} color='gray.600'>
-            We've sent a password reset link to your email address.
-          </Text>
-          <Button
-            mt={4}
-            variant='link'
-            colorScheme='blue'
-            onClick={() => !forgotPassword.isSuccess}
-          >
-            Back to forgot password
-          </Button>
-        </Flex>
-      </Box>
-    );
-  }
-
   return (
     <Box maxW='md' mx='auto' bg='white' rounded='lg' shadow='md' p={6}>
       <Flex direction='column' align='center' textAlign='center' mb={6}>
-        <Icon as={Mail} boxSize={12} color='blue.500' />
-        <Heading mt={2} fontSize='2xl'>
+        <Icon as={Mail} boxSize={12} color='teal.500' />
+        <Heading mt={2} fontSize='2xl' color='teal.800'>
           Forgot Password
         </Heading>
-        <Text mt={2} color='gray.600'>
+        <Text mt={2} color='teal.500'>
           Enter your email address and we'll send you a link to reset your
           password.
         </Text>
@@ -102,7 +92,7 @@ export default function ForgotPasswordForm() {
 
           <Button
             type='submit'
-            colorScheme='blue'
+            colorScheme='teal'
             width='full'
             isDisabled={forgotPassword.isPending}
             leftIcon={
@@ -115,9 +105,15 @@ export default function ForgotPasswordForm() {
       </form>
 
       <Text mt={4} textAlign='center' fontSize='sm'>
-        <Link color='blue.600' href='#login'>
+        <Button
+          as={RouterLink}
+          to='/my-account'
+          variant='link'
+          size='sm'
+          colorScheme='teal'
+        >
           Back to login
-        </Link>
+        </Button>
       </Text>
     </Box>
   );

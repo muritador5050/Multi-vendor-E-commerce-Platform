@@ -15,7 +15,7 @@ function Layout() {
   const pathname = location.pathname;
 
   const isExcludedPage = () => {
-    const excluded = ['/', '/store-manager', '/adminDashboard'];
+    const excluded = ['/', '/store-manager', '/adminDashboard', '/auth'];
     return excluded.some((path) => {
       if (path === '/') return pathname === '/';
       return pathname === path || pathname.startsWith(path + '/');

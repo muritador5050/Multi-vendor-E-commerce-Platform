@@ -211,9 +211,6 @@ export const useLogin = () => {
       if (passwordError) throw new ApiError(passwordError, 400);
 
       const response = await login(email.trim().toLowerCase(), password);
-      if (!response.success) {
-        throw new ApiError(response.message || 'Login failed', 401);
-      }
       return response.data;
     },
     onSuccess: (data) => {
@@ -227,7 +224,7 @@ export const useLogin = () => {
   });
 };
 
-export const useRegister = () => {
+export const useRegister = (options?: { onSuccess?: () => void }) => {
   return useMutation({
     mutationFn: async ({
       name,
@@ -247,15 +244,14 @@ export const useRegister = () => {
         password,
         confirmPassword
       );
-      if (!response.success) {
-        throw new ApiError(response.message || 'Registration failed', 400);
-      }
+
       return response;
     },
+    onSuccess: options?.onSuccess,
   });
 };
 
-export const useRegisterVendor = () => {
+export const useRegisterVendor = (options?: { onSuccess?: () => void }) => {
   return useMutation({
     mutationFn: async ({
       name,
@@ -275,51 +271,40 @@ export const useRegisterVendor = () => {
         password,
         confirmPassword
       );
-      if (!response.success) {
-        throw new ApiError(
-          response.message || 'Vendor registration failed',
-          400
-        );
-      }
+
       return response;
     },
+    onSuccess: options?.onSuccess,
   });
 };
 
-export const useLogout = () => {
+export const useLogout = (options?: { onSuccess?: () => void }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: logout,
     onSettled: () => {
       queryClient.clear();
       navigate('/', { replace: true });
     },
+    onSuccess: options?.onSuccess,
   });
 };
 
-export const useForgotPassword = () => {
+export const useForgotPassword = (options?: { onSuccess?: () => void }) => {
   return useMutation({
     mutationFn: async (email: string) => {
       const emailError = validators.email(email);
       if (emailError) throw new ApiError(emailError, 400);
 
       const response = await forgotPassword(email.trim().toLowerCase());
-      if (!response.success) {
-        throw new ApiError(
-          response.message || 'Failed to send reset email',
-          400
-        );
-      }
       return response;
     },
+    onSuccess: options?.onSuccess,
   });
 };
 
-export const useResetPassword = () => {
-  const navigate = useNavigate();
-
+export const useResetPassword = (options?: { onSuccess?: () => void }) => {
   return useMutation({
     mutationFn: async ({
       token,
@@ -339,19 +324,10 @@ export const useResetPassword = () => {
         const matchError = validators.passwordMatch(password, confirmPassword);
         if (matchError) throw new ApiError(matchError, 400);
       }
-
       const response = await resetPassword(token, password);
-      if (!response.success) {
-        throw new ApiError(response.message || 'Password reset failed', 400);
-      }
       return response;
     },
-    onSuccess: () => {
-      navigate(
-        '/auth/login?message=Password reset successful. Please log in.',
-        { replace: true }
-      );
-    },
+    onSuccess: options?.onSuccess,
   });
 };
 

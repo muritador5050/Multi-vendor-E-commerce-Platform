@@ -19,7 +19,6 @@ import {
   Heading,
   Card,
   CardBody,
-  Switch,
   Badge,
   Flex,
 } from '@chakra-ui/react';

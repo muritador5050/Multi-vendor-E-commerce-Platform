@@ -176,6 +176,7 @@ class ApiClient {
   /**
    * Public API request (no authentication required)
    */
+
   public async publicApiRequest<T = unknown>(
     endpoint: string,
     options: RequestInit = {}

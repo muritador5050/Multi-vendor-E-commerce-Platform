@@ -7,7 +7,6 @@ import {
   Input,
   Stack,
   Text,
-  Box,
   IconButton,
   Alert,
   AlertIcon,
@@ -15,8 +14,9 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
+  useToast,
 } from '@chakra-ui/react';
-import { AlertCircle, CheckCircle, Eye, EyeOff, Mail } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
 import { useRegister } from '@/context/AuthContextService';
 
 type RegisterProps = {
@@ -27,6 +27,7 @@ type RegisterProps = {
 };
 
 export default function RegisterForm() {
+  const toast = useToast();
   const [user, setUser] = useState<RegisterProps>({
     name: '',
     email: '',
@@ -35,8 +36,24 @@ export default function RegisterForm() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const register = useRegister();
+  const registerMutation = useRegister({
+    onSuccess: () => {
+      toast({
+        title: 'Registration successful!',
+        description: 'Check your email for a verification link.',
+        status: 'success',
+        position: 'top',
+        duration: 6000,
+        isClosable: true,
+      });
+      setUser({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+    },
+  });
 
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,7 +66,7 @@ export default function RegisterForm() {
       return;
     }
     try {
-      await register.mutateAsync({
+      await registerMutation.mutateAsync({
         name: user.name,
         email: user.email,
         password: user.password,
@@ -60,48 +77,16 @@ export default function RegisterForm() {
     }
   };
 
-  if (register.isSuccess) {
-    return (
-      <Box
-        maxW='md'
-        mx='auto'
-        bg='white'
-        _dark={{ bg: 'gray.800' }}
-        rounded='lg'
-        shadow='md'
-        p={6}
-        textAlign='center'
-      >
-        <CheckCircle size={48} color='green' style={{ margin: '0 auto' }} />
-        <Heading mt={4} fontSize='2xl'>
-          Check Your Email
-        </Heading>
-        <Text mt={2}>
-          We've sent a verification link to your email address. Please check
-          your inbox and click the link to verify your account.
-        </Text>
-        <Button
-          mt={4}
-          colorScheme='blue'
-          variant='link'
-          onClick={() => !register.isSuccess}
-        >
-          Back to registration
-        </Button>
-      </Box>
-    );
-  }
-
   return (
     <form onSubmit={handleSubmit}>
       <Stack spacing={7}>
         <Heading>Sign Up</Heading>
 
-        {register.error && (
+        {registerMutation.error && (
           <Alert status='error' borderRadius='md'>
             <AlertIcon as={AlertCircle} />
             <AlertDescription fontSize='sm'>
-              {register.error.message}
+              {registerMutation.error.message}
             </AlertDescription>
           </Alert>
         )}
@@ -186,12 +171,12 @@ export default function RegisterForm() {
           type='submit'
           colorScheme='teal'
           isDisabled={
-            register.isPending || user.password !== user.confirmPassword
+            registerMutation.isPending || user.password !== user.confirmPassword
           }
-          isLoading={register.isPending}
+          isLoading={registerMutation.isPending}
           loadingText='Registering'
         >
-          Register as Vendor
+          REGISTER
         </Button>
       </Stack>
     </form>

@@ -62,8 +62,8 @@ function App() {
           <Route path='my-account' element={<AccountPage />} />
           <Route path='auth/forgot-password' element={<ForgotPasswordForm />} />
           <Route
-            path='auth/reset-password'
-            element={<ResetPasswordForm token='' />}
+            path='auth/reset-password/:token'
+            element={<ResetPasswordForm />}
           />
         </Route>
       </Routes>

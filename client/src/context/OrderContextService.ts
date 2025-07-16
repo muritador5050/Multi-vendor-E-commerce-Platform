@@ -1,3 +1,4 @@
+import type { ApiResponse } from '@/type/ApiResponse';
 import type {
   DailySalesReport,
   Order,
@@ -13,20 +14,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const getOrders = async (
   params: OrderParams = {}
-): Promise<OrdersPaginationResponse<Order>> => {
+): Promise<ApiResponse<OrdersPaginationResponse<Order>>> => {
   const queryString = buildQueryString(params);
   const endpoint = queryString ? `/orders?${queryString}` : '/orders';
-  return apiClient.authenticatedApiRequest<OrdersPaginationResponse<Order>>(
-    endpoint
-  );
+  return apiClient.authenticatedApiRequest<
+    ApiResponse<OrdersPaginationResponse<Order>>
+  >(endpoint);
 };
 
-const getOrderById = async (id: string): Promise<Order> => {
-  return apiClient.authenticatedApiRequest<Order>(`/orders/${id}`);
+const getOrderById = async (id: string): Promise<ApiResponse<Order>> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<Order>>(`/orders/${id}`);
 };
 
-const createOrder = async (orderData: Omit<Order, '_id'>): Promise<Order> => {
-  return apiClient.authenticatedApiRequest<Order>('/orders', {
+const createOrder = async (
+  orderData: Omit<Order, '_id'>
+): Promise<ApiResponse<Order>> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<Order>>('/orders', {
     method: 'POST',
     body: JSON.stringify(orderData),
   });
@@ -37,38 +40,49 @@ const updateOrderStatus = async (
   statusData: Partial<
     Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
   >
-): Promise<Order> => {
-  return apiClient.authenticatedApiRequest<Order>(`/orders/${id}/status`, {
-    method: 'PUT',
-    body: JSON.stringify(statusData),
-  });
+): Promise<ApiResponse<Order>> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<Order>>(
+    `/orders/${id}/status`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(statusData),
+    }
+  );
 };
 
-const deleteOrder = async (id: string): Promise<void> => {
-  return apiClient.authenticatedApiRequest<void>(`/orders/${id}`, {
+const deleteOrder = async (id: string): Promise<ApiResponse<void>> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<void>>(`/orders/${id}`, {
     method: 'DELETE',
   });
 };
 
 // Get order statistics
-const getOrderStats = async (): Promise<OrderStatsResponse> => {
-  return apiClient.authenticatedApiRequest<OrderStatsResponse>('/orders/stats');
+const getOrderStats = async (): Promise<ApiResponse<OrderStatsResponse>> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<OrderStatsResponse>>(
+    '/orders/stats'
+  );
 };
 
-const getDailySalesReport = async (): Promise<DailySalesReport[]> => {
-  return apiClient.authenticatedApiRequest<DailySalesReport[]>(
+const getDailySalesReport = async (): Promise<
+  ApiResponse<DailySalesReport[]>
+> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<DailySalesReport[]>>(
     '/orders/analytics/sales-by-date'
   );
 };
 
-const getSalesByProduct = async (): Promise<ProductSalesReport[]> => {
-  return apiClient.authenticatedApiRequest<ProductSalesReport[]>(
+const getSalesByProduct = async (): Promise<
+  ApiResponse<ProductSalesReport[]>
+> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<ProductSalesReport[]>>(
     '/orders/analytics/sales-by-product'
   );
 };
 
-const getVendorSalesAnalytics = async (): Promise<VendorSalesAnalytics> => {
-  return apiClient.authenticatedApiRequest<VendorSalesAnalytics>(
+const getVendorSalesAnalytics = async (): Promise<
+  ApiResponse<VendorSalesAnalytics>
+> => {
+  return apiClient.authenticatedApiRequest<ApiResponse<VendorSalesAnalytics>>(
     '/orders/analytics/vendor-sales-report'
   );
 };

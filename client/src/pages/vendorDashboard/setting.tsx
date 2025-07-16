@@ -34,7 +34,7 @@ import SEOSetting from '@/components/StoreSettings/SEOSetting';
 import StorePolicies from '@/components/StoreSettings/StorePolicies';
 import CustomerSupport from '@/components/StoreSettings/CustomerSupport';
 import StoreHours from '@/components/StoreSettings/StoreHours';
-import { usePercentageComplete } from '@/context/AuthContextService';
+import { useProfileCompletion } from '@/context/AuthContextService';
 
 const tabName = [
   { name: 'Store', icon: ShoppingBasket },
@@ -49,7 +49,7 @@ const tabName = [
 
 export default function Setting() {
   const [activeTab, setActiveTab] = useState(0);
-  const percentageComplete = usePercentageComplete();
+  const percentageComplete = useProfileCompletion();
 
   return (
     <Box>
