@@ -86,6 +86,7 @@ export default function ForgotPasswordForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 pl={10}
                 placeholder='Enter your email'
+                autoComplete='username'
               />
             </Flex>
           </FormControl>

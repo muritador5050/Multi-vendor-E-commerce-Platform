@@ -41,8 +41,8 @@ class UserController {
   }
 
   //Login user
-  static async loginUser(req, res, next) {
-    const { email, password } = req.body;
+  static async loginUser(req, res) {
+    const { email, password, rememberMe } = req.body;
 
     const user = await User.findOne({ email });
 
@@ -56,19 +56,34 @@ class UserController {
         .json({ message: 'Please verify your email first' });
     }
 
+    const tokenOptions = rememberMe
+      ? {
+          accessTokenExpiry: '15m',
+          refreshTokenExpiry: '30d',
+        }
+      : {
+          accessTokenExpiry: '15m',
+          refreshTokenExpiry: '7d',
+        };
+
     // Generate token pair
-    const { accessToken, refreshToken } = user.generateToken();
+    const { accessToken, refreshToken } = user.generateToken(tokenOptions);
 
     //Save refresh token to database
     user.refreshToken = refreshToken;
     await user.save();
+
+    // Cookie configuration with dynamic maxAge based on rememberMe
+    const cookieMaxAge = rememberMe
+      ? 30 * 24 * 60 * 60 * 1000 // 30 days
+      : 7 * 24 * 60 * 60 * 1000; // 7 days
 
     // Cookie configuration
     const cookieOptions = {
       httpOnly: true,
       secure: NODE_ENV === 'production',
       sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: cookieMaxAge,
     };
 
     // Set refresh token as httpOnly cookie
@@ -258,7 +273,9 @@ class UserController {
     passport.authenticate('google', { session: false }, async (err, user) => {
       if (err) return next(err);
       if (!user)
-        return res.redirect(`${FRONTEND_URL}/login?error=oauth_failed`);
+        return res.redirect(
+          `${FRONTEND_URL}/oauth/callback?error=oauth_failed`
+        );
 
       const { accessToken, refreshToken } = user.generateToken();
 
@@ -267,7 +284,7 @@ class UserController {
       await user.save();
 
       res.redirect(
-        `${FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
+        `${FRONTEND_URL}/oauth/callback?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
           JSON.stringify({
             id: user._id,
             name: user.name,
@@ -275,49 +292,6 @@ class UserController {
             role: user.role,
           })
         )}`
-      );
-
-      if (!user.isEmailVerified) {
-        await EmailService.sendWelcomeEmail(user);
-        next();
-      }
-    })(req, res, next);
-  }
-
-  // Test endpoint to verify OAuth setup
-  static async testGoogleAuth(req, res) {
-    res.json({
-      message: 'Google OAuth test endpoint',
-      googleClientId: process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set',
-      googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Not set',
-      callbackUrl: '/api/auth/google/callback',
-    });
-  }
-
-  //Facebook auth
-  static facebookAuth(req, res, next) {
-    return passport.authenticate('facebook', { scope: ['email'] })(
-      req,
-      res,
-      next
-    );
-  }
-
-  //Facebook Callback
-  static facebookCallback(req, res, next) {
-    passport.authenticate('facebook', { session: false }, async (err, user) => {
-      if (err) return next(err);
-      if (!user)
-        return res.redirect(`${FRONTEND_URL}/login?error=oauth_failed`);
-
-      const { accessToken, refreshToken } = user.generateToken();
-
-      // Save refresh token to database
-      user.refreshToken = refreshToken;
-      await user.save();
-
-      res.redirect(
-        `${FRONTEND_URL}/login?token=${accessToken}&refresh=${refreshToken}`
       );
 
       if (!user.isEmailVerified) {

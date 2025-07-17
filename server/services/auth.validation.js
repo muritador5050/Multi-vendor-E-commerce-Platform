@@ -1,7 +1,6 @@
 const joi = require('joi');
 
 //Register
-
 const register = joi
   .object({
     name: joi.string().min(2).max(50).required(),
@@ -17,6 +16,7 @@ const login = joi
   .object({
     email: joi.string().required(),
     password: joi.string().required(),
+    rememberMe: joi.boolean().optional().default(false),
   })
   .required();
 

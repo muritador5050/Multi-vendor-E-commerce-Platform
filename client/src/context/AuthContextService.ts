@@ -9,7 +9,7 @@ import {
   type AuthResponse,
   type ProfileData,
 } from '@/type/auth';
-import { apiClient } from '@/utils/Api';
+import { apiBase, apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
 import type { ApiResponse } from '@/type/ApiResponse';
 
@@ -41,19 +41,55 @@ async function registerVendor(
   );
 }
 
-async function login(email: string, password: string) {
+// async function login(email: string, password: string, rememberMe: boolean) {
+//   const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
+//     '/auth/login',
+//     {
+//       method: 'POST',
+//       body: JSON.stringify({ email, password, rememberMe }),
+//     }
+//   );
+
+//   if (response.data?.accessToken) {
+//     localStorage.setItem('accessToken', response.data.accessToken);
+
+//     // Store rememberMe preference for future reference
+//     localStorage.setItem('rememberMe', rememberMe.toString());
+//   }
+//   return response;
+// }
+
+async function login(email: string, password: string, rememberMe: boolean) {
   const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
     '/auth/login',
     {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe }),
     }
   );
 
   if (response.data?.accessToken) {
-    localStorage.setItem('accessToken', response.data.accessToken);
+    localStorage.removeItem('accessToken');
+    sessionStorage.removeItem('accessToken');
+
+    // Always save the email for convenience (regardless of rememberMe)
+    localStorage.setItem('savedEmail', email);
+
+    if (rememberMe) {
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('rememberMe', 'true');
+    } else {
+      sessionStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.removeItem('rememberMe');
+    }
   }
   return response;
+}
+
+async function googleLogin() {
+  window.location.href = `${
+    apiBase || 'http://localhost:8000/api'
+  }/auth/google-signup`;
 }
 
 async function logout() {
@@ -170,9 +206,6 @@ export const useProfile = () => {
     queryKey: authKeys.profile,
     queryFn: async () => {
       const response = await getProfile();
-      if (!response.success) {
-        throw new ApiError(response.message || 'Failed to fetch profile', 500);
-      }
       return response.data;
     },
     enabled: isAuthenticated(),
@@ -200,9 +233,11 @@ export const useLogin = () => {
     mutationFn: async ({
       email,
       password,
+      rememberMe = false,
     }: {
       email: string;
       password: string;
+      rememberMe?: boolean;
     }) => {
       const emailError = validators.email(email);
       if (emailError) throw new ApiError(emailError, 400);
@@ -210,7 +245,11 @@ export const useLogin = () => {
       const passwordError = validators.password(password);
       if (passwordError) throw new ApiError(passwordError, 400);
 
-      const response = await login(email.trim().toLowerCase(), password);
+      const response = await login(
+        email.trim().toLowerCase(),
+        password,
+        rememberMe
+      );
       return response.data;
     },
     onSuccess: (data) => {
@@ -220,6 +259,15 @@ export const useLogin = () => {
           replace: true,
         });
       }
+    },
+  });
+};
+
+export const useGoogleLogin = () => {
+  return useMutation({
+    mutationFn: googleLogin,
+    onError: (error) => {
+      console.error('Google login failed:', error);
     },
   });
 };
@@ -283,11 +331,11 @@ export const useLogout = (options?: { onSuccess?: () => void }) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logout,
+    onSuccess: options?.onSuccess,
     onSettled: () => {
       queryClient.clear();
       navigate('/', { replace: true });
     },
-    onSuccess: options?.onSuccess,
   });
 };
 
@@ -438,7 +486,9 @@ export const useForceLogout = () => {
   return (message?: string) => {
     clearAuth();
     queryClient.clear();
-    const url = message ? `/login?message=${encodeURIComponent(message)}` : '/';
+    const url = message
+      ? `/my-account?message=${encodeURIComponent(message)}`
+      : '/';
     navigate(url, { replace: true });
   };
 };

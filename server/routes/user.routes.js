@@ -97,6 +97,10 @@ router.post(
   asyncHandler(UserController.loginUser)
 );
 
+//Google auth
+router.get('/google-signup', UserController.googleAuth);
+router.get('/google/callback', UserController.googleCallback);
+
 /**
  * @openapi
  * /api/auth/refresh-token:
@@ -230,13 +234,6 @@ router.get(
   '/verify-email/:token',
   asyncHandler(UserController.emailVerification)
 );
-
-router.get('/google-signup', asyncHandler(UserController.googleAuth));
-
-router.get('/google/callback', asyncHandler(UserController.googleCallback));
-router.get('/test-google', asyncHandler(UserController.testGoogleAuth));
-router.get('/facebook-signup', asyncHandler(UserController.facebookAuth));
-router.get('/facebook/callback', asyncHandler(UserController.facebookCallback));
 
 /**
  * @openapi

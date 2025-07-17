@@ -249,6 +249,7 @@ export default function ResetPasswordForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder='Enter new password'
                 pr={12}
+                autoComplete='new-password'
               />
               <InputRightElement>
                 <Button
@@ -282,6 +283,7 @@ export default function ResetPasswordForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder='Confirm new password'
                 pr={12}
+                autoComplete='new-password'
               />
             </InputGroup>
             {password !== confirmPassword && confirmPassword && (

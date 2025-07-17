@@ -197,17 +197,21 @@ userSchema.methods.checkPassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateToken = function () {
-  const accessToken = jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
-    JWT_SECRET,
-    { expiresIn: '1h' }
-  );
-  const refreshToken = jwt.sign(
-    { id: this._id, email: this.email, role: this.role },
-    REFRESH_TOKEN,
-    { expiresIn: '7d' }
-  );
+userSchema.methods.generateToken = function (options = {}) {
+  const { accessTokenExpiry = '15m', refreshTokenExpiry = '7d' } = options;
+
+  const payload = {
+    id: this._id,
+    email: this.email,
+    role: this.role,
+  };
+
+  const accessToken = jwt.sign(payload, JWT_SECRET, {
+    expiresIn: accessTokenExpiry,
+  });
+  const refreshToken = jwt.sign(payload, REFRESH_TOKEN, {
+    expiresIn: refreshTokenExpiry,
+  });
   return { accessToken, refreshToken };
 };
 

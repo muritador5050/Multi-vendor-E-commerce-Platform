@@ -1,6 +1,6 @@
 import { ApiError } from './ApiError';
 
-const apiBase = import.meta.env.VITE_API_URL;
+export const apiBase = import.meta.env.VITE_API_URL;
 const REQUEST_TIMEOUT = 10000; // 10 seconds
 const MAX_REFRESH_ATTEMPTS = 3;
 const TOKEN_REFRESH_BUFFER = 30000; // 30 seconds
@@ -271,7 +271,11 @@ class ApiClient {
    * Utility method to check if user is authenticated
    */
   public isAuthenticated(): boolean {
-    const token = localStorage.getItem('accessToken');
+    // Check both localStorage and sessionStorage
+    const localToken = localStorage.getItem('accessToken');
+    const sessionToken = sessionStorage.getItem('accessToken');
+
+    const token = localToken || sessionToken;
     return this.isTokenValid(token);
   }
 
@@ -280,6 +284,9 @@ class ApiClient {
    */
   public clearAuth(): void {
     localStorage.removeItem('accessToken');
+    sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('savedEmail');
     this.refreshAttempts = 0;
   }
 

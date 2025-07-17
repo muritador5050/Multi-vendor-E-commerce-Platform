@@ -1,3 +1,4 @@
+import { LogOut } from 'lucide-react';
 import { Box, Tooltip, IconButton, Stack } from '@chakra-ui/react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
@@ -10,16 +11,14 @@ import Layout from './components/layout/layout';
 import AccountPage from './auth/accountPage';
 import WishList from './pages/wishList';
 import VendorRegistration from './auth/vendorRegistration';
-
 import ProductDetail from './pages/ProductDetail';
 import OAuthCallback from './auth/OAuthCallback';
 import ResetPasswordForm from './auth/ResetPassword';
 import ForgotPasswordForm from './auth/ForgotPassword';
 import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
-import { LogOut } from 'lucide-react';
 import ProductCategoryPage from './pages/ProductCategoryPage';
-import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 import AdminDashboard from './pages/adminDashboard/AdminHomePage';
+import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 
 //App
 function App() {
