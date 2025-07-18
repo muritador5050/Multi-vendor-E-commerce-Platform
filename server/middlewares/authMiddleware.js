@@ -1,52 +1,77 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../configs/index');
-const { asyncHandler } = require('../utils/asyncHandler');
+const User = require('../models/user.model');
 
-const authenticate = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const headerToken = authHeader && authHeader.split(' ')[1];
-
-  const cookieToken = req.cookies?.jwt;
-  const token = headerToken || cookieToken;
-
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
+const authenticate = async (req, res, next) => {
   try {
-    const decode = jwt.verify(token, JWT_SECRET);
-    req.user = decode;
+    // Get token from header or cookie
+    const authHeader = req.headers['authorization'];
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    const cookieToken = req.cookies?.jwt;
+    const token = headerToken || cookieToken;
+
+    if (!token) {
+      return res.status(401).json({
+        message: 'Access denied. No token provided.',
+      });
+    }
+    // Verify token
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Find user and validate existence
+    const user = await User.findById(decoded.id).select(
+      '-password -refreshToken -__v'
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'User not found or token invalid.',
+      });
+    }
+
+    // Check if user account is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        message: 'Account has been deactivated.',
+      });
+    }
+
+    // Check token version (for token invalidation)
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      return res.status(401).json({
+        message: 'Token has been invalidated. Please log in again.',
+      });
+    }
+
+    if (!user.isEmailVerified) {
+      return res.status(401).json({
+        message: 'Please verify your email address.',
+      });
+    }
+
+    // Attach user to request
+    req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid or Expired token' });
+    // Handle specific JWT errors
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        message: 'Token has expired.',
+      });
+    }
+
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        message: 'Invalid token.',
+      });
+    }
+
+    // Database or other errors
+    console.error('Authentication error:', error);
+    return res.status(500).json({
+      message: 'Authentication failed. Please try again.',
+    });
   }
 };
 
-const isAdmin = asyncHandler(async function (req, res, next) {
-  if (req.user.role !== 'admin') {
-    return res
-      .status(403)
-      .json({ message: 'Access denied. Admin role required.' });
-  }
-  next();
-});
-
-const isVendor = asyncHandler(async function (req, res, next) {
-  if (req.user.role !== 'vendor') {
-    return res
-      .status(403)
-      .json({ message: 'Access denied, Vendor role required.' });
-  }
-  next();
-});
-
-const adminOrVendor = asyncHandler(async function (req, res, next) {
-  if (req.user.role == 'vendor' || req.user.role == 'admin') {
-    return next();
-  }
-  return res
-    .status(403)
-    .json({ message: 'Access denied, Admin or Vendor role required.' });
-});
-
-module.exports = { authenticate, isAdmin, isVendor, adminOrVendor };
+module.exports = { authenticate };

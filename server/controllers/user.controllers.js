@@ -10,30 +10,16 @@ const {
 class UserController {
   //Register user
   static async createUser(req, res) {
-    const userExist = await User.findByEmail(req.body.email);
-
-    if (userExist) {
-      return res.status(400).json({ message: 'Email already exist' });
-    }
-
-    const user = await User.create({ ...req.body });
-
+    await User.createIfNotExists(req.body);
     res.status(201).json({
       message:
         'User created successfully. Please check your email for verification.',
     });
   }
 
+  //Register vendor
   static async registerVendor(req, res) {
-    const userExist = await User.findByEmail(req.body.email);
-
-    if (userExist) {
-      return res.status(400).json({ message: 'Email already exist' });
-    }
-
-    // Only include allowed fields
-    const user = await User.create({ ...req.body, role: 'vendor' });
-
+    await User.createVendor(req.body);
     res.status(201).json({
       message:
         'User created successfully. Please check your email for verification.',
@@ -44,12 +30,7 @@ class UserController {
   static async loginUser(req, res) {
     const { email, password, rememberMe } = req.body;
 
-    const user = await User.findOne({ email });
-
-    if (!user || !(await user.checkPassword(password))) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
+    const user = await User.findByEmailAndValidateCredential(email, password);
     if (!user.isEmailVerified) {
       return res
         .status(401)
@@ -66,19 +47,13 @@ class UserController {
           refreshTokenExpiry: '7d',
         };
 
-    // Generate token pair
-    const { accessToken, refreshToken } = user.generateToken(tokenOptions);
-
-    //Save refresh token to database
-    user.refreshToken = refreshToken;
+    const { accessToken, refreshToken } = user.loginWithTokens(tokenOptions);
     await user.save();
 
-    // Cookie configuration with dynamic maxAge based on rememberMe
     const cookieMaxAge = rememberMe
-      ? 30 * 24 * 60 * 60 * 1000 // 30 days
-      : 7 * 24 * 60 * 60 * 1000; // 7 days
+      ? 30 * 24 * 60 * 60 * 1000
+      : 7 * 24 * 60 * 60 * 1000;
 
-    // Cookie configuration
     const cookieOptions = {
       httpOnly: true,
       secure: NODE_ENV === 'production',
@@ -86,10 +61,9 @@ class UserController {
       maxAge: cookieMaxAge,
     };
 
-    // Set refresh token as httpOnly cookie
     res.cookie('refreshToken', refreshToken, cookieOptions).json({
       data: {
-        user,
+        user: user.getPublicProfile(),
         accessToken,
       },
     });
@@ -114,21 +88,16 @@ class UserController {
     }
 
     //Generate new tokens
-    const { accessToken, refreshToken: newRefreshToken } = user.generateToken();
-
-    //Update refresh token in database
-    user.refreshToken = newRefreshToken;
+    const { accessToken, refreshToken: newRefreshToken } = user.refreshTokens();
     await user.save();
 
-    // Cookie configuration
     const cookieOptions = {
       httpOnly: true,
       secure: NODE_ENV === 'production',
       sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     };
 
-    // Set new refresh token as cookie
     res
       .cookie('refreshToken', newRefreshToken, cookieOptions)
       .json({ accessToken, message: 'Token refreshed successfully' });
@@ -139,7 +108,6 @@ class UserController {
     const token = req.cookies?.refreshToken;
 
     if (!token) {
-      // Clear cookie anyway and return success
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: NODE_ENV === 'production',
@@ -148,13 +116,10 @@ class UserController {
       return res.status(200).json({ message: 'Logout successful' });
     }
 
-    // Find user with this refresh token and clear it
-    const user = await User.findOne({ refreshToken: token });
+    const user = await User.findByRefreshToken(token);
     if (user) {
-      user.refreshToken = null;
-      await user.save();
+      await user.clearRefreshToken();
     }
-    // Clear the refresh token cookie with same options as when set
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: NODE_ENV === 'production',
@@ -165,57 +130,42 @@ class UserController {
 
   // Get user profile
   static async getUserProfile(req, res) {
-    const user = await User.findById(req.user.id, '-password -refreshToken');
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: 'User not found' });
+    const user = await User.findByIdAndValidate(req.user.id);
     const completion = calculateProfileCompletion(user);
-    res.json({ success: true, data: { user, profileCompletion: completion } });
+    res.json({
+      success: true,
+      data: {
+        user: user.getPublicProfile(),
+        profileCompletion: completion,
+      },
+    });
   }
 
   //Email verification
   static async emailVerification(req, res) {
-    //Token
     const { token } = req.params;
 
-    //Model
-    const user = await User.findOne({
-      emailVerificationToken: token,
-      emailVerificationExpires: { $gt: Date.now() },
-    });
+    const user = await User.findByVerificationToken(token);
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid verification token' });
-    }
-
-    if (user.isEmailVerified) {
+    if (user.isEmailAlreadyVerified()) {
       return res.status(200).send('Email already verified.');
     }
 
-    // Mark email as verified
-    user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
-    await user.save();
+    await user.verifyEmail();
+    await user.sendWelcomeEmail();
 
-    //Send welcome email
-    await EmailService.sendWelcomeEmail(user);
     res.json({ message: 'Email verified successfully' });
   }
 
   // Request password reset
   static async forgotPassword(req, res) {
-    // 1. Validate email exists in request
     if (!req.body.email) {
       return res.status(400).json({
         message: 'Please provide an email address',
       });
     }
 
-    const user = await User.findOne({
-      email: req.body.email.toLowerCase().trim(),
-    });
+    const user = await User.findByEmail(req.body.email.toLowerCase().trim());
 
     if (!user) {
       return res.status(200).json({
@@ -224,11 +174,9 @@ class UserController {
       });
     }
 
-    // 4. Generate token and send email
     const resetToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
-
-    await EmailService.sendPasswordResetEmail(user, resetToken);
+    await user.processPasswordReset(resetToken);
 
     res.status(200).json({
       message:
@@ -241,26 +189,12 @@ class UserController {
     const { token } = req.params;
     const { password } = req.body;
 
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
-    });
-
-    // Check if user exists and token hasn't expired
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
-    }
-
-    // Set new password
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
+    const user = await User.findResetToken(token);
+    await user.resetPassword(password);
 
     res.json({ message: 'Password reset successful' });
   }
 
-  // Google OAuth routes (implement with passport-google-oauth20)
   static googleAuth(req, res, next) {
     return passport.authenticate('google', { scope: ['profile', 'email'] })(
       req,
@@ -269,54 +203,52 @@ class UserController {
     );
   }
 
+  // Google OAuth callback
   static googleCallback(req, res, next) {
     passport.authenticate('google', { session: false }, async (err, user) => {
       if (err) return next(err);
-      if (!user)
+      if (!user) {
         return res.redirect(
           `${FRONTEND_URL}/oauth/callback?error=oauth_failed`
         );
-
-      const { accessToken, refreshToken } = user.generateToken();
-
-      //Save refresh token to database
-      user.refreshToken = refreshToken;
-      await user.save();
-
-      res.redirect(
-        `${FRONTEND_URL}/oauth/callback?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
-          JSON.stringify({
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          })
-        )}`
-      );
-
-      if (!user.isEmailVerified) {
-        await EmailService.sendWelcomeEmail(user);
-        next();
       }
+
+      const { redirectUrl, shouldSendWelcome } =
+        await User.processOAuthCallback(user, FRONTEND_URL);
+
+      if (shouldSendWelcome) {
+        await user.sendWelcomeEmail();
+      }
+
+      res.redirect(redirectUrl);
     })(req, res, next);
   }
 
+  // Get all users
+  static async getAllUsers(req, res) {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const filter = User.buildSearchFilter(req.query);
+    const result = await User.findWithPagination(filter, { page, limit });
+
+    res.status(200).json({
+      data: result.users,
+      pagination: result.pagination,
+    });
+  }
+
   // Get user by ID
-  static async getUserById(req, res, next) {
-    const user = await User.findById(req.params.id, '-password -refreshToken');
+  static async getUserById(req, res) {
+    const currentUser = await User.findByIdAndValidate(req.user.id);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Allow access if user is admin OR if user is requesting their own data
-    if (req.user.role !== 'admin' && req.params.id !== req.user.id) {
+    if (!currentUser.canAccessUser(req.params.id, req.user.role)) {
       return res.status(403).json({
         message: 'Access denied. You can only access your own profile.',
       });
     }
 
-    res.status(200).json({ data: user });
+    const user = await User.findByIdAndValidate(req.params.id);
+    res.status(200).json({ data: user.getPublicProfile() });
   }
 
   //Update user
@@ -328,23 +260,18 @@ class UserController {
       {
         new: true,
         runValidators: true,
-        select: '-password -refreshToken',
       }
     );
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json({ data: user });
+    res.json({ data: user.getPublicProfile() });
   }
 
   // Delete user (admin only)
   static async deleteUser(req, res) {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found!' });
-    }
+    await User.findByIdAndValidate(req.params.id);
 
     if (!req.user.id || req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin permission required!' });
@@ -352,6 +279,128 @@ class UserController {
 
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
+  }
+
+  //Deactivate user
+  static async deactivateUser(req, res) {
+    const { id } = req.params;
+    const currentUser = await User.findByIdAndValidate(req.user.id);
+
+    if (!currentUser.canDeactivateUser(id, req.user.role)) {
+      const message =
+        req.user.role === 'admin' && req.user.id === id
+          ? 'Admins cannot deactivate their own accounts.'
+          : 'Insufficient permissions to deactivate this user';
+      return res.status(403).json({ success: false, message });
+    }
+
+    const user = await User.findByIdAndValidate(id);
+
+    if (user.isAlreadyDeactivated()) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'User is already deactivated.' });
+    }
+
+    await user.deactivate();
+
+    res.json({
+      success: true,
+      message: 'User account deactivated successfully.',
+      data: {
+        id: user._id,
+        isActive: user.isActive,
+        tokenVersion: user.tokenVersion,
+      },
+    });
+  }
+
+  // Activate user - simplified
+  static async activateUser(req, res) {
+    const { id } = req.params;
+
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can activate user accounts.',
+      });
+    }
+
+    const user = await User.findByIdAndValidate(id);
+
+    if (user.isAlreadyActive()) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'User is already active.' });
+    }
+
+    await user.activate();
+
+    res.json({
+      success: true,
+      message: 'User account activated successfully.',
+      data: { id: user._id, isActive: user.isActive },
+    });
+  }
+
+  // Invalidate user tokens
+  static async invalidateUserTokens(req, res) {
+    const { id } = req.params;
+    const currentUser = await User.findByIdAndValidate(req.user.id);
+
+    if (!currentUser.canInvalidateTokens(id, req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions to invalidate tokens for this user.',
+      });
+    }
+
+    const user = await User.findByIdAndValidate(id);
+    await user.invalidateAllTokens();
+
+    res.json({
+      success: true,
+      message:
+        'All user tokens invalidated successfully. User will need to login again.',
+      data: { id: user._id, tokenVersion: user.tokenVersion },
+    });
+  }
+
+  static async getActiveUsers(req, res) {
+    const currentUser = req.user;
+
+    if (currentUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can view all active users.',
+      });
+    }
+
+    const users = await User.findActiveUsers();
+    res.json({
+      success: true,
+      data: users,
+      count: users.length,
+    });
+  }
+
+  // Get user status - simplified
+  static async getUserStatus(req, res) {
+    const { id } = req.params;
+    const currentUser = await User.findByIdAndValidate(req.user.id);
+
+    if (!currentUser.canAccessUser(id, req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Insufficient permissions to view this user's status.",
+      });
+    }
+
+    const user = await User.findByIdAndValidate(id);
+    res.json({
+      success: true,
+      data: user.getStatusInfo(),
+    });
   }
 }
 

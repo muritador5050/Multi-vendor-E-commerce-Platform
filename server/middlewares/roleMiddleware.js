@@ -1,34 +1,33 @@
 const roles = {
-  admin: {
-    can: ['create', 'edit', 'delete', 'read'],
-  },
-  vendor: {
-    can: ['create', 'edit', 'read'],
-  },
-  customer: {
-    can: ['read'],
-  },
+  admin: { can: ['create', 'edit', 'delete', 'read'] },
+  vendor: { can: ['create', 'edit', 'read'] },
+  customer: { can: ['read'] },
 };
 
 const checkRole = (allowedRoles, action) => {
   return (req, res, next) => {
-    const userRole = req.user.role;
+    if (typeof allowedRoles === 'string') {
+      allowedRoles = [allowedRoles];
+    }
 
-    if (!allowedRoles.includes(userRole)) {
+    if (!req.user?.role) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
       return res
         .status(403)
         .json({ message: 'Access Denied: Role not allowed' });
     }
 
-    const permissions = roles[userRole]?.can || [];
-
-    if (permissions.includes(action)) {
-      return next();
+    if (action) {
+      const permissions = roles[req.user.role]?.can || [];
+      if (!permissions.includes(action)) {
+        return res.status(403).json({ message: 'Action not permitted' });
+      }
     }
 
-    return res
-      .status(403)
-      .json({ message: 'Access Denied: Action not permitted' });
+    next();
   };
 };
 
