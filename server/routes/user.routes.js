@@ -240,14 +240,6 @@ router.get(
   asyncHandler(UserController.getAllUsers)
 );
 
-// Get active users (admin only)
-router.get(
-  '/users/active',
-  authenticate,
-  checkRole('admin', 'read'),
-  asyncHandler(UserController.getActiveUsers)
-);
-
 // User status and token management
 router.get(
   '/users/:id/status',
@@ -265,7 +257,6 @@ router.patch(
 router.patch(
   '/users/:id/deactivate',
   authenticate,
-  checkRole('admin', 'edit'),
   asyncHandler(UserController.deactivateUser)
 );
 

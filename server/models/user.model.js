@@ -335,11 +335,11 @@ userSchema.statics.findWithPagination = async function (filter, options) {
 };
 
 // Utility methods
-userSchema.statics.findActiveUsers = async function () {
-  return await this.find({ isActive: true }).select(
-    'name email role isEmailVerified createdAt updatedAt avatar isActive'
-  );
-};
+// userSchema.statics.findActiveUsers = async function () {
+//   return await this.find({ isActive: true }).select(
+//     'name email role phone isEmailVerified createdAt updatedAt avatar isActive'
+//   );
+// };
 
 userSchema.statics.processOAuthCallback = async function (user, frontendUrl) {
   const { accessToken, refreshToken } = user.generateToken();
@@ -461,7 +461,7 @@ userSchema.methods.resetPassword = function (newPassword) {
 };
 
 userSchema.methods.processPasswordReset = async function (resetToken) {
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+  const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
   await EmailService.sendPasswordResetEmail(this, resetToken);
   return resetLink;
 };
@@ -488,6 +488,10 @@ userSchema.methods.isAlreadyDeactivated = function () {
 
 // Permission methods
 userSchema.methods.canAccessUser = function (requestedUserId, userRole) {
+  return userRole === 'admin' || this._id.toString() === requestedUserId;
+};
+
+userSchema.methods.canUpdateUser = function (requestedUserId, userRole) {
   return userRole === 'admin' || this._id.toString() === requestedUserId;
 };
 
@@ -531,9 +535,10 @@ userSchema.methods.getStatusInfo = function () {
     id: this._id,
     name: this.name,
     email: this.email,
+    phone: this.phone,
+    role: this.role,
     isActive: this.isActive,
     isEmailVerified: this.isEmailVerified,
-    role: this.role,
     tokenVersion: this.tokenVersion,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,

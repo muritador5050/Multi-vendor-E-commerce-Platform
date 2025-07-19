@@ -6,6 +6,10 @@ const passport = require('passport');
 const {
   calculateProfileCompletion,
 } = require('../utils/calculateProfileCompletion');
+const {
+  validateFieldPermissions,
+  getFilteredUpdateData,
+} = require('../utils/ValidateFieldPermission');
 
 class UserController {
   //Register user
@@ -253,20 +257,64 @@ class UserController {
 
   //Update user
   static async updateUser(req, res) {
-    const { name, email, role } = req.body;
-    const user = await User.findByIdAndUpdate(
+    const currentUser = await User.findByIdAndValidate(req.user.id);
+
+    if (!currentUser) {
+      return res.status(401).json({
+        message: 'Current user not found or session invalid.',
+      });
+    }
+
+    if (!currentUser.canUpdateUser(req.params.id, req.user.role)) {
+      return res.status(403).json({
+        message: 'Access denied. You can only edit your own profile.',
+      });
+    }
+
+    const validation = validateFieldPermissions(req.body, req.user.role);
+    if (!validation.isValid) {
+      return res.status(403).json({
+        message: `You don't have permission to edit: ${validation.forbiddenFields.join(
+          ', '
+        )}`,
+        forbiddenFields: validation.forbiddenFields,
+      });
+    }
+
+    const targetUser = await User.findByIdAndValidate(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    const updateData = getFilteredUpdateData(req.body, req.user.role);
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message: 'No valid fields provided for update.',
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, role },
+      updateData,
       {
         new: true,
         runValidators: true,
       }
     );
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!updatedUser) {
+      return res.status(500).json({
+        message: 'Failed to update user. Please try again.',
+      });
     }
-    res.json({ data: user.getPublicProfile() });
+
+    return res.status(200).json({
+      message: 'User updated successfully',
+      data: updatedUser.getPublicProfile(),
+    });
   }
 
   // Delete user (admin only)
@@ -274,7 +322,15 @@ class UserController {
     await User.findByIdAndValidate(req.params.id);
 
     if (!req.user.id || req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin permission required!' });
+      return res
+        .status(403)
+        .json({ message: 'You can only delete your account!' });
+    }
+
+    if (req.user.role === 'admin' && req.user.id === req.params.id) {
+      return res
+        .status(403)
+        .json({ message: "Admin can't delete their own profile" });
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -346,6 +402,8 @@ class UserController {
   // Invalidate user tokens
   static async invalidateUserTokens(req, res) {
     const { id } = req.params;
+    const { reason } = req.body;
+
     const currentUser = await User.findByIdAndValidate(req.user.id);
 
     if (!currentUser.canInvalidateTokens(id, req.user.role)) {
@@ -356,31 +414,24 @@ class UserController {
     }
 
     const user = await User.findByIdAndValidate(id);
+    const invalidationTimestamp = new Date();
+
     await user.invalidateAllTokens();
+
+    console.log(
+      `Tokens invalidated for user ${id} by ${
+        req.user.id
+      } at ${invalidationTimestamp}${reason ? ` - Reason: ${reason}` : ''}`
+    );
 
     res.json({
       success: true,
       message:
         'All user tokens invalidated successfully. User will need to login again.',
-      data: { id: user._id, tokenVersion: user.tokenVersion },
-    });
-  }
-
-  static async getActiveUsers(req, res) {
-    const currentUser = req.user;
-
-    if (currentUser.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admins can view all active users.',
-      });
-    }
-
-    const users = await User.findActiveUsers();
-    res.json({
-      success: true,
-      data: users,
-      count: users.length,
+      data: {
+        invalidatedAt: invalidationTimestamp,
+        reason: reason || 'Not specified',
+      },
     });
   }
 
