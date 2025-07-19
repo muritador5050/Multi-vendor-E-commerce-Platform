@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { validators } from '@/utils/Validation';
 import { permissionUtils } from '@/utils/Permission';
-import {
-  type User,
-  type UserRole,
-  type Action,
-  type AuthResponse,
-  type ProfileData,
+import type {
+  User,
+  UserRole,
+  Action,
+  AuthResponse,
+  ProfileData,
+  UserStatus,
+  UserStatusUpdate,
 } from '@/type/auth';
 import { apiBase, apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
@@ -40,24 +42,6 @@ async function registerVendor(
     }
   );
 }
-
-// async function login(email: string, password: string, rememberMe: boolean) {
-//   const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
-//     '/auth/login',
-//     {
-//       method: 'POST',
-//       body: JSON.stringify({ email, password, rememberMe }),
-//     }
-//   );
-
-//   if (response.data?.accessToken) {
-//     localStorage.setItem('accessToken', response.data.accessToken);
-
-//     // Store rememberMe preference for future reference
-//     localStorage.setItem('rememberMe', rememberMe.toString());
-//   }
-//   return response;
-// }
 
 async function login(email: string, password: string, rememberMe: boolean) {
   const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
@@ -130,7 +114,7 @@ async function resetPassword(token: string, password: string) {
 
 async function verifyEmail(token: string) {
   return apiClient.publicApiRequest<ApiResponse<null>>(
-    `/auth/verify/${token}`,
+    `/auth/verify-email/${token}`,
     {
       method: 'GET',
     }
@@ -167,6 +151,42 @@ async function uploadFile<T = unknown>(
   });
 }
 
+// Deactivate user
+async function deactivateUser(id: string) {
+  return apiClient.authenticatedApiRequest<ApiResponse<UserStatusUpdate>>(
+    `/users/${id}/deactivate`,
+    {
+      method: 'PATCH',
+    }
+  );
+}
+
+// Activate user
+async function activateUser(id: string) {
+  return apiClient.authenticatedApiRequest<ApiResponse<UserStatusUpdate>>(
+    `/users/${id}/activate`,
+    {
+      method: 'PATCH',
+    }
+  );
+}
+
+// Invalidate user tokens
+async function invalidateUserTokens(id: string) {
+  return apiClient.authenticatedApiRequest<
+    ApiResponse<{ id: string; tokenVersion: number }>
+  >(`/users/${id}/invalidate-tokens`, {
+    method: 'PATCH',
+  });
+}
+
+// Get user status
+async function getUserStatus(id: string) {
+  return apiClient.authenticatedApiRequest<ApiResponse<UserStatus>>(
+    `/users/${id}/status`
+  );
+}
+
 // Utility functions
 function isAuthenticated(): boolean {
   return apiClient.isAuthenticated();
@@ -198,6 +218,8 @@ function validateRegistration(
 // Query keys
 export const authKeys = {
   profile: ['auth', 'profile'] as const,
+  activeUsers: ['users', 'active'] as const,
+  userStatus: (id: string) => ['users', 'status', id] as const,
 };
 
 // Profile query
@@ -212,6 +234,32 @@ export const useProfile = () => {
     staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
       // Don't retry on client errors (4xx)
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
+};
+
+// Get user status
+export const useUserStatus = (id: string) => {
+  const user = useCurrentUser();
+  const canView = permissionUtils.isAdmin(user?.role) || user?._id === id;
+
+  return useQuery({
+    queryKey: authKeys.userStatus(id),
+    queryFn: async () => {
+      const response = await getUserStatus(id);
+      return response.data;
+    },
+    enabled: isAuthenticated() && canView && !!id,
+    staleTime: 1 * 60 * 1000, // 1 minute
+    retry: (failureCount, error) => {
       if (
         error instanceof ApiError &&
         error.status >= 400 &&
@@ -392,11 +440,7 @@ export const useUpdateProfile = () => {
         const nameError = validators.name(updates.name);
         if (nameError) throw new ApiError(nameError, 400);
       }
-
       const response = await updateProfile(updates);
-      if (!response.success) {
-        throw new ApiError(response.message || 'Profile update failed', 400);
-      }
       return response.data?.user;
     },
     onSuccess: () => {
@@ -405,25 +449,18 @@ export const useUpdateProfile = () => {
   });
 };
 
-export const useVerifyEmail = () => {
-  const queryClient = useQueryClient();
-
+export const useVerifyEmail = (options?: {
+  onSuccess?: () => void;
+  onError?: (error: ApiError) => void;
+}) => {
   return useMutation({
     mutationFn: async (token: string) => {
       if (!token?.trim()) throw new ApiError('Invalid verification token', 400);
-
       const response = await verifyEmail(token);
-      if (!response.success) {
-        throw new ApiError(
-          response.message || 'Email verification failed',
-          400
-        );
-      }
       return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: authKeys.profile });
-    },
+    onSuccess: options?.onSuccess,
+    onError: options?.onError,
   });
 };
 
@@ -444,6 +481,103 @@ export const useUploadFile = () => {
         throw new ApiError(response.message || 'File upload failed', 400);
       }
       return response.data;
+    },
+  });
+};
+
+// Deactivate user mutation
+export const useDeactivateUser = (options?: {
+  onSuccess?: () => void;
+  onError?: () => void;
+}) => {
+  const queryClient = useQueryClient();
+  const forceLogout = useForceLogout();
+  const currentUser = useCurrentUser();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!id?.trim()) throw new ApiError('User ID is required', 400);
+
+      const response = await deactivateUser(id);
+      if (!response.success) {
+        throw new ApiError(response.message || 'User deactivation failed', 400);
+      }
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: authKeys.activeUsers });
+      queryClient.invalidateQueries({
+        queryKey: authKeys.userStatus(variables),
+      });
+
+      // If user deactivated themselves, force logout
+      if (currentUser?._id === variables) {
+        forceLogout('Your account has been deactivated');
+      }
+    },
+    onError: options?.onError,
+  });
+};
+
+// Activate user mutation
+export const useActivateUser = (options?: { onSuccess?: () => void }) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!id?.trim()) throw new ApiError('User ID is required', 400);
+
+      const response = await activateUser(id);
+      if (!response.success) {
+        throw new ApiError(response.message || 'User activation failed', 400);
+      }
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: authKeys.activeUsers });
+      queryClient.invalidateQueries({
+        queryKey: authKeys.userStatus(variables),
+      });
+
+      options?.onSuccess?.();
+    },
+  });
+};
+
+// Invalidate user tokens mutation
+export const useInvalidateUserTokens = (options?: {
+  onSuccess?: () => void;
+}) => {
+  const queryClient = useQueryClient();
+  const forceLogout = useForceLogout();
+
+  const currentUser = useCurrentUser();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!id?.trim()) throw new ApiError('User ID is required', 400);
+
+      const response = await invalidateUserTokens(id);
+      if (!response.success) {
+        throw new ApiError(
+          response.message || 'Token invalidation failed',
+          400
+        );
+      }
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({
+        queryKey: authKeys.userStatus(variables),
+      });
+
+      // If user invalidated their own tokens, force logout
+      if (currentUser?._id === variables) {
+        forceLogout('Your session has been invalidated. Please login again.');
+      }
+
+      options?.onSuccess?.();
     },
   });
 };
@@ -490,5 +624,31 @@ export const useForceLogout = () => {
       ? `/my-account?message=${encodeURIComponent(message)}`
       : '/';
     navigate(url, { replace: true });
+  };
+};
+
+// Check if current user can manage a specific user
+export const useCanManageUser = (userId: string) => {
+  const currentUser = useCurrentUser();
+  const isAdmin = permissionUtils.isAdmin(currentUser?.role);
+  const isOwner = currentUser?._id === userId;
+
+  return {
+    canDeactivate: isAdmin || isOwner,
+    canActivate: isAdmin,
+    canInvalidateTokens: isAdmin || isOwner,
+    canViewStatus: isAdmin || isOwner,
+  };
+};
+
+// Get user activity status
+export const useUserActivityStatus = (userId: string) => {
+  const { data: userStatus } = useUserStatus(userId);
+
+  return {
+    isActive: userStatus?.isActive ?? false,
+    isEmailVerified: userStatus?.isEmailVerified ?? false,
+    tokenVersion: userStatus?.tokenVersion ?? 0,
+    lastUpdated: userStatus?.updatedAt,
   };
 };

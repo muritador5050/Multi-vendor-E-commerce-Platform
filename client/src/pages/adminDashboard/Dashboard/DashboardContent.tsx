@@ -1,6 +1,7 @@
 import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
 import { TrendingUp } from 'lucide-react';
 import { getStatusColor } from '../Utils';
+import UserManagementDashboard from '@/components/UserManagementDasboard/UserManagementDashboard';
 
 type Stat = {
   label: string;
@@ -158,6 +159,7 @@ export const DashboardContent = ({ data }: { data: DashboardData }) => {
             </Flex>
           ))}
         </Box>
+        <UserManagementDashboard />
       </Box>
     </Box>
   );

@@ -19,6 +19,7 @@ import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
 import ProductCategoryPage from './pages/ProductCategoryPage';
 import AdminDashboard from './pages/adminDashboard/AdminHomePage';
 import { useIsAuthenticated, useLogout } from './context/AuthContextService';
+import { EmailVerificationPage } from './auth/EmailVerification';
 
 //App
 function App() {
@@ -63,6 +64,10 @@ function App() {
           <Route
             path='auth/reset-password/:token'
             element={<ResetPasswordForm />}
+          />
+          <Route
+            path='auth/verify-email/:token'
+            element={<EmailVerificationPage />}
           />
         </Route>
       </Routes>

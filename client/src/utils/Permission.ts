@@ -113,3 +113,15 @@ export const permissionUtils = {
   isAdmin: (userRole: UserRole | undefined): boolean =>
     userRole === USER_ROLES.ADMIN,
 };
+
+export const usePermissions = (userRole: UserRole | undefined) => {
+  return {
+    canCreate: permissionUtils.canPerformAction(userRole, ACTIONS.CREATE),
+    canEdit: permissionUtils.canPerformAction(userRole, ACTIONS.EDIT),
+    canDelete: permissionUtils.canPerformAction(userRole, ACTIONS.DELETE),
+    canRead: permissionUtils.canPerformAction(userRole, ACTIONS.READ),
+    isAdmin: permissionUtils.isAdmin(userRole),
+    hasRole: (roles: UserRole[]) => permissionUtils.hasAnyRole(userRole, roles),
+    getDefaultRoute: () => permissionUtils.getDefaultRoute(userRole!),
+  };
+};

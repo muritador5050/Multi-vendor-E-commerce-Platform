@@ -33,6 +33,8 @@ export interface User {
   googleId?: string;
   facebookId?: string;
   avatar?: string;
+  isActive?: boolean;
+  tokenVersion?: number;
   isEmailVerified: boolean;
   profileCompletion?: number;
   emailVerificationToken?: string;
@@ -42,6 +44,28 @@ export interface User {
   refreshToken?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface UserStatusUpdate {
+  _id: string;
+  isActive: boolean;
+  tokenVersion?: number;
+}
+
+export interface UserStatus {
+  _id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  isActive: boolean;
+  isEmailVerified: boolean;
+  role: UserRole;
+  tokenVersion: number;
+  phone: number;
+  location: string;
+  lastLogin?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const USER_ROLES = {
