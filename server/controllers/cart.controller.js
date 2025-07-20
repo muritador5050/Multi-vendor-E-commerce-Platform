@@ -20,94 +20,36 @@ class CartController {
       });
     }
 
-    let cart = await Cart.findOne({ user: req.user.id });
-
-    if (!cart) {
-      cart = new Cart({
-        user: req.user.id,
-        items: [],
-      });
-    }
-    const itemsIndex = cart.items.findIndex(
-      (item) => item.product.toString() === productId
-    );
-
-    if (itemsIndex > -1) {
-      cart.items[itemsIndex].quantity += quantity;
-    } else {
-      cart.items.push({ product: productId, quantity });
-    }
-
-    cart.updatedAt = new Date();
+    const cart = await Cart.findOrCreateCart(req.user.id);
+    cart.addItem(productId, quantity);
     await cart.save();
 
-    const updatedCart = await Cart.findOne({ user: req.user.id }).populate(
-      'items.product'
-    );
-
-    const totalAmount = updatedCart.items.reduce((total, item) => {
-      return total + item.product.price * item.quantity;
-    }, 0);
-
-    const totalItems = updatedCart.items.reduce((total, item) => {
-      return total + item.quantity;
-    }, 0);
+    const updatedCart = await Cart.getPopulatedCart(req.user.id);
 
     res.json({
       success: true,
       message: 'Item added to cart successfully',
-      data: {
-        ...updatedCart.toObject(),
-        totalItems,
-        totalAmount,
-      },
+      data: updatedCart.toResponseFormat(),
     });
   }
 
   static async getCart(req, res) {
-    const userId = req.user.id;
-
-    const cart = await Cart.findOne({ user: userId })
-      .populate('items.product')
-      .populate('user', 'name email');
+    const cart = await Cart.getPopulatedCart(req.user.id);
 
     if (!cart) {
-      return res.json({
-        success: true,
-        message: 'Cart is empty',
-        data: {
-          user: userId,
-          items: [],
-          totalItems: 0,
-          totalAmount: 0,
-        },
-      });
+      return res.json(Cart.getEmptyCartResponse(req.user.id));
     }
-
-    // Calculate total amount
-    const totalAmount = cart.items.reduce((total, item) => {
-      return total + item.product.price * item.quantity;
-    }, 0);
-
-    const totalItems = cart.items.reduce((total, item) => {
-      return total + item.quantity;
-    }, 0);
 
     res.json({
       success: true,
       message: 'Cart retrieved successfully',
-      data: {
-        ...cart.toObject(),
-        totalItems,
-        totalAmount,
-      },
+      data: cart.toResponseFormat(),
     });
   }
 
   static async updateProductQuantity(req, res) {
-    const userId = req.user.id;
-    const productId = req.params.id;
     const { quantity } = req.body;
+    const productId = req.params.id;
 
     if (quantity === undefined) {
       return res.status(400).json({
@@ -123,59 +65,33 @@ class CartController {
       });
     }
 
-    const cart = await Cart.findOne({ user: userId });
+    const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
       return res.status(404).json({
         success: false,
         message: 'Cart not found',
       });
     }
-    const itemIndex = cart.items.findIndex(
-      (item) => item.product.toString() === productId
-    );
 
-    if (itemIndex === -1) {
+    const updated = cart.updateItemQuantity(productId, quantity);
+    if (!updated) {
       return res.status(404).json({
         success: false,
         message: 'Product not found in cart',
       });
     }
 
-    if (quantity === 0) {
-      cart.items.splice(itemIndex, 1);
-    } else {
-      cart.items[itemIndex].quantity = quantity;
-    }
-
-    cart.updatedAt = new Date();
     await cart.save();
-
-    const updatedCart = await Cart.findOne({ user: userId }).populate(
-      'items.product'
-    );
-
-    const totalAmount = updatedCart.items.reduce((total, item) => {
-      return total + item.product.price * item.quantity;
-    }, 0);
-
-    const totalItems = updatedCart.items.reduce((total, item) => {
-      return total + item.quantity;
-    }, 0);
+    const updatedCart = await Cart.getPopulatedCart(req.user.id);
 
     res.json({
       success: true,
       message: 'Cart updated successfully',
-      data: {
-        ...updatedCart.toObject(),
-        totalItems,
-        totalAmount,
-      },
+      data: updatedCart.toResponseFormat(),
     });
   }
 
-  //Remove item from cart
   static async deleteCartItem(req, res) {
-    const userId = req.user.id;
     const productId = req.params.id;
 
     if (!productId) {
@@ -185,7 +101,7 @@ class CartController {
       });
     }
 
-    const cart = await Cart.findOne({ user: userId });
+    const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
       return res.status(404).json({
         success: false,
@@ -193,18 +109,14 @@ class CartController {
       });
     }
 
-    const itemIndex = cart.items.findIndex(
-      (item) => item.product.toString() === productId
-    );
-
-    if (itemIndex === -1) {
+    const removed = cart.removeItem(productId);
+    if (!removed) {
       return res.status(404).json({
         success: false,
         message: 'Item not found in cart',
       });
     }
 
-    cart.items.splice(itemIndex, 1);
     await cart.save();
 
     res.json({
@@ -213,11 +125,8 @@ class CartController {
     });
   }
 
-  //Clear cart items
   static async clearCart(req, res) {
-    const userId = req.user.id;
-
-    const cart = await Cart.findOne({ user: userId });
+    const cart = await Cart.findOne({ user: req.user.id });
     if (!cart) {
       return res.status(404).json({
         success: false,
@@ -225,10 +134,13 @@ class CartController {
       });
     }
 
-    cart.items = [];
+    cart.clearItems();
     await cart.save();
 
-    res.json({ success: true, message: 'Cart cleared successfully' });
+    res.json({
+      success: true,
+      message: 'Cart cleared successfully',
+    });
   }
 }
 

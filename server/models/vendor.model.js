@@ -1,101 +1,5 @@
 const mongoose = require('mongoose');
 
-/**
- * @openapi
- * components:
- *   schemas:
- *     VendorProfile:
- *       type: object
- *       required:
- *         - businessName
- *         - businessType
- *       properties:
- *         businessName:
- *           type: string
- *           example: "John's Electronics Store"
- *         businessType:
- *           type: string
- *           enum: [individual, company, partnership, corporation]
- *           example: "company"
- *         taxId:
- *           type: string
- *           example: "123-45-6789"
- *         businessRegistrationNumber:
- *           type: string
- *           example: "REG123456"
- *         businessAddress:
- *           type: object
- *           properties:
- *             street:
- *               type: string
- *               example: "456 Business Ave"
- *             city:
- *               type: string
- *               example: "Commerce City"
- *             state:
- *               type: string
- *               example: "NY"
- *             zipCode:
- *               type: string
- *               example: "10002"
- *             country:
- *               type: string
- *               example: "USA"
- *         businessPhone:
- *           type: string
- *           example: "+1-555-123-4567"
- *         businessEmail:
- *           type: string
- *           example: "business@johnselectronics.com"
- *         verificationStatus:
- *           type: string
- *           enum: [pending, verified, rejected, suspended]
- *           example: "pending"
- *         bankDetails:
- *           type: object
- *           properties:
- *             accountName:
- *               type: string
- *               example: "John's Electronics Store"
- *             accountNumber:
- *               type: string
- *               example: "****1234"
- *             bankName:
- *               type: string
- *               example: "First National Bank"
- *         paymentTerms:
- *           type: string
- *           enum: [net15, net30, net45, net60, immediate]
- *           example: "net30"
- *         storeName:
- *           type: string
- *           example: "John's Electronics"
- *         storeDescription:
- *           type: string
- *           example: "Quality electronics and gadgets"
- *         storeLogo:
- *           type: string
- *           example: "https://example.com/logo.png"
- *         storeSlug:
- *           type: string
- *           example: "johns-electronics"
- *         commission:
- *           type: number
- *           example: 0.10
- *         rating:
- *           type: number
- *           example: 4.5
- *         totalOrders:
- *           type: number
- *           example: 150
- *         totalRevenue:
- *           type: number
- *           example: 25000.50
- *         isActive:
- *           type: boolean
- *           example: true
- */
-
 const vendorSchema = new mongoose.Schema(
   {
     userId: {
@@ -105,7 +9,6 @@ const vendorSchema = new mongoose.Schema(
       unique: true,
     },
 
-    // Business Information
     businessName: {
       type: String,
       required: true,
@@ -126,7 +29,6 @@ const vendorSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Contact & Address
     businessAddress: {
       street: String,
       city: String,
@@ -144,7 +46,6 @@ const vendorSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Financial Information
     bankDetails: {
       accountName: String,
       accountNumber: String,
@@ -158,7 +59,6 @@ const vendorSchema = new mongoose.Schema(
       default: 'net30',
     },
 
-    // Verification & Status
     verificationStatus: {
       type: String,
       enum: ['pending', 'verified', 'rejected', 'suspended'],
@@ -192,7 +92,6 @@ const vendorSchema = new mongoose.Schema(
       ref: 'User',
     },
 
-    // Business Metrics
     rating: {
       type: Number,
       min: 1,
@@ -215,16 +114,11 @@ const vendorSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // Settings
     commission: {
       type: Number,
       default: 0.1,
       min: 0,
       max: 1,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
     },
 
     // Store Information
@@ -245,6 +139,14 @@ const vendorSchema = new mongoose.Schema(
       lowercase: true,
     },
     storeBanner: String,
+
+    // Account Status
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    deactivationReason: String,
+    deactivatedAt: Date,
 
     // Additional Settings
     notifications: {
@@ -326,7 +228,7 @@ vendorSchema.pre('save', function (next) {
   next();
 });
 
-// Static methods
+// Static methods for queries and utilities
 vendorSchema.statics.findByUserId = function (userId) {
   return this.findOne({ userId }).populate('user', '-password -refreshToken');
 };
@@ -345,10 +247,105 @@ vendorSchema.statics.findPendingVerification = function () {
   );
 };
 
+vendorSchema.statics.buildQuery = function (filters) {
+  const query = {};
+
+  if (filters.search) query.$text = { $search: filters.search };
+  if (filters.status) query.verificationStatus = filters.status;
+  if (filters.businessType) query.businessType = filters.businessType;
+  if (filters.verified) {
+    query.verificationStatus = 'verified';
+    query.isActive = true;
+  }
+
+  return query;
+};
+
+vendorSchema.statics.buildPagination = function (page = 1, limit = 10) {
+  const normalizedLimit = Math.min(parseInt(limit), 50);
+  const normalizedPage = parseInt(page);
+  const skip = (normalizedPage - 1) * normalizedLimit;
+
+  return { page: normalizedPage, limit: normalizedLimit, skip };
+};
+
+vendorSchema.statics.findByIdentifier = function (identifier) {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
+  const query = isObjectId ? { _id: identifier } : { storeSlug: identifier };
+
+  return this.findOne(query).populate('user', 'name email avatar createdAt');
+};
+
+vendorSchema.statics.findWithPagination = function (
+  query,
+  page,
+  limit,
+  populateOptions = '',
+  selectFields = ''
+) {
+  const { skip, limit: normalizedLimit } = this.buildPagination(page, limit);
+
+  const findQuery = this.find(query);
+
+  if (selectFields) findQuery.select(selectFields);
+  if (populateOptions) findQuery.populate(populateOptions);
+
+  return Promise.all([
+    findQuery.sort({ createdAt: -1 }).skip(skip).limit(normalizedLimit),
+    this.countDocuments(query),
+  ]);
+};
+
+vendorSchema.statics.getAdminStatistics = async function () {
+  const [
+    totalVendors,
+    verifiedVendors,
+    pendingVendors,
+    rejectedVendors,
+    revenueAggregate,
+    recentRegistrations,
+  ] = await Promise.all([
+    this.countDocuments(),
+    this.countDocuments({ verificationStatus: 'verified' }),
+    this.countDocuments({ verificationStatus: 'pending' }),
+    this.countDocuments({ verificationStatus: 'rejected' }),
+    this.aggregate([
+      { $group: { _id: null, totalRevenue: { $sum: '$totalRevenue' } } },
+    ]),
+    this.find().populate('user', 'name email').sort({ createdAt: -1 }).limit(5),
+  ]);
+
+  return {
+    totalVendors,
+    verifiedVendors,
+    pendingVendors,
+    rejectedVendors,
+    totalRevenue:
+      revenueAggregate.length > 0 ? revenueAggregate[0].totalRevenue : 0,
+    recentRegistrations,
+  };
+};
+
+vendorSchema.statics.updateVerificationStatus = function (
+  id,
+  status,
+  notes,
+  verifiedBy
+) {
+  return this.findByIdAndUpdate(
+    id,
+    {
+      verificationStatus: status,
+      verificationNotes: notes,
+      verifiedAt: status === 'verified' ? new Date() : null,
+      verifiedBy,
+    },
+    { new: true }
+  ).populate('user', 'name email');
+};
+
 // Instance methods
 vendorSchema.methods.updateRating = async function (newRating) {
-  // This would typically be called when a new review is added
-  // You'd calculate the average from all reviews
   this.rating = newRating;
   this.reviewCount += 1;
   return this.save();
@@ -388,6 +385,71 @@ vendorSchema.methods.calculateProfileCompletion = function () {
   });
 
   return Math.round((completedFields / requiredFields.length) * 100);
+};
+
+vendorSchema.methods.getPublicFields = function () {
+  return {
+    id: this._id,
+    businessName: this.businessName,
+    storeName: this.storeName,
+    storeDescription: this.storeDescription,
+    storeLogo: this.storeLogo,
+    storeSlug: this.storeSlug,
+    rating: this.rating,
+    reviewCount: this.reviewCount,
+    businessHours: this.businessHours,
+    socialMedia: this.socialMedia,
+    verificationStatus: this.verificationStatus,
+    user: this.user,
+    createdAt: this.createdAt,
+  };
+};
+
+vendorSchema.methods.getDashboardStats = function () {
+  return {
+    totalOrders: this.totalOrders || 0,
+    totalRevenue: this.totalRevenue || 0,
+    rating: this.rating || 0,
+    reviewCount: this.reviewCount || 0,
+    verificationStatus: this.verificationStatus,
+  };
+};
+
+vendorSchema.methods.toggleStatus = function (reason) {
+  const isDeactivating = this.isActive;
+
+  if (isDeactivating) {
+    this.isActive = false;
+    this.deactivationReason = reason;
+    this.deactivatedAt = new Date();
+  } else {
+    this.isActive = true;
+    this.deactivationReason = undefined;
+    this.deactivatedAt = undefined;
+  }
+
+  return this.save();
+};
+
+vendorSchema.methods.updateSettings = function (settingType, settingData) {
+  const allowedSettings = ['notifications', 'businessHours', 'socialMedia'];
+
+  if (!allowedSettings.includes(settingType)) {
+    throw new Error('Invalid setting type');
+  }
+
+  this[settingType] = settingData;
+  return this.save({ validateBeforeSave: true });
+};
+
+vendorSchema.methods.manageDocuments = function (action, data) {
+  if (action === 'add' && data.documents) {
+    this.verificationDocuments.push(...data.documents);
+  } else if (action === 'remove' && data.documentId) {
+    this.verificationDocuments.id(data.documentId).remove();
+  }
+
+  return this.save();
 };
 
 module.exports = mongoose.model('Vendor', vendorSchema);

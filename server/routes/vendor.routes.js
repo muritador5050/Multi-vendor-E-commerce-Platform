@@ -5,7 +5,6 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 
-// === VENDOR PROFILE ROUTES ===
 router
   .route('/profile')
   .get(
@@ -24,41 +23,13 @@ router
     asyncHandler(VendorController.upsertVendorProfile)
   );
 
-// === PUBLIC VENDOR ROUTES ===
-router.get('/', asyncHandler(VendorController.getAllVendors));
-router.get('/:identifier', asyncHandler(VendorController.getVendor));
-
-// === DOCUMENT MANAGEMENT ===
-router
-  .route('/documents/:documentId')
-  .post(
-    authenticate,
-    checkRole('vendor', 'create'),
-    asyncHandler(VendorController.manageDocuments)
-  )
-  .delete(
-    authenticate,
-    checkRole('vendor', 'delete'),
-    asyncHandler(VendorController.manageDocuments)
-  );
-
-// === VENDOR SETTINGS ===
-router.put(
-  '/settings/:settingType',
+router.get(
+  '/admin/list',
   authenticate,
-  checkRole('vendor', 'edit'),
-  asyncHandler(VendorController.updateSettings)
+  checkRole('admin', 'read'),
+  asyncHandler(VendorController.getVendorsForAdmin)
 );
 
-// === ACCOUNT STATUS ===
-router.put(
-  '/toggle-status',
-  authenticate,
-  checkRole('vendor', 'edit'),
-  asyncHandler(VendorController.toggleAccountStatus)
-);
-
-// === STATISTICS ===
 router.get(
   '/stats/:type',
   authenticate,
@@ -69,16 +40,40 @@ router.get(
   asyncHandler(VendorController.getStatistics)
 );
 
-// === ADMIN ROUTES ===
-router.get(
-  '/admin/list',
+router.get('/', asyncHandler(VendorController.getAllVendors));
+router.get('/:identifier', asyncHandler(VendorController.getVendor));
+
+router
+  .route('/documents')
+  .post(
+    authenticate,
+    checkRole('vendor', 'create'),
+    asyncHandler(VendorController.manageDocuments)
+  );
+
+router.delete(
+  '/documents/:documentId',
   authenticate,
-  checkRole('admin', 'read'),
-  asyncHandler(VendorController.getVendorsForAdmin)
+  checkRole('vendor', 'delete'),
+  asyncHandler(VendorController.manageDocuments)
 );
 
 router.put(
-  '/admin/:id/verify',
+  '/settings/:settingType',
+  authenticate,
+  checkRole('vendor', 'edit'),
+  asyncHandler(VendorController.updateSettings)
+);
+
+router.put(
+  '/toggle-status',
+  authenticate,
+  checkRole('vendor', 'edit'),
+  asyncHandler(VendorController.toggleAccountStatus)
+);
+
+router.put(
+  '/admin/verify/:id',
   authenticate,
   checkRole('admin', 'edit'),
   asyncHandler(VendorController.updateVerificationStatus)
