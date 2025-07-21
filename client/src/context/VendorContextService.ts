@@ -17,10 +17,17 @@ import type {
   AccountStatusToggle,
   SettingsUpdate,
   SettingsResponse,
+  SocialMedia,
+  BusinessType,
+  VerificationStatus,
+  DocumentType,
 } from '../type/vendor';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
 
+// ===== API FUNCTIONS =====
+
+// Profile Management
 async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
   return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
     '/vendors/profile'
@@ -35,9 +42,7 @@ async function upsertVendorProfile(
     {
       method: 'POST',
       body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     }
   );
 }
@@ -50,23 +55,23 @@ async function updateVendorProfile(
     {
       method: 'PUT',
       body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     }
   );
 }
 
-// === PUBLIC VENDOR ROUTES ===
+// Public Vendor Routes
 async function getAllVendors(
   filters: VendorFilters = {}
 ): Promise<ApiResponse<VendorListResponse>> {
   const params = new URLSearchParams();
-  if (filters.page) params.append('page', filters.page.toString());
-  if (filters.limit) params.append('limit', filters.limit.toString());
-  if (filters.search) params.append('search', filters.search);
-  if (filters.businessType) params.append('businessType', filters.businessType);
-  if (filters.status) params.append('status', filters.status);
+
+  // Build query parameters
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, value.toString());
+    }
+  });
 
   const queryString = params.toString();
   const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
@@ -82,18 +87,16 @@ async function getVendor(
   );
 }
 
-// === DOCUMENT MANAGEMENT ===
+// Document Management
 async function uploadDocuments(
   data: DocumentUpload
 ): Promise<ApiResponse<VendorDocument[]>> {
   return apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
-    '/vendors/documents/',
+    '/vendors/documents',
     {
       method: 'POST',
       body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     }
   );
 }
@@ -103,13 +106,11 @@ async function deleteDocument(
 ): Promise<ApiResponse<VendorDocument[]>> {
   return apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
     `/vendors/documents/${documentId}`,
-    {
-      method: 'DELETE',
-    }
+    { method: 'DELETE' }
   );
 }
 
-// === VENDOR SETTINGS ===
+// Settings Management
 async function updateSettings<T extends SettingsResponse>(
   settingType: 'notifications' | 'businessHours' | 'socialMedia',
   data: SettingsUpdate
@@ -119,14 +120,12 @@ async function updateSettings<T extends SettingsResponse>(
     {
       method: 'PUT',
       body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     }
   );
 }
 
-// === ACCOUNT STATUS ===
+// Account Status
 async function toggleAccountStatus(
   data: AccountStatusToggle
 ): Promise<ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>> {
@@ -135,13 +134,11 @@ async function toggleAccountStatus(
   >('/vendors/toggle-status', {
     method: 'PUT',
     body: JSON.stringify(data),
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
-// === STATISTICS ===
+// Statistics
 async function getVendorStats(): Promise<ApiResponse<VendorStats>> {
   return apiClient.authenticatedApiRequest<ApiResponse<VendorStats>>(
     '/vendors/stats/vendor'
@@ -154,15 +151,17 @@ async function getAdminStats(): Promise<ApiResponse<AdminVendorStats>> {
   );
 }
 
-// === ADMIN ROUTES ===
+// Admin Routes
 async function getVendorsForAdmin(
   filters: VendorFilters = {}
 ): Promise<ApiResponse<VendorAdminListResponse>> {
   const params = new URLSearchParams();
-  if (filters.page) params.append('page', filters.page.toString());
-  if (filters.limit) params.append('limit', filters.limit.toString());
-  if (filters.search) params.append('search', filters.search);
-  if (filters.status) params.append('status', filters.status);
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.append(key, value.toString());
+    }
+  });
 
   const queryString = params.toString();
   const endpoint = queryString
@@ -179,18 +178,16 @@ async function updateVerificationStatus(
   data: VerificationStatusUpdate
 ): Promise<ApiResponse<Vendor>> {
   return apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
-    `/vendors/admin/${vendorId}/verify`,
+    `/vendors/admin/verify/${vendorId}`,
     {
       method: 'PUT',
       body: JSON.stringify(data),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     }
   );
 }
 
-// === QUERY KEYS ===
+// ===== QUERY KEYS =====
 export const vendorKeys = {
   all: ['vendor'] as const,
   profile: ['vendor', 'profile'] as const,
@@ -201,9 +198,13 @@ export const vendorKeys = {
   admin: ['vendor', 'admin'] as const,
   adminList: (filters: VendorFilters) =>
     ['vendor', 'admin', 'list', filters] as const,
+  documents: ['vendor', 'documents'] as const,
+  settings: (type: string) => ['vendor', 'settings', type] as const,
 };
 
-// === VENDOR PROFILE HOOKS ===
+// ===== HOOKS =====
+
+// Profile Hooks
 export const useVendorProfile = () => {
   return useQuery({
     queryKey: vendorKeys.profile,
@@ -222,7 +223,6 @@ export const useUpsertVendorProfile = () => {
 
   return useMutation({
     mutationFn: async (data: VendorProfileUpdate) => {
-      // Validate before API call
       const validationErrors = validateVendorProfile(data);
       if (validationErrors) {
         const firstError = Object.values(validationErrors)[0];
@@ -244,7 +244,6 @@ export const useUpdateVendorProfile = () => {
 
   return useMutation({
     mutationFn: async (data: VendorProfileUpdate) => {
-      // Validate before API call
       const validationErrors = validateVendorProfile(data);
       if (validationErrors) {
         const firstError = Object.values(validationErrors)[0];
@@ -261,7 +260,7 @@ export const useUpdateVendorProfile = () => {
   });
 };
 
-// === PUBLIC VENDOR HOOKS ===
+// Public Vendor Hooks
 export const useVendors = (filters: VendorFilters = {}) => {
   return useQuery({
     queryKey: vendorKeys.list(filters),
@@ -286,7 +285,7 @@ export const useVendor = (identifier: string) => {
   });
 };
 
-// === DOCUMENT MANAGEMENT HOOKS ===
+// Document Management Hooks
 export const useUploadDocuments = () => {
   const queryClient = useQueryClient();
 
@@ -296,11 +295,28 @@ export const useUploadDocuments = () => {
         throw new Error('At least one document is required');
       }
 
+      // Validate document types
+      const validTypes: DocumentType[] = [
+        'business_license',
+        'tax_certificate',
+        'bank_statement',
+        'id_document',
+        'other',
+      ];
+
+      const invalidDocs = data.documents.filter(
+        (doc) => !validTypes.includes(doc.type as DocumentType)
+      );
+      if (invalidDocs.length > 0) {
+        throw new Error('Invalid document type provided');
+      }
+
       const response = await uploadDocuments(data);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
+      queryClient.invalidateQueries({ queryKey: vendorKeys.documents });
     },
   });
 };
@@ -319,11 +335,12 @@ export const useDeleteDocument = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
+      queryClient.invalidateQueries({ queryKey: vendorKeys.documents });
     },
   });
 };
 
-// === SETTINGS HOOKS ===
+// Settings Hooks
 export const useUpdateSettings = <
   T extends SettingsResponse = SettingsResponse
 >() => {
@@ -342,9 +359,19 @@ export const useUpdateSettings = <
         throw new Error('Invalid setting type');
       }
 
-      // Validate business hours if that's the setting being updated
-      if (settingType === 'businessHours' && data) {
-        const validationErrors = validateBusinessHours(data as BusinessHours);
+      // Validate based on setting type
+      if (settingType === 'businessHours' && data.businessHours) {
+        const validationErrors = validateBusinessHours(
+          data.businessHours as BusinessHours
+        );
+        if (validationErrors) {
+          const firstError = Object.values(validationErrors)[0];
+          throw new Error(firstError);
+        }
+      }
+
+      if (settingType === 'socialMedia' && data.socialMedia) {
+        const validationErrors = validateSocialMedia(data.socialMedia);
         if (validationErrors) {
           const firstError = Object.values(validationErrors)[0];
           throw new Error(firstError);
@@ -354,32 +381,32 @@ export const useUpdateSettings = <
       const response = await updateSettings<T>(settingType, data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
+      queryClient.invalidateQueries({
+        queryKey: vendorKeys.settings(variables.settingType),
+      });
     },
   });
 };
 
-// === ACCOUNT STATUS HOOKS ===
+// Account Status Hooks
 export const useToggleAccountStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: AccountStatusToggle) => {
-      if (typeof data.reason !== 'boolean') {
-        throw new Error('isActive must be a boolean value');
-      }
-
       const response = await toggleAccountStatus(data);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
+      queryClient.invalidateQueries({ queryKey: vendorKeys.all });
     },
   });
 };
 
-// === STATISTICS HOOKS ===
+// Statistics Hooks
 export const useVendorStats = () => {
   return useQuery({
     queryKey: vendorKeys.stats('vendor'),
@@ -404,7 +431,7 @@ export const useAdminStats = () => {
   });
 };
 
-// === ADMIN HOOKS ===
+// Admin Hooks
 export const useVendorsForAdmin = (filters: VendorFilters = {}) => {
   return useQuery({
     queryKey: vendorKeys.adminList(filters),
@@ -436,7 +463,12 @@ export const useUpdateVerificationStatus = () => {
         throw new Error('Status is required');
       }
 
-      const allowedStatuses = ['pending', 'verified', 'rejected'];
+      const allowedStatuses: VerificationStatus[] = [
+        'pending',
+        'verified',
+        'rejected',
+        'suspended',
+      ];
       if (!allowedStatuses.includes(data.status)) {
         throw new Error('Invalid status');
       }
@@ -451,7 +483,7 @@ export const useUpdateVerificationStatus = () => {
   });
 };
 
-// === UTILITY HOOKS ===
+// ===== UTILITY HOOKS =====
 export const useCurrentVendor = () => {
   const { data } = useVendorProfile();
   return data;
@@ -467,29 +499,7 @@ export const useIsVendorActive = () => {
   return vendor?.isActive === true;
 };
 
-// === PERMISSION HOOKS ===
-// These hooks need to be implemented based on your auth/permission system
-export const useCanPerformAction = (action: string): boolean => {
-  // Placeholder implementation - replace with actual permission logic
-  console.warn(`useCanPerformAction not implemented for action: ${action}`);
-  return false;
-};
-
-export const useHasAnyRole = (roles: string[]): boolean => {
-  // Placeholder implementation - replace with actual role checking logic
-  console.warn(`useHasAnyRole not implemented for roles: ${roles.join(', ')}`);
-  return false;
-};
-
-export const useCanManageVendor = () => {
-  return useCanPerformAction('manage_vendors');
-};
-
-export const useIsVendorRole = () => {
-  return useHasAnyRole(['vendor']);
-};
-
-// === VALIDATION HELPERS ===
+// ===== VALIDATION HELPERS =====
 export const validateVendorProfile = (data: VendorProfileUpdate) => {
   const errors: Record<string, string> = {};
 
@@ -515,6 +525,18 @@ export const validateVendorProfile = (data: VendorProfileUpdate) => {
       'Store slug can only contain lowercase letters, numbers, and hyphens';
   }
 
+  if (data.businessType) {
+    const validTypes: BusinessType[] = [
+      'individual',
+      'company',
+      'partnership',
+      'corporation',
+    ];
+    if (!validTypes.includes(data.businessType)) {
+      errors.businessType = 'Invalid business type';
+    }
+  }
+
   return Object.keys(errors).length > 0 ? errors : null;
 };
 
@@ -528,12 +550,39 @@ export const validateBusinessHours = (businessHours: BusinessHours) => {
     'friday',
     'saturday',
     'sunday',
-  ];
+  ] as const;
 
   days.forEach((day) => {
-    const dayHours = businessHours[day as keyof BusinessHours];
-    if (dayHours && !dayHours.isClosed && (!dayHours.open || !dayHours.close)) {
-      errors[day] = 'Open and close times are required for open days';
+    const dayHours = businessHours[day];
+    if (dayHours && !dayHours.isClosed) {
+      if (!dayHours.open || !dayHours.close) {
+        errors[day] = 'Open and close times are required for open days';
+      }
+
+      // Validate time format (HH:MM)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (dayHours.open && !timeRegex.test(dayHours.open)) {
+        errors[`${day}_open`] = 'Invalid open time format (use HH:MM)';
+      }
+      if (dayHours.close && !timeRegex.test(dayHours.close)) {
+        errors[`${day}_close`] = 'Invalid close time format (use HH:MM)';
+      }
+    }
+  });
+
+  return Object.keys(errors).length > 0 ? errors : null;
+};
+
+export const validateSocialMedia = (socialMedia: Partial<SocialMedia>) => {
+  const errors: Record<string, string> = {};
+
+  // URL validation regex
+  const urlRegex =
+    /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/;
+
+  Object.entries(socialMedia).forEach(([key, value]) => {
+    if (value && !urlRegex.test(value)) {
+      errors[key] = `Invalid ${key} URL format`;
     }
   });
 

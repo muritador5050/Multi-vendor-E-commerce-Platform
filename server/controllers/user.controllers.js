@@ -236,8 +236,12 @@ class UserController {
     const result = await User.findWithPagination(filter, { page, limit });
 
     res.status(200).json({
-      data: result.users,
-      pagination: result.pagination,
+      success: true,
+      message: 'Users retrieved successfully',
+      data: {
+        users: result.users,
+        pagination: result.pagination,
+      },
     });
   }
 

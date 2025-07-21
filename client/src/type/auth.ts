@@ -38,12 +38,13 @@ export interface User {
   isEmailVerified: boolean;
   profileCompletion?: number;
   emailVerificationToken?: string;
-  emailVerificationExpires?: Date;
+  emailVerificationExpires?: Date | string;
   resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
+  resetPasswordExpires?: Date | string;
   refreshToken?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  lastLogin?: Date | string;
 }
 
 export interface UserStatusUpdate {
@@ -56,16 +57,39 @@ export interface UserStatus {
   _id: string;
   name: string;
   email: string;
-  avatar: string;
+  avatar?: string;
   isActive: boolean;
   isEmailVerified: boolean;
   role: UserRole;
-  tokenVersion: number;
-  phone: number;
-  location: string;
-  lastLogin?: Date;
+  tokenVersion?: number;
+  phone?: string;
   createdAt: string;
   updatedAt: string;
+  address?: Address;
+  googleId?: string;
+  facebookId?: string;
+  profileCompletion?: number;
+  lastLogin?: string;
+}
+
+export interface PaginatedUsers {
+  users: UserStatus[];
+  pagination: {
+    total: number;
+    page: number;
+    pages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+    limit: number;
+  };
+}
+
+export interface UserQueryParams {
+  name?: string;
+  role?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
 }
 
 export const USER_ROLES = {

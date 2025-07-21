@@ -8,18 +8,18 @@ import ContactUs from './pages/contactUs';
 import StoreManagerDashboard from './pages/storeManager';
 import VendorMembership from './pages/vendorMemberShip';
 import Layout from './components/layout/layout';
-import AccountPage from './auth/accountPage';
+import AccountPage from './components/Auth/accountPage';
 import WishList from './pages/wishList';
-import VendorRegistration from './auth/vendorRegistration';
+import VendorRegistration from './components/Auth/vendorRegistration';
 import ProductDetail from './pages/ProductDetail';
-import OAuthCallback from './auth/OAuthCallback';
-import ResetPasswordForm from './auth/ResetPassword';
-import ForgotPasswordForm from './auth/ForgotPassword';
+import OAuthCallback from './components/Auth/OAuthCallback';
+import ResetPasswordForm from './components/Auth/ResetPassword';
+import ForgotPasswordForm from './components/Auth/ForgotPassword';
 import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
 import ProductCategoryPage from './pages/ProductCategoryPage';
-import AdminDashboard from './pages/adminDashboard/AdminHomePage';
+import AdminDashboard from './components/AdminManagement/AdminHomePage';
 import { useIsAuthenticated, useLogout } from './context/AuthContextService';
-import { EmailVerificationPage } from './auth/EmailVerification';
+import { EmailVerificationPage } from './components/Auth/EmailVerification';
 
 //App
 function App() {

@@ -1,14 +1,66 @@
 import type { User } from './auth';
 
-// === TYPES ===
+// ===== BASE ENUMS AND CONSTANTS =====
+export type BusinessType =
+  | 'individual'
+  | 'company'
+  | 'partnership'
+  | 'corporation';
+export type PaymentTerms = 'net15' | 'net30' | 'net45' | 'net60' | 'immediate';
+export type VerificationStatus =
+  | 'pending'
+  | 'verified'
+  | 'rejected'
+  | 'suspended';
+export type DocumentType =
+  | 'business_license'
+  | 'tax_certificate'
+  | 'bank_statement'
+  | 'id_document'
+  | 'other';
+export type DayOfWeek =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday';
+
+// ===== NESTED INTERFACES =====
+export interface BusinessAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
+export interface BankDetails {
+  accountName?: string;
+  accountNumber?: string;
+  bankName?: string;
+  routingNumber?: string;
+  swiftCode?: string;
+}
+
 export interface VendorDocument {
-  _id: string;
-  type: string;
+  _id?: string;
+  type: DocumentType;
+  filename?: string;
   url: string;
-  name: string;
+  name?: string; // For frontend display
   uploadedAt: Date;
 }
 
+export interface BusinessHourEntry {
+  day: DayOfWeek;
+  isOpen: boolean;
+  openTime?: string;
+  closeTime?: string;
+}
+
+// Simplified business hours for frontend consumption
 export interface BusinessHours {
   monday: { open: string; close: string; isClosed: boolean };
   tuesday: { open: string; close: string; isClosed: boolean };
@@ -20,87 +72,95 @@ export interface BusinessHours {
 }
 
 export interface SocialMedia {
+  website?: string;
   facebook?: string;
   instagram?: string;
   twitter?: string;
   linkedin?: string;
-  website?: string;
 }
 
 export interface NotificationSettings {
   emailNotifications: boolean;
   smsNotifications: boolean;
   orderNotifications: boolean;
-  marketingNotifications: boolean;
 }
 
-export interface SocialMediaSettings {
-  facebook?: string;
-  instagram?: string;
-  twitter?: string;
-  linkedin?: string;
-  website?: string;
-}
-
-export type SettingsResponse =
-  | NotificationSettings
-  | BusinessHours
-  | SocialMediaSettings;
-
+// ===== MAIN VENDOR INTERFACE =====
 export interface Vendor {
   _id: string;
-  userId: string;
+  userId: string | User;
+
+  // Business Information
   businessName: string;
-  storeName: string;
-  storeDescription: string;
-  storeLogo?: string;
-  storeSlug: string;
-  businessType: string;
-  businessAddress: string;
-  businessPhone: string;
-  businessEmail: string;
+  businessType: BusinessType;
+  taxId?: string;
   businessRegistrationNumber?: string;
-  taxIdentificationNumber?: string;
-  rating: number;
-  reviewCount: number;
-  totalOrders: number;
-  totalRevenue: number;
-  verificationStatus: 'pending' | 'verified' | 'rejected';
-  verificationNotes?: string;
+  businessAddress?: BusinessAddress;
+  businessPhone?: string;
+  businessEmail?: string;
+
+  // Financial Information
+  bankDetails?: BankDetails;
+  paymentTerms: PaymentTerms;
+  commission: number;
+
+  // Verification
+  verificationStatus: VerificationStatus;
   verificationDocuments: VendorDocument[];
+  verificationNotes?: string;
   verifiedAt?: Date;
   verifiedBy?: string;
+
+  // Performance Metrics
+  rating: number;
+  totalOrders: number;
+  totalRevenue: number;
+  reviewCount: number;
+
+  // Store Information
+  storeName?: string;
+  storeDescription?: string;
+  storeLogo?: string;
+  storeSlug?: string;
+  storeBanner?: string;
+
+  // Account Status
   isActive: boolean;
   deactivationReason?: string;
   deactivatedAt?: Date;
-  businessHours: BusinessHours;
-  socialMedia: SocialMedia;
-  notificationSettings: NotificationSettings;
-  user: User;
+
+  // Settings
+  notifications: NotificationSettings;
+  businessHours?: BusinessHourEntry[];
+  socialMedia?: SocialMedia;
+
+  // Timestamps
   createdAt: Date;
   updatedAt: Date;
 }
 
+// ===== DERIVED INTERFACES =====
 export interface VendorProfile extends Vendor {
   user: User;
 }
 
 export interface PublicVendor {
-  id: string;
+  _id: string;
   businessName: string;
-  storeName: string;
-  storeDescription: string;
+  storeName?: string;
+  storeDescription?: string;
   storeLogo?: string;
-  storeSlug: string;
+  storeSlug?: string;
   rating: number;
   reviewCount: number;
   businessHours: BusinessHours;
-  socialMedia: SocialMedia;
-  verificationStatus: string;
-  user: Pick<User, 'name' | 'email' | 'avatar' | 'createdAt'>;
+  socialMedia?: SocialMedia;
+  verificationStatus: VerificationStatus;
+  user: Pick<User, 'name' | 'email' | 'avatar' | 'createdAt' | 'isActive'>;
   createdAt: Date;
 }
 
+// ===== API RESPONSE INTERFACES =====
 export interface VendorListResponse {
   vendors: PublicVendor[];
   pagination: {
@@ -126,7 +186,7 @@ export interface VendorStats {
   totalRevenue: number;
   rating: number;
   reviewCount: number;
-  verificationStatus: string;
+  verificationStatus: VerificationStatus;
 }
 
 export interface AdminVendorStats {
@@ -134,57 +194,75 @@ export interface AdminVendorStats {
   verifiedVendors: number;
   pendingVendors: number;
   rejectedVendors: number;
+  suspendedVendors: number;
   totalRevenue: number;
   recentRegistrations: Array<{
     _id: string;
     businessName: string;
-    storeName: string;
+    storeName?: string;
     user: Pick<User, 'name' | 'email'>;
     createdAt: Date;
   }>;
 }
 
+// ===== FILTER AND REQUEST INTERFACES =====
 export interface VendorFilters {
   page?: number;
   limit?: number;
   search?: string;
-  businessType?: string;
-  status?: 'pending' | 'verified' | 'rejected';
+  businessType?: BusinessType;
+  verificationStatus?: VerificationStatus;
+  isActive?: boolean;
 }
 
 export interface VendorProfileUpdate {
+  // Business Information
   businessName?: string;
+  businessType?: BusinessType;
+  taxId?: string;
+  businessRegistrationNumber?: string;
+  businessAddress?: Partial<BusinessAddress>;
+  businessPhone?: string;
+  businessEmail?: string;
+
+  // Store Information
   storeName?: string;
   storeDescription?: string;
   storeLogo?: string;
   storeSlug?: string;
-  businessType?: string;
-  businessAddress?: string;
-  businessPhone?: string;
-  businessEmail?: string;
-  businessRegistrationNumber?: string;
-  taxIdentificationNumber?: string;
+  storeBanner?: string;
+
+  // Financial Information
+  bankDetails?: Partial<BankDetails>;
+  paymentTerms?: PaymentTerms;
 }
 
 export interface VerificationStatusUpdate {
-  status: 'pending' | 'verified' | 'rejected';
+  status: VerificationStatus;
   notes?: string;
 }
 
 export interface DocumentUpload {
   documents: Array<{
-    type: string;
+    type: DocumentType;
     url: string;
     name: string;
   }>;
 }
 
 export interface AccountStatusToggle {
+  isActive?: boolean;
   reason?: string;
 }
 
 export interface SettingsUpdate {
-  notifications?: NotificationSettings;
-  businessHours?: BusinessHours;
-  socialMedia?: SocialMedia;
+  notifications?: Partial<NotificationSettings>;
+  businessHours?: BusinessHours | BusinessHourEntry[];
+  socialMedia?: Partial<SocialMedia>;
 }
+
+// ===== SETTINGS RESPONSE UNION TYPE =====
+export type SettingsResponse =
+  | NotificationSettings
+  | BusinessHours
+  | SocialMedia;

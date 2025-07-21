@@ -10,10 +10,13 @@ import type {
   ProfileData,
   UserStatus,
   UserStatusUpdate,
+  UserQueryParams,
+  PaginatedUsers,
 } from '@/type/auth';
 import { apiBase, apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
 import type { ApiResponse } from '@/type/ApiResponse';
+import { buildQueryString } from '@/utils/QueryString';
 
 // API functions
 async function register(
@@ -121,6 +124,38 @@ async function verifyEmail(token: string) {
   );
 }
 
+async function fetchUsers(
+  params: UserQueryParams = {}
+): Promise<PaginatedUsers> {
+  const queryString = buildQueryString(params);
+  const url = `/auth/users${queryString ? `?${queryString}` : ''}`;
+
+  try {
+    const response = await apiClient.authenticatedApiRequest<
+      ApiResponse<PaginatedUsers>
+    >(url);
+
+    console.log('Raw res===', response);
+    console.log('Data res===', response.data);
+    return (
+      response.data || {
+        users: [],
+        pagination: {
+          total: 0,
+          page: 1,
+          pages: 0,
+          hasNext: false,
+          hasPrev: false,
+          limit: 10,
+        },
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error; // Let React Query handle the error
+  }
+}
+
 async function getProfile() {
   return apiClient.authenticatedApiRequest<ApiResponse<ProfileData>>(
     '/auth/profile'
@@ -217,9 +252,22 @@ function validateRegistration(
 
 // Query keys
 export const authKeys = {
+  users: ['auth', 'users'] as const,
   profile: ['auth', 'profile'] as const,
   activeUsers: ['users', 'active'] as const,
   userStatus: (id: string) => ['users', 'status', id] as const,
+};
+
+export const useUsers = (params: UserQueryParams = {}) => {
+  return useQuery({
+    queryKey: [...authKeys.users, params],
+    queryFn: () => {
+      console.log('useQuery calling fetchUsers with params:', params);
+      return fetchUsers(params);
+    },
+    enabled: isAuthenticated(),
+    staleTime: 5 * 60 * 1000,
+  });
 };
 
 // Profile query
@@ -486,10 +534,7 @@ export const useUploadFile = () => {
 };
 
 // Deactivate user mutation
-export const useDeactivateUser = (options?: {
-  onSuccess?: () => void;
-  onError?: () => void;
-}) => {
+export const useDeactivateUser = () => {
   const queryClient = useQueryClient();
   const forceLogout = useForceLogout();
   const currentUser = useCurrentUser();
@@ -515,12 +560,11 @@ export const useDeactivateUser = (options?: {
         forceLogout('Your account has been deactivated');
       }
     },
-    onError: options?.onError,
   });
 };
 
 // Activate user mutation
-export const useActivateUser = (options?: { onSuccess?: () => void }) => {
+export const useActivateUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -533,26 +577,22 @@ export const useActivateUser = (options?: { onSuccess?: () => void }) => {
       }
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: authKeys.activeUsers });
       queryClient.invalidateQueries({
         queryKey: authKeys.userStatus(variables),
       });
-
-      options?.onSuccess?.();
     },
   });
 };
 
 // Invalidate user tokens mutation
-export const useInvalidateUserTokens = (options?: {
-  onSuccess?: () => void;
-}) => {
+export const useInvalidateUserTokens = () => {
   const queryClient = useQueryClient();
   const forceLogout = useForceLogout();
-
   const currentUser = useCurrentUser();
+
   return useMutation({
     mutationFn: async (id: string) => {
       if (!id?.trim()) throw new ApiError('User ID is required', 400);
@@ -566,7 +606,7 @@ export const useInvalidateUserTokens = (options?: {
       }
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: authKeys.userStatus(variables),
@@ -576,8 +616,6 @@ export const useInvalidateUserTokens = (options?: {
       if (currentUser?._id === variables) {
         forceLogout('Your session has been invalidated. Please login again.');
       }
-
-      options?.onSuccess?.();
     },
   });
 };
@@ -628,7 +666,7 @@ export const useForceLogout = () => {
 };
 
 // Check if current user can manage a specific user
-export const useCanManageUser = (userId: string) => {
+export const useCanManageUser = (userId: string | undefined) => {
   const currentUser = useCurrentUser();
   const isAdmin = permissionUtils.isAdmin(currentUser?.role);
   const isOwner = currentUser?._id === userId;
