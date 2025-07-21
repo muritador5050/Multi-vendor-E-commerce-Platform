@@ -50,7 +50,8 @@ class UserController {
           accessTokenExpiry: '15m',
           refreshTokenExpiry: '7d',
         };
-
+    user.isOnline = true;
+    user.lastSeen = new Date();
     const { accessToken, refreshToken } = user.loginWithTokens(tokenOptions);
     await user.save();
 
@@ -67,7 +68,7 @@ class UserController {
 
     res.cookie('refreshToken', refreshToken, cookieOptions).json({
       data: {
-        user: user.getPublicProfile(),
+        user: user.getStatusInfo(),
         accessToken,
       },
     });
@@ -256,7 +257,66 @@ class UserController {
     }
 
     const user = await User.findByIdAndValidate(req.params.id);
-    res.status(200).json({ data: user.getPublicProfile() });
+    res.status(200).json({
+      success: true,
+      message: 'User detail retrived successfully',
+      data: user.getPublicProfile(),
+    });
+  }
+
+  // Set user online
+  static async setUserOnline(req, res) {
+    const user = await User.findByIdAndValidate(req.user.id);
+
+    await user.setOnline();
+
+    return res.status(200).json({
+      success: true,
+      message: 'User is online',
+      data: {
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen,
+      },
+    });
+  }
+
+  // Set user offline
+  static async setUserOffline(req, res) {
+    const user = await User.findByIdAndValidate(req.user.id);
+
+    await user.setOffline();
+
+    return res.status(200).json({
+      success: true,
+      message: 'User is offline',
+      data: {
+        isOnline: user.isOnline,
+        lastSeen: user.lastSeen,
+      },
+    });
+  }
+
+  static async updateUserHeartbeat(req, res) {
+    const user = await User.findByIdAndValidate(req.user.id);
+    await user.setOnline();
+    res.status(200).json({ success: true });
+  }
+
+  static async getOnlineUsers(req, res) {
+    const minutesAgo = req.query.minutes || 5;
+    const timeThreshold = new Date(Date.now() - minutesAgo * 60 * 1000);
+
+    const onlineUsers = await User.find({
+      isActive: true,
+      lastSeen: { $gte: timeThreshold },
+      isOnline: true,
+    }).select('_id name email role isOnline lastSeen');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Online users retrieved',
+      data: onlineUsers,
+    });
   }
 
   //Update user

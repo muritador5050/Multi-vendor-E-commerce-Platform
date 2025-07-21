@@ -240,6 +240,32 @@ router.get(
   asyncHandler(UserController.getAllUsers)
 );
 
+//Online and Offline status
+router.post(
+  '/heartbeat',
+  authenticate,
+  asyncHandler(UserController.updateUserHeartbeat)
+);
+
+router.post(
+  '/online',
+  authenticate,
+  asyncHandler(UserController.setUserOnline)
+);
+
+router.post(
+  '/offline',
+  authenticate,
+  asyncHandler(UserController.setUserOffline)
+);
+
+router.get(
+  '/online-users',
+  authenticate,
+  checkRole('admin', 'read'),
+  asyncHandler(UserController.getOnlineUsers)
+);
+
 // User status and token management
 router.get(
   '/users/:id/status',
@@ -253,7 +279,6 @@ router.patch(
   asyncHandler(UserController.invalidateUserTokens)
 );
 
-// User activation/deactivation (admin only)
 router.patch(
   '/users/:id/deactivate',
   authenticate,

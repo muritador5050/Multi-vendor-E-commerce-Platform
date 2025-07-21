@@ -188,7 +188,8 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     profileCompletion: Number,
-
+    isOnline: { type: Boolean, default: false },
+    lastSeen: Date,
     tokenVersion: {
       type: Number,
       default: 1,
@@ -208,6 +209,8 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+userSchema.index({ isOnline: 1 });
+userSchema.index({ lastSeen: 1 });
 // ============================================================================
 // STATIC METHODS (Best Practice: Individual assignments)
 // ============================================================================
@@ -466,6 +469,18 @@ userSchema.methods.processPasswordReset = async function (resetToken) {
   return resetLink;
 };
 
+userSchema.methods.setOnline = async function () {
+  this.isOnline = true;
+  this.lastSeen = new Date();
+  return this.save();
+};
+
+userSchema.methods.setOffline = async function () {
+  this.isOnline = false;
+  this.lastSeen = new Date();
+  return this.save();
+};
+
 // User status methods
 userSchema.methods.activate = function () {
   this.isActive = true;
@@ -532,12 +547,14 @@ userSchema.methods.getPublicProfile = function () {
 
 userSchema.methods.getStatusInfo = function () {
   return {
-    id: this._id,
+    _id: this._id,
     name: this.name,
     email: this.email,
     phone: this.phone,
     role: this.role,
     isActive: this.isActive,
+    isOnline: this.isOnline,
+    lastSeen: this.lastSeen,
     isEmailVerified: this.isEmailVerified,
     tokenVersion: this.tokenVersion,
     createdAt: this.createdAt,
