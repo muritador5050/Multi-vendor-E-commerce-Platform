@@ -8,7 +8,7 @@ import { AnalyticsContent } from './Analytics';
 import { SettingsContent } from './SettingManagement/SettingsContent';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import CustomersContents from './CustomersManagement/CustomersContents';
+import { CustomersContents } from './CustomersManagement/CustomersContents';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -27,7 +27,7 @@ const AdminDashboard = () => {
         return <ProductsContent />;
       case 'analytics':
         return <AnalyticsContent />;
-      case 'cutomers':
+      case 'customers':
         return <CustomersContents />;
       case 'settings':
         return <SettingsContent />;

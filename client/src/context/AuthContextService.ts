@@ -17,6 +17,7 @@ import { apiBase, apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { buildQueryString } from '@/utils/QueryString';
+import React from 'react';
 
 // API functions
 async function register(
@@ -135,25 +136,17 @@ async function fetchUsers(
       ApiResponse<PaginatedUsers>
     >(url);
 
-    console.log('Raw res===', response);
-    console.log('Data res===', response.data);
-    return (
-      response.data || {
-        users: [],
-        pagination: {
-          total: 0,
-          page: 1,
-          pages: 0,
-          hasNext: false,
-          hasPrev: false,
-          limit: 10,
-        },
-      }
-    );
+    return response.data!;
   } catch (error) {
     console.error('Error fetching users:', error);
-    throw error; // Let React Query handle the error
+    throw error;
   }
+}
+
+async function getUserById(id: string) {
+  return apiClient.authenticatedApiRequest<ApiResponse<UserStatus>>(
+    `/auth/users/${id}`
+  );
 }
 
 async function getProfile() {
@@ -231,6 +224,39 @@ function clearAuth(): void {
   apiClient.clearAuth();
 }
 
+//Online
+function setUserOnline() {
+  return apiClient.authenticatedApiRequest<
+    ApiResponse<{ isOnline: boolean; lastSeen: Date }>
+  >('/auth/online', {
+    method: 'POST',
+  });
+}
+
+//Offline
+function setUserOffline() {
+  return apiClient.authenticatedApiRequest<
+    ApiResponse<{ isOnline: boolean; lastSeen: Date }>
+  >('/auth/offline', { method: 'POST' });
+}
+
+function updateHeartbeat() {
+  return apiClient.authenticatedApiRequest<ApiResponse<{ success: boolean }>>(
+    '/auth/heartbeat',
+    {
+      method: 'POST',
+    }
+  );
+}
+function getOnlineUsers() {
+  return apiClient.authenticatedApiRequest<ApiResponse<User[]>>(
+    '/auth/online-users',
+    {
+      method: 'GET',
+    }
+  );
+}
+
 function validateRegistration(
   name: string,
   email: string,
@@ -250,30 +276,61 @@ function validateRegistration(
   if (matchError) throw new ApiError(matchError, 400);
 }
 
-// Query keys
 export const authKeys = {
-  users: ['auth', 'users'] as const,
-  profile: ['auth', 'profile'] as const,
-  activeUsers: ['users', 'active'] as const,
-  userStatus: (id: string) => ['users', 'status', id] as const,
+  all: ['auth'] as const,
+  users: () => [...authKeys.all, 'list'] as const,
+  user: (id: string) => [...authKeys.all, 'detail', id] as const,
+  profile: () => [...authKeys.all, 'profile'] as const,
+  activeUsers: () => [...authKeys.users(), 'active'] as const,
+  userStatus: (id: string) => [...authKeys.user(id), 'status'] as const,
+  onlineUsers: () => [...authKeys.users(), 'online'] as const,
 };
 
 export const useUsers = (params: UserQueryParams = {}) => {
   return useQuery({
-    queryKey: [...authKeys.users, params],
-    queryFn: () => {
-      console.log('useQuery calling fetchUsers with params:', params);
-      return fetchUsers(params);
-    },
+    queryKey: [...authKeys.users(), params],
+    queryFn: () => fetchUsers(params),
     enabled: isAuthenticated(),
     staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+  });
+};
+
+export const useUserById = (id: string) => {
+  return useQuery({
+    queryKey: authKeys.user(id),
+    queryFn: async () => {
+      const response = await getUserById(id);
+      return response.data;
+    },
+    enabled: !!id && isAuthenticated(),
+    staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 };
 
 // Profile query
 export const useProfile = () => {
   return useQuery({
-    queryKey: authKeys.profile,
+    queryKey: authKeys.profile(),
     queryFn: async () => {
       const response = await getProfile();
       return response.data;
@@ -305,7 +362,7 @@ export const useUserStatus = (id: string) => {
       const response = await getUserStatus(id);
       return response.data;
     },
-    enabled: isAuthenticated() && canView && !!id,
+    enabled: !!id && isAuthenticated() && canView,
     staleTime: 1 * 60 * 1000, // 1 minute
     retry: (failureCount, error) => {
       if (
@@ -324,6 +381,7 @@ export const useUserStatus = (id: string) => {
 export const useLogin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const setOnline = useSetUserOnline();
 
   return useMutation({
     mutationFn: async ({
@@ -348,9 +406,17 @@ export const useLogin = () => {
       );
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data?.user) {
-        queryClient.invalidateQueries({ queryKey: authKeys.profile });
+        queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+
+        //Set user online afer successful login
+        try {
+          await setOnline.mutateAsync();
+          apiClient.startHeartBeat();
+        } catch (error) {
+          console.warn('Failed to set user online after login:', error);
+        }
         navigate(permissionUtils.getDefaultRoute(data.user.role), {
           replace: true,
         });
@@ -364,6 +430,143 @@ export const useGoogleLogin = () => {
     mutationFn: googleLogin,
     onError: (error) => {
       console.error('Google login failed:', error);
+    },
+  });
+};
+
+//Online Users Query Hook
+export const useOnlineUsers = () => {
+  const currentUser = useCurrentUser();
+  const canView = permissionUtils.isAdmin(currentUser?.role);
+
+  return useQuery({
+    queryKey: authKeys.onlineUsers(),
+    queryFn: async () => {
+      const response = await getOnlineUsers();
+      return response.data;
+    },
+    enabled: isAuthenticated() && canView,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+};
+
+//Set User Online
+export const useSetUserOnline = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: setUserOnline,
+    onSuccess: (data) => {
+      // Update profile cache with new online status
+      queryClient.setQueryData(
+        authKeys.profile(),
+        (old: ProfileData | undefined) => {
+          if (old?.user) {
+            return {
+              ...old,
+              data: {
+                ...old.user,
+                user: {
+                  ...old.user,
+                  isOnline: data.data?.isOnline,
+                  lastSeen: data.data?.lastSeen,
+                },
+              },
+            };
+          }
+          return old;
+        }
+      );
+
+      // Invalidate online users list
+      queryClient.invalidateQueries({ queryKey: authKeys.onlineUsers() });
+    },
+    onError: (error) => {
+      console.error('Failed to set user online:', error);
+    },
+  });
+};
+
+// Set User Offline Mutation
+export const useSetUserOffline = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: setUserOffline,
+    onSuccess: (data) => {
+      // Update profile cache with new offline status
+      queryClient.setQueryData(
+        authKeys.profile(),
+        (old: ProfileData | undefined) => {
+          if (old?.user) {
+            return {
+              ...old,
+              data: {
+                ...old.user,
+                user: {
+                  ...old.user,
+                  isOnline: data.data?.isOnline,
+                  lastSeen: data.data?.lastSeen,
+                },
+              },
+            };
+          }
+          return old;
+        }
+      );
+
+      // Invalidate online users list
+      queryClient.invalidateQueries({ queryKey: authKeys.onlineUsers() });
+    },
+    onError: (error) => {
+      console.error('Failed to set user offline:', error);
+    },
+  });
+};
+
+// Heartbeat Mutation (for internal use)
+export const useUpdateHeartbeat = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateHeartbeat,
+    onSuccess: () => {
+      // Optionally update last seen in profile cache
+      queryClient.setQueryData(
+        authKeys.profile(),
+        (old: ProfileData | undefined) => {
+          if (old?.user) {
+            return {
+              ...old,
+              data: {
+                ...old.user,
+                user: {
+                  ...old.user,
+                  lastSeen: new Date(),
+                  isOnline: true,
+                },
+              },
+            };
+          }
+          return old;
+        }
+      );
+    },
+    retry: 2,
+    // Don't show errors for heartbeat failures
+    onError: () => {
+      // Silent failure for heartbeat
     },
   });
 };
@@ -425,8 +628,19 @@ export const useRegisterVendor = (options?: { onSuccess?: () => void }) => {
 export const useLogout = (options?: { onSuccess?: () => void }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const setOffline = useSetUserOffline();
+
   return useMutation({
-    mutationFn: logout,
+    mutationFn: async () => {
+      try {
+        await setOffline.mutateAsync();
+      } catch (error) {
+        console.warn('Failed to set user offline during logout:', error);
+      }
+      apiClient.stopHeartbeat();
+
+      return logout();
+    },
     onSuccess: options?.onSuccess,
     onSettled: () => {
       queryClient.clear();
@@ -492,7 +706,7 @@ export const useUpdateProfile = () => {
       return response.data?.user;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: authKeys.profile });
+      queryClient.invalidateQueries({ queryKey: authKeys.profile() });
     },
   });
 };
@@ -538,6 +752,7 @@ export const useDeactivateUser = () => {
   const queryClient = useQueryClient();
   const forceLogout = useForceLogout();
   const currentUser = useCurrentUser();
+
   return useMutation({
     mutationFn: async (id: string) => {
       if (!id?.trim()) throw new ApiError('User ID is required', 400);
@@ -550,10 +765,11 @@ export const useDeactivateUser = () => {
     },
     onSuccess: (_data, variables) => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: authKeys.activeUsers });
+      queryClient.invalidateQueries({ queryKey: authKeys.activeUsers() });
       queryClient.invalidateQueries({
         queryKey: authKeys.userStatus(variables),
       });
+      queryClient.invalidateQueries({ queryKey: authKeys.users() });
 
       // If user deactivated themselves, force logout
       if (currentUser?._id === variables) {
@@ -579,10 +795,11 @@ export const useActivateUser = () => {
     },
     onSuccess: (_data, variables) => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: authKeys.activeUsers });
+      queryClient.invalidateQueries({ queryKey: authKeys.activeUsers() });
       queryClient.invalidateQueries({
         queryKey: authKeys.userStatus(variables),
       });
+      queryClient.invalidateQueries({ queryKey: authKeys.users() });
     },
   });
 };
@@ -689,4 +906,81 @@ export const useUserActivityStatus = (userId: string) => {
     tokenVersion: userStatus?.tokenVersion ?? 0,
     lastUpdated: userStatus?.updatedAt,
   };
+};
+
+export const useUserOnlineStatus = () => {
+  const currentUser = useCurrentUser();
+  const setOnline = useSetUserOnline();
+  const setOffline = useSetUserOffline();
+  const updateHeartbeat = useUpdateHeartbeat();
+
+  //Start online session
+  const startOnlineSession = () => {
+    setOnline.mutate();
+    apiClient.startHeartBeat();
+  };
+
+  // End online session
+  const endOnlineSession = () => {
+    setOffline.mutate();
+    apiClient.stopHeartbeat();
+  };
+
+  // Manual heartbeat update
+  const sendHeartbeat = () => {
+    updateHeartbeat.mutate();
+  };
+
+  return {
+    isOnline: currentUser?.isOnline || false,
+    lastSeen: currentUser?.lastSeen,
+    startOnlineSession,
+    endOnlineSession,
+    sendHeartbeat,
+    isSettingOnline: setOnline.isPending,
+    isSettingOffline: setOffline.isPending,
+  };
+};
+
+//Hook for window/tab lifecycle management
+export const useOnlineStatusLifecycle = () => {
+  const { startOnlineSession, endOnlineSession } = useUserOnlineStatus();
+
+  React.useEffect(() => {
+    if (!isAuthenticated()) return;
+
+    //Set online when component mount (app starts)
+    startOnlineSession();
+
+    //Handle page visibility changes
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        endOnlineSession();
+      } else {
+        startOnlineSession();
+      }
+    };
+
+    //Handle page unload
+    const handleBeforeUnload = () => {
+      //SendBeacon for reliable offline status
+      try {
+        navigator.sendBeacon(`${apiBase}/auth/offline`, JSON.stringify({}));
+      } catch (error) {
+        console.warn('Failed to send offline beacon:', error);
+      }
+    };
+
+    //Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    //Cleanup
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      endOnlineSession();
+    };
+  }, [startOnlineSession, endOnlineSession]);
 };

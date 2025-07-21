@@ -56,7 +56,7 @@ const UserManagementDashboard = () => {
   const invalidateTokens = useInvalidateUserTokens();
   const { data, isLoading, error } = useUsers();
 
-  const users = data?.user || [];
+  const users = data?.users;
   const pagination = data?.pagination || {
     total: 0,
     page: 1,
@@ -65,9 +65,6 @@ const UserManagementDashboard = () => {
     hasPrev: false,
     limit: 10,
   };
-  console.log('Data', data);
-  console.log('Awesome user:', users);
-  console.log('Pagination:', pagination);
 
   // FIXED: Calculate stats correctly
   const totalUsers = pagination.total || 0;
@@ -200,19 +197,13 @@ const UserManagementDashboard = () => {
         </CardHeader>
 
         <CardBody>
-          <UserTable
-            users={users}
-            currentUserId={currentUser?._id}
-            onAction={handleUserAction}
-            onViewDetails={handleViewDetails}
-            onDelete={handleDeleteConfirm}
-          />
+          <UserTable />
 
-          {users.length === 0 && !isLoading && (
+          {/* {users?.length === 0 && !isLoading && (
             <Box textAlign='center' py={8}>
               <Text color='gray.500'>No users found</Text>
             </Box>
-          )}
+          )} */}
         </CardBody>
       </Card>
 

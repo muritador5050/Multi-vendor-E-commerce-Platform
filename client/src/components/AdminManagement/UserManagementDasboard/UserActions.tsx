@@ -1,6 +1,5 @@
 import {
   HStack,
-  Button,
   Menu,
   MenuButton,
   MenuList,
@@ -38,14 +37,13 @@ export const UserActions = ({
 }: UserActionProps) => {
   return (
     <HStack spacing={2}>
-      <Button
+      <IconButton
+        aria-label='detail'
         size='sm'
-        leftIcon={<FiEye />}
+        icon={<FiEye />}
         onClick={onViewDetails}
         variant='ghost'
-      >
-        Details
-      </Button>
+      />
 
       <Menu>
         <MenuButton

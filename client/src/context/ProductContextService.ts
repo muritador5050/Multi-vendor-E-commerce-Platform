@@ -413,3 +413,5 @@ export {
   useUpdateProduct,
   useDeleteProduct,
 };
+
+export type { ProductQueryParams, ProductPaginatedResponse };

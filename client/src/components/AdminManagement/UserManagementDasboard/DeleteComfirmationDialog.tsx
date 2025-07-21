@@ -7,6 +7,7 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
+  Highlight,
 } from '@chakra-ui/react';
 
 interface DeleteConfirmProps {
@@ -37,8 +38,13 @@ export const DeleteConfirmationDialog = ({
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            Are you sure you want to deactivate this user? This action can be
-            reversed later.
+            <Highlight
+              query='deactivate'
+              styles={{ px: '2', py: '1', rounded: 'full', bg: 'red.100' }}
+            >
+              Are you sure you want to deactivate this user? This action can be
+              reversed later.
+            </Highlight>
           </AlertDialogBody>
 
           <AlertDialogFooter>

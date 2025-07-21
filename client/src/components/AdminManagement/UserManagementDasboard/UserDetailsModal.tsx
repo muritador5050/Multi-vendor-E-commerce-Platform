@@ -36,7 +36,11 @@ import {
   FiUserCheck,
   FiRefreshCw,
 } from 'react-icons/fi';
-import { useCanManageUser, useUsers } from '@/context/AuthContextService';
+import {
+  useCanManageUser,
+  useUserById,
+  useUserOnlineStatus,
+} from '@/context/AuthContextService';
 import { LoadingState } from './LoadingState';
 
 interface UserModalProps {
@@ -56,8 +60,8 @@ export const UserDetailsModal = ({
 
   const { canDeactivate, canActivate, canInvalidateTokens } =
     useCanManageUser(userId);
-  const { data, isLoading, error } = useUsers();
-  const user = data?.data?.find((u) => u._id === userId);
+  const { data: user, isLoading, error } = useUserById(userId);
+  const { isOnline } = useUserOnlineStatus();
 
   if (!isOpen) return null;
   if (isLoading) {
@@ -148,9 +152,9 @@ export const UserDetailsModal = ({
                     </HStack>
                   </StatLabel>
                   <StatNumber fontSize='md'>
-                    {/* {user.lastLogin
-                      ? new Date(user.lastLogin).toLocaleDateString()
-                      : 'Never'} */}
+                    {user.lastSeen
+                      ? new Date(user.lastSeen).toLocaleDateString()
+                      : 'Never'}
                   </StatNumber>
                 </Stat>
               </GridItem>
@@ -163,8 +167,12 @@ export const UserDetailsModal = ({
 
               <HStack justify='space-between'>
                 <Text fontWeight='medium'>Email Verified:</Text>
-                <Badge colorScheme={user.isEmailVerified ? 'green' : 'red'}>
-                  {user.isEmailVerified ? 'Yes' : 'No'}
+                <Badge
+                  p={3}
+                  borderRadius='xl'
+                  colorScheme={user.isEmailVerified ? 'green' : 'red'}
+                >
+                  {user.isEmailVerified ? 'Verified' : 'Not-verified'}
                 </Badge>
               </HStack>
 
@@ -175,12 +183,12 @@ export const UserDetailsModal = ({
                 </HStack>
               )}
 
-              {/* {user.location && (
-                  <HStack justify='space-between'>
-                    <Text fontWeight='medium'>Location:</Text>
-                    <Text>{users?.location}</Text>
-                  </HStack>
-                )} */}
+              {user.profileCompletion && (
+                <HStack justify='space-between'>
+                  <Text fontWeight='medium'>Completed profile:</Text>
+                  <Text>{user?.profileCompletion}%</Text>
+                </HStack>
+              )}
             </VStack>
 
             {/* Activity Status */}
@@ -192,8 +200,12 @@ export const UserDetailsModal = ({
                 </Heading>
                 <HStack justify='space-between'>
                   <Text fontWeight='medium'>Status:</Text>
-                  <Badge colorScheme={user.isActive ? 'green' : 'gray'}>
-                    {user.isActive ? 'Online' : 'Offline'}
+                  <Badge
+                    p={2}
+                    borderRadius='xl'
+                    colorScheme={isOnline ? 'green' : 'gray'}
+                  >
+                    {isOnline ? 'Online' : 'Offline'}
                   </Badge>
                 </HStack>
               </Box>

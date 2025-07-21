@@ -29,6 +29,8 @@ export interface User {
   password?: string;
   role: UserRole;
   phone?: string;
+  isOnline: boolean;
+  lastSeen: Date;
   address?: Address;
   googleId?: string;
   facebookId?: string;
@@ -44,7 +46,6 @@ export interface User {
   refreshToken?: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
-  lastLogin?: Date | string;
 }
 
 export interface UserStatusUpdate {
@@ -61,15 +62,13 @@ export interface UserStatus {
   isActive: boolean;
   isEmailVerified: boolean;
   role: UserRole;
-  tokenVersion?: number;
   phone?: string;
+  isOnline: boolean;
+  lastSeen: Date;
+  tokenVersion?: number;
   createdAt: string;
   updatedAt: string;
-  address?: Address;
-  googleId?: string;
-  facebookId?: string;
   profileCompletion?: number;
-  lastLogin?: string;
 }
 
 export interface PaginatedUsers {

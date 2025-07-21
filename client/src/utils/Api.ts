@@ -1,9 +1,9 @@
 import { ApiError } from './ApiError';
 
 export const apiBase = import.meta.env.VITE_API_URL;
-const REQUEST_TIMEOUT = 10000; // 10 seconds
+const REQUEST_TIMEOUT = 10000;
 const MAX_REFRESH_ATTEMPTS = 3;
-const TOKEN_REFRESH_BUFFER = 30000; // 30 seconds
+const TOKEN_REFRESH_BUFFER = 30000;
 
 class ApiClient {
   private defaultOptions: RequestInit = {
@@ -14,6 +14,9 @@ class ApiClient {
   private isRefreshing = false;
   private refreshPromise: Promise<string> | null = null;
   private refreshAttempts = 0;
+
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private heartbeatFrequency = 3 * 60 * 1000;
 
   /**
    * Fetch with timeout and abort controller
@@ -237,7 +240,6 @@ class ApiClient {
         config
       );
 
-      // Handle 401 with token refresh
       if (
         response.status === 401 &&
         !endpoint.includes('/auth/refresh-token')
@@ -295,6 +297,37 @@ class ApiClient {
    */
   public isTokenRefreshing(): boolean {
     return this.isRefreshing;
+  }
+
+  public startHeartBeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+    }
+
+    this.heartbeatInterval = setInterval(async () => {
+      try {
+        await this.authenticatedApiRequest('/auth/heartbeat', {
+          method: 'POST',
+        });
+      } catch (error) {
+        console.error('Heartbeat failed:', error);
+        this.handleHeartbeatFailure(error);
+      }
+    }, this.heartbeatFrequency);
+  }
+
+  public stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  private handleHeartbeatFailure(error: unknown) {
+    if (error instanceof ApiError && error.status === 401) {
+      this.stopHeartbeat();
+      this.clearAuthAndRedirect();
+    }
   }
 }
 
