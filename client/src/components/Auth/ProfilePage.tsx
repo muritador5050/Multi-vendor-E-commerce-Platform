@@ -1,8 +1,10 @@
+import React, { useState } from 'react';
 import {
   useCurrentUser,
   useLogout,
   useUpdateProfile,
 } from '@/context/AuthContextService';
+import { type UserRole } from '@/type/auth';
 import {
   Box,
   Button,
@@ -50,7 +52,6 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
-import React, { useState } from 'react';
 
 // Type definitions
 interface Address {
@@ -61,23 +62,23 @@ interface Address {
   country: string;
 }
 
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
-  role: 'admin' | 'vendor' | 'user';
-  address?: Address;
-  isEmailVerified: boolean;
-  isActive: boolean;
-  isOnline?: boolean;
-  profileCompletion?: number;
-  createdAt: string | Date;
-  lastSeen?: string | Date;
-  googleId?: string;
-  facebookId?: string;
-}
+// interface UserProfile {
+//   id: string;
+//   name: string;
+//   email: string;
+//   phone?: string;
+//   avatar?: string;
+//   role: 'admin' | 'vendor' | 'user';
+//   address?: Address;
+//   isEmailVerified: boolean;
+//   isActive: boolean;
+//   isOnline?: boolean;
+//   profileCompletion?: number;
+//   createdAt: string | Date;
+//   lastSeen?: string | Date;
+//   googleId?: string;
+//   facebookId?: string;
+// }
 
 interface FormData {
   name: string;
@@ -87,7 +88,7 @@ interface FormData {
   address: Address;
 }
 
-type UserRole = 'admin' | 'vendor' | 'user';
+// type UserRole = 'admin' | 'vendor' | 'customer';
 
 function ProfilePage() {
   const updateProfile = useUpdateProfile();
@@ -111,7 +112,6 @@ function ProfilePage() {
     },
   });
 
-  // Color mode values
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
@@ -210,23 +210,40 @@ function ProfilePage() {
                   <Badge
                     colorScheme={getRoleColor(currentUser.role)}
                     variant='subtle'
+                    borderRadius='xl'
+                    p={2}
                   >
                     {currentUser.role?.charAt(0).toUpperCase() +
                       currentUser.role?.slice(1)}
                   </Badge>
                   {currentUser.isEmailVerified ? (
-                    <Badge colorScheme='green' variant='subtle'>
+                    <Badge
+                      colorScheme='green'
+                      variant='subtle'
+                      borderRadius='xl'
+                      p={2}
+                    >
                       <Icon as={CheckCircle} mr={1} w={3} h={3} />
                       Verified
                     </Badge>
                   ) : (
-                    <Badge colorScheme='red' variant='subtle'>
+                    <Badge
+                      colorScheme='red'
+                      variant='subtle'
+                      borderRadius='xl'
+                      p={2}
+                    >
                       <Icon as={XCircle} mr={1} w={3} h={3} />
                       Unverified
                     </Badge>
                   )}
                   {currentUser.isOnline && (
-                    <Badge colorScheme='green' variant='solid'>
+                    <Badge
+                      colorScheme='green'
+                      variant='solid'
+                      borderRadius='xl'
+                      p={2}
+                    >
                       Online
                     </Badge>
                   )}

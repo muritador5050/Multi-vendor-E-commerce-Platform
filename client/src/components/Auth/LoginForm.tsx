@@ -23,7 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
 import { useLogin } from '@/context/AuthContextService';
-import { GoogleLoginButton } from '@/components/GoogleButton/GoogleButton';
+import { GoogleLoginButton } from '@/components/Buttons/GoogleButton';
 
 export default function LoginForm() {
   const [user, setUser] = useState({ email: '', password: '' });

@@ -1216,6 +1216,15 @@ async function getUserById(id: string) {
     `/auth/users/${id}`
   );
 }
+/**Toggle user verification */
+async function verifyUser(id: string) {
+  return apiClient.authenticatedApiRequest<ApiResponse<User>>(
+    `/auth/verify-user/${id}`,
+    {
+      method: 'PATCH',
+    }
+  );
+}
 
 /**
  * Get current user's profile
@@ -1279,11 +1288,14 @@ async function activateUser(id: string) {
 /**
  * Invalidate user's tokens
  */
-async function invalidateUserTokens(id: string) {
+
+async function invalidateUserTokens(id: string, reason?: string) {
+  const requestBody = reason ? { reason } : {};
   return apiClient.authenticatedApiRequest<
-    ApiResponse<{ id: string; tokenVersion: number }>
+    ApiResponse<{ invalidatedAt: string; reason: string }>
   >(`/auth/users/${id}/invalidate-tokens`, {
-    method: 'PATCH',
+    method: 'POST',
+    body: JSON.stringify(requestBody),
   });
 }
 
@@ -1660,6 +1672,17 @@ export const useRegisterVendor = (options?: { onSuccess?: () => void }) => {
   });
 };
 
+/**Verify user */
+export const useVerifyUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: verifyUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.users() });
+    },
+  });
+};
+
 /**
  * Logout mutation
  */
@@ -1920,10 +1943,10 @@ export const useInvalidateUserTokens = () => {
   const currentUser = useCurrentUser();
 
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
       if (!id?.trim()) throw new ApiError('User ID is required', 400);
 
-      const response = await invalidateUserTokens(id);
+      const response = await invalidateUserTokens(id, reason);
       if (!response.success) {
         throw new ApiError(
           response.message || 'Token invalidation failed',
@@ -1933,13 +1956,15 @@ export const useInvalidateUserTokens = () => {
       return response.data;
     },
     onSuccess: (_data, variables) => {
-      // Invalidate related queries
       queryClient.invalidateQueries({
-        queryKey: authKeys.userStatus(variables),
+        queryKey: authKeys.userStatus(variables.id),
       });
 
-      // If user invalidated their own tokens, force logout
-      if (currentUser?._id === variables) {
+      queryClient.invalidateQueries({
+        queryKey: authKeys.users(),
+      });
+
+      if (currentUser?._id === variables.id) {
         forceLogout('Your session has been invalidated. Please login again.');
       }
     },
