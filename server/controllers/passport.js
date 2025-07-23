@@ -23,16 +23,18 @@ passport.use(
         // Link Google account to existing user
         user.googleId = profile.id;
         user.avatar = user.avatar || profile.photos[0].value;
-        user.isEmailVerified = true; // Trust Google's email verification
+        user.isEmailVerified = true;
+        user.isActive = true;
         await User.updateOne(
           {
             _id: user._id,
           },
           {
             $set: {
-              googleId: profile._id,
+              googleId: profile.id,
               avatar: user.avatar || profile.photos[0].value,
               isEmailVerified: true,
+              isActive: true,
             },
           }
         );
@@ -48,57 +50,10 @@ passport.use(
         email: profile.emails[0].value,
         googleId: profile.id,
         avatar: profile.photos[0].value,
-        isEmailVerified: true, // Trust Google's email verification
+        isEmailVerified: true,
+        isActive: true,
       });
       return done(null, user);
-    }
-  )
-);
-
-passport.use(
-  new FacebookStrategy(
-    {
-      clientID: '123-456-789',
-      clientSecret: 'shhh-its-a-secret',
-      callbackURL: '/api/auth/facebook/callback',
-      profileFields: ['id', 'displayName', 'photos', 'email'],
-    },
-    async function (accessToken, refreshToken, profile, done) {
-      try {
-        //Check if user exist
-        let user = await User.findOne({ facebookId: profile.id });
-        if (user) return done(null, user);
-
-        // Check if user exists with same email
-        if (profile.emails && profile.emails.length > 0) {
-          user = await User.findOne({ email: profile.emails[0].value });
-
-          if (user) {
-            // Link Facebook account to existing user
-            user.facebookId = profile.id;
-            user.avatar =
-              user.avatar ||
-              (profile.photos[0] ? profile.photos[0].value : null);
-            user.isEmailVerified = true; // Trust Facebook's email verification
-            await user.save({ validateBeforeSave: false });
-            return done(null, user);
-          }
-
-          //Create new user
-          user = await User.create({
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            facebookId: profile.id,
-            avatar: profile.photos[0] ? profile.photos[0].value : null,
-            isEmailVerified: true, // Trust Facebook's email verification
-          });
-          return done(null, user);
-        } else {
-          return done(new Error('No email found in Facebook profile'), null);
-        }
-      } catch (error) {
-        return done(error, null);
-      }
     }
   )
 );

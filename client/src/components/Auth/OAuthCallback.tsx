@@ -9,6 +9,7 @@ import {
   Icon,
   Fade,
   ScaleFade,
+  useToast,
 } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, AlertCircle, Shield } from 'lucide-react';
@@ -25,6 +26,7 @@ type LoadingStage =
   | 'error';
 
 function OAuthCallback() {
+  const toast = useToast();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -32,7 +34,6 @@ function OAuthCallback() {
     useState<LoadingStage>('authenticating');
   const [progress, setProgress] = useState(0);
 
-  // Simulate progress stages for better UX
   useEffect(() => {
     const progressStages = [
       { stage: 'authenticating' as const, progress: 25, delay: 0 },
@@ -78,7 +79,7 @@ function OAuthCallback() {
           if (userData) {
             // Store email for convenience
             localStorage.setItem('savedEmail', userData.email);
-            queryClient.invalidateQueries({ queryKey: authKeys.profile });
+            queryClient.invalidateQueries({ queryKey: authKeys.profile() });
 
             const defaultRoute = permissionUtils.getDefaultRoute(userData.role);
 
@@ -107,11 +108,29 @@ function OAuthCallback() {
             });
           }, 2000);
         }
-      } else if (error === 'oauth_failed') {
-        console.error('OAuth failed');
+      } else if (error === 'oauth_failed' || error === 'account_inactive') {
+        console.error('OAuth error:', error);
         setLoadingStage('error');
+        toast({
+          title:
+            error === 'account_inactive'
+              ? 'Account is not active'
+              : 'Google login failed',
+          description:
+            error === 'account_inactive'
+              ? 'Please contact support or wait for account activation.'
+              : 'We couldn’t complete your login. Please try again.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+          position: 'top',
+        });
+
         setTimeout(() => {
-          navigate('/my-account?error=oauth_failed', { replace: true });
+          const message =
+            error === 'account_inactive' ? 'account_inactive' : 'oauth_failed';
+
+          navigate(`/my-account?error=${message}`, { replace: true });
         }, 2000);
       } else {
         // No valid parameters, redirect to login

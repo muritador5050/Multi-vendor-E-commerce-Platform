@@ -13,18 +13,24 @@ const {
 
 class UserController {
   //Register user
-  static async createUser(req, res) {
-    await User.createIfNotExists(req.body);
+  static async registerUser(req, res) {
+    const user = await User.createIfNotExists(req.body);
+    await user.sendVerificationEmail();
+
     res.status(201).json({
+      success: true,
       message:
         'User created successfully. Please check your email for verification.',
     });
   }
 
   //Register vendor
-  static async registerVendor(req, res) {
-    await User.createVendor(req.body);
+  static async registerVendorUser(req, res) {
+    const user = await User.createVendor(req.body);
+    await user.sendVerificationEmail();
+
     res.status(201).json({
+      success: true,
       message:
         'User created successfully. Please check your email for verification.',
     });
@@ -35,10 +41,18 @@ class UserController {
     const { email, password, rememberMe } = req.body;
 
     const user = await User.findByEmailAndValidateCredential(email, password);
+
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message:
+          'Your account as been deactivated please contact admin for further information',
+      });
+    }
+
+    const warnings = [];
     if (!user.isEmailVerified) {
-      return res
-        .status(401)
-        .json({ message: 'Please verify your email first' });
+      warnings.push('Please verify your email address to access all features.');
     }
 
     const tokenOptions = rememberMe
@@ -68,8 +82,10 @@ class UserController {
 
     res.cookie('refreshToken', refreshToken, cookieOptions).json({
       data: {
+        success: true,
         user: user.getStatusInfo(),
         accessToken,
+        warnings,
       },
     });
   }
@@ -148,18 +164,92 @@ class UserController {
 
   //Email verification
   static async emailVerification(req, res) {
-    const { token } = req.params;
+    try {
+      const { token } = req.params;
 
-    const user = await User.findByVerificationToken(token);
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Verification token is required',
+        });
+      }
 
-    if (user.isEmailAlreadyVerified()) {
-      return res.status(200).send('Email already verified.');
+      const user = await User.findByVerificationToken(token);
+
+      if (user.isEmailAlreadyVerified()) {
+        return res.status(200).json({
+          success: true,
+          message: 'Email is already verified.',
+        });
+      }
+
+      await user.verifyEmail();
+      await user.sendWelcomeEmail();
+
+      res.status(200).json({
+        success: true,
+        message: 'Email verified successfully',
+      });
+    } catch (error) {
+      console.error('Email verification error:', error);
+
+      // Handle specific error types
+      if (error.message.includes('expired')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Verification token has expired. Please request a new one.',
+          code: 'TOKEN_EXPIRED',
+        });
+      }
+
+      if (error.message.includes('Invalid')) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'Invalid verification token. Please check the link or request a new one.',
+          code: 'TOKEN_INVALID',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message:
+          'An error occurred during email verification. Please try again.',
+      });
+    }
+  }
+
+  static async verifyUserByAdmin(req, res) {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
-    await user.verifyEmail();
-    await user.sendWelcomeEmail();
+    const user = await User.findByIdAndValidate(req.params.id);
 
-    res.json({ message: 'Email verified successfully' });
+    await user.toggleEmailVerification();
+
+    res.json({
+      message: `User ${
+        user.isEmailVerified ? 'verified' : 'unverified'
+      } successfully`,
+      data: user,
+    });
+  }
+
+  static async resendEmailVerification(req, res) {
+    const user = await User.findByIdAndValidate(req.user.id);
+
+    if (user.isEmailAlreadyVerified()) {
+      return res.status(200).json({
+        success: true,
+        message: 'Email is already verified.',
+      });
+    }
+    await user.sendResendVerificationEmail();
+    res.status(200).json({
+      success: true,
+      message: 'Verification email sent successfully. Please check your inbox.',
+    });
   }
 
   // Request password reset
@@ -218,8 +308,18 @@ class UserController {
         );
       }
 
-      const { redirectUrl, shouldSendWelcome } =
+      if (!user.isActive) {
+        return res.redirect(
+          `${FRONTEND_URL}/oauth/callback?error=account_inactive`
+        );
+      }
+
+      const { redirectUrl, shouldSendVerification, shouldSendWelcome } =
         await User.processOAuthCallback(user, FRONTEND_URL);
+
+      if (shouldSendVerification) {
+        await user.sendVerificationEmail();
+      }
 
       if (shouldSendWelcome) {
         await user.sendWelcomeEmail();
@@ -385,10 +485,10 @@ class UserController {
   static async deleteUser(req, res) {
     await User.findByIdAndValidate(req.params.id);
 
-    if (!req.user.id || req.user.role !== 'admin') {
-      return res
-        .status(403)
-        .json({ message: 'You can only delete your account!' });
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Only admin has the permission to delete user account!',
+      });
     }
 
     if (req.user.role === 'admin' && req.user.id === req.params.id) {
@@ -398,7 +498,7 @@ class UserController {
     }
 
     await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'User deleted successfully' });
+    res.json({ success: true, message: 'User deleted successfully' });
   }
 
   //Deactivate user

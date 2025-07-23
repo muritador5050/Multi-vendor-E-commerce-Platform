@@ -43,12 +43,6 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    if (!user.isEmailVerified) {
-      return res.status(401).json({
-        message: 'Please verify your email address.',
-      });
-    }
-
     // Attach user to request
     req.user = user;
     next();

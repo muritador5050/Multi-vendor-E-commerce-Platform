@@ -237,12 +237,12 @@ userSchema.statics.alreadyExists = async function (email) {
 
 userSchema.statics.createIfNotExists = async function (userData) {
   await this.alreadyExists(userData.email);
-  return this.create(userData);
+  return this.create({ ...userData, isActive: true });
 };
 
 userSchema.statics.createVendor = async function (userData, role = 'vendor') {
   await this.alreadyExists(userData.email);
-  return this.create({ ...userData, role });
+  return this.create({ ...userData, role, isActive: true });
 };
 
 // Authentication methods
@@ -271,14 +271,28 @@ userSchema.statics.findResetToken = async function (token) {
 };
 
 userSchema.statics.findByVerificationToken = async function (token) {
-  const user = await this.findOne({
-    emailVerificationToken: token,
-    emailVerificationExpires: { $gt: Date.now() },
-  });
-  if (!user) {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    const user = await this.findOne({
+      _id: decoded.id,
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      throw new Error('Invalid or expired verification token');
+    }
+
+    return user;
+  } catch (jwtError) {
+    if (jwtError.name === 'TokenExpiredError') {
+      throw new Error('Verification token has expired');
+    } else if (jwtError.name === 'JsonWebTokenError') {
+      throw new Error('Invalid verification token');
+    }
     throw new Error('Invalid verification token');
   }
-  return user;
 };
 
 userSchema.statics.findByRefreshToken = async function (refreshToken) {
@@ -337,14 +351,9 @@ userSchema.statics.findWithPagination = async function (filter, options) {
   };
 };
 
-// Utility methods
-// userSchema.statics.findActiveUsers = async function () {
-//   return await this.find({ isActive: true }).select(
-//     'name email role phone isEmailVerified createdAt updatedAt avatar isActive'
-//   );
-// };
-
 userSchema.statics.processOAuthCallback = async function (user, frontendUrl) {
+  const isNewUser = user.isNew || user.createdAt > new Date(Date.now() - 5000);
+
   const { accessToken, refreshToken } = user.generateToken();
   user.refreshToken = refreshToken;
   await user.save();
@@ -360,7 +369,8 @@ userSchema.statics.processOAuthCallback = async function (user, frontendUrl) {
     redirectUrl: `${frontendUrl}/oauth/callback?token=${accessToken}&refresh=${refreshToken}&user=${encodeURIComponent(
       JSON.stringify(userData)
     )}`,
-    shouldSendWelcome: !user.isEmailVerified,
+    shouldSendVerification: !user.isEmailVerified,
+    shouldSendWelcome: isNewUser && user.isEmailVerified,
   };
 };
 
@@ -435,15 +445,38 @@ userSchema.methods.verifyEmail = function () {
 
 userSchema.methods.generateVerificationEmailToken = function () {
   const token = jwt.sign({ id: this._id, email: this.email }, JWT_SECRET, {
-    expiresIn: '1h',
+    expiresIn: '24h',
   });
   this.emailVerificationToken = token;
   this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
   return token;
 };
 
+userSchema.methods.toggleEmailVerification = async function () {
+  this.isEmailVerified = !this.isEmailVerified;
+  if (this.isEmailVerified) {
+    this.emailVerificationToken = undefined;
+    this.emailVerificationExpires = undefined;
+  }
+  return await this.save();
+};
+
 userSchema.methods.sendWelcomeEmail = async function () {
   await EmailService.sendWelcomeEmail(this);
+};
+
+userSchema.methods.sendVerificationEmail = async function () {
+  const token = this.generateVerificationEmailToken();
+  await this.save({ validateBeforeSave: false });
+  await EmailService.sendVerificationEmail(this, token);
+  return token;
+};
+
+userSchema.methods.sendResendVerificationEmail = async function () {
+  const token = this.generateVerificationEmailToken();
+  await this.save({ validateBeforeSave: false });
+  await EmailService.sendResendVerificationEmail(this, token);
+  return token;
 };
 
 // Password reset methods
@@ -482,14 +515,22 @@ userSchema.methods.setOffline = async function () {
 };
 
 // User status methods
-userSchema.methods.activate = function () {
+userSchema.methods.activate = async function () {
   this.isActive = true;
+  await EmailService.sendAccountActivationEmail(
+    this,
+    'Account review completed successfully'
+  );
   return this.save();
 };
 
-userSchema.methods.deactivate = function () {
+userSchema.methods.deactivate = async function () {
   this.isActive = false;
   this.tokenVersion += 1;
+  await EmailService.sendAccountDeactivationEmail(
+    this,
+    'Suspicious activity detected'
+  );
   return this.save();
 };
 
@@ -567,19 +608,13 @@ userSchema.methods.getStatusInfo = function () {
 // ============================================================================
 
 userSchema.pre('save', async function (next) {
-  // Check if this is a Google or Facebook user and skip token generation
-  if ((this.googleId || this.facebookId) && this.isEmailVerified) {
-    return next();
-  }
-
-  if (this.isNew || !this.isEmailVerified) {
+  if (this.isNew && !this.isEmailVerified && !this.emailVerificationToken) {
     this.generateVerificationEmailToken();
   }
 
   next();
 });
 
-// Pre-save: Hash password if modified
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password') || !this.password) return next();
 
@@ -588,33 +623,6 @@ userSchema.pre('save', async function (next) {
     next();
   } catch (err) {
     next(err);
-  }
-});
-
-// Pre-save: Auto-activate when email is verified
-userSchema.pre('save', function (next) {
-  if (this.isEmailVerified && this.isModified('isEmailVerified')) {
-    this.isActive = true;
-  }
-  next();
-});
-
-// Post-save: Send verification email for new users
-userSchema.post('save', async function (doc, next) {
-  try {
-    if (
-      doc.createdAt.getTime() === doc.updatedAt.getTime() &&
-      !doc.googleId &&
-      !doc.facebookId &&
-      !doc.isEmailVerified &&
-      doc.emailVerificationToken
-    ) {
-      await EmailService.sendVerificationEmail(doc, doc.emailVerificationToken);
-    }
-    next();
-  } catch (err) {
-    console.error('Post-save email sending error:', err);
-    next();
   }
 });
 

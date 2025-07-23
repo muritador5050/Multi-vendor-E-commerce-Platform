@@ -61,13 +61,13 @@ const { register, login } = require('../services/auth.validation');
 router.post(
   '/register',
   validation(register),
-  asyncHandler(UserController.createUser)
+  asyncHandler(UserController.registerUser)
 );
 
 router.post(
   '/vendor-register',
   validation(register),
-  asyncHandler(UserController.registerVendor)
+  asyncHandler(UserController.registerVendorUser)
 );
 
 /**
@@ -240,6 +240,12 @@ router.get(
   asyncHandler(UserController.getAllUsers)
 );
 
+router.post(
+  '/resend-verification',
+  authenticate,
+  asyncHandler(UserController.resendEmailVerification)
+);
+
 //Online and Offline status
 router.post(
   '/heartbeat',
@@ -290,6 +296,13 @@ router.patch(
   authenticate,
   checkRole('admin', 'edit'),
   asyncHandler(UserController.activateUser)
+);
+
+router.patch(
+  '/verify-user/:id',
+  authenticate,
+  checkRole('admin', 'edit'),
+  asyncHandler(UserController.verifyUserByAdmin)
 );
 
 /**

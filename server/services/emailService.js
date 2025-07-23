@@ -90,6 +90,69 @@ class EmailService {
     });
   }
 
+  async sendResendVerificationEmail(user, token) {
+    const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${token}`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+          .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+          .button { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+          .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Email Verification</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${user.name}!</h2>
+            <p>Please verify your email address to complete your registration.</p>
+            <p>Click the button below to verify your email:</p>
+            <a href="${verificationUrl}" class="button">Verify Email</a>
+            <p>Or copy and paste this link into your browser:</p>
+            <p>${verificationUrl}</p>
+            <p><strong>This link will expire in 24 hours.</strong></p>
+            <p>If you didn't create an account with us, please ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} ${
+      process.env.APP_NAME
+    }. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+    const text = `
+    Hello ${user.name}!
+    
+    Thank you for registering with us. Please verify your email address to complete your registration.
+    
+    Click this link to verify your email: ${verificationUrl}
+    
+    This link will expire in 24 hours.
+    
+    If you didn't create an account with us, please ignore this email.
+    
+    ${process.env.APP_NAME}
+  `;
+
+    await this.sendEmail({
+      to: user.email,
+      subject: 'Verify Your Email Address',
+      html,
+      text,
+    });
+  }
+
   async sendWelcomeEmail(user) {
     const html = `
       <!DOCTYPE html>
@@ -178,6 +241,132 @@ class EmailService {
       subject: 'Password Reset Request',
       html,
       text: `Password reset requested. Visit this link to reset your password: ${resetUrl}. This link expires in 10 min.`,
+    });
+  }
+
+  async sendAccountActivationEmail(user, reason = null) {
+    const loginUrl = `${process.env.FRONTEND_URL}/my-account`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+            .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+            .button { display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+            .success-icon { font-size: 48px; color: #4CAF50; text-align: center; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Account Activated</h1>
+            </div>
+            <div class="content">
+              <div class="success-icon">🎉</div>
+              <h2>Hello ${user.name}!</h2>
+              <p>Great news! Your account has been <strong>activated</strong> and you can now access all platform features.</p>
+              ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+              <p>You can now log in and enjoy our services.</p>
+              <a href="${loginUrl}" class="button">Login Now</a>
+              <p>Thank you for being part of our community!</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} ${
+      process.env.APP_NAME
+    }. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const text = `
+      Hello ${user.name}!
+      
+      Great news! Your account has been activated and you can now access all platform features.
+      
+      ${reason ? `Reason: ${reason}` : ''}
+      
+      You can now log in at: ${loginUrl}
+      
+      Thank you for being part of our community!
+      
+      ${process.env.APP_NAME}
+    `;
+
+    await this.sendEmail({
+      to: user.email,
+      subject: 'Account Activated - Welcome Back!',
+      html,
+      text,
+    });
+  }
+
+  async sendAccountDeactivationEmail(user, reason = null) {
+    const supportUrl = `${process.env.FRONTEND_URL}/support`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #f44336; color: white; padding: 20px; text-align: center; }
+            .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+            .button { display: inline-block; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+            .warning-icon { font-size: 48px; color: #f44336; text-align: center; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Account Deactivated</h1>
+            </div>
+            <div class="content">
+              <div class="warning-icon">⚠️</div>
+              <h2>Hello ${user.name},</h2>
+              <p>We're writing to inform you that your account has been <strong>deactivated</strong>.</p>
+              ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+              <p>You will not be able to access your account until it is reactivated.</p>
+              <p>If you believe this was done in error or have questions, please contact our support team.</p>
+              <a href="${supportUrl}" class="button">Contact Support</a>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} ${
+      process.env.APP_NAME
+    }. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const text = `
+      Hello ${user.name},
+      
+      We're writing to inform you that your account has been deactivated.
+      
+      ${reason ? `Reason: ${reason}` : ''}
+      
+      You will not be able to access your account until it is reactivated.
+      
+      If you believe this was done in error or have questions, please contact our support team at: ${supportUrl}
+      
+      ${process.env.APP_NAME}
+    `;
+
+    await this.sendEmail({
+      to: user.email,
+      subject: 'Account Deactivated - Action Required',
+      html,
+      text,
     });
   }
 

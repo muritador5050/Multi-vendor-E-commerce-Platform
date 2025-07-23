@@ -21,7 +21,6 @@ import {
   StatLabel,
   StatNumber,
   Icon,
-  Divider,
   Alert,
   AlertIcon,
   AlertDescription,
@@ -35,11 +34,17 @@ import {
   FiUserX,
   FiUserCheck,
   FiRefreshCw,
+  FiMail,
+  FiPhone,
+  FiCheckCircle,
+  FiXCircle,
 } from 'react-icons/fi';
 import {
   useCanManageUser,
   useUserById,
   useUserOnlineStatus,
+  useActivateUser,
+  useDeactivateUser,
 } from '@/context/AuthContextService';
 import { LoadingState } from './LoadingState';
 
@@ -47,7 +52,7 @@ interface UserModalProps {
   userId: string;
   isOpen: boolean;
   onClose: () => void;
-  onAction: (_id: string, action: string) => void;
+  onAction?: (userId: string, action: string) => void;
 }
 
 export const UserDetailsModal = ({
@@ -56,20 +61,69 @@ export const UserDetailsModal = ({
   onClose,
   onAction,
 }: UserModalProps) => {
-  const userInfoColor = useColorModeValue('gray.50', 'gray.700');
+  const bgGradient = 'linear(to-br, blue.100, purple.50)';
+  const cardBg = useColorModeValue('white', 'gray.700');
+  const headerBg = useColorModeValue('white', 'gray.800');
+  const statBg = useColorModeValue('gray.50', 'gray.600');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
 
   const { canDeactivate, canActivate, canInvalidateTokens } =
     useCanManageUser(userId);
-  const { data: user, isLoading, error } = useUserById(userId);
+
+  // Add mutations directly in the modal for better control
+  const activateUserMutation = useActivateUser();
+  const deActivateUserMutation = useDeactivateUser();
+
+  const { data: user, isLoading, error, refetch } = useUserById(userId);
   const { isOnline } = useUserOnlineStatus();
 
+  // Handle actions with proper loading states and refetch
+  const handleAction = async (action: string) => {
+    try {
+      switch (action) {
+        case 'activate':
+          await activateUserMutation.mutateAsync(userId);
+          break;
+        case 'deactivate':
+          await deActivateUserMutation.mutateAsync(userId);
+          break;
+        case 'invalidate':
+          if (onAction) {
+            onAction(userId, action);
+          }
+          break;
+        default:
+          console.warn('Unknown action:', action);
+          return;
+      }
+
+      // Refetch user data after successful mutation
+      await refetch();
+
+      // Also call parent onAction if provided
+      if (onAction) {
+        onAction(userId, action);
+      }
+    } catch (error) {
+      console.error(`Error performing ${action}:`, error);
+    }
+  };
+
   if (!isOpen) return null;
+
   if (isLoading) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} size='xl'>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>User Details</ModalHeader>
+        <ModalOverlay bg='blackAlpha.600' backdropFilter='blur(10px)' />
+        <ModalContent bg={cardBg} borderRadius='2xl' shadow='2xl'>
+          <ModalHeader
+            bg={headerBg}
+            borderTopRadius='2xl'
+            borderBottom='1px'
+            borderColor={borderColor}
+          >
+            User Details
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <LoadingState />
@@ -82,12 +136,19 @@ export const UserDetailsModal = ({
   if (error || !user) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} size='xl'>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>User Details</ModalHeader>
+        <ModalOverlay bg='blackAlpha.600' backdropFilter='blur(10px)' />
+        <ModalContent bg={cardBg} borderRadius='2xl' shadow='2xl'>
+          <ModalHeader
+            bg={headerBg}
+            borderTopRadius='2xl'
+            borderBottom='1px'
+            borderColor={borderColor}
+          >
+            User Details
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Alert status='error'>
+            <Alert status='error' borderRadius='xl'>
               <AlertIcon />
               <AlertDescription>
                 {error ? 'Failed to load user details.' : 'User not found.'}
@@ -95,7 +156,9 @@ export const UserDetailsModal = ({
             </Alert>
           </ModalBody>
           <ModalFooter>
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose} borderRadius='xl'>
+              Close
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -103,125 +166,286 @@ export const UserDetailsModal = ({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size='xl'>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>User Details</ModalHeader>
+    <Modal isOpen={isOpen} onClose={onClose} scrollBehavior='inside' size='xl'>
+      <ModalOverlay bg='blackAlpha.600' backdropFilter='blur(10px)' />
+      <ModalContent
+        bg={cardBg}
+        borderRadius='2xl'
+        shadow='2xl'
+        overflow='hidden'
+      >
+        <ModalHeader
+          bg={headerBg}
+          borderBottom='1px'
+          borderColor={borderColor}
+          fontSize='xl'
+          fontWeight='600'
+        >
+          User Details
+        </ModalHeader>
         <ModalCloseButton />
-        <ModalBody>
-          <VStack spacing={6} align='stretch'>
-            <Flex align='center' p={4} bg={userInfoColor} rounded='md'>
-              <Avatar size='lg' name={user.name} src={user.avatar} mr={4} />
-              <Box>
-                <Heading size='md'>{user.name}</Heading>
-                <Text color='gray.600'>{user.email}</Text>
-                <HStack mt={2} spacing={2}>
-                  <Badge colorScheme={user.isActive ? 'green' : 'red'}>
-                    {user.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                  <Badge colorScheme='blue' textTransform='capitalize'>
-                    {user.role}
-                  </Badge>
-                </HStack>
-              </Box>
-            </Flex>
 
-            {/* User Stats */}
-            <Grid templateColumns='repeat(2, 1fr)' gap={4}>
+        <ModalBody p={0}>
+          <Box bgGradient={bgGradient} p={8} position='relative'>
+            <Flex align='center' justify='center' direction='column'>
+              <Box position='relative'>
+                <Avatar
+                  size='2xl'
+                  name={user.name}
+                  src={user.avatar}
+                  border='4px solid'
+                  borderColor='white'
+                  shadow='xl'
+                />
+                <Box
+                  position='absolute'
+                  bottom='2'
+                  right='2'
+                  w='4'
+                  h='4'
+                  bg={isOnline ? 'green.400' : 'gray.400'}
+                  borderRadius='full'
+                  border='2px solid white'
+                />
+              </Box>
+              <Heading size='lg' mt={4} mb={1} textAlign='center'>
+                {user.name}
+              </Heading>
+              <Text color='gray.600' fontSize='lg' mb={4}>
+                {user.email}
+              </Text>
+              <HStack spacing={3}>
+                <Badge
+                  colorScheme={user.isActive ? 'green' : 'red'}
+                  px={3}
+                  py={1}
+                  borderRadius='full'
+                  fontWeight='600'
+                >
+                  {user.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+                <Badge
+                  colorScheme='blue'
+                  px={3}
+                  py={1}
+                  borderRadius='full'
+                  textTransform='capitalize'
+                  fontWeight='600'
+                >
+                  {user.role}
+                </Badge>
+              </HStack>
+            </Flex>
+          </Box>
+
+          <VStack spacing={6} p={6}>
+            {/* User Stats with Enhanced Cards */}
+            <Grid templateColumns='repeat(2, 1fr)' gap={4} w='full'>
               <GridItem>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiCalendar} />
-                      <Text>Joined</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber fontSize='md'>
-                    {user.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString()
-                      : 'N/A'}
-                  </StatNumber>
-                </Stat>
+                <Box
+                  bg={statBg}
+                  p={4}
+                  borderRadius='xl'
+                  border='1px'
+                  borderColor={borderColor}
+                >
+                  <Stat>
+                    <StatLabel>
+                      <HStack color='gray.600'>
+                        <Icon as={FiCalendar} />
+                        <Text fontWeight='500'>Joined</Text>
+                      </HStack>
+                    </StatLabel>
+                    <StatNumber fontSize='lg' fontWeight='700' mt={1}>
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : 'N/A'}
+                    </StatNumber>
+                  </Stat>
+                </Box>
               </GridItem>
               <GridItem>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiActivity} />
-                      <Text>Last Active</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber fontSize='md'>
-                    {user.lastSeen
-                      ? new Date(user.lastSeen).toLocaleDateString()
-                      : 'Never'}
-                  </StatNumber>
-                </Stat>
+                <Box
+                  bg={statBg}
+                  p={4}
+                  borderRadius='xl'
+                  border='1px'
+                  borderColor={borderColor}
+                >
+                  <Stat>
+                    <StatLabel>
+                      <HStack color='gray.600'>
+                        <Icon as={FiActivity} />
+                        <Text fontWeight='500'>Last Active</Text>
+                      </HStack>
+                    </StatLabel>
+                    <StatNumber fontSize='lg' fontWeight='700' mt={1}>
+                      {user.lastSeen
+                        ? new Date(user.lastSeen).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : 'Never'}
+                    </StatNumber>
+                  </Stat>
+                </Box>
               </GridItem>
             </Grid>
 
-            {/* Additional Info */}
-            <VStack spacing={3} align='stretch'>
-              <Divider />
-              <Heading size='sm'>Additional Information</Heading>
+            {/* Enhanced Additional Info */}
+            <Box w='full'>
+              <Heading size='md' mb={4} color='gray.700'>
+                Account Information
+              </Heading>
 
-              <HStack justify='space-between'>
-                <Text fontWeight='medium'>Email Verified:</Text>
-                <Badge
-                  p={3}
+              <VStack spacing={4} align='stretch'>
+                <Box
+                  bg={statBg}
+                  p={4}
                   borderRadius='xl'
-                  colorScheme={user.isEmailVerified ? 'green' : 'red'}
+                  border='1px'
+                  borderColor={borderColor}
                 >
-                  {user.isEmailVerified ? 'Verified' : 'Not-verified'}
-                </Badge>
-              </HStack>
+                  <HStack justify='space-between' align='center'>
+                    <HStack>
+                      <Icon as={FiMail} color='gray.500' />
+                      <Text fontWeight='600' color='gray.700'>
+                        Email Verified
+                      </Text>
+                    </HStack>
+                    <HStack>
+                      <Icon
+                        as={user.isEmailVerified ? FiCheckCircle : FiXCircle}
+                        color={user.isEmailVerified ? 'green.500' : 'red.500'}
+                      />
+                      <Badge
+                        colorScheme={user.isEmailVerified ? 'green' : 'red'}
+                        borderRadius='full'
+                        px={3}
+                        py={1}
+                      >
+                        {user.isEmailVerified ? 'Verified' : 'Not Verified'}
+                      </Badge>
+                    </HStack>
+                  </HStack>
+                </Box>
 
-              {user.phone && (
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Phone:</Text>
-                  <Text>{user.phone}</Text>
-                </HStack>
-              )}
+                {user.phone && (
+                  <Box
+                    bg={statBg}
+                    p={4}
+                    borderRadius='xl'
+                    border='1px'
+                    borderColor={borderColor}
+                  >
+                    <HStack justify='space-between'>
+                      <HStack>
+                        <Icon as={FiPhone} color='gray.500' />
+                        <Text fontWeight='600' color='gray.700'>
+                          Phone Number
+                        </Text>
+                      </HStack>
+                      <Text fontWeight='500'>{user.phone}</Text>
+                    </HStack>
+                  </Box>
+                )}
 
-              {user.profileCompletion && (
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Completed profile:</Text>
-                  <Text>{user?.profileCompletion}%</Text>
-                </HStack>
-              )}
-            </VStack>
+                {user.profileCompletion && (
+                  <Box
+                    bg={statBg}
+                    p={4}
+                    borderRadius='xl'
+                    border='1px'
+                    borderColor={borderColor}
+                  >
+                    <HStack justify='space-between'>
+                      <Text fontWeight='600' color='gray.700'>
+                        Profile Completion
+                      </Text>
+                      <HStack>
+                        <Box
+                          w='20'
+                          h='2'
+                          bg='gray.200'
+                          borderRadius='full'
+                          overflow='hidden'
+                        >
+                          <Box
+                            w={`${user.profileCompletion}%`}
+                            h='full'
+                            bg='green.400'
+                            transition='width 0.3s'
+                          />
+                        </Box>
+                        <Text fontWeight='700' color='green.600'>
+                          {user.profileCompletion}%
+                        </Text>
+                      </HStack>
+                    </HStack>
+                  </Box>
+                )}
+              </VStack>
+            </Box>
 
             {/* Activity Status */}
             {user.isActive && (
-              <Box>
-                <Divider mb={3} />
-                <Heading size='sm' mb={3}>
-                  Recent Activity
+              <Box w='full'>
+                <Heading size='md' mb={4} color='gray.700'>
+                  Current Status
                 </Heading>
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Status:</Text>
-                  <Badge
-                    p={2}
-                    borderRadius='xl'
-                    colorScheme={isOnline ? 'green' : 'gray'}
-                  >
-                    {isOnline ? 'Online' : 'Offline'}
-                  </Badge>
-                </HStack>
+                <Box
+                  bg={statBg}
+                  p={4}
+                  borderRadius='xl'
+                  border='1px'
+                  borderColor={borderColor}
+                >
+                  <HStack justify='space-between'>
+                    <HStack>
+                      <Box
+                        w='3'
+                        h='3'
+                        bg={isOnline ? 'green.400' : 'gray.400'}
+                        borderRadius='full'
+                        animation={isOnline ? 'pulse 2s infinite' : 'none'}
+                      />
+                      <Text fontWeight='600' color='gray.700'>
+                        Connection Status
+                      </Text>
+                    </HStack>
+                    <Badge
+                      colorScheme={isOnline ? 'green' : 'gray'}
+                      borderRadius='full'
+                      px={3}
+                      py={1}
+                      fontWeight='600'
+                    >
+                      {isOnline ? 'Online' : 'Offline'}
+                    </Badge>
+                  </HStack>
+                </Box>
               </Box>
             )}
           </VStack>
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter bg={headerBg} borderTop='1px' borderColor={borderColor}>
           <ButtonGroup spacing={3}>
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose} borderRadius='xl' variant='ghost'>
+              Close
+            </Button>
 
             {canInvalidateTokens && (
               <Button
                 colorScheme='orange'
                 leftIcon={<FiRefreshCw />}
-                onClick={() => onAction(userId, 'invalidate')}
+                borderRadius='xl'
+                onClick={() => handleAction('invalidate')}
               >
                 Invalidate Tokens
               </Button>
@@ -231,7 +455,10 @@ export const UserDetailsModal = ({
               <Button
                 colorScheme='red'
                 leftIcon={<FiUserX />}
-                onClick={() => onAction(userId, 'deactivate')}
+                borderRadius='xl'
+                onClick={() => handleAction('deactivate')}
+                isLoading={deActivateUserMutation.isPending}
+                loadingText='Deactivating...'
               >
                 Deactivate
               </Button>
@@ -241,7 +468,10 @@ export const UserDetailsModal = ({
               <Button
                 colorScheme='green'
                 leftIcon={<FiUserCheck />}
-                onClick={() => onAction(userId, 'activate')}
+                borderRadius='xl'
+                onClick={() => handleAction('activate')}
+                isLoading={activateUserMutation.isPending}
+                loadingText='Activating...'
               >
                 Activate
               </Button>

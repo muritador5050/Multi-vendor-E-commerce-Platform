@@ -193,15 +193,26 @@ export default function ResetPasswordForm() {
   const resetPassword = useResetPassword({
     onSuccess: () => {
       toast({
-        title: 'Password reset link',
+        title: 'Password updated',
         description:
-          "If this email is registered, you'll receive a reset link shortly.",
+          'Your password has been reset successfully. You can now log in.',
         status: 'success',
         position: 'top',
         duration: 6000,
         isClosable: true,
       });
       setTimeout(() => navigate('/my-account', { replace: true }), 3000);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Reset failed',
+        description:
+          error.message || 'Password reset failed. Please try again.',
+        status: 'error',
+        position: 'top',
+        duration: 6000,
+        isClosable: true,
+      });
     },
   });
 

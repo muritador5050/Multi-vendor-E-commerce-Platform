@@ -35,6 +35,16 @@ export default function ForgotPasswordForm() {
         isClosable: true,
       });
     },
+    onError: (error) => {
+      toast({
+        title: 'Something went wrong!',
+        description: error.message,
+        status: 'error',
+        position: 'top',
+        duration: 6000,
+        isClosable: true,
+      });
+    },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

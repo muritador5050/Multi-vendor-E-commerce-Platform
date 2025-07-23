@@ -17,9 +17,9 @@ import {
   StatNumber,
   useDisclosure,
   useColorModeValue,
+  Button,
 } from '@chakra-ui/react';
 import { UserTable } from './UserTable';
-import { UserDetailsModal } from './UserDetailsModal';
 import { DeleteConfirmationDialog } from './DeleteComfirmationDialog';
 import {
   useCurrentUser,
@@ -31,14 +31,8 @@ import {
 } from '@/context/AuthContextService';
 
 const UserManagementDashboard = () => {
-  const [selectedUserId, setSelectedUserId] = useState('');
   const [userToDelete, setUserToDelete] = useState('');
 
-  const {
-    isOpen: isDetailsOpen,
-    onOpen: onDetailsOpen,
-    onClose: onDetailsClose,
-  } = useDisclosure();
   const {
     isOpen: isDeleteOpen,
     onOpen: onDeleteOpen,
@@ -46,7 +40,6 @@ const UserManagementDashboard = () => {
   } = useDisclosure();
 
   const isAdmin = useIsAdmin();
-  const currentUser = useCurrentUser();
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
@@ -54,7 +47,7 @@ const UserManagementDashboard = () => {
   const deactivateUser = useDeactivateUser();
   const activateUser = useActivateUser();
   const invalidateTokens = useInvalidateUserTokens();
-  const { data, isLoading, error } = useUsers();
+  const { data, isLoading, error, refetch, isFetching } = useUsers();
 
   const users = data?.users;
   const pagination = data?.pagination || {
@@ -89,21 +82,11 @@ const UserManagementDashboard = () => {
     }
   };
 
-  const handleDeleteConfirm = (userId: string) => {
-    setUserToDelete(userId);
-    onDeleteOpen();
-  };
-
   const handleDeleteUser = async () => {
     if (userToDelete) {
       await handleUserAction(userToDelete, 'deactivate');
     }
     onDeleteClose();
-  };
-
-  const handleViewDetails = (userId: string) => {
-    setSelectedUserId(userId);
-    onDetailsOpen();
   };
 
   // Access control check
@@ -171,6 +154,14 @@ const UserManagementDashboard = () => {
                 User Management
               </Heading>
               <Text color='gray.600'>Manage user accounts and permissions</Text>
+              <Button
+                onClick={() => refetch()}
+                isLoading={isFetching}
+                loadingText='Refreshing'
+                colorScheme='blue'
+              >
+                Refresh
+              </Button>
             </Box>
 
             <HStack spacing={4}>
@@ -206,14 +197,6 @@ const UserManagementDashboard = () => {
           )} */}
         </CardBody>
       </Card>
-
-      {/* User Details Modal */}
-      <UserDetailsModal
-        userId={selectedUserId}
-        isOpen={isDetailsOpen}
-        onClose={onDetailsClose}
-        onAction={handleUserAction}
-      />
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog

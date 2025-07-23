@@ -7,7 +7,8 @@ import {
   AlertDialogHeader,
   AlertDialogOverlay,
   Button,
-  Highlight,
+  Text,
+  Box,
 } from '@chakra-ui/react';
 
 interface DeleteConfirmProps {
@@ -15,6 +16,7 @@ interface DeleteConfirmProps {
   onClose: () => void;
   onConfirm: () => void;
   isLoading: boolean;
+  userName?: string;
 }
 
 export const DeleteConfirmationDialog = ({
@@ -22,6 +24,7 @@ export const DeleteConfirmationDialog = ({
   onClose,
   onConfirm,
   isLoading,
+  userName = 'User',
 }: DeleteConfirmProps) => {
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -33,22 +36,28 @@ export const DeleteConfirmationDialog = ({
     >
       <AlertDialogOverlay>
         <AlertDialogContent>
-          <AlertDialogHeader fontSize='lg' fontWeight='bold'>
-            Deactivate User
+          <AlertDialogHeader fontSize='lg' fontWeight='bold' color='red.600'>
+            Delete User
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            <Highlight
-              query='deactivate'
-              styles={{ px: '2', py: '1', rounded: 'full', bg: 'red.100' }}
-            >
-              Are you sure you want to deactivate this user? This action can be
-              reversed later.
-            </Highlight>
+            <Box>
+              <Text mb={2}>
+                Are you sure you want to delete{' '}
+                <Text as='span' fontWeight='bold' color='red.600'>
+                  {userName}
+                </Text>
+                ?
+              </Text>
+              <Text fontSize='sm' color='gray.600'>
+                This action cannot be undone. All user data will be permanently
+                removed from the system.
+              </Text>
+            </Box>
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onClose}>
+            <Button ref={cancelRef} onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
             <Button
@@ -56,8 +65,9 @@ export const DeleteConfirmationDialog = ({
               onClick={onConfirm}
               ml={3}
               isLoading={isLoading}
+              loadingText='Deleting...'
             >
-              Deactivate
+              Delete User
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
