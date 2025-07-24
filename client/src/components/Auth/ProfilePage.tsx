@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   useCurrentUser,
   useLogout,
@@ -40,6 +40,7 @@ import {
   StatLabel,
   StatNumber,
   useColorModeValue,
+  IconButton,
 } from '@chakra-ui/react';
 import {
   LogOut,
@@ -51,6 +52,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Save,
+  Camera,
 } from 'lucide-react';
 
 // Type definitions
@@ -62,24 +65,6 @@ interface Address {
   country: string;
 }
 
-// interface UserProfile {
-//   id: string;
-//   name: string;
-//   email: string;
-//   phone?: string;
-//   avatar?: string;
-//   role: 'admin' | 'vendor' | 'user';
-//   address?: Address;
-//   isEmailVerified: boolean;
-//   isActive: boolean;
-//   isOnline?: boolean;
-//   profileCompletion?: number;
-//   createdAt: string | Date;
-//   lastSeen?: string | Date;
-//   googleId?: string;
-//   facebookId?: string;
-// }
-
 interface FormData {
   name: string;
   email: string;
@@ -88,14 +73,13 @@ interface FormData {
   address: Address;
 }
 
-// type UserRole = 'admin' | 'vendor' | 'customer';
-
 function ProfilePage() {
   const updateProfile = useUpdateProfile();
   const logout = useLogout();
   const currentUser = useCurrentUser();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form data state
   const [formData, setFormData] = useState<FormData>({
@@ -137,6 +121,56 @@ function ProfilePage() {
         ...prev,
         [field]: value,
       }));
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check if file is an image
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please select an image file',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please select an image smaller than 5MB',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Create a temporary URL for preview
+      const imageUrl = URL.createObjectURL(file);
+      handleInputChange('avatar', imageUrl);
+
+      // Here you would typically upload the file to your server
+      // and then update the avatar with the server URL
+      // For now, we're just using the local URL for demonstration
+
+      toast({
+        title: 'Image selected',
+        description:
+          "Avatar image has been updated. Don't forget to save your changes!",
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
@@ -190,19 +224,42 @@ function ProfilePage() {
   }
 
   return (
-    <Box maxW='6xl' mx='auto' p={6}>
+    <Box maxW='6xl' mx='auto' p={6} minH='100vh'>
+      {/* Hidden file input */}
+      <Input
+        ref={fileInputRef}
+        type='file'
+        accept='image/*'
+        onChange={handleFileChange}
+        display='none'
+      />
+
       {/* Header Section */}
       <Card mb={6} bg={cardBg} shadow='lg'>
         <CardBody>
           <Flex justify='space-between' align='center' mb={6}>
             <HStack spacing={4}>
-              <Avatar
-                size='xl'
-                src={currentUser.avatar}
-                name={currentUser.name}
-                border='4px solid'
-                borderColor={borderColor}
-              />
+              <Box position='relative'>
+                <Avatar
+                  size='xl'
+                  src={currentUser.avatar}
+                  name={currentUser.name}
+                  border='4px solid'
+                  borderColor={borderColor}
+                />
+                <IconButton
+                  aria-label='Change avatar'
+                  icon={<Camera size={16} />}
+                  size='sm'
+                  colorScheme='blue'
+                  borderRadius='full'
+                  position='absolute'
+                  bottom='-2'
+                  right='-2'
+                  onClick={handleAvatarClick}
+                  shadow='md'
+                />
+              </Box>
               <VStack align='start' spacing={1}>
                 <Heading size='lg'>{currentUser.name}</Heading>
                 <Text color='gray.500'>{currentUser.email}</Text>
@@ -482,20 +539,29 @@ function ProfilePage() {
         </Card>
       </SimpleGrid>
 
-      {/* Edit Profile Drawer */}
-      <Drawer isOpen={isOpen} placement='right' onClose={onClose} size='md'>
+      {/* Edit Profile Drawer - FIXED VERSION */}
+      <Drawer
+        isOpen={isOpen}
+        placement='right'
+        onClose={onClose}
+        size='md'
+        blockScrollOnMount={false} // Allow main page scrolling
+      >
         <DrawerOverlay />
-        <DrawerContent>
+        <DrawerContent maxH='100vh' display='flex' flexDirection='column'>
           <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth='1px'>
+          <DrawerHeader borderBottomWidth='1px' flexShrink={0}>
             <HStack>
               <Icon as={Edit3} />
               <Text>Edit Profile</Text>
             </HStack>
           </DrawerHeader>
 
-          <form onSubmit={handleSubmit}>
-            <DrawerBody py={4}>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          >
+            <DrawerBody py={4} flex={1} overflowY='auto'>
               <VStack spacing={6} align='stretch'>
                 {/* Personal Information Section */}
                 <Box>
@@ -524,6 +590,7 @@ function ProfilePage() {
                           handleInputChange('email', e.target.value)
                         }
                         placeholder='Enter your email'
+                        isDisabled
                       />
                     </FormControl>
 
@@ -537,21 +604,8 @@ function ProfilePage() {
                         placeholder='Enter your phone number'
                       />
                     </FormControl>
-
-                    <FormControl>
-                      <FormLabel>Avatar URL</FormLabel>
-                      <Input
-                        value={formData.avatar}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          handleInputChange('avatar', e.target.value)
-                        }
-                        placeholder='Enter avatar image URL'
-                      />
-                    </FormControl>
                   </VStack>
                 </Box>
-
-                <Divider />
 
                 {/* Address Section */}
                 <Box>
@@ -621,22 +675,26 @@ function ProfilePage() {
                     </Grid>
                   </VStack>
                 </Box>
+
+                <Box h={4} />
               </VStack>
+              <HStack spacing={3} mb={16} w='full' justifyContent='flex-end'>
+                <Button variant='outline' onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  colorScheme='blue'
+                  type='submit'
+                  isLoading={updateProfile.isPending}
+                  loadingText='Saving...'
+                  leftIcon={<Icon as={Save} />}
+                >
+                  Save Changes
+                </Button>
+              </HStack>
             </DrawerBody>
 
-            <DrawerFooter borderTopWidth='1px'>
-              <Button variant='outline' mr={3} onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                colorScheme='blue'
-                type='submit'
-                isLoading={updateProfile.isPending}
-                loadingText='Saving...'
-              >
-                Save Changes
-              </Button>
-            </DrawerFooter>
+            <DrawerFooter borderTopWidth='1px' flexShrink={0}></DrawerFooter>
           </form>
         </DrawerContent>
       </Drawer>

@@ -1,4 +1,6 @@
 const Category = require('../models/category.model');
+const path = require('path');
+const { deleteFile } = require('../utils/FileUploads');
 
 class CategoryController {
   static async createCategory(req, res) {
@@ -83,6 +85,55 @@ class CategoryController {
         note: `${result.productsUpdated} products were updated to remove category reference`,
       }),
     });
+  }
+
+  // Upload category image
+  static async uploadCategoryImage(req, res) {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded',
+      });
+    }
+
+    const imagePath = `uploads/categories/${req.file.filename}`;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Category image uploaded successfully',
+      data: {
+        filename: req.file.filename,
+        path: imagePath,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      },
+    });
+  }
+
+  static async deleteCategoryImage(req, res) {
+    const { filename } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({
+        success: false,
+        message: 'Filename is required',
+      });
+    }
+
+    const filePath = path.join(__dirname, '..', 'uploads/categories', filename);
+    const result = await deleteFile(filePath);
+
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: 'Category image deleted successfully',
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: result.message,
+      });
+    }
   }
 }
 

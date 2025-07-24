@@ -6,6 +6,7 @@ const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
+const { avatarUpload, handleUploadError } = require('../utils/FileUploads');
 
 // Auth routes (no middleware needed)
 /**
@@ -240,6 +241,27 @@ router.get(
   asyncHandler(UserController.getAllUsers)
 );
 
+//Upload/Update avatar
+router.post(
+  '/upload-avatar',
+  authenticate,
+  (req, res, next) => {
+    avatarUpload.single('avatar')(req, res, (err) => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
+      }
+      next();
+    });
+  },
+  asyncHandler(UserController.uploadAvatar)
+);
+
+router.delete(
+  '/delete-avatar',
+  authenticate,
+  asyncHandler(UserController.deleteAvatar)
+);
+
 router.post(
   '/resend-verification',
   authenticate,
@@ -279,7 +301,7 @@ router.get(
   asyncHandler(UserController.getUserStatus)
 );
 
-router.patch(
+router.post(
   '/users/:id/invalidate-tokens',
   authenticate,
   asyncHandler(UserController.invalidateUserTokens)

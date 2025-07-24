@@ -1,4 +1,11 @@
 const Blog = require('../models/blog.model');
+const path = require('path');
+const {
+  blogImageUpload,
+  handleUploadError,
+  uploadResponse,
+  deleteFile,
+} = require('../utils/FileUploads');
 
 class BlogController {
   static async createBlog(req, res) {
@@ -62,6 +69,56 @@ class BlogController {
       } successfully`,
       data: updatedBlog,
     });
+  }
+
+  // Upload blog image
+  static async uploadBlogImage(req, res) {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded',
+      });
+    }
+
+    const imagePath = `uploads/blogs/${req.file.filename}`;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Blog image uploaded successfully',
+      data: {
+        filename: req.file.filename,
+        path: imagePath,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      },
+    });
+  }
+
+  // Delete blog image
+  static async deleteBlogImage(req, res) {
+    const { filename } = req.body;
+
+    if (!filename) {
+      return res.status(400).json({
+        success: false,
+        message: 'Filename is required',
+      });
+    }
+
+    const filePath = path.join(__dirname, '..', 'uploads/blogs', filename);
+    const result = await deleteFile(filePath);
+
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: 'Blog image deleted successfully',
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: result.message,
+      });
+    }
   }
 }
 

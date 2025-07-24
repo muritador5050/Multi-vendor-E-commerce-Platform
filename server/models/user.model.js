@@ -187,7 +187,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    profileCompletion: Number,
+    profileCompletion: {
+      type: Number,
+      default: 0,
+    },
+
     isOnline: { type: Boolean, default: false },
     lastSeen: Date,
     tokenVersion: {
@@ -603,6 +607,45 @@ userSchema.methods.getStatusInfo = function () {
   };
 };
 
+userSchema.methods.getProfileCompletion = function () {
+  const requiredFields = [
+    'name',
+    'email',
+    'phone',
+    'address.street',
+    'address.city',
+  ];
+
+  const optionalFields = [
+    'avatar',
+    'address.state',
+    'address.zipCode',
+    'address.country',
+  ];
+
+  let completed = 0;
+  const totalFields = requiredFields.length + optionalFields.length;
+
+  // Check required fields (weight them more heavily)
+  requiredFields.forEach((fieldPath) => {
+    const value = this.get(fieldPath);
+    if (value && value.toString().trim() !== '') {
+      completed += 1.5;
+    }
+  });
+
+  // Check optional fields
+  optionalFields.forEach((fieldPath) => {
+    const value = this.get(fieldPath);
+    if (value && value.toString().trim() !== '') {
+      completed += 1;
+    }
+  });
+
+  const adjustedTotal = requiredFields.length * 1.5 + optionalFields.length;
+  return Math.round((completed / adjustedTotal) * 100);
+};
+
 // ============================================================================
 // MIDDLEWARE (Pre/Post hooks)
 // ============================================================================
@@ -624,6 +667,21 @@ userSchema.pre('save', async function (next) {
   } catch (err) {
     next(err);
   }
+});
+
+// Update profile completion before saving
+userSchema.pre('save', function (next) {
+  // Only calculate if relevant fields might have changed
+  if (
+    this.isModified('name') ||
+    this.isModified('email') ||
+    this.isModified('phone') ||
+    this.isModified('avatar') ||
+    this.isModified('address')
+  ) {
+    this.profileCompletion = this.getProfileCompletion();
+  }
+  next();
 });
 
 module.exports = mongoose.model('User', userSchema);

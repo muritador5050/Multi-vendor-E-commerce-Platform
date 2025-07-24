@@ -4,6 +4,10 @@ const ProductsController = require('../controllers/product.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
+const {
+  productImageUpload,
+  handleUploadError,
+} = require('../utils/FileUploads');
 
 /**
  * @openapi
@@ -45,6 +49,23 @@ router
     checkRole('vendor', 'create'),
     asyncHandler(ProductsController.createProduct)
   );
+
+router.post('/upload-image', authenticate, (req, res, next) => {
+  productImageUpload.array('productImage', 5)(req, res, (err) => {
+    if (err) {
+      return handleUploadError(err, req, res, next);
+    }
+    next();
+  });
+  asyncHandler(ProductsController.uploadProductImage);
+});
+
+router.delete(
+  '/delete-image',
+  authenticate,
+  checkRole(['admin', 'vendor'], 'delete'),
+  asyncHandler(ProductsController.deleteProductImage)
+);
 
 /**
  * @openapi

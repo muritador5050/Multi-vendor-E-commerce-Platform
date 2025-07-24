@@ -2,6 +2,7 @@ require('./controllers/passport');
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -36,7 +37,7 @@ app.use(
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 //Routes
-app.use('/uploads/images', express.static('uploads/images'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/', require('./routes'));
 
 // Only connect DB here if not in test environment

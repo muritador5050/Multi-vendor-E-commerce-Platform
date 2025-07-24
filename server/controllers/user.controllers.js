@@ -1,15 +1,20 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const { NODE_ENV, REFRESH_TOKEN, FRONTEND_URL } = require('../configs/index');
-const EmailService = require('../services/emailService');
 const passport = require('passport');
-const {
-  calculateProfileCompletion,
-} = require('../utils/calculateProfileCompletion');
+const path = require('path');
+const fs = require('fs');
+
 const {
   validateFieldPermissions,
   getFilteredUpdateData,
 } = require('../utils/ValidateFieldPermission');
+const {
+  handleUploadError,
+  uploadResponse,
+  deleteFile,
+  uploadConfigs,
+} = require('../utils/FileUploads');
 
 class UserController {
   //Register user
@@ -152,12 +157,11 @@ class UserController {
   // Get user profile
   static async getUserProfile(req, res) {
     const user = await User.findByIdAndValidate(req.user.id);
-    const completion = calculateProfileCompletion(user);
     res.json({
       success: true,
+      message: 'User profile retrieved successfully',
       data: {
         user: user.getPublicProfile(),
-        profileCompletion: completion,
       },
     });
   }
@@ -229,6 +233,7 @@ class UserController {
     await user.toggleEmailVerification();
 
     res.json({
+      success: true,
       message: `User ${
         user.isEmailVerified ? 'verified' : 'unverified'
       } successfully`,
@@ -615,6 +620,86 @@ class UserController {
     res.json({
       success: true,
       data: user.getStatusInfo(),
+    });
+  }
+
+  // Upload avatar controller
+  static async uploadAvatar(req, res) {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded',
+      });
+    }
+
+    // Get the user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      // Clean up uploaded file if user not found
+      await deleteFile(req.file.path);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Delete old avatar if it exists and is not default
+    if (user.avatar && !user.avatar.includes('default-avatar')) {
+      const oldAvatarPath = path.join(__dirname, '..', user.avatar);
+      await deleteFile(oldAvatarPath).catch((err) =>
+        console.error('Error deleting old avatar:', err)
+      );
+    }
+
+    // Update user avatar path - store relative path
+    const avatarPath = `uploads/avatars/${req.file.filename}`;
+    user.avatar = avatarPath;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      data: {
+        filename: req.file.filename,
+        path: avatarPath,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        avatar: user.avatar,
+      },
+    });
+  }
+
+  // Delete user avatar
+  static async deleteAvatar(req, res) {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    if (!user.avatar || user.avatar.includes('default-avatar')) {
+      return res.status(400).json({
+        success: false,
+        message: 'No custom avatar to delete',
+      });
+    }
+
+    // Delete the file
+    const avatarPath = path.join(__dirname, '..', user.avatar);
+    await deleteFile(avatarPath);
+
+    // Reset to default avatar
+    user.avatar = 'uploads/avatars/default-avatar.png';
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Avatar deleted successfully',
+      data: {
+        avatar: user.avatar,
+      },
     });
   }
 }

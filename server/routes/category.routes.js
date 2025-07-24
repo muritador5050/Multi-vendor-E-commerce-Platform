@@ -4,6 +4,10 @@ const CategoryController = require('../controllers/category.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
+const {
+  categoryImageUpload,
+  handleUploadError,
+} = require('../utils/FileUploads');
 
 /**
  * @openapi
@@ -104,6 +108,28 @@ router.post(
   authenticate,
   checkRole('admin', 'create'),
   asyncHandler(CategoryController.createCategory)
+);
+
+router.post(
+  '/upload-image',
+  authenticate,
+  checkRole(['admin', 'vendor'], 'create'),
+  (req, res, next) => {
+    categoryImageUpload.single('categoryImage')(req, res, (err) => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
+      }
+      next();
+    });
+    asyncHandler(CategoryController.uploadCategoryImage);
+  }
+);
+
+router.delete(
+  '/delete-image',
+  authenticate,
+  checkRole('admin', 'delete'),
+  asyncHandler(CategoryController.deleteCategoryImage)
 );
 
 /**
