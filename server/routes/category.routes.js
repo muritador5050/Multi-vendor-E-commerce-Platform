@@ -34,49 +34,6 @@ router.get('/', asyncHandler(CategoryController.getAllCategories));
 
 /**
  * @openapi
- * /api/categories/slug/{slug}:
- *   get:
- *     summary: Get category by slug
- *     tags: [Categories]
- *     parameters:
- *       - in: path
- *         name: slug
- *         schema:
- *           type: string
- *         required: true
- *         description: Category slug
- *       - in: query
- *         name: includeProducts
- *         schema:
- *           type: boolean
- *           default: false
- *         description: Include products in the category
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Page number (when includeProducts is true)
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Number of products per page
- *     responses:
- *       '200':
- *         description: A single category with optional products
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/CategoryResponse'
- *       '404':
- *         description: Category not found
- */
-router.get('/slug/:slug', asyncHandler(CategoryController.getCategoryBySlug));
-
-/**
- * @openapi
  * /api/categories:
  *   post:
  *     summary: Create a new category
@@ -121,8 +78,8 @@ router.post(
       }
       next();
     });
-    asyncHandler(CategoryController.uploadCategoryImage);
-  }
+  },
+  asyncHandler(CategoryController.uploadCategoryImage)
 );
 
 router.delete(
@@ -173,6 +130,49 @@ router.post(
   checkRole('admin', 'create'),
   asyncHandler(CategoryController.createBulkCategories)
 );
+
+/**
+ * @openapi
+ * /api/categories/slug/{slug}:
+ *   get:
+ *     summary: Get category by slug
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Category slug
+ *       - in: query
+ *         name: includeProducts
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Include products in the category
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number (when includeProducts is true)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of products per page
+ *     responses:
+ *       '200':
+ *         description: A single category with optional products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CategoryResponse'
+ *       '404':
+ *         description: Category not found
+ */
+router.get('/slug/:slug', asyncHandler(CategoryController.getCategoryBySlug));
 
 /**
  * @openapi

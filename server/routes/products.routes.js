@@ -50,15 +50,19 @@ router
     asyncHandler(ProductsController.createProduct)
   );
 
-router.post('/upload-image', authenticate, (req, res, next) => {
-  productImageUpload.array('productImage', 5)(req, res, (err) => {
-    if (err) {
-      return handleUploadError(err, req, res, next);
-    }
-    next();
-  });
-  asyncHandler(ProductsController.uploadProductImage);
-});
+router.post(
+  '/upload-image',
+  authenticate,
+  (req, res, next) => {
+    productImageUpload.array('productImage', 5)(req, res, (err) => {
+      if (err) {
+        return handleUploadError(err, req, res, next);
+      }
+      next();
+    });
+  },
+  asyncHandler(ProductsController.uploadProductImage)
+);
 
 router.delete(
   '/delete-image',

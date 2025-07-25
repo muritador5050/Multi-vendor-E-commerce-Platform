@@ -8,7 +8,11 @@ const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
 const { avatarUpload, handleUploadError } = require('../utils/FileUploads');
 
-// Auth routes (no middleware needed)
+// ============================================================================
+// PUBLIC ROUTES (No authentication required)
+// ============================================================================
+
+// Registration routes
 /**
  * @openapi
  * /api/auth/register:
@@ -71,6 +75,7 @@ router.post(
   asyncHandler(UserController.registerVendorUser)
 );
 
+// Login routes
 /**
  * @openapi
  * /api/auth/login:
@@ -91,17 +96,17 @@ router.post(
  *               type: string
  *               example: hjuy574h47hfhfb367fbb290vbiuf9hgf
  */
-
 router.post(
   '/login',
   validation(login),
   asyncHandler(UserController.loginUser)
 );
 
-//Google auth
+// Google OAuth routes
 router.get('/google-signup', UserController.googleAuth);
 router.get('/google/callback', UserController.googleCallback);
 
+// Token management routes
 /**
  * @openapi
  * /api/auth/refresh-token:
@@ -134,6 +139,8 @@ router.post('/refresh-token', asyncHandler(UserController.refreshToken));
  *         description: User logged out successfully
  */
 router.post('/logout', asyncHandler(UserController.logOut));
+
+// Password reset routes
 /**
  * @openapi
  * /api/auth/forgot-password:
@@ -188,6 +195,8 @@ router.post(
   '/reset-password/:token',
   asyncHandler(UserController.resetPassword)
 );
+
+// Email verification routes
 /**
  * @openapi
  * /api/auth/verify-email/{token}:
@@ -210,23 +219,27 @@ router.get(
   asyncHandler(UserController.emailVerification)
 );
 
-// Profile route (authenticated users only)
+// ============================================================================
+// AUTHENTICATED ROUTES (Require authentication)
+// ============================================================================
+
+// Profile routes
 /**
  * @openapi
- * /api/auth/users:
+ * /api/auth/profile:
  *   get:
  *     tags:
  *       - Auth
- *     summary: Get all users (Admin only)
+ *     summary: Get current user profile
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of all users
+ *         description: User profile data
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/UserPublic'
+ *               $ref: '#/components/schemas/UserPublic'
  */
 router.get(
   '/profile',
@@ -234,14 +247,7 @@ router.get(
   asyncHandler(UserController.getUserProfile)
 );
 
-router.get(
-  '/users',
-  authenticate,
-  checkRole('admin', 'read'),
-  asyncHandler(UserController.getAllUsers)
-);
-
-//Upload/Update avatar
+// Avatar management routes
 router.post(
   '/upload-avatar',
   authenticate,
@@ -262,13 +268,14 @@ router.delete(
   asyncHandler(UserController.deleteAvatar)
 );
 
+// Email verification for authenticated users
 router.post(
   '/resend-verification',
   authenticate,
   asyncHandler(UserController.resendEmailVerification)
 );
 
-//Online and Offline status
+// User online/offline status routes
 router.post(
   '/heartbeat',
   authenticate,
@@ -287,6 +294,42 @@ router.post(
   asyncHandler(UserController.setUserOffline)
 );
 
+// User self-management routes
+router.patch(
+  '/users/:id/deactivate',
+  authenticate,
+  asyncHandler(UserController.deactivateUser)
+);
+
+// ============================================================================
+// ADMIN ROUTES (Require admin role)
+// ============================================================================
+
+// User management routes for admins
+/**
+ * @openapi
+ * /api/auth/users:
+ *   get:
+ *     tags:
+ *       - Auth
+ *     summary: Get all users (Admin only)
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/UserPublic'
+ */
+router.get(
+  '/users',
+  authenticate,
+  checkRole('admin', 'read'),
+  asyncHandler(UserController.getAllUsers)
+);
+
 router.get(
   '/online-users',
   authenticate,
@@ -294,7 +337,7 @@ router.get(
   asyncHandler(UserController.getOnlineUsers)
 );
 
-// User status and token management
+// Individual user management by admin
 router.get(
   '/users/:id/status',
   authenticate,
@@ -305,12 +348,6 @@ router.post(
   '/users/:id/invalidate-tokens',
   authenticate,
   asyncHandler(UserController.invalidateUserTokens)
-);
-
-router.patch(
-  '/users/:id/deactivate',
-  authenticate,
-  asyncHandler(UserController.deactivateUser)
 );
 
 router.patch(

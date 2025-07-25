@@ -23,11 +23,26 @@ router
     asyncHandler(VendorController.upsertVendorProfile)
   );
 
+router.get('/', asyncHandler(VendorController.getAllVendors));
+router
+  .route('/documents')
+  .post(
+    authenticate,
+    checkRole('vendor', 'create'),
+    asyncHandler(VendorController.manageDocuments)
+  );
 router.get(
   '/admin/list',
   authenticate,
   checkRole('admin', 'read'),
   asyncHandler(VendorController.getVendorsForAdmin)
+);
+
+router.put(
+  '/toggle-status',
+  authenticate,
+  checkRole('vendor', 'edit'),
+  asyncHandler(VendorController.toggleAccountStatus)
 );
 
 router.get(
@@ -40,16 +55,7 @@ router.get(
   asyncHandler(VendorController.getStatistics)
 );
 
-router.get('/', asyncHandler(VendorController.getAllVendors));
 router.get('/:identifier', asyncHandler(VendorController.getVendor));
-
-router
-  .route('/documents')
-  .post(
-    authenticate,
-    checkRole('vendor', 'create'),
-    asyncHandler(VendorController.manageDocuments)
-  );
 
 router.delete(
   '/documents/:documentId',
@@ -63,13 +69,6 @@ router.put(
   authenticate,
   checkRole('vendor', 'edit'),
   asyncHandler(VendorController.updateSettings)
-);
-
-router.put(
-  '/toggle-status',
-  authenticate,
-  checkRole('vendor', 'edit'),
-  asyncHandler(VendorController.toggleAccountStatus)
 );
 
 router.put(

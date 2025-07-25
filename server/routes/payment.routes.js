@@ -5,13 +5,6 @@ const PaymentController = require('../controllers/payment.controller');
 const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 
-// Webhook endpoint for payment providers (e.g., Stripe, PayPal)
-router.post(
-  '/webhooks/:paymentProvider',
-  express.raw({ type: 'application/json' }),
-  PaymentController.processWebhooks
-);
-
 /**
  * @openapi
  * /payments:
@@ -69,6 +62,48 @@ router.get(
 
 /**
  * @openapi
+ * /payments:
+ *   get:
+ *     summary: Get all payments (admin only)
+ *     tags: [Payments]
+ *     responses:
+ *       '200':
+ *         description: List of all payments
+ *       '401':
+ *         description: Unauthorized, user not authenticated
+ *       '403':
+ *         description: Forbidden, user does not have permission to view all payments
+ */
+router.get(
+  '/',
+  authenticate,
+  checkRole('admin', 'read'),
+  asyncHandler(PaymentController.getAllPayments)
+);
+
+/**
+ * @openapi
+ * /admin/analytics:
+ *   get:
+ *     summary: Get payment analytics (admin only)
+ *     tags: [Payments]
+ *     responses:
+ *       '200':
+ *         description: Payment analytics retrieved successfully
+ *       '401':
+ *         description: Unauthorized, user not authenticated
+ *       '403':
+ *         description: Forbidden, user does not have permission to view analytics
+ */
+router.get(
+  '/admin/analytics',
+  authenticate,
+  checkRole('admin', 'read'),
+  asyncHandler(PaymentController.getPaymentAnalytics)
+);
+
+/**
+ * @openapi
  * /payments/{id}:
  *   get:
  *     summary: Get payment details by ID
@@ -94,27 +129,6 @@ router.get(
   '/:id',
   authenticate,
   asyncHandler(PaymentController.getPaymentById)
-);
-
-/**
- * @openapi
- * /payments:
- *   get:
- *     summary: Get all payments (admin only)
- *     tags: [Payments]
- *     responses:
- *       '200':
- *         description: List of all payments
- *       '401':
- *         description: Unauthorized, user not authenticated
- *       '403':
- *         description: Forbidden, user does not have permission to view all payments
- */
-router.get(
-  '/',
-  authenticate,
-  checkRole('admin', 'read'),
-  asyncHandler(PaymentController.getAllPayments)
 );
 
 /**
@@ -185,25 +199,11 @@ router.delete(
   asyncHandler(PaymentController.deletePayment)
 );
 
-/**
- * @openapi
- * /admin/analytics:
- *   get:
- *     summary: Get payment analytics (admin only)
- *     tags: [Payments]
- *     responses:
- *       '200':
- *         description: Payment analytics retrieved successfully
- *       '401':
- *         description: Unauthorized, user not authenticated
- *       '403':
- *         description: Forbidden, user does not have permission to view analytics
- */
-router.get(
-  '/admin/analytics',
-  authenticate,
-  checkRole('admin', 'read'),
-  asyncHandler(PaymentController.getPaymentAnalytics)
+// Webhook endpoint for payment providers (e.g., Stripe, PayPal)
+router.post(
+  '/webhooks/:paymentProvider',
+  express.raw({ type: 'application/json' }),
+  PaymentController.processWebhooks
 );
 
 module.exports = router;

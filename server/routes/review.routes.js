@@ -88,57 +88,6 @@ router.get('/', asyncHandler(ReviewController.getReviews));
 
 /**
  * @openapi
- * /reviews/{id}:
- *   get:
- *     summary: Get a single review by ID
- *     tags: [Reviews]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: The ID of the review to retrieve
- *     responses:
- *       '200':
- *         description: Review details
- *       '400':
- *         description: Invalid review ID
- *       '404':
- *         description: Review not found
- *       '500':
- *         description: Internal server error
- */
-router.get('/:id', asyncHandler(ReviewController.getReviewById));
-
-/**
- * @openapi
- * /reviews/product/{id}/average-rating:
- *   get:
- *     summary: Get average rating for a specific product
- *     tags: [Reviews]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: The ID of the product to get average rating for
- *     responses:
- *       '200':
- *         description: Average rating and total reviews for the product
- *       '400':
- *         description: Invalid product ID
- *       '500':
- *         description: Internal server error
- */
-router.get(
-  '/product/:id/average-rating',
-  asyncHandler(ReviewController.getAverageRating)
-);
-
-/**
- * @openapi
  * /reviews/stats:
  *   get:
  *     summary: Get review statistics (admin only)
@@ -208,6 +157,57 @@ router.post(
   authenticate,
   validation(reviewInput),
   asyncHandler(ReviewController.createReview)
+);
+
+/**
+ * @openapi
+ * /reviews/{id}:
+ *   get:
+ *     summary: Get a single review by ID
+ *     tags: [Reviews]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the review to retrieve
+ *     responses:
+ *       '200':
+ *         description: Review details
+ *       '400':
+ *         description: Invalid review ID
+ *       '404':
+ *         description: Review not found
+ *       '500':
+ *         description: Internal server error
+ */
+router.get('/:id', asyncHandler(ReviewController.getReviewById));
+
+/**
+ * @openapi
+ * /reviews/product/{id}/average-rating:
+ *   get:
+ *     summary: Get average rating for a specific product
+ *     tags: [Reviews]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the product to get average rating for
+ *     responses:
+ *       '200':
+ *         description: Average rating and total reviews for the product
+ *       '400':
+ *         description: Invalid product ID
+ *       '500':
+ *         description: Internal server error
+ */
+router.get(
+  '/product/:id/average-rating',
+  asyncHandler(ReviewController.getAverageRating)
 );
 
 /**
