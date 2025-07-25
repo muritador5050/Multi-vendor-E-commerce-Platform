@@ -5,7 +5,9 @@ import {
   useDeactivateUser,
   useInvalidateUserTokens,
   useDeleteUserAccount,
+  useUpdateProfile,
 } from '@/context/AuthContextService';
+import type { UserRole } from '@/type/auth';
 
 export const useUserActions = () => {
   const toast = useToast();
@@ -15,7 +17,8 @@ export const useUserActions = () => {
   const deActivateUserMutation = useDeactivateUser();
   const invalidateTokensMutation = useInvalidateUserTokens();
   const deleteAccountMutation = useDeleteUserAccount();
-
+  const changeRole = useUpdateProfile();
+  //Toast
   const showToast = useCallback(
     (
       title: string,
@@ -33,6 +36,7 @@ export const useUserActions = () => {
     [toast]
   );
 
+  //Handle actiavte user
   const handleActivateUser = useCallback(
     async (userId: string): Promise<boolean> => {
       try {
@@ -48,6 +52,7 @@ export const useUserActions = () => {
     [activateUserMutation, showToast]
   );
 
+  //handle deactivate user
   const handleDeactivateUser = useCallback(
     async (userId: string): Promise<boolean> => {
       try {
@@ -63,6 +68,7 @@ export const useUserActions = () => {
     [deActivateUserMutation, showToast]
   );
 
+  //Handle invalidate token
   const handleInvalidateTokens = useCallback(
     async (userId: string, reason = 'Admin action'): Promise<boolean> => {
       try {
@@ -87,6 +93,7 @@ export const useUserActions = () => {
     [invalidateTokensMutation, showToast]
   );
 
+  //Handle delete user
   const handleDeleteUser = useCallback(
     async (userId: string): Promise<boolean> => {
       try {
@@ -100,6 +107,22 @@ export const useUserActions = () => {
       }
     },
     [deleteAccountMutation, showToast]
+  );
+
+  const handleRoleChange = useCallback(
+    async (id: string, newRole: string) => {
+      try {
+        await changeRole.mutateAsync({
+          id,
+          updates: { role: newRole as UserRole },
+        });
+        showToast('Success', 'User role updated successfully', 'success');
+      } catch (error) {
+        console.log('Failed', error);
+        showToast('Error', 'Failed to update user role', 'error');
+      }
+    },
+    [changeRole, showToast]
   );
 
   const handleUserAction = useCallback(
@@ -132,7 +155,7 @@ export const useUserActions = () => {
     handleDeactivateUser,
     handleInvalidateTokens,
     handleDeleteUser,
-
+    handleRoleChange,
     // Generic handler
     handleUserAction,
 

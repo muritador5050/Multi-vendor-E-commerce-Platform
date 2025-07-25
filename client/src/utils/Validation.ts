@@ -33,6 +33,14 @@ export const validators = {
     return null;
   },
 
+  role: (role: string): string => {
+    const roles = ['admin', 'vendor', 'customer'];
+    if (!role?.trim()) return 'Role is required';
+
+    if (!roles.includes(role)) return 'There is no such role in this platform';
+    return '';
+  },
+
   passwordMatch: (password: string, confirmPassword: string): string | null => {
     if (password !== confirmPassword) return 'Passwords do not match';
     return null;

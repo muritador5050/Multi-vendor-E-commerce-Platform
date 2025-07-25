@@ -127,6 +127,20 @@ export interface StatusColors {
   [key: string]: string;
 }
 
+export const formatDate = (date: string | Date | undefined): string => {
+  return date ? new Date(date).toLocaleDateString() : 'Never';
+};
+export const getRoleBadgeColor = (role: string) => {
+  switch (role) {
+    case 'admin':
+      return 'purple';
+    case 'vendor':
+      return 'yellow';
+    default:
+      return 'blue';
+  }
+};
+
 export const getStatusColor = (status: string): string => {
   const statusColors: StatusColors = {
     active: 'green',
