@@ -4,17 +4,8 @@ const { NODE_ENV, REFRESH_TOKEN, FRONTEND_URL } = require('../configs/index');
 const passport = require('passport');
 const path = require('path');
 const fs = require('fs');
-
-const {
-  validateFieldPermissions,
-  getFilteredUpdateData,
-} = require('../utils/ValidateFieldPermission');
-const {
-  handleUploadError,
-  uploadResponse,
-  deleteFile,
-  uploadConfigs,
-} = require('../utils/FileUploads');
+const { getFilteredUpdateData } = require('../utils/ValidateFieldPermission');
+const { deleteFile } = require('../utils/FileUploads');
 
 class UserController {
   //Register user
@@ -127,6 +118,52 @@ class UserController {
     res
       .cookie('refreshToken', newRefreshToken, cookieOptions)
       .json({ accessToken, message: 'Token refreshed successfully' });
+  }
+
+  //Update user
+  static async updateUserProfile(req, res) {
+    const currentUser = await User.findByIdAndValidate(req.user.id);
+
+    if (!currentUser.canUpdateUser(req.params.id, req.user.role)) {
+      return res.status(403).json({
+        message: 'Access denied. You can only edit your own profile.',
+      });
+    }
+
+    const targetUser = await User.findByIdAndValidate(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    const updateData = getFilteredUpdateData(req.body, req.user.role);
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        message: 'Insufficient permission to update this field .',
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    if (!updatedUser) {
+      return res.status(500).json({
+        message: 'Failed to update user. Please try again.',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'User updated successfully',
+      data: updatedUser.getPublicProfile(),
+    });
   }
 
   //Logout
@@ -421,68 +458,6 @@ class UserController {
       success: true,
       message: 'Online users retrieved',
       data: onlineUsers,
-    });
-  }
-
-  //Update user
-  static async updateUser(req, res) {
-    const currentUser = await User.findByIdAndValidate(req.user.id);
-
-    if (!currentUser) {
-      return res.status(401).json({
-        message: 'Current user not found or session invalid.',
-      });
-    }
-
-    if (!currentUser.canUpdateUser(req.params.id, req.user.role)) {
-      return res.status(403).json({
-        message: 'Access denied. You can only edit your own profile.',
-      });
-    }
-
-    const validation = validateFieldPermissions(req.body, req.user.role);
-    if (!validation.isValid) {
-      return res.status(403).json({
-        message: `You don't have permission to edit: ${validation.forbiddenFields.join(
-          ', '
-        )}`,
-        forbiddenFields: validation.forbiddenFields,
-      });
-    }
-
-    const targetUser = await User.findByIdAndValidate(req.params.id);
-    if (!targetUser) {
-      return res.status(404).json({
-        message: 'User not found.',
-      });
-    }
-
-    const updateData = getFilteredUpdateData(req.body, req.user.role);
-
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        message: 'No valid fields provided for update.',
-      });
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-
-    if (!updatedUser) {
-      return res.status(500).json({
-        message: 'Failed to update user. Please try again.',
-      });
-    }
-
-    return res.status(200).json({
-      message: 'User updated successfully',
-      data: updatedUser.getPublicProfile(),
     });
   }
 

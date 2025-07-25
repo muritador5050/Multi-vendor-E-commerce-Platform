@@ -351,7 +351,7 @@ router.patch(
 router
   .route('/users/:id')
   .get(authenticate, asyncHandler(UserController.getUserById))
-  .put(authenticate, asyncHandler(UserController.updateUser))
+  .put(authenticate, asyncHandler(UserController.updateUserProfile))
   .delete(
     authenticate,
     checkRole('admin', 'delete'),
