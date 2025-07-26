@@ -834,10 +834,14 @@ export const useUpdateProfile = () => {
  * File upload mutation
  */
 export const useUploadAvatar = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (file: File) => {
       const response = await uploadAvatar(file);
       return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.profile() });
     },
   });
 };

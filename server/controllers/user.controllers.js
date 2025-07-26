@@ -1,6 +1,11 @@
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
-const { NODE_ENV, REFRESH_TOKEN, FRONTEND_URL } = require('../configs/index');
+const {
+  NODE_ENV,
+  REFRESH_TOKEN,
+  FRONTEND_URL,
+  BACKEND_URL,
+} = require('../configs/index');
 const passport = require('passport');
 const path = require('path');
 const fs = require('fs');
@@ -626,9 +631,11 @@ class UserController {
       );
     }
 
-    // Update user avatar path - store relative path
     const avatarPath = `uploads/avatars/${req.file.filename}`;
-    user.avatar = avatarPath;
+    const fullAvatarUrl =
+      `${BACKEND_URL}/${avatarPath}` ||
+      `${req.protocol}://${req.get('host')}${avatarPath}`;
+    user.avatar = fullAvatarUrl;
     await user.save();
 
     return res.status(200).json({
@@ -639,7 +646,7 @@ class UserController {
         path: avatarPath,
         size: req.file.size,
         mimetype: req.file.mimetype,
-        avatar: user.avatar,
+        avatar: fullAvatarUrl,
       },
     });
   }

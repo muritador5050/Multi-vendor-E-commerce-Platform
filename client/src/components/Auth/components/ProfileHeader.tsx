@@ -18,6 +18,7 @@ import { Edit3, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import { type User } from '@/type/auth';
 import { getRoleBadgeColor } from '@/components/AdminManagement/Utils';
 import { useLogout } from '@/context/AuthContextService';
+import { getAvatarUrl } from '@/utils/AvatarUrl';
 
 interface ProfileHeaderProps {
   currentUser: User;
@@ -33,6 +34,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
   const logout = useLogout();
 
+  // Get proper avatar URL
+  const avatarSrc = getAvatarUrl(currentUser.avatar!);
+
   return (
     <Card mb={6} bg={cardBg} shadow='lg'>
       <CardBody>
@@ -41,7 +45,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             <Box position='relative'>
               <Avatar
                 size='xl'
-                src={currentUser.avatar}
+                src={avatarSrc}
                 name={currentUser.name}
                 border='4px solid'
                 borderColor={borderColor}
