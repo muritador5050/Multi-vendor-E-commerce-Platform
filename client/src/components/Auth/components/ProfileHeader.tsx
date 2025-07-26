@@ -17,20 +17,21 @@ import {
 import { Edit3, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import { type User } from '@/type/auth';
 import { getRoleBadgeColor } from '@/components/AdminManagement/Utils';
+import { useLogout } from '@/context/AuthContextService';
 
 interface ProfileHeaderProps {
   currentUser: User;
   onEditClick: () => void;
-  onLogout: () => void;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   currentUser,
   onEditClick,
-  onLogout,
 }) => {
   const cardBg = 'gray.500';
   const borderColor = 'teal.500';
+
+  const logout = useLogout();
 
   return (
     <Card mb={6} bg={cardBg} shadow='lg'>
@@ -105,7 +106,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               colorScheme='red'
               variant='ghost'
               size='sm'
-              onClick={onLogout}
+              onClick={() => logout.mutateAsync()}
               leftIcon={<LogOut size={16} />}
             >
               Logout

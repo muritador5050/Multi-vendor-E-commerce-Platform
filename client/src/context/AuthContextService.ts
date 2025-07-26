@@ -391,18 +391,23 @@ function validateRegistration(
 /**
  * Upload file to server
  */
-async function uploadAvatar<T = unknown>(
-  file: File,
-  endpoint: string = '/auth/upload-avatar'
-) {
+async function uploadAvatar<T = unknown>(file: File) {
+  console.log('File to upload:', file.name, file.size, file.type);
+
   const formData = new FormData();
   formData.append('avatar', file);
 
-  return apiClient.authenticatedApiRequest<ApiResponse<T>>(endpoint, {
-    method: 'POST',
-    body: formData,
-    headers: {},
-  });
+  // Log FormData contents (for debugging)
+  for (const [key, value] of formData.entries()) {
+    console.log('FormData entry:', key, value);
+  }
+  return apiClient.authenticatedApiRequest<ApiResponse<T>>(
+    '/auth/users/avatar',
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
 }
 
 // =============================================
@@ -830,20 +835,9 @@ export const useUpdateProfile = () => {
  */
 export const useUploadAvatar = () => {
   return useMutation({
-    mutationFn: async ({
-      file,
-      endpoint,
-    }: {
-      file: File;
-      endpoint?: string;
-    }) => {
-      if (!isAuthenticated())
-        throw new ApiError('Authentication required', 401);
-
-      const response = await uploadAvatar(file, endpoint);
-      console.log('AVATAR:', response);
-      console.log('AVATAR:', response.data);
-      return response.data;
+    mutationFn: async (file: File) => {
+      const response = await uploadAvatar(file);
+      return response;
     },
   });
 };

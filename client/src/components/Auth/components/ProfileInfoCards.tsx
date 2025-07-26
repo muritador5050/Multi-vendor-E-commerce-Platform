@@ -16,25 +16,48 @@ import {
   StatNumber,
   Button,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
 import { User as UserIcon, Mail, MapPin, Clock, Shield } from 'lucide-react';
 import type { User } from '@/type/auth';
+import { useSendVerifyEmailLink } from '@/context/AuthContextService';
+import { formatDate } from '@/components/AdminManagement/Utils';
 
 interface ProfileInfoCardsProps {
   currentUser: User;
-  onSendVerification: () => void;
-  isVerificationLoading: boolean;
 }
 
 export const ProfileInfoCards: React.FC<ProfileInfoCardsProps> = ({
   currentUser,
-  onSendVerification,
-  isVerificationLoading,
 }) => {
   const cardBg = useColorModeValue('white', 'gray.800');
 
-  const formatDate = (date: string | Date | undefined): string => {
-    return date ? new Date(date).toLocaleDateString() : 'Never';
+  const toast = useToast();
+  const sendEmailVerification = useSendVerifyEmailLink();
+
+  const handleSendVerification = async () => {
+    try {
+      await sendEmailVerification.mutateAsync();
+      toast({
+        title: 'Verification email sent!',
+        description: 'Please check your email inbox and spam folder.',
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Email verification error:', error);
+      toast({
+        title: 'Failed to send verification email',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Something went wrong. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   return (
@@ -198,8 +221,8 @@ export const ProfileInfoCards: React.FC<ProfileInfoCardsProps> = ({
                 <Button
                   size='sm'
                   colorScheme='blue'
-                  onClick={onSendVerification}
-                  isLoading={isVerificationLoading}
+                  onClick={handleSendVerification}
+                  isLoading={sendEmailVerification.isPending}
                   loadingText='Sending...'
                 >
                   Send Verification Email

@@ -143,6 +143,42 @@ class ApiClient {
   /**
    * Handle response and extract data
    */
+  // private async handleResponse<T>(response: Response): Promise<T> {
+  //   // Rate limiting handling
+  //   if (response.status === 429) {
+  //     const retryAfter = response.headers.get('Retry-After') || '60';
+  //     throw new ApiError(
+  //       `Too many requests. Try again in ${retryAfter} seconds.`,
+  //       429,
+  //       response
+  //     );
+  //   }
+
+  //   if (!response.ok) {
+  //     let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+  //     try {
+  //       const errorData = await response.json();
+  //       errorMessage = errorData.message || errorData.error || errorMessage;
+  //     } catch {
+  //       // Keep original error message if JSON parsing fails
+  //     }
+  //     throw new ApiError(errorMessage, response.status, response);
+  //   }
+
+  //   // Handle empty responses gracefully
+  //   const contentType = response.headers.get('content-type');
+  //   if (contentType && contentType.includes('application/json')) {
+  //     return response.json();
+  //   }
+
+  //   // For non-JSON responses, return as text or empty object
+  //   const text = await response.text();
+  //   return (text ? text : {}) as T;
+  // }
+
+  /**
+   * Handle response and extract data
+   */
   private async handleResponse<T>(response: Response): Promise<T> {
     // Rate limiting handling
     if (response.status === 429) {
@@ -156,16 +192,33 @@ class ApiClient {
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch {
-        // Keep original error message if JSON parsing fails
+
+      // Check content type before trying to parse as JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // Keep original error message if JSON parsing fails
+        }
+      } else {
+        // For non-JSON error responses, try to get text content
+        try {
+          const errorText = await response.text();
+          if (errorText && !errorText.startsWith('--')) {
+            // Avoid multipart data
+            errorMessage = errorText;
+          }
+        } catch {
+          // Keep original error message if text parsing fails
+        }
       }
+
       throw new ApiError(errorMessage, response.status, response);
     }
 
-    // Handle empty responses gracefully
+    // Handle successful responses
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       return response.json();
@@ -224,10 +277,15 @@ class ApiClient {
       }
 
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        // 'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       };
+
+      if (!(options.body instanceof FormData)) {
+        (headers as Record<string, string>)['Content-Type'] =
+          'application/json';
+      }
 
       const config: RequestInit = {
         ...options,
@@ -245,13 +303,23 @@ class ApiClient {
         !endpoint.includes('/auth/refresh-token')
       ) {
         const newToken = await this.refreshToken();
+
+        const retryHeaders = {
+          ...config.headers,
+          Authorization: `Bearer ${newToken}`,
+        };
+
+        // Again, don't override Content-Type for FormData on retry
+        if (!(options.body instanceof FormData)) {
+          (retryHeaders as Record<string, string>)['Content-Type'] =
+            'application/json';
+        }
+
         const retryConfig: RequestInit = {
           ...config,
-          headers: {
-            ...config.headers,
-            Authorization: `Bearer ${newToken}`,
-          },
+          headers: retryHeaders,
         };
+
         const retryResponse = await this.fetchWithTimeout(
           `${apiBase}${endpoint}`,
           retryConfig

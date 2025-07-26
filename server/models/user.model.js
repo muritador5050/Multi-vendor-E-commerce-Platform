@@ -597,6 +597,7 @@ userSchema.methods.getStatusInfo = function () {
     email: this.email,
     phone: this.phone,
     role: this.role,
+    avatar: this.avatar,
     isActive: this.isActive,
     isOnline: this.isOnline,
     lastSeen: this.lastSeen,

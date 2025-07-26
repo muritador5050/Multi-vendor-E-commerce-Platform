@@ -249,7 +249,7 @@ router.get(
 
 // Avatar management routes
 router.post(
-  '/upload-avatar',
+  '/users/avatar',
   authenticate,
   (req, res, next) => {
     avatarUpload.single('avatar')(req, res, (err) => {

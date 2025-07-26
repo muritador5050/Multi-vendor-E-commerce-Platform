@@ -38,7 +38,18 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
       toast({
         title: 'File too large',
         description: 'Please select an image smaller than 5MB',
-        status: 'error',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!file) {
+      toast({
+        title: 'Empty file selected',
+        description: 'Please select a file!',
+        status: 'info',
         duration: 3000,
         isClosable: true,
       });
@@ -52,10 +63,7 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
     try {
       setIsUploading(true);
 
-      const uploadResponse = await uploadAvatar.mutateAsync({
-        file,
-        endpoint: '/auth/upload-avatar',
-      });
+      const uploadResponse = await uploadAvatar.mutateAsync(file);
 
       let avatarUrl = '';
 

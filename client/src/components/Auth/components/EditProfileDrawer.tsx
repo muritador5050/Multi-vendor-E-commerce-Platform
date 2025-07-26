@@ -30,14 +30,12 @@ import { useProfileForm } from '../hooks/useProfileForm';
 import { useCurrentUser } from '@/context/AuthContextService';
 import { useAvatarUpload } from '../hooks/useAvatarUpload';
 
-interface EditProfileDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const EditProfileDrawer: React.FC<EditProfileDrawerProps> = ({
+export const EditProfileDrawer = ({
   isOpen,
   onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
 }) => {
   //Colors
   const bgGradient = 'linear(to-br, blue.100, purple.50)';
