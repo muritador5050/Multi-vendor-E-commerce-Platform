@@ -25,7 +25,10 @@ class VendorController {
       message: `Vendor profile ${
         isNewVendor ? 'created' : 'updated'
       } successfully`,
-      data: vendor,
+      data: {
+        ...vendor.toObject(),
+        profileCompletion: vendor.calculateProfileCompletion(),
+      },
     });
   }
 
@@ -49,7 +52,27 @@ class VendorController {
     res.json({
       success: true,
       message: 'Profile retrieved successfully',
-      data: vendor,
+      data: {
+        ...vendor.toObject(),
+        profileCompletion: vendor.calculateProfileCompletion(),
+      },
+    });
+  }
+  static async getProfileCompletion(req, res) {
+    const vendor = await Vendor.findByUserId(req.user.id);
+
+    if (!vendor) {
+      return res.status(404).json({ message: 'Vendor profile not found' });
+    }
+
+    const completion = vendor.calculateProfileCompletion();
+
+    res.json({
+      success: true,
+      data: {
+        profileCompletion: completion,
+        isComplete: completion === 100,
+      },
     });
   }
 

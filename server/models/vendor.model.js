@@ -472,6 +472,7 @@ vendorSchema.methods.getDashboardStats = function () {
     rating: this.rating || 0,
     reviewCount: this.reviewCount || 0,
     verificationStatus: this.verificationStatus,
+    profileCompletion: this.calculateProfileCompletion(),
   };
 };
 
@@ -504,7 +505,7 @@ vendorSchema.methods.manageDocuments = function (action, data) {
   if (action === 'add' && data.documents) {
     this.verificationDocuments.push(...data.documents);
   } else if (action === 'remove' && data.documentId) {
-    this.verificationDocuments.pull(data.documentId)
+    this.verificationDocuments.pull(data.documentId);
   }
 
   return this.save();

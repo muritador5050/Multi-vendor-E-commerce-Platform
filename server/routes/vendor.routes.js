@@ -27,6 +27,13 @@ router
     asyncHandler(VendorController.upsertVendorProfile)
   );
 
+router.get(
+  '/profile/completion',
+  authenticate,
+  checkRole(['vendor'], 'read'),
+  asyncHandler(VendorController.getProfileCompletion)
+);
+
 // Document management routes
 router
   .route('/documents')
