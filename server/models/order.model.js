@@ -117,7 +117,11 @@ const orderSchema = new mongoose.Schema(
       zipCode: String,
       country: String,
     },
-    paymentMethod: { type: String, required: true }, // e.g., Stripe, PayPal, COD
+    paymentMethod: {
+      type: String,
+      required: true,
+      enum: ['stripe', 'paypal', 'cod', 'bank_transfer'],
+    },
     paymentStatus: {
       type: String,
       enum: ['pending', 'completed', 'failed', 'refunded'],
@@ -165,8 +169,8 @@ orderSchema.statics.validateOrderData = function (orderData) {
   }
 
   for (const item of products) {
-    if (!item.product || !item.quantity || !item.price) {
-      throw new Error('Each product must have product ID, quantity, and price');
+    if (!item.product || !item.quantity) {
+      throw new Error('Each product must have product ID and quantity');
     }
   }
 };
@@ -174,14 +178,21 @@ orderSchema.statics.validateOrderData = function (orderData) {
 orderSchema.statics.createNewOrder = async function (orderData) {
   this.validateOrderData(orderData);
 
+  const calculatedTotal =
+    orderData.products.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    ) + (orderData.shippingCost || 0);
+
   const order = await this.create({
     ...orderData,
+    totalPrice: calculatedTotal,
     shippingCost: orderData.shippingCost || 0,
   });
 
   return await order.populate([
     { path: 'user', select: 'name email' },
-    { path: 'products.product', select: 'name price' },
+    // { path: 'products.product', select: 'name price' },
   ]);
 };
 
@@ -244,7 +255,7 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
   const [orders, total] = await Promise.all([
     this.find(filter)
       .populate('user', 'name email')
-      .populate('products.product', 'name price')
+      .populate('products.product', 'name quantity price')
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))

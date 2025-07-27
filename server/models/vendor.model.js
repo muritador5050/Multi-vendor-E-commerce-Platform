@@ -9,6 +9,7 @@ const vendorSchema = new mongoose.Schema(
       unique: true,
     },
 
+    // Business Information
     businessName: {
       type: String,
       required: true,
@@ -29,6 +30,7 @@ const vendorSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Business Contact (only if different from user's contact info)
     businessAddress: {
       street: String,
       city: String,
@@ -36,16 +38,8 @@ const vendorSchema = new mongoose.Schema(
       zipCode: String,
       country: String,
     },
-    businessPhone: {
-      type: String,
-      trim: true,
-    },
-    businessEmail: {
-      type: String,
-      lowercase: true,
-      trim: true,
-    },
 
+    // Financial Information
     bankDetails: {
       accountName: String,
       accountNumber: String,
@@ -59,6 +53,7 @@ const vendorSchema = new mongoose.Schema(
       default: 'net30',
     },
 
+    // Verification (vendor-specific status)
     verificationStatus: {
       type: String,
       enum: ['pending', 'verified', 'rejected', 'suspended'],
@@ -92,6 +87,7 @@ const vendorSchema = new mongoose.Schema(
       ref: 'User',
     },
 
+    // Performance Metrics
     rating: {
       type: Number,
       min: 1,
@@ -140,11 +136,7 @@ const vendorSchema = new mongoose.Schema(
     },
     storeBanner: String,
 
-    // Account Status
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+    // Account Status (vendor-specific deactivation)
     deactivationReason: String,
     deactivatedAt: Date,
 
@@ -204,7 +196,8 @@ const vendorSchema = new mongoose.Schema(
   }
 );
 
-vendorSchema.index({ isActive: 1 });
+// Indexes - Fixed: removed isActive index since it's not in schema
+vendorSchema.index({ verificationStatus: 1 });
 vendorSchema.index({ businessName: 'text', storeName: 'text' });
 
 // Virtual for user information
@@ -228,13 +221,13 @@ vendorSchema.pre('save', function (next) {
   next();
 });
 
-// Static methods for queries and utilities
+// Static Methods
 vendorSchema.statics.findByUserId = function (userId) {
   return this.findOne({ userId }).populate('user', '-password -refreshToken');
 };
 
 vendorSchema.statics.findVerifiedVendors = function () {
-  return this.find({ verificationStatus: 'verified', isActive: true }).populate(
+  return this.find({ verificationStatus: 'verified' }).populate(
     'user',
     'name email avatar'
   );
@@ -255,7 +248,6 @@ vendorSchema.statics.buildQuery = function (filters) {
   if (filters.businessType) query.businessType = filters.businessType;
   if (filters.verified) {
     query.verificationStatus = 'verified';
-    query.isActive = true;
   }
 
   return query;
@@ -344,7 +336,7 @@ vendorSchema.statics.updateVerificationStatus = function (
   ).populate('user', 'name email');
 };
 
-// Instance methods
+// Instance Methods
 vendorSchema.methods.updateRating = async function (newRating) {
   this.rating = newRating;
   this.reviewCount += 1;
@@ -361,8 +353,6 @@ vendorSchema.methods.calculateProfileCompletion = function () {
   const requiredFields = [
     'businessName',
     'businessType',
-    'businessPhone',
-    'businessEmail',
     'businessAddress.street',
     'businessAddress.city',
     'businessAddress.state',
@@ -415,15 +405,14 @@ vendorSchema.methods.getDashboardStats = function () {
   };
 };
 
+// Fixed: Removed isActive references since it's not in schema
 vendorSchema.methods.toggleStatus = function (reason) {
-  const isDeactivating = this.isActive;
+  const isDeactivating = !this.deactivatedAt;
 
   if (isDeactivating) {
-    this.isActive = false;
     this.deactivationReason = reason;
     this.deactivatedAt = new Date();
   } else {
-    this.isActive = true;
     this.deactivationReason = undefined;
     this.deactivatedAt = undefined;
   }

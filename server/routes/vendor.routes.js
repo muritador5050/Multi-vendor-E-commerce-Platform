@@ -5,6 +5,7 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 
+// Vendor profile routes
 router
   .route('/profile')
   .get(
@@ -23,7 +24,10 @@ router
     asyncHandler(VendorController.upsertVendorProfile)
   );
 
+// Public route to get all verified vendors
 router.get('/', asyncHandler(VendorController.getAllVendors));
+
+// Document management routes
 router
   .route('/documents')
   .post(
@@ -31,6 +35,15 @@ router
     checkRole('vendor', 'create'),
     asyncHandler(VendorController.manageDocuments)
   );
+
+router.delete(
+  '/documents/:documentId',
+  authenticate,
+  checkRole('vendor', 'delete'),
+  asyncHandler(VendorController.manageDocuments)
+);
+
+// Admin routes
 router.get(
   '/admin/list',
   authenticate,
@@ -39,12 +52,29 @@ router.get(
 );
 
 router.put(
+  '/admin/verify/:id',
+  authenticate,
+  checkRole('admin', 'edit'),
+  asyncHandler(VendorController.updateVerificationStatus)
+);
+
+// Account status toggle
+router.put(
   '/toggle-status',
   authenticate,
   checkRole('vendor', 'edit'),
   asyncHandler(VendorController.toggleAccountStatus)
 );
 
+// Settings management
+router.put(
+  '/settings/:settingType',
+  authenticate,
+  checkRole('vendor', 'edit'),
+  asyncHandler(VendorController.updateSettings)
+);
+
+// Statistics routes
 router.get(
   '/stats/:type',
   authenticate,
@@ -56,26 +86,5 @@ router.get(
 );
 
 router.get('/:identifier', asyncHandler(VendorController.getVendor));
-
-router.delete(
-  '/documents/:documentId',
-  authenticate,
-  checkRole('vendor', 'delete'),
-  asyncHandler(VendorController.manageDocuments)
-);
-
-router.put(
-  '/settings/:settingType',
-  authenticate,
-  checkRole('vendor', 'edit'),
-  asyncHandler(VendorController.updateSettings)
-);
-
-router.put(
-  '/admin/verify/:id',
-  authenticate,
-  checkRole('admin', 'edit'),
-  asyncHandler(VendorController.updateVerificationStatus)
-);
 
 module.exports = router;

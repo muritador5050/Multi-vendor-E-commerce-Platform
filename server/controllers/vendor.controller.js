@@ -162,7 +162,7 @@ class VendorController {
       return res.status(404).json({ message: 'Vendor profile not found' });
     }
 
-    const isDeactivating = vendor.isActive;
+    const isDeactivating = !vendor.deactivatedAt;
     await vendor.toggleStatus(req.body.reason);
 
     res.json({
@@ -170,8 +170,9 @@ class VendorController {
         isDeactivating ? 'deactivated' : 'reactivated'
       } successfully`,
       data: {
-        isActive: vendor.isActive,
+        deactivated: !!vendor.deactivatedAt,
         deactivatedAt: vendor.deactivatedAt,
+        deactivationReason: vendor.deactivationReason,
       },
     });
   }

@@ -1,7 +1,14 @@
 const Order = require('../models/order.model');
+const Product = require('../models/product.model');
 
+//Order
 class OrderController {
   static async createOrder(req, res) {
+    for (const item of req.body.products) {
+      const product = await Product.findById(item.product);
+      item.price = product.price;
+    }
+
     const order = await Order.createNewOrder(req.body);
 
     res.status(201).json({
@@ -14,7 +21,7 @@ class OrderController {
   static async getAllOrders(req, res) {
     const { orders, pagination } = await Order.getFilteredOrders(req.query);
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Orders retrieved successfully',
       data: orders,
