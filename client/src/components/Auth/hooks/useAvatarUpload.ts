@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { useToast } from '@chakra-ui/react';
 import { useUploadAvatar } from '@/context/AuthContextService';
-import { getAvatarUrl } from '@/utils/AvatarUrl';
 
 interface UploadResponseData {
   filename: string;
@@ -73,7 +72,7 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
 
         if (response.success && response.data) {
           const rawAvatarUrl = response.data.avatar || response.data.path;
-          avatarUrl = getAvatarUrl(rawAvatarUrl);
+          avatarUrl = rawAvatarUrl;
         } else if (response.success === false) {
           throw new Error(response.message || 'Upload failed');
         }

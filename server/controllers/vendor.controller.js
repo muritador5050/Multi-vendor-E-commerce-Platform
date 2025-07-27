@@ -4,9 +4,7 @@ const EmailService = require('../services/emailService');
 
 class VendorController {
   static async upsertVendorProfile(req, res) {
-    const userId = req.user.id;
-
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.id);
     if (!user || user.role !== 'vendor') {
       return res.status(403).json({
         message: 'Only users with vendor role can create vendor profiles',
@@ -14,10 +12,10 @@ class VendorController {
     }
 
     const vendor = await Vendor.findOneAndUpdate(
-      { userId },
-      { userId, ...req.body },
+      { user: req.user.id },
+      { user: req.user.id, ...req.body },
       { new: true, upsert: true, runValidators: true }
-    ).populate('user', '-password -refreshToken');
+    ).populate('user', '-password -refreshToken -tokenVersion -_v');
 
     const isNewVendor =
       !vendor.createdAt ||
@@ -35,14 +33,28 @@ class VendorController {
     const vendor = await Vendor.findByUserId(req.user.id);
 
     if (!vendor) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Vendor profile not found',
+      });
     }
 
-    res.json({ success: true, data: vendor });
+    if (vendor.user.role !== 'vendor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your role is not vendor',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile retrieved successfully',
+      data: vendor,
+    });
   }
 
-  static async getVendor(req, res) {
-    const vendor = await Vendor.findByIdentifier(req.params.identifier);
+  static async getVendorById(req, res) {
+    const vendor = await Vendor.findByIdentifier(req.params.id);
 
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor not found' });
@@ -55,49 +67,50 @@ class VendorController {
   }
 
   static async getAllVendors(req, res) {
-    const query = Vendor.buildQuery({ ...req.query, verified: true });
-    const { page, limit } = Vendor.buildPagination(
-      req.query.page,
-      req.query.limit
-    );
+    const vendors = await Vendor.findVerifiedVendors();
 
-    const [vendors, total] = await Vendor.findWithPagination(
-      query,
-      page,
-      limit,
-      'user',
-      'businessName storeName storeDescription storeLogo storeSlug rating reviewCount verificationStatus createdAt'
-    );
+    if (!vendors || vendors.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No verified vendors yet!',
+      });
+    }
 
     res.json({
       success: true,
+      message: 'Vendors retrieved successfully',
       data: vendors,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     });
   }
 
   static async getVendorsForAdmin(req, res) {
-    const query = Vendor.buildQuery(req.query);
-    const { page, limit } = Vendor.buildPagination(
-      req.query.page,
-      req.query.limit
-    );
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const filter = Vendor.buildSearchFilter(req.query);
+    const result = await Vendor.findWithPagination(filter, { page, limit });
 
-    const [vendors, total] = await Vendor.findWithPagination(
-      query,
-      page,
-      limit,
-      'user'
-    );
+    if (req.user.role !== 'admin') {
+      return res.status(401).json('You have no access to this page');
+    }
+
+    if (!result) {
+      return res.status(404).json({ message: 'Vendors not found' });
+    }
 
     res.json({
       success: true,
-      data: vendors,
-      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      message: 'Vendors retrieved successfully',
+      data: result,
+      pagination: {
+        page: result.page,
+        limit: result.limit,
+        totalCount: result.totalCount,
+        totalPages: result.totalPages,
+      },
     });
   }
 
-  static async updateVerificationStatus(req, res) {
+  static async updateVendorVerificationStatus(req, res) {
     const { status, notes } = req.body;
 
     const vendor = await Vendor.updateVerificationStatus(
@@ -156,13 +169,42 @@ class VendorController {
   }
 
   static async toggleAccountStatus(req, res) {
-    const vendor = await Vendor.findByUserId(req.user.id);
+    let targetUserId;
+
+    // Determine which vendor to toggle based on user role
+    if (req.user.role === 'admin') {
+      // Admins can toggle any vendor using req.params.id
+      targetUserId = req.params.id;
+      if (!targetUserId) {
+        return res.status(400).json({
+          message: 'Vendor ID is required for admin operations',
+        });
+      }
+    } else if (req.user.role === 'vendor') {
+      // Vendors can only toggle their own account
+      targetUserId = req.user.id;
+    } else {
+      return res.status(403).json({
+        message: 'Insufficient permissions to perform this action',
+      });
+    }
+
+    const vendor = await Vendor.findById(targetUserId);
 
     if (!vendor) {
       return res.status(404).json({ message: 'Vendor profile not found' });
     }
 
     const isDeactivating = !vendor.deactivatedAt;
+
+    // Vendors can only deactivate their own account, not reactivate
+    if (req.user.role === 'vendor' && !isDeactivating) {
+      return res.status(403).json({
+        message:
+          'Only admins can reactivate vendor accounts. Please contact support.',
+      });
+    }
+
     await vendor.toggleStatus(req.body.reason);
 
     res.json({

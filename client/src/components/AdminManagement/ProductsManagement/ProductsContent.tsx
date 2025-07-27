@@ -18,7 +18,7 @@ import {
   useBreakpointValue,
 } from '@chakra-ui/react';
 import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
-import { getStatusColor } from '../Utils';
+import { getStatusColor } from '../Utils/Utils';
 import type { Product } from '@/type/product';
 import { useProducts } from '@/context/ProductContextService';
 

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const vendorSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -92,7 +92,7 @@ const vendorSchema = new mongoose.Schema(
       type: Number,
       min: 1,
       max: 5,
-      default: 5,
+      default: 1,
     },
     totalOrders: {
       type: Number,
@@ -196,16 +196,14 @@ const vendorSchema = new mongoose.Schema(
   }
 );
 
-// Indexes - Fixed: removed isActive index since it's not in schema
-vendorSchema.index({ verificationStatus: 1 });
 vendorSchema.index({ businessName: 'text', storeName: 'text' });
 
-// Virtual for user information
-vendorSchema.virtual('user', {
+vendorSchema.virtual('userDetails', {
   ref: 'User',
-  localField: 'userId',
+  localField: 'user',
   foreignField: '_id',
   justOne: true,
+  options: { select: 'name email -password -refreshToken -tokenVersion' },
 });
 
 // Pre-save middleware to generate store slug
@@ -223,7 +221,10 @@ vendorSchema.pre('save', function (next) {
 
 // Static Methods
 vendorSchema.statics.findByUserId = function (userId) {
-  return this.findOne({ userId }).populate('user', '-password -refreshToken');
+  return this.findOne({ user: userId }).populate(
+    'user',
+    '-password -refreshToken'
+  );
 };
 
 vendorSchema.statics.findVerifiedVendors = function () {
@@ -240,25 +241,92 @@ vendorSchema.statics.findPendingVerification = function () {
   );
 };
 
-vendorSchema.statics.buildQuery = function (filters) {
-  const query = {};
+vendorSchema.statics.buildSearchFilter = function (query) {
+  const filter = {};
 
-  if (filters.search) query.$text = { $search: filters.search };
-  if (filters.status) query.verificationStatus = filters.status;
-  if (filters.businessType) query.businessType = filters.businessType;
-  if (filters.verified) {
-    query.verificationStatus = 'verified';
+  // Verification Status Filter
+  if (query.verificationStatus) {
+    filter.verificationStatus = query.verificationStatus;
   }
 
-  return query;
-};
+  // Business Type Filter
+  if (query.businessType) {
+    filter.businessType = query.businessType;
+  }
 
-vendorSchema.statics.buildPagination = function (page = 1, limit = 10) {
-  const normalizedLimit = Math.min(parseInt(limit), 50);
-  const normalizedPage = parseInt(page);
-  const skip = (normalizedPage - 1) * normalizedLimit;
+  // Payment Terms Filter
+  if (query.paymentTerms) {
+    filter.paymentTerms = query.paymentTerms;
+  }
 
-  return { page: normalizedPage, limit: normalizedLimit, skip };
+  if (query.isActive !== undefined) {
+    if (query.isActive === 'true') {
+      filter.deactivatedAt = { $exists: false };
+    } else {
+      filter.deactivatedAt = { $exists: true };
+    }
+  }
+
+  if (query.isVerified !== undefined) {
+    filter.verificationStatus =
+      query.isVerified === 'true' ? 'verified' : { $ne: 'verified' };
+  }
+
+  if (query.minRating) {
+    filter.rating = { $gte: parseFloat(query.minRating) };
+  }
+
+  if (query.minOrders) {
+    filter.totalOrders = { $gte: parseInt(query.minOrders) };
+  }
+
+  if (query.minRevenue) {
+    filter.totalRevenue = { $gte: parseFloat(query.minRevenue) };
+  }
+
+  if (query.city) {
+    filter['businessAddress.city'] = { $regex: query.city, $options: 'i' };
+  }
+  if (query.state) {
+    filter['businessAddress.state'] = { $regex: query.state, $options: 'i' };
+  }
+  if (query.country) {
+    filter['businessAddress.country'] = {
+      $regex: query.country,
+      $options: 'i',
+    };
+  }
+
+  if (query.createdFrom) {
+    filter.createdAt = { $gte: new Date(query.createdFrom) };
+  }
+  if (query.createdTo) {
+    filter.createdAt = { ...filter.createdAt, $lte: new Date(query.createdTo) };
+  }
+
+  if (query.verifiedFrom) {
+    filter.verifiedAt = { $gte: new Date(query.verifiedFrom) };
+  }
+  if (query.verifiedTo) {
+    filter.verifiedAt = {
+      ...filter.verifiedAt,
+      $lte: new Date(query.verifiedTo),
+    };
+  }
+
+  if (query.search) {
+    filter.$or = [
+      { businessName: { $regex: query.search, $options: 'i' } },
+      { storeName: { $regex: query.search, $options: 'i' } },
+      { storeDescription: { $regex: query.search, $options: 'i' } },
+      { taxId: { $regex: query.search, $options: 'i' } },
+      { businessRegistrationNumber: { $regex: query.search, $options: 'i' } },
+      { 'bankDetails.accountName': { $regex: query.search, $options: 'i' } },
+      { 'bankDetails.bankName': { $regex: query.search, $options: 'i' } },
+    ];
+  }
+
+  return filter;
 };
 
 vendorSchema.statics.findByIdentifier = function (identifier) {
@@ -268,24 +336,26 @@ vendorSchema.statics.findByIdentifier = function (identifier) {
   return this.findOne(query).populate('user', 'name email avatar createdAt');
 };
 
-vendorSchema.statics.findWithPagination = function (
-  query,
-  page,
-  limit,
-  populateOptions = '',
-  selectFields = ''
-) {
-  const { skip, limit: normalizedLimit } = this.buildPagination(page, limit);
+vendorSchema.statics.findWithPagination = async function (filter, options) {
+  const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
+  const skip = (page - 1) * limit;
 
-  const findQuery = this.find(query);
+  const vendors = await this.find(filter, '-password -refreshToken')
+    .skip(skip)
+    .limit(limit)
+    .sort(sort);
 
-  if (selectFields) findQuery.select(selectFields);
-  if (populateOptions) findQuery.populate(populateOptions);
+  const total = await this.countDocuments(filter);
 
-  return Promise.all([
-    findQuery.sort({ createdAt: -1 }).skip(skip).limit(normalizedLimit),
-    this.countDocuments(query),
-  ]);
+  return {
+    vendors,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 vendorSchema.statics.getAdminStatistics = async function () {
@@ -405,7 +475,6 @@ vendorSchema.methods.getDashboardStats = function () {
   };
 };
 
-// Fixed: Removed isActive references since it's not in schema
 vendorSchema.methods.toggleStatus = function (reason) {
   const isDeactivating = !this.deactivatedAt;
 
@@ -435,7 +504,7 @@ vendorSchema.methods.manageDocuments = function (action, data) {
   if (action === 'add' && data.documents) {
     this.verificationDocuments.push(...data.documents);
   } else if (action === 'remove' && data.documentId) {
-    this.verificationDocuments.id(data.documentId).remove();
+    this.verificationDocuments.pull(data.documentId)
   }
 
   return this.save();

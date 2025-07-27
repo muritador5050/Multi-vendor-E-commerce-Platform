@@ -1,14 +1,12 @@
 import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
 import { Filter, Download } from 'lucide-react';
-import { getStatusColor } from '../Utils';
+import { getStatusColor } from '../Utils/Utils';
 import { useOrders } from '@/context/OrderContextService';
-
-
 
 export const OrdersContent = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
-  const { data: ordersData } = useOrders()
-  const orders = ordersData?.data?.order || []
+  const { data: ordersData } = useOrders();
+  const orders = ordersData?.data?.order || [];
   return (
     <Box>
       <Flex justify='space-between' align='center' mb={6}>
@@ -68,7 +66,7 @@ export const OrdersContent = () => {
                         borderRadius: '12px',
                         fontSize: '12px',
                         backgroundColor:
-                          getStatusColor(order.orderStatus ??  '') === 'green'
+                          getStatusColor(order.orderStatus ?? '') === 'green'
                             ? '#c6f6d5'
                             : '#fed7d7',
                         color:

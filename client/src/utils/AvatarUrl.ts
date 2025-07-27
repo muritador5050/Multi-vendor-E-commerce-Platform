@@ -16,8 +16,6 @@ export const getAvatarUrl = (avatarPath: string): string => {
     return avatarPath;
   }
 
-  // For local uploads, construct the full URL
-  //   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const cleanPath = avatarPath.startsWith('/')
     ? avatarPath.slice(1)
     : avatarPath;

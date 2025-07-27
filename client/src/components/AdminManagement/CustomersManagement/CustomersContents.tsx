@@ -34,7 +34,7 @@ import {
   FiChevronsLeft,
   FiChevronsRight,
 } from 'react-icons/fi';
-import { UserTable } from '../UserManagementDasboard/UserTable';
+import { UserTable } from './UserManagementDasboard/UserTable';
 import { useIsAdmin, useUsers } from '@/context/AuthContextService';
 import { useState } from 'react';
 
@@ -108,7 +108,7 @@ export const CustomersContents = () => {
   const handlePageSizeChange = (event) => {
     const newSize = parseInt(event.target.value);
     setPageSize(newSize);
-    setCurrentPage(1); // Reset to first page when changing page size
+    setCurrentPage(1);
   };
 
   const generatePageNumbers = () => {

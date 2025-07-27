@@ -5,12 +5,15 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 
+// Public route to get all verified vendors
+router.get('/', asyncHandler(VendorController.getAllVendors));
+
 // Vendor profile routes
 router
   .route('/profile')
   .get(
     authenticate,
-    checkRole(['vendor'], 'read'),
+    checkRole('vendor', 'read'),
     asyncHandler(VendorController.getVendorProfile)
   )
   .post(
@@ -23,9 +26,6 @@ router
     checkRole('vendor', 'edit'),
     asyncHandler(VendorController.upsertVendorProfile)
   );
-
-// Public route to get all verified vendors
-router.get('/', asyncHandler(VendorController.getAllVendors));
 
 // Document management routes
 router
@@ -55,7 +55,7 @@ router.put(
   '/admin/verify/:id',
   authenticate,
   checkRole('admin', 'edit'),
-  asyncHandler(VendorController.updateVerificationStatus)
+  asyncHandler(VendorController.updateVendorVerificationStatus)
 );
 
 // Account status toggle
@@ -63,6 +63,13 @@ router.put(
   '/toggle-status',
   authenticate,
   checkRole('vendor', 'edit'),
+  asyncHandler(VendorController.toggleAccountStatus)
+);
+
+router.put(
+  '/toggle-status/:id',
+  authenticate,
+  checkRole('admin', 'edit'),
   asyncHandler(VendorController.toggleAccountStatus)
 );
 
@@ -85,6 +92,6 @@ router.get(
   asyncHandler(VendorController.getStatistics)
 );
 
-router.get('/:identifier', asyncHandler(VendorController.getVendor));
+router.get('/:id', asyncHandler(VendorController.getVendorById));
 
 module.exports = router;

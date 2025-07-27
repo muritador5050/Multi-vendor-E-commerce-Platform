@@ -1,6 +1,6 @@
 const roles = {
   admin: { can: ['create', 'edit', 'delete', 'read'] },
-  vendor: { can: ['create', 'edit', 'read'] },
+  vendor: { can: ['create', 'edit', 'read', 'delete'] },
   customer: { can: ['read'] },
 };
 

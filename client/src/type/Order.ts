@@ -26,13 +26,16 @@ export interface Order {
   trackingNumber?: string;
   deliveredAt?: string;
 }
-export interface OrdersPaginationResponse<T> {
-  order: T[];
+export interface OrderPagination {
   currentPage: number;
   totalPages: number;
   totalOrders: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
+}
+export interface OrdersResponse {
+  data: Order[];
+  pagination: OrderPagination;
 }
 
 export interface OrderParams {

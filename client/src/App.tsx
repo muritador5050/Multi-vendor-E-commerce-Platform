@@ -17,7 +17,7 @@ import ResetPasswordForm from './components/Auth/ResetPassword';
 import ForgotPasswordForm from './components/Auth/ForgotPassword';
 import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
 import ProductCategoryPage from './pages/ProductCategoryPage';
-import AdminDashboard from './components/AdminManagement/AdminHomePage';
+import AdminDashboard from './components/AdminManagement/AdminDashboardLayout';
 import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 import { EmailVerificationPage } from './components/Auth/EmailVerification';
 

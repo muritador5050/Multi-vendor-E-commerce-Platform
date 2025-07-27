@@ -21,7 +21,7 @@ import {
 import { User as UserIcon, Mail, MapPin, Clock, Shield } from 'lucide-react';
 import type { User } from '@/type/auth';
 import { useSendVerifyEmailLink } from '@/context/AuthContextService';
-import { formatDate } from '@/components/AdminManagement/Utils';
+import { formatDate } from '@/components/AdminManagement/Utils/Utils';
 
 interface ProfileInfoCardsProps {
   currentUser: User;

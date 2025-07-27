@@ -1,6 +1,6 @@
 import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
 import { Plus, Eye, Edit, Trash2, Star } from 'lucide-react';
-import { getStatusColor } from '../Utils';
+import { getStatusColor } from '../Utils/Utils';
 import { useVendors } from '@/context/VendorContextService';
 
 export const VendorsContent = () => {

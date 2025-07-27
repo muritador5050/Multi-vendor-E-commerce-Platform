@@ -3,10 +3,10 @@ import type {
   DailySalesReport,
   Order,
   OrderParams,
-  OrdersPaginationResponse,
   OrderStatsResponse,
   ProductSalesReport,
   VendorSalesAnalytics,
+  OrdersResponse,
 } from '@/type/Order';
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
@@ -14,12 +14,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const getOrders = async (
   params: OrderParams = {}
-): Promise<ApiResponse<OrdersPaginationResponse<Order>>> => {
+): Promise<ApiResponse<OrdersResponse>> => {
   const queryString = buildQueryString(params);
   const endpoint = queryString ? `/orders?${queryString}` : '/orders';
-  return apiClient.authenticatedApiRequest<
-    ApiResponse<OrdersPaginationResponse<Order>>
-  >(endpoint);
+  const response =
+    apiClient.authenticatedApiRequest<ApiResponse<OrdersResponse>>(endpoint);
+  return response;
 };
 
 const getOrderById = async (id: string): Promise<ApiResponse<Order>> => {
@@ -87,7 +87,7 @@ const getVendorSalesAnalytics = async (): Promise<
   );
 };
 
-// Query Keys
+// Query keys (unchanged)
 export const orderKeys = {
   all: ['orders'] as const,
   lists: () => [...orderKeys.all, 'list'] as const,
@@ -99,7 +99,6 @@ export const orderKeys = {
   vendorSales: () => [...orderKeys.all, 'vendor-sales'] as const,
 };
 
-// Custom Hooks
 export const useOrders = (params: OrderParams = {}) => {
   return useQuery({
     queryKey: orderKeys.list(params),
