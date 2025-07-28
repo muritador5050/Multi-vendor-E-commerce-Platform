@@ -24,13 +24,12 @@ import {
   useBreakpointValue,
 } from '@chakra-ui/react';
 import { FiUsers, FiUserCheck, FiUserX } from 'react-icons/fi';
-
 import { useCurrentUser, useUsers } from '@/context/AuthContextService';
 import { FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { formatLastSeen, getRoleBadgeColor } from '../Utils/Utils';
 import { StatCard } from '../Utils/CardUtil';
-import { SkeletonUtil } from '../Utils/Skeleton';
 import { ErrorUtil } from '../Utils/Error';
+import { LoadingState } from '../CustomersManagement/UserManagementDasboard/LoadingState';
 
 export const UserStats = () => {
   // Color mode values
@@ -59,7 +58,7 @@ export const UserStats = () => {
 
   // Loading state
   if (isLoading) {
-    return <SkeletonUtil />;
+    return <LoadingState />;
   }
 
   // Error state

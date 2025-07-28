@@ -21,7 +21,10 @@ import {
   MenuItem,
   MenuDivider,
   IconButton,
+  Button,
+  ButtonGroup,
   useDisclosure,
+  Center,
 } from '@chakra-ui/react';
 import {
   useCanManageUser,
@@ -36,6 +39,8 @@ import {
   FiUserCheck,
   FiRefreshCw,
   FiMoreVertical,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { useState, useCallback } from 'react';
 import { formatLastSeen, getRoleBadgeColor } from '../../Utils/Utils';
@@ -60,14 +65,27 @@ export const UserTable = () => {
   // State hooks
   const [selectedUserId, setSelectedUserId] = useState('');
   const [userToDelete, setUserToDelete] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Data and permission hooks
-  const { data: users } = useUsers();
+  // Data and permission hooks - pass current page to useUsers
+  const { data, refetch } = useUsers({ page: currentPage });
+
+  console.log('Raw', data);
+  console.log('Two-level', data?.users);
   const currentUser = useCurrentUser();
   const { canActivate, canDeactivate, canViewStatus, canInvalidateTokens } =
     useCanManageUser(currentUser?._id);
 
-  // Use the shared user actions hook
+  const pagination = data?.pagination || {
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+  };
+
+  const hasNext = pagination.page < pagination.totalPages;
+  const hasPrev = pagination.page > 1;
+
   const {
     handleActivateUser,
     handleDeactivateUser,
@@ -79,9 +97,31 @@ export const UserTable = () => {
     isDeleting,
   } = useUserActions();
 
+  // Pagination handlers
+  const handlePreviousPage = useCallback(() => {
+    if (hasPrev) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  }, [hasPrev]);
+
+  const handleNextPage = useCallback(() => {
+    if (hasNext) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  }, [hasNext]);
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page >= 1 && page <= pagination.totalPages) {
+        setCurrentPage(page);
+      }
+    },
+    [pagination.totalPages]
+  );
+
   // Selected user data
-  const selectedUser = users?.users.find((user) => user._id === selectedUserId);
-  const userToDeleteData = users?.users.find(
+  const selectedUser = data?.users.find((user) => user._id === selectedUserId);
+  const userToDeleteData = data?.users.find(
     (user) => user._id === userToDelete
   );
 
@@ -113,8 +153,9 @@ export const UserTable = () => {
     if (success) {
       setUserToDelete('');
       onDeleteClose();
+      refetch();
     }
-  }, [userToDelete, handleDeleteUser, onDeleteClose]);
+  }, [userToDelete, handleDeleteUser, onDeleteClose, refetch]);
 
   // Handle user actions from the modal
   const handleModalUserAction = useCallback(
@@ -124,8 +165,37 @@ export const UserTable = () => {
     []
   );
 
-  if (!users?.users || users.users.length === 0) {
-    return <Text>No users found.</Text>;
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const totalPages = pagination.totalPages;
+    const current = pagination.page;
+
+    // Show max 5 page numbers
+    let start = Math.max(1, current - 2);
+    const end = Math.min(totalPages, start + 4);
+
+    // Adjust start if we're near the end
+    if (end - start < 4) {
+      start = Math.max(1, end - 4);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
+
+  if (!data?.users || data.users.length === 0) {
+    return (
+      <Center>
+        <Text fontSize='xl' color='blue' fontWeight='bold'>
+          No users found.
+        </Text>
+        ;
+      </Center>
+    );
   }
 
   return (
@@ -143,7 +213,7 @@ export const UserTable = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {users.users.map((user) => {
+            {data?.users?.map((user) => {
               const isCurrentUser = user._id === currentUser?._id;
               return (
                 <Tr
@@ -228,11 +298,11 @@ export const UserTable = () => {
                         aria-label='View user details'
                         size='sm'
                         icon={<FiEye />}
-                        onClick={() => handleViewDetails(user._id)}
+                        onClick={() => user._id && handleViewDetails(user._id)}
                         variant='ghost'
                       />
                       <VerificationButton
-                        userId={user._id}
+                        userId={user._id!}
                         isVerified={user.isEmailVerified}
                       />
                       <Menu>
@@ -248,7 +318,9 @@ export const UserTable = () => {
                             <MenuItem
                               icon={<FiUserX />}
                               color='red.600'
-                              onClick={() => handleDeactivateUser(user._id)}
+                              onClick={() =>
+                                user._id && handleDeactivateUser(user._id)
+                              }
                               isDisabled={isDeactivating}
                             >
                               {isDeactivating
@@ -261,7 +333,9 @@ export const UserTable = () => {
                             <MenuItem
                               icon={<FiUserCheck />}
                               color='green.600'
-                              onClick={() => handleActivateUser(user._id)}
+                              onClick={() =>
+                                user._id && handleActivateUser(user._id)
+                              }
                               isDisabled={isActivating}
                             >
                               {isActivating ? 'Activating...' : 'Activate User'}
@@ -273,7 +347,9 @@ export const UserTable = () => {
                               <MenuDivider />
                               <MenuItem
                                 icon={<FiRefreshCw />}
-                                onClick={() => handleInvalidateTokens(user._id)}
+                                onClick={() =>
+                                  user._id && handleInvalidateTokens(user._id)
+                                }
                                 isDisabled={isInvalidatingTokens}
                               >
                                 {isInvalidatingTokens
@@ -289,7 +365,9 @@ export const UserTable = () => {
                               <MenuItem
                                 icon={<FiUserX />}
                                 color='red.600'
-                                onClick={() => handleDeleteClick(user._id)}
+                                onClick={() =>
+                                  user._id && handleDeleteClick(user._id)
+                                }
                               >
                                 Delete User
                               </MenuItem>
@@ -306,6 +384,62 @@ export const UserTable = () => {
         </Table>
       </TableContainer>
 
+      {/* Enhanced Pagination */}
+      <Flex
+        mt={6}
+        justify={{ base: 'center', md: 'space-between' }}
+        align='center'
+        direction={{ base: 'column', md: 'row' }}
+        gap={4}
+      >
+        {/* Pagination Info */}
+        <Text fontSize='sm' color='gray.600'>
+          Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+          {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+          {pagination.total} users
+        </Text>
+
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <ButtonGroup>
+            {/* Previous Button */}
+            <Button
+              size='sm'
+              leftIcon={<FiChevronLeft />}
+              onClick={handlePreviousPage}
+              isDisabled={!hasPrev}
+              variant='outline'
+            >
+              Previous
+            </Button>
+
+            {/* Page Numbers */}
+            {getPageNumbers().map((pageNum) => (
+              <Button
+                key={pageNum}
+                size='sm'
+                onClick={() => handlePageChange(pageNum)}
+                colorScheme={pageNum === pagination.page ? 'blue' : 'gray'}
+                variant={pageNum === pagination.page ? 'solid' : 'outline'}
+              >
+                {pageNum}
+              </Button>
+            ))}
+
+            {/* Next Button */}
+            <Button
+              size='sm'
+              rightIcon={<FiChevronRight />}
+              onClick={handleNextPage}
+              isDisabled={!hasNext}
+              variant='outline'
+            >
+              Next
+            </Button>
+          </ButtonGroup>
+        )}
+      </Flex>
+
       {selectedUserId && selectedUser && (
         <UserDetailsDrawer
           userId={selectedUserId}
@@ -316,7 +450,6 @@ export const UserTable = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-
       <DeleteConfirmationDialog
         isOpen={isDeleteOpen}
         onClose={onDeleteClose}

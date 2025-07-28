@@ -15,63 +15,37 @@ import {
   Stat,
   useColorModeValue,
   Button,
-  IconButton,
   Skeleton,
   Badge,
   useToast,
   Divider,
   Grid,
-  Select,
   useBreakpointValue,
 } from '@chakra-ui/react';
-import {
-  FiRefreshCw,
-  FiUsers,
-  FiUserCheck,
-  FiUserX,
-  FiChevronLeft,
-  FiChevronRight,
-  FiChevronsLeft,
-  FiChevronsRight,
-} from 'react-icons/fi';
+import { FiRefreshCw, FiUsers, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { UserTable } from './UserManagementDasboard/UserTable';
 import { useIsAdmin, useUsers } from '@/context/AuthContextService';
-import { useState } from 'react';
 
 export const CustomersContents = () => {
   const isAdmin = useIsAdmin();
   const toast = useToast();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
   // Responsive values
   const isMobile = useBreakpointValue({ base: true, md: false });
   const cardPadding = useBreakpointValue({ base: 4, md: 6 });
-  const statColumns = useBreakpointValue({
-    base: 1,
-    sm: 2,
-    md: 3,
-    lg: 3,
-  });
 
   // Color mode values
-  const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const cardBg = useColorModeValue('white', 'gray.700');
   const statBg = useColorModeValue('gray.50', 'gray.800');
 
-  const { data, isLoading, error, refetch, isFetching } = useUsers({
-    page: currentPage,
-    limit: pageSize,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useUsers();
 
   const users = data?.users;
   const pagination = data?.pagination || {
     total: 0,
     page: 1,
-    pages: 0,
-    hasNext: false,
-    hasPrev: false,
+    totalPages: 0,
     limit: 10,
   };
 
@@ -92,52 +66,13 @@ export const CustomersContents = () => {
     } catch (err) {
       toast({
         title: 'Refresh failed',
-        description: 'Could not update user data',
+        description: 'Could not update user data ' + err,
         status: 'error',
         duration: 3000,
         isClosable: true,
         position: 'top-right',
       });
     }
-  };
-
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  const handlePageSizeChange = (event) => {
-    const newSize = parseInt(event.target.value);
-    setPageSize(newSize);
-    setCurrentPage(1);
-  };
-
-  const generatePageNumbers = () => {
-    const pages = [];
-    const totalPages = pagination.pages;
-    const current = pagination.page;
-
-    // Show first page
-    if (current > 3) {
-      pages.push(1);
-      if (current > 4) pages.push('...');
-    }
-
-    // Show pages around current
-    for (
-      let i = Math.max(1, current - 2);
-      i <= Math.min(totalPages, current + 2);
-      i++
-    ) {
-      pages.push(i);
-    }
-
-    // Show last page
-    if (current < totalPages - 2) {
-      if (current < totalPages - 3) pages.push('...');
-      pages.push(totalPages);
-    }
-
-    return pages;
   };
 
   // Access control check
@@ -358,178 +293,13 @@ export const CustomersContents = () => {
           </Grid>
 
           {/* Page Size Selector */}
-          <Flex justify={{ base: 'center', md: 'flex-start' }} mb={4}>
-            <HStack spacing={2} align='center'>
-              <Text fontSize='sm' color='gray.600'>
-                Show:
-              </Text>
-              <Select
-                size='sm'
-                value={pageSize}
-                onChange={handlePageSizeChange}
-                width='80px'
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </Select>
-              <Text fontSize='sm' color='gray.600'>
-                per page
-              </Text>
-            </HStack>
-          </Flex>
 
           {/* User Table */}
-          <Box
-            borderWidth='1px'
-            borderRadius='lg'
-            overflow='hidden'
-            borderColor={borderColor}
-            mb={4}
-          >
-            <UserTable
-              users={users}
-              currentPage={currentPage}
-              pageSize={pageSize}
-            />
-          </Box>
 
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <PaginationControls
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              isMobile={isMobile}
-            />
-          )}
+          <UserTable />
         </CardBody>
       </Card>
     </Box>
-  );
-};
-
-// Pagination Controls Component
-const PaginationControls = ({ pagination, onPageChange, isMobile }) => {
-  const { page: currentPage, pages: totalPages, hasNext, hasPrev } = pagination;
-
-  const generatePageNumbers = () => {
-    const pages = [];
-    const maxVisible = isMobile ? 3 : 5;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      const start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-      const end = Math.min(totalPages, start + maxVisible - 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-    }
-
-    return pages;
-  };
-
-  return (
-    <Flex
-      justify='center'
-      align='center'
-      mt={6}
-      direction={{ base: 'column', md: 'row' }}
-      gap={4}
-    >
-      {/* Mobile pagination */}
-      {isMobile ? (
-        <HStack spacing={2}>
-          <IconButton
-            icon={<FiChevronLeft />}
-            onClick={() => onPageChange(currentPage - 1)}
-            isDisabled={!hasPrev}
-            size='sm'
-            aria-label='Previous page'
-          />
-
-          <Text fontSize='sm' px={4}>
-            {currentPage} of {totalPages}
-          </Text>
-
-          <IconButton
-            icon={<FiChevronRight />}
-            onClick={() => onPageChange(currentPage + 1)}
-            isDisabled={!hasNext}
-            size='sm'
-            aria-label='Next page'
-          />
-        </HStack>
-      ) : (
-        /* Desktop pagination */
-        <HStack spacing={1}>
-          {/* First page button */}
-          <IconButton
-            icon={<FiChevronsLeft />}
-            onClick={() => onPageChange(1)}
-            isDisabled={currentPage === 1}
-            size='sm'
-            variant='ghost'
-            aria-label='First page'
-          />
-
-          {/* Previous page button */}
-          <IconButton
-            icon={<FiChevronLeft />}
-            onClick={() => onPageChange(currentPage - 1)}
-            isDisabled={!hasPrev}
-            size='sm'
-            variant='ghost'
-            aria-label='Previous page'
-          />
-
-          {/* Page number buttons */}
-          {generatePageNumbers().map((pageNum) => (
-            <Button
-              key={pageNum}
-              onClick={() => onPageChange(pageNum)}
-              variant={pageNum === currentPage ? 'solid' : 'ghost'}
-              colorScheme={pageNum === currentPage ? 'blue' : 'gray'}
-              size='sm'
-              minW='40px'
-            >
-              {pageNum}
-            </Button>
-          ))}
-
-          {/* Next page button */}
-          <IconButton
-            icon={<FiChevronRight />}
-            onClick={() => onPageChange(currentPage + 1)}
-            isDisabled={!hasNext}
-            size='sm'
-            variant='ghost'
-            aria-label='Next page'
-          />
-
-          {/* Last page button */}
-          <IconButton
-            icon={<FiChevronsRight />}
-            onClick={() => onPageChange(totalPages)}
-            isDisabled={currentPage === totalPages}
-            size='sm'
-            variant='ghost'
-            aria-label='Last page'
-          />
-        </HStack>
-      )}
-
-      {/* Page info */}
-      <Text fontSize='sm' color='gray.600' textAlign='center'>
-        Showing {(currentPage - 1) * pagination.limit + 1} to{' '}
-        {Math.min(currentPage * pagination.limit, pagination.total)} of{' '}
-        {pagination.total} users
-      </Text>
-    </Flex>
   );
 };
 

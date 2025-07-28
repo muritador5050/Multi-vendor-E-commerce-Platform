@@ -26,6 +26,8 @@ export interface Order {
   paymentStatus?: PaymentStatus;
   trackingNumber?: string;
   deliveredAt?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 export interface OrderPagination {
   currentPage: number;

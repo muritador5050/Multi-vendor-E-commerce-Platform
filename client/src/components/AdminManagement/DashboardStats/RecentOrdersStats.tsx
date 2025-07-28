@@ -51,7 +51,11 @@ export default function RecentOrdersStats() {
       </Text>
       {isLoading ? (
         <Center h='150px'>
-          <SkeletonUtil variant='table' />
+          <SkeletonUtil
+            variant='table'
+            width='inherit'
+            contentHeight={{ base: '150px ', md: '150px' }}
+          />
         </Center>
       ) : data?.data?.orders.length === 0 ? (
         <Center flexDirection='column' h='150px' color='gray.500'>

@@ -184,20 +184,12 @@ async function sendEmailVerificationLink() {
  */
 async function fetchUsers(
   params: UserQueryParams = {}
-): Promise<PaginatedUsers> {
+): Promise<ApiResponse<PaginatedUsers>> {
   const queryString = buildQueryString(params);
   const url = `/auth/users${queryString ? `?${queryString}` : ''}`;
-
-  try {
-    const response = await apiClient.authenticatedApiRequest<
-      ApiResponse<PaginatedUsers>
-    >(url);
-
-    return response.data!;
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    throw error;
-  }
+  return await apiClient.authenticatedApiRequest<ApiResponse<PaginatedUsers>>(
+    url
+  );
 }
 
 /**
@@ -423,6 +415,7 @@ export const useUsers = (params: UserQueryParams = {}) => {
     queryFn: () => fetchUsers(params),
     enabled: isAuthenticated(),
     staleTime: 5 * 60 * 1000,
+    select: (data) => data.data,
     retry: (failureCount, error) => {
       if (
         error instanceof ApiError &&

@@ -29,6 +29,7 @@ export const useUserActions = () => {
         title,
         description,
         status,
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });

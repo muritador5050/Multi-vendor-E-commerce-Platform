@@ -40,7 +40,8 @@ import {
   HStack,
   VStack,
   Divider,
-  Tooltip,
+  InputGroup,
+  InputLeftElement,
 } from '@chakra-ui/react';
 import {
   Filter,
@@ -50,20 +51,18 @@ import {
   Edit,
   Truck,
   Ban,
-  RefreshCw,
   MessageSquare,
   CreditCard,
-  Package,
   Search,
   Plus,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
-import { getStatusColor } from '../Utils/Utils';
+import { formatDate, getStatusColor } from '../Utils/Utils';
 import { useOrders } from '@/context/OrderContextService';
+import type { Order } from '@/type/Order';
 
 export const OrdersContent = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
   const { data: ordersData } = useOrders();
   const orders = ordersData?.data?.orders || [];
   const toast = useToast();
@@ -100,22 +99,15 @@ export const OrdersContent = () => {
     onClose: onMessageClose,
   } = useDisclosure();
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order>();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editForm, setEditForm] = useState({});
   const [trackingInfo, setTrackingInfo] = useState('');
-  const [refundAmount, setRefundAmount] = useState('');
+  const [refundAmount, setRefundAmount] = useState<number>();
   const [refundReason, setRefundReason] = useState('');
   const [message, setMessage] = useState('');
-  const cancelRef = useRef();
-
-  const getStatusBadgeProps = (status) => {
-    const color = getStatusColor(status ?? '');
-    return color === 'green'
-      ? { colorScheme: 'green' }
-      : { colorScheme: 'red' };
-  };
+  const cancelRef = useRef(null);
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -126,45 +118,45 @@ export const OrdersContent = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleViewOrder = (order) => {
+  const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
     onViewOpen();
   };
 
-  const handleEditOrder = (order) => {
+  const handleEditOrder = (order: Order) => {
     setSelectedOrder(order);
     setEditForm({
       status: order.orderStatus,
       paymentStatus: order.paymentStatus,
       shippingAddress: order.shippingAddress || '',
-      notes: order.notes || '',
+      notes: order.shippingCost || '',
     });
     onEditOpen();
   };
 
-  const handleUpdateTracking = (order) => {
+  const handleUpdateTracking = (order: Order) => {
     setSelectedOrder(order);
     setTrackingInfo(order.trackingNumber || '');
     onTrackingOpen();
   };
 
-  const handleRefund = (order) => {
+  const handleRefund = (order: Order) => {
     setSelectedOrder(order);
     setRefundAmount(order.totalPrice);
     onRefundOpen();
   };
 
-  const handleCancelOrder = (order) => {
+  const handleCancelOrder = (order: Order) => {
     setSelectedOrder(order);
     onCancelOpen();
   };
 
-  const handleSendMessage = (order) => {
+  const handleSendMessage = (order: Order) => {
     setSelectedOrder(order);
     onMessageOpen();
   };
 
-  const executeAction = (action, successMessage) => {
+  const executeAction = (action: () => void, successMessage: string) => {
     // Simulate API call
     setTimeout(() => {
       toast({
@@ -250,12 +242,16 @@ export const OrdersContent = () => {
       <Box bg={cardBg} p={4} borderRadius='lg' boxShadow='sm' mb={4}>
         <HStack spacing={4}>
           <Box flex={1}>
-            <Input
-              placeholder='Search by Order ID or Customer Name...'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftElement={<Search size={16} />}
-            />
+            <InputGroup>
+              <InputLeftElement>
+                <Search size={16} />
+              </InputLeftElement>
+              <Input
+                placeholder='Search by Order ID or Customer Name...'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </InputGroup>
           </Box>
           <Select
             value={statusFilter}
@@ -280,7 +276,7 @@ export const OrdersContent = () => {
               <Tr>
                 <Th>Order ID</Th>
                 <Th>Customer</Th>
-                <Th>Items</Th>
+                {/* <Th>Items</Th> */}
                 <Th>Amount</Th>
                 <Th>Status</Th>
                 <Th>Payment</Th>
@@ -293,11 +289,11 @@ export const OrdersContent = () => {
                 <Tr key={order._id}>
                   <Td>{order._id}</Td>
                   <Td>{order.user?.name || 'N/A'}</Td>
-                  <Td>{order.items?.length || 0} items</Td>
+                  {/* <Td>{order..length || 0} items</Td> */}
                   <Td>${order.totalPrice}</Td>
                   <Td>
                     <Badge
-                      {...getStatusBadgeProps(order.orderStatus)}
+                      // {getStatusColor(order?.orderStatus)}
                       variant='subtle'
                     >
                       {order.orderStatus || 'Unknown'}
@@ -313,7 +309,7 @@ export const OrdersContent = () => {
                       {order.paymentStatus || 'N/A'}
                     </Badge>
                   </Td>
-                  <Td>{new Date(order.createdAt).toLocaleDateString()}</Td>
+                  <Td>{formatDate(order.createdAt)}</Td>
                   <Td>
                     <Menu>
                       <MenuButton

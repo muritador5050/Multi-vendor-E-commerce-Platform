@@ -72,14 +72,12 @@ export interface UserStatus {
 }
 
 export interface PaginatedUsers {
-  users: UserStatus[];
+  users: User[];
   pagination: {
     total: number;
     page: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
     limit: number;
+    totalPages: number;
   };
 }
 
