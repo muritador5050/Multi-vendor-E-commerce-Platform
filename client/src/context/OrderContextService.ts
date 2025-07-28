@@ -17,8 +17,9 @@ const getOrders = async (
 ): Promise<ApiResponse<OrdersResponse>> => {
   const queryString = buildQueryString(params);
   const endpoint = queryString ? `/orders?${queryString}` : '/orders';
-  const response =
-    apiClient.authenticatedApiRequest<ApiResponse<OrdersResponse>>(endpoint);
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<OrdersResponse>
+  >(endpoint);
   return response;
 };
 

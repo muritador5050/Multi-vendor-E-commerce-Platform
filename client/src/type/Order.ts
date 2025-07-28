@@ -1,3 +1,4 @@
+import type { User } from './auth';
 import type { Product } from './product';
 
 type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
@@ -13,7 +14,7 @@ export interface Address {
 
 export interface Order {
   _id: string;
-  user: string;
+  user: User;
   products: Product[];
   shippingAddress?: Address;
   billingAddress?: Address;
@@ -34,7 +35,7 @@ export interface OrderPagination {
   hasPrevPage: boolean;
 }
 export interface OrdersResponse {
-  data: Order[];
+  orders: Order[];
   pagination: OrderPagination;
 }
 

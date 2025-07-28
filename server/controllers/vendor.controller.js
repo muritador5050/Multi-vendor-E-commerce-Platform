@@ -53,11 +53,12 @@ class VendorController {
       success: true,
       message: 'Profile retrieved successfully',
       data: {
-        ...vendor.toObject(),
+        vendor,
         profileCompletion: vendor.calculateProfileCompletion(),
       },
     });
   }
+
   static async getProfileCompletion(req, res) {
     const vendor = await Vendor.findByUserId(req.user.id);
 
@@ -90,7 +91,10 @@ class VendorController {
   }
 
   static async getAllVendors(req, res) {
-    const vendors = await Vendor.findVerifiedVendors();
+    const [vendors, count] = await Promise.all([
+      Vendor.find(),
+      Vendor.countDocuments(),
+    ]);
 
     if (!vendors || vendors.length === 0) {
       return res.status(404).json({
@@ -102,34 +106,86 @@ class VendorController {
     res.json({
       success: true,
       message: 'Vendors retrieved successfully',
-      data: vendors,
+      data: {
+        vendors,
+        total: count,
+      },
+    });
+  }
+
+  static async getTopVendors(req, res) {
+    const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'rating';
+
+    let sortCriteria;
+    switch (sortBy) {
+      case 'sales':
+        sortCriteria = { totalSales: -1, rating: -1 };
+        break;
+      case 'recent':
+        sortCriteria = { createdAt: -1, rating: -1 };
+        break;
+      default:
+        sortCriteria = { rating: -1, reviewCount: -1 };
+    }
+
+    const topVendors = await Vendor.aggregate([
+      { $match: { isVerified: true } },
+      {
+        $addFields: {
+          topScore: {
+            $add: [
+              { $multiply: ['$rating', 0.4] },
+              { $multiply: [{ $divide: ['$totalSales', 1000] }, 0.3] },
+              { $multiply: [{ $divide: ['$reviewCount', 10] }, 0.3] },
+            ],
+          },
+        },
+      },
+      { $sort: sortCriteria },
+      { $limit: limit },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          rating: 1,
+          reviewCount: 1,
+          totalSales: 1,
+          createdAt: 1,
+          profileImage: 1,
+          topScore: 1,
+          isVerified: 1,
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      message: `Top vendors by ${sortBy} retrieved successfully`,
+      data: {
+        vendors: topVendors,
+        total: topVendors.length,
+      },
     });
   }
 
   static async getVendorsForAdmin(req, res) {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const filter = Vendor.buildSearchFilter(req.query);
-    const result = await Vendor.findWithPagination(filter, { page, limit });
-
     if (req.user.role !== 'admin') {
       return res.status(401).json('You have no access to this page');
     }
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const result = await Vendor.findWithPagination(req.query, { page, limit });
+
     if (!result) {
       return res.status(404).json({ message: 'Vendors not found' });
     }
-
     res.json({
       success: true,
       message: 'Vendors retrieved successfully',
       data: result,
-      pagination: {
-        page: result.page,
-        limit: result.limit,
-        totalCount: result.totalCount,
-        totalPages: result.totalPages,
-      },
     });
   }
 
@@ -160,7 +216,7 @@ class VendorController {
 
     res.json({
       message: `Vendor ${status} successfully`,
-      data: vendor,
+      data: { vendor },
     });
   }
 
@@ -187,7 +243,9 @@ class VendorController {
       message: `Documents ${
         req.method === 'DELETE' ? 'deleted' : 'uploaded'
       } successfully`,
-      data: vendor.verificationDocuments,
+      data: {
+        vendor: vendor.verificationDocuments,
+      },
     });
   }
 
@@ -256,7 +314,9 @@ class VendorController {
 
     res.json({
       message: `${req.params.settingType} updated successfully`,
-      data: vendor[req.params.settingType],
+      data: {
+        vendor: vendor[req.params.settingType],
+      },
     });
   }
 
@@ -273,7 +333,7 @@ class VendorController {
 
     res.json({
       success: true,
-      data: vendor.getDashboardStats(),
+      data: { vendor: vendor.getDashboardStats() },
     });
   }
 }

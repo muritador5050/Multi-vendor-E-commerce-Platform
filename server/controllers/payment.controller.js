@@ -3,7 +3,6 @@ const { resSuccessObject } = require('../utils/responseObject');
 
 // Payment controller
 class PaymentController {
-  // Create a new payment
   static async createPayment(req, res) {
     const { order, paymentProvider, amount, currency } = req.body;
 
@@ -61,15 +60,14 @@ class PaymentController {
 
     const result = await Payment.getFilteredPayments(filters, pagination);
 
-    return res.json(
-      resSuccessObject({
-        results: result.payments,
-        count: result.count,
-        totalPayments: result.totalPayments,
-        numOfPages: result.numOfPages,
-        currentPage: result.currentPage,
-      })
-    );
+    return res.json({
+      success: true,
+      message: 'Payments retrieved successfully',
+      data: {
+        payments: result.payments,
+        pagination: result.pagination,
+      },
+    });
   }
 
   // Get payment by ID

@@ -6,7 +6,6 @@ import type {
   Vendor,
   VendorProfile,
   PublicVendor,
-  VendorListResponse,
   VendorAdminListResponse,
   VendorStats,
   AdminVendorStats,
@@ -21,171 +20,11 @@ import type {
   BusinessType,
   VerificationStatus,
   DocumentType,
+  TopVendor,
 } from '../type/vendor';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
-
-// ===== API FUNCTIONS =====
-
-// Profile Management
-async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
-    '/vendors/profile'
-  );
-}
-
-async function upsertVendorProfile(
-  data: VendorProfileUpdate
-): Promise<ApiResponse<VendorProfile>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
-    '/vendors/profile',
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
-}
-
-async function updateVendorProfile(
-  data: VendorProfileUpdate
-): Promise<ApiResponse<VendorProfile>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
-    '/vendors/profile',
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
-}
-
-// Public Vendor Routes
-async function getAllVendors(
-  filters: VendorFilters = {}
-): Promise<ApiResponse<VendorListResponse>> {
-  const params = new URLSearchParams();
-
-  // Build query parameters
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.append(key, value.toString());
-    }
-  });
-
-  const queryString = params.toString();
-  const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
-
-  return apiClient.publicApiRequest<ApiResponse<VendorListResponse>>(endpoint);
-}
-
-async function getVendor(
-  identifier: string
-): Promise<ApiResponse<PublicVendor>> {
-  return apiClient.publicApiRequest<ApiResponse<PublicVendor>>(
-    `/vendors/${identifier}`
-  );
-}
-
-// Document Management
-async function uploadDocuments(
-  data: DocumentUpload
-): Promise<ApiResponse<VendorDocument[]>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
-    '/vendors/documents',
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
-}
-
-async function deleteDocument(
-  documentId: string
-): Promise<ApiResponse<VendorDocument[]>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
-    `/vendors/documents/${documentId}`,
-    { method: 'DELETE' }
-  );
-}
-
-// Settings Management
-async function updateSettings<T extends SettingsResponse>(
-  settingType: 'notifications' | 'businessHours' | 'socialMedia',
-  data: SettingsUpdate
-): Promise<ApiResponse<T>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<T>>(
-    `/vendors/settings/${settingType}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
-}
-
-// Account Status
-async function toggleAccountStatus(
-  data: AccountStatusToggle
-): Promise<ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>> {
-  return apiClient.authenticatedApiRequest<
-    ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>
-  >('/vendors/toggle-status', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
-// Statistics
-async function getVendorStats(): Promise<ApiResponse<VendorStats>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorStats>>(
-    '/vendors/stats/vendor'
-  );
-}
-
-async function getAdminStats(): Promise<ApiResponse<AdminVendorStats>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<AdminVendorStats>>(
-    '/vendors/stats/admin'
-  );
-}
-
-// Admin Routes
-async function getVendorsForAdmin(
-  filters: VendorFilters = {}
-): Promise<ApiResponse<VendorAdminListResponse>> {
-  const params = new URLSearchParams();
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.append(key, value.toString());
-    }
-  });
-
-  const queryString = params.toString();
-  const endpoint = queryString
-    ? `/vendors/admin/list?${queryString}`
-    : '/vendors/admin/list';
-
-  return apiClient.authenticatedApiRequest<
-    ApiResponse<VendorAdminListResponse>
-  >(endpoint);
-}
-
-async function updateVerificationStatus(
-  vendorId: string,
-  data: VerificationStatusUpdate
-): Promise<ApiResponse<Vendor>> {
-  return apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
-    `/vendors/admin/verify/${vendorId}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
-}
+import { buildQueryString } from '@/utils/QueryString';
 
 // ===== QUERY KEYS =====
 export const vendorKeys = {
@@ -200,7 +39,168 @@ export const vendorKeys = {
     ['vendor', 'admin', 'list', filters] as const,
   documents: ['vendor', 'documents'] as const,
   settings: (type: string) => ['vendor', 'settings', type] as const,
+  completion: ['vendor', 'completion'] as const,
+  topVendors: ['vendor', 'top'] as const,
 };
+
+// ===== API FUNCTIONS =====
+
+// Profile Management
+async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<VendorProfile>
+  >('/vendors/profile');
+  return response;
+}
+
+async function upsertVendorProfile(
+  data: VendorProfileUpdate
+): Promise<ApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+async function updateVendorProfile(
+  data: VendorProfileUpdate
+): Promise<ApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile',
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+// Public Vendor Routes
+async function getAllVendors(
+  filters: VendorFilters = {}
+): Promise<ApiResponse<VendorProfile>> {
+  const queryString = buildQueryString(filters);
+  const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
+  const response = await apiClient.publicApiRequest<ApiResponse<VendorProfile>>(
+    endpoint
+  );
+  return response;
+}
+
+async function getVendorById(
+  identifier: string
+): Promise<ApiResponse<PublicVendor>> {
+  return await apiClient.publicApiRequest<ApiResponse<PublicVendor>>(
+    `/vendors/${identifier}`
+  );
+}
+
+// Document Management
+async function uploadDocuments(
+  data: DocumentUpload
+): Promise<ApiResponse<VendorDocument[]>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
+    '/vendors/documents',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+async function deleteDocument(
+  documentId: string
+): Promise<ApiResponse<VendorDocument[]>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
+    `/vendors/documents/${documentId}`,
+    { method: 'DELETE' }
+  );
+}
+
+// Settings Management
+async function updateSettings<T extends SettingsResponse>(
+  settingType: 'notifications' | 'businessHours' | 'socialMedia',
+  data: SettingsUpdate
+): Promise<ApiResponse<T>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
+    `/vendors/settings/${settingType}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+// Account Status
+async function toggleAccountStatus(
+  data: AccountStatusToggle
+): Promise<ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>> {
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<{ isActive: boolean; deactivatedAt?: Date }>
+  >('/vendors/toggle-status', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+// Statistics
+async function getVendorStats(): Promise<ApiResponse<VendorStats>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorStats>>(
+    '/vendors/stats/vendor'
+  );
+}
+
+async function getAdminStats(): Promise<ApiResponse<AdminVendorStats>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<AdminVendorStats>>(
+    '/vendors/stats/admin'
+  );
+}
+
+// Admin Routes
+async function getVendorsForAdmin(
+  filters: VendorFilters = {}
+): Promise<ApiResponse<VendorAdminListResponse>> {
+  const queryString = buildQueryString(filters);
+  const endpoint = queryString
+    ? `/vendors/admin/list?${queryString}`
+    : '/vendors/admin/list';
+
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<VendorAdminListResponse>
+  >(endpoint);
+  return response;
+}
+
+async function updateVerificationStatus(
+  vendorId: string,
+  data: VerificationStatusUpdate
+): Promise<ApiResponse<Vendor>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
+    `/vendors/admin/verify/${vendorId}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+async function getVendorProfileCompletion(): Promise<
+  ApiResponse<VendorProfile>
+> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile/completion'
+  );
+}
+
+async function getTopVendors(): Promise<ApiResponse<TopVendor>> {
+  const response = await apiClient.authenticatedApiRequest<
+    ApiResponse<TopVendor>
+  >('/vendors/top');
+
+  return response;
+}
 
 // ===== HOOKS =====
 
@@ -239,6 +239,30 @@ export const useUpsertVendorProfile = () => {
   });
 };
 
+export const useVendorProfileCompletion = () => {
+  return useQuery({
+    queryKey: vendorKeys.completion,
+    queryFn: async () => {
+      const response = await getVendorProfileCompletion();
+      return response.data;
+    },
+    enabled: apiClient.isAuthenticated(),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useTopVendors = () => {
+  return useQuery({
+    queryKey: vendorKeys.topVendors,
+    queryFn: async () => {
+      const response = await getTopVendors();
+      return response.data;
+    },
+    enabled: apiClient.isAuthenticated(),
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
 export const useUpdateVendorProfile = () => {
   const queryClient = useQueryClient();
 
@@ -273,11 +297,11 @@ export const useVendors = (filters: VendorFilters = {}) => {
   });
 };
 
-export const useVendor = (identifier: string) => {
+export const useVendorById = (identifier: string) => {
   return useQuery({
     queryKey: vendorKeys.detail(identifier),
     queryFn: async () => {
-      const response = await getVendor(identifier);
+      const response = await getVendorById(identifier);
       return response.data;
     },
     enabled: Boolean(identifier?.trim()),
@@ -492,11 +516,6 @@ export const useCurrentVendor = () => {
 export const useIsVendorVerified = () => {
   const vendor = useCurrentVendor();
   return vendor?.verificationStatus === 'verified';
-};
-
-export const useIsVendorActive = () => {
-  const vendor = useCurrentVendor();
-  return vendor?.isActive === true;
 };
 
 // ===== VALIDATION HELPERS =====

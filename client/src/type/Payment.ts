@@ -13,6 +13,16 @@ export interface Payment {
   updatedAt: Date;
 }
 
+export interface PaginatedPayments {
+  payments: Payment[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface CreatePaymentData {
   order: string;
   paymentProvider: 'stripe' | 'paystack';

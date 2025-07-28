@@ -34,6 +34,13 @@ router.get(
   asyncHandler(VendorController.getProfileCompletion)
 );
 
+router.get(
+  '/top',
+  authenticate,
+  checkRole('admin', 'read'),
+  asyncHandler(VendorController.getTopVendors)
+);
+
 // Document management routes
 router
   .route('/documents')

@@ -167,7 +167,7 @@ async function verifyEmail(token: string) {
 }
 
 async function sendEmailVerificationLink() {
-  return apiClient.authenticatedApiRequest<ApiResponse<null>>(
+  return await apiClient.authenticatedApiRequest<ApiResponse<null>>(
     '/auth/resend-verification',
     {
       method: 'POST',

@@ -241,6 +241,13 @@ vendorSchema.statics.findPendingVerification = function () {
   );
 };
 
+vendorSchema.statics.findByIdentifier = function (identifier) {
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
+  const query = isObjectId ? { _id: identifier } : { storeSlug: identifier };
+
+  return this.findOne(query).populate('user', 'name email avatar createdAt');
+};
+
 vendorSchema.statics.buildSearchFilter = function (query) {
   const filter = {};
 
@@ -329,17 +336,10 @@ vendorSchema.statics.buildSearchFilter = function (query) {
   return filter;
 };
 
-vendorSchema.statics.findByIdentifier = function (identifier) {
-  const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
-  const query = isObjectId ? { _id: identifier } : { storeSlug: identifier };
-
-  return this.findOne(query).populate('user', 'name email avatar createdAt');
-};
-
-vendorSchema.statics.findWithPagination = async function (filter, options) {
+vendorSchema.statics.findWithPagination = async function (query, options) {
+  const filter = this.buildSearchFilter(query);
   const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
   const skip = (page - 1) * limit;
-
   const vendors = await this.find(filter, '-password -refreshToken')
     .skip(skip)
     .limit(limit)

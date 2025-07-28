@@ -1,17 +1,34 @@
 module.exports.resSuccessObject = ({
   message = '',
-  results = {},
+  data = {},
   accessToken,
   refreshToken,
 }) => {
   const response = {
     success: true,
     message,
-    results,
+    data,
   };
 
   if (accessToken) response.accessToken = accessToken;
   if (refreshToken) response.refreshToken = refreshToken;
 
   return response;
+};
+
+// utils/sendResponse.js
+const sendResponse = (
+  res,
+  statusCode,
+  success,
+  data,
+  message = '',
+  errors = []
+) => {
+  return res.status(statusCode).json({
+    success,
+    message,
+    data,
+    errors,
+  });
 };

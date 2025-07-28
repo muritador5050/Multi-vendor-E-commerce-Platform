@@ -314,14 +314,16 @@ paymentSchema.statics.getFilteredPayments = async function (
     this.countDocuments(filter),
   ]);
 
-  const numOfPages = Math.ceil(totalPayments / parseInt(limit));
+  const totalPages = Math.ceil(totalPayments / parseInt(limit));
 
   return {
     payments,
-    totalPayments,
-    numOfPages,
-    currentPage: parseInt(page),
-    count: payments.length,
+    pagination: {
+      total: totalPayments,
+      page: parseInt(page),
+      limit,
+      totalPages,
+    },
   };
 };
 

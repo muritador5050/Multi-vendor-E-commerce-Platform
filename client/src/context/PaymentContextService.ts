@@ -3,6 +3,7 @@ import type { ApiResponse } from '@/type/ApiResponse';
 import type {
   CreatePaymentData,
   CreatePaymentResponse,
+  PaginatedPayments,
   Payment,
   PaymentAnalytics,
   PaymentFilters,
@@ -55,10 +56,12 @@ export const useGetAllPayments = (filters: PaymentFilters = {}) => {
   const queryString = buildQueryString(filters);
   const endpoint = queryString ? `/payments?${queryString}` : '/payments';
 
-  return useQuery<ApiResponse<Payment[]>, Error>({
+  return useQuery<ApiResponse<PaginatedPayments>, Error>({
     queryKey: paymentKeys.list(filters),
-    queryFn: () =>
-      apiClient.authenticatedApiRequest<ApiResponse<Payment[]>>(endpoint),
+    queryFn: async () =>
+      await apiClient.authenticatedApiRequest<ApiResponse<PaginatedPayments>>(
+        endpoint
+      ),
   });
 };
 
@@ -66,8 +69,8 @@ export const useGetAllPayments = (filters: PaymentFilters = {}) => {
 export const useGetPaymentById = (id: string) => {
   return useQuery<ApiResponse<Payment>, Error>({
     queryKey: paymentKeys.detail(id),
-    queryFn: () =>
-      apiClient.authenticatedApiRequest<ApiResponse<Payment>>(
+    queryFn: async () =>
+      await apiClient.authenticatedApiRequest<ApiResponse<Payment>>(
         `/payments/${id}`
       ),
     enabled: !!id,
@@ -78,8 +81,8 @@ export const useGetPaymentById = (id: string) => {
 export const useGetUserPayments = () => {
   return useQuery<ApiResponse<Payment[]>, Error>({
     queryKey: paymentKeys.userPayments(),
-    queryFn: () =>
-      apiClient.authenticatedApiRequest<ApiResponse<Payment[]>>(
+    queryFn: async () =>
+      await apiClient.authenticatedApiRequest<ApiResponse<Payment[]>>(
         '/payments/my-payments'
       ),
   });
@@ -133,12 +136,14 @@ export const useDeletePayment = () => {
 // Get Payment Analytics
 export const useGetPaymentAnalytics = (period: string = '12months') => {
   const queryString = buildQueryString({ period });
-  const endpoint = `/payments/admin/analytics?${queryString}`;
+  const endpoint = queryString
+    ? `/payments/admin/analytics?${queryString}`
+    : '/payments/admin/analytics';
 
   return useQuery<ApiResponse<PaymentAnalytics>, Error>({
     queryKey: paymentKeys.analytics(period),
-    queryFn: () =>
-      apiClient.authenticatedApiRequest<ApiResponse<PaymentAnalytics>>(
+    queryFn: async () =>
+      await apiClient.authenticatedApiRequest<ApiResponse<PaymentAnalytics>>(
         endpoint
       ),
   });

@@ -388,7 +388,7 @@ userSchema.methods.checkPassword = async function (password) {
 };
 
 userSchema.methods.generateToken = function (options = {}) {
-  const { accessTokenExpiry = '15m', refreshTokenExpiry = '7d' } = options;
+  const { accessTokenExpiry = '1h', refreshTokenExpiry = '7d' } = options;
 
   const payload = {
     id: this._id,

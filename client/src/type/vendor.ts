@@ -1,6 +1,5 @@
 import type { User } from './auth';
 
-// ===== BASE ENUMS AND CONSTANTS =====
 export type BusinessType =
   | 'individual'
   | 'company'
@@ -49,7 +48,7 @@ export interface VendorDocument {
   type: DocumentType;
   filename?: string;
   url: string;
-  name?: string; // For frontend display
+  name?: string;
   uploadedAt: Date;
 }
 
@@ -88,7 +87,7 @@ export interface NotificationSettings {
 // ===== MAIN VENDOR INTERFACE =====
 export interface Vendor {
   _id: string;
-  userId: string | User;
+  user: User;
 
   // Business Information
   businessName: string;
@@ -125,7 +124,6 @@ export interface Vendor {
   storeBanner?: string;
 
   // Account Status
-  isActive: boolean;
   deactivationReason?: string;
   deactivatedAt?: Date;
 
@@ -162,7 +160,7 @@ export interface PublicVendor {
 
 // ===== API RESPONSE INTERFACES =====
 export interface VendorListResponse {
-  vendors: PublicVendor[];
+  vendors: Vendor[];
   pagination: {
     page: number;
     limit: number;
@@ -171,13 +169,18 @@ export interface VendorListResponse {
   };
 }
 
+export interface TopVendor {
+  vendors: Vendor[];
+  total: number;
+}
+
 export interface VendorAdminListResponse {
   vendors: Vendor[];
   pagination: {
     page: number;
     limit: number;
     total: number;
-    pages: number;
+    totalPages: number;
   };
 }
 
@@ -212,7 +215,6 @@ export interface VendorFilters {
   search?: string;
   businessType?: BusinessType;
   verificationStatus?: VerificationStatus;
-  isActive?: boolean;
 }
 
 export interface VendorProfileUpdate {
@@ -251,7 +253,7 @@ export interface DocumentUpload {
 }
 
 export interface AccountStatusToggle {
-  isActive?: boolean;
+  verificationStatus?: boolean;
   reason?: string;
 }
 

@@ -82,8 +82,9 @@ class UserController {
     };
 
     res.cookie('refreshToken', refreshToken, cookieOptions).json({
+      success: true,
+      message: 'User retrieved successfully',
       data: {
-        success: true,
         user: user.getStatusInfo(),
         accessToken,
         warnings,
