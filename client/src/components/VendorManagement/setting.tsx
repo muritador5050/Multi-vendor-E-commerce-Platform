@@ -34,7 +34,7 @@ import SEOSetting from '@/components/VendorManagement/StoreSettings/SEOSetting';
 import StorePolicies from '@/components/VendorManagement/StoreSettings/StorePolicies';
 import CustomerSupport from '@/components/VendorManagement/StoreSettings/CustomerSupport';
 import StoreHours from '@/components/VendorManagement/StoreSettings/StoreHours';
-import { useProfileCompletion } from '@/context/AuthContextService';
+import { useVendorProfile } from '@/context/VendorContextService';
 
 const tabName = [
   { name: 'Store', icon: ShoppingBasket },
@@ -49,7 +49,7 @@ const tabName = [
 
 export default function Setting() {
   const [activeTab, setActiveTab] = useState(0);
-  const percentageComplete = useProfileCompletion();
+  const { data } = useVendorProfile();
 
   return (
     <Box>
@@ -68,7 +68,7 @@ export default function Setting() {
       </Flex>
 
       <ProfileProgress
-        percentage={percentageComplete?.percent}
+        percentage={data?.profileCompletion}
         remainingFields={[]}
       />
 

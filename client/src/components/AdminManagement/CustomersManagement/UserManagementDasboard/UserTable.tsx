@@ -25,6 +25,7 @@ import {
   ButtonGroup,
   useDisclosure,
   Center,
+  Spinner,
 } from '@chakra-ui/react';
 import {
   useCanManageUser,
@@ -68,10 +69,8 @@ export const UserTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Data and permission hooks - pass current page to useUsers
-  const { data, refetch } = useUsers({ page: currentPage });
+  const { data, refetch, isLoading } = useUsers({ page: currentPage });
 
-  console.log('Raw', data);
-  console.log('Two-level', data?.users);
   const currentUser = useCurrentUser();
   const { canActivate, canDeactivate, canViewStatus, canInvalidateTokens } =
     useCanManageUser(currentUser?._id);
@@ -186,6 +185,14 @@ export const UserTable = () => {
 
     return pages;
   };
+
+  if (isLoading) {
+    return (
+      <Center>
+        <Spinner />
+      </Center>
+    );
+  }
 
   if (!data?.users || data.users.length === 0) {
     return (

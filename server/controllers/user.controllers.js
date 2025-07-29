@@ -382,14 +382,17 @@ class UserController {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filter = User.buildSearchFilter(req.query);
-    const result = await User.findWithPagination(filter, { page, limit });
+    const { users, pagination } = await User.findWithPagination(filter, {
+      page,
+      limit,
+    });
 
     res.status(200).json({
       success: true,
       message: 'Users retrieved successfully',
       data: {
-        users: result.users,
-        pagination: result.pagination,
+        users,
+        pagination,
       },
     });
   }

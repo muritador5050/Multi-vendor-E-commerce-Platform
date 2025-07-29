@@ -4,7 +4,6 @@ import type {
   VendorDocument,
   BusinessHours,
   Vendor,
-  VendorProfile,
   PublicVendor,
   VendorAdminListResponse,
   VendorStats,
@@ -21,6 +20,7 @@ import type {
   VerificationStatus,
   DocumentType,
   TopVendor,
+  VendorProfileData,
 } from '../type/vendor';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
@@ -46,17 +46,16 @@ export const vendorKeys = {
 // ===== API FUNCTIONS =====
 
 // Profile Management
-async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<VendorProfile>
+async function getVendorProfile(): Promise<ApiResponse<VendorProfileData>> {
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<VendorProfileData>
   >('/vendors/profile');
-  return response;
 }
 
 async function upsertVendorProfile(
   data: VendorProfileUpdate
-): Promise<ApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+): Promise<ApiResponse<Vendor>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
     '/vendors/profile',
     {
       method: 'POST',
@@ -67,8 +66,8 @@ async function upsertVendorProfile(
 
 async function updateVendorProfile(
   data: VendorProfileUpdate
-): Promise<ApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+): Promise<ApiResponse<Vendor>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
     '/vendors/profile',
     {
       method: 'PUT',
@@ -80,10 +79,10 @@ async function updateVendorProfile(
 // Public Vendor Routes
 async function getAllVendors(
   filters: VendorFilters = {}
-): Promise<ApiResponse<VendorProfile>> {
+): Promise<ApiResponse<Vendor>> {
   const queryString = buildQueryString(filters);
   const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
-  const response = await apiClient.publicApiRequest<ApiResponse<VendorProfile>>(
+  const response = await apiClient.publicApiRequest<ApiResponse<Vendor>>(
     endpoint
   );
   return response;
@@ -186,10 +185,8 @@ async function updateVerificationStatus(
   );
 }
 
-async function getVendorProfileCompletion(): Promise<
-  ApiResponse<VendorProfile>
-> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+async function getVendorProfileCompletion(): Promise<ApiResponse<Vendor>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
     '/vendors/profile/completion'
   );
 }
@@ -208,12 +205,10 @@ async function getTopVendors(): Promise<ApiResponse<TopVendor>> {
 export const useVendorProfile = () => {
   return useQuery({
     queryKey: vendorKeys.profile,
-    queryFn: async () => {
-      const response = await getVendorProfile();
-      return response.data;
-    },
+    queryFn: () => getVendorProfile(),
+    select: (data) => data.data,
     enabled: apiClient.isAuthenticated(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: false,
   });
 };
@@ -515,7 +510,7 @@ export const useCurrentVendor = () => {
 
 export const useIsVendorVerified = () => {
   const vendor = useCurrentVendor();
-  return vendor?.verificationStatus === 'verified';
+  return vendor?.vendor.verificationStatus === 'verified';
 };
 
 // ===== VALIDATION HELPERS =====

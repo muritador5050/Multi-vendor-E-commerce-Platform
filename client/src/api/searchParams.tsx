@@ -1,684 +1,671 @@
-// ====================
-// QUERY HOOKS USAGE
-// ====================
+import React, { useState, useCallback } from 'react';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Switch,
+  Badge,
+  VStack,
+  HStack,
+  useToast,
+} from '@chakra-ui/react';
 
-// 1. useUsers - Get paginated list of users
-function UsersList() {
-  const { data, isLoading, error } = useUsers({
-    page: 1,
-    limit: 10,
-    search: 'john',
-  });
-
-  if (isLoading) return <div>Loading users...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return (
-    <div>
-      {data?.users.map((user) => (
-        <div key={user._id}>
-          {user.name} - {user.email}
-        </div>
-      ))}
-      <p>Total: {data?.total} users</p>
-    </div>
-  );
+// Define your vendor setting types
+interface VendorSettings {
+  apiKey: string;
+  isEnabled: boolean;
+  endpoint: string;
+  timeout: number;
+  // Add more fields as needed
 }
 
-// 2. useUserById - Get specific user by ID
-function UserProfile({ userId }: { userId: string }) {
-  const { data: user, isLoading, error } = useUserById(userId);
-
-  if (isLoading) return <div>Loading user...</div>;
-  if (error) return <div>User not found</div>;
-
-  return (
-    <div>
-      <h2>{user?.name}</h2>
-      <p>{user?.email}</p>
-      <p>Role: {user?.role}</p>
-    </div>
-  );
+interface Vendor {
+  id: string;
+  name: string;
+  settings: VendorSettings;
 }
 
-// 3. useProfile - Get current user's profile
-function MyProfile() {
-  const { data, isLoading, error } = useProfile();
-
-  if (isLoading) return <div>Loading profile...</div>;
-  if (error) return <div>Error loading profile</div>;
-
-  return (
-    <div>
-      <h1>Welcome, {data?.user.name}!</h1>
-      <p>Email: {data?.user.email}</p>
-      <p>Profile Completion: {data?.profileCompletion}%</p>
-    </div>
-  );
+// Type for the save payload
+interface VendorSavePayload {
+  id: string;
+  settings: VendorSettings;
 }
 
-// 4. useUserStatus - Get user's status (active, email verified, etc.)
-function UserStatusCard({ userId }: { userId: string }) {
-  const { data: status, isLoading } = useUserStatus(userId);
-
-  if (isLoading) return <div>Loading status...</div>;
-
-  return (
-    <div>
-      <p>Active: {status?.isActive ? 'Yes' : 'No'}</p>
-      <p>Email Verified: {status?.isEmailVerified ? 'Yes' : 'No'}</p>
-      <p>Token Version: {status?.tokenVersion}</p>
-    </div>
-  );
+// Component props type
+interface VendorSettingsProps {
+  vendors: Vendor[];
+  onSave: (vendorsToSave: VendorSavePayload[]) => Promise<void>;
 }
 
-// ====================
-// MUTATION HOOKS USAGE
-// ====================
+const VendorSettingsComponent: React.FC<VendorSettingsProps> = ({
+  vendors,
+  onSave,
+}) => {
+  const toast = useToast();
 
-// 5. useLogin - Handle user login
-function LoginForm() {
-  const loginMutation = useLogin();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false,
-  });
+  // State management with proper typing
+  const [vendorSettings, setVendorSettings] = useState<
+    Record<string, VendorSettings>
+  >(() =>
+    vendors.reduce(
+      (acc, vendor) => ({
+        ...acc,
+        [vendor.id]: vendor.settings,
+      }),
+      {}
+    )
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await loginMutation.mutateAsync(formData);
-      // User will be redirected automatically on success
-    } catch (error) {
-      console.error('Login failed:', error);
+  const [dirtyFields, setDirtyFields] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Generic handler for vendor setting changes
+  const handleVendorChange = useCallback(
+    <K extends keyof VendorSettings>(
+      vendorId: string,
+      field: K,
+      value: VendorSettings[K]
+    ) => {
+      setVendorSettings((prev) => ({
+        ...prev,
+        [vendorId]: {
+          ...prev[vendorId],
+          [field]: value,
+        },
+      }));
+
+      setDirtyFields((prev) => new Set([...prev, vendorId]));
+    },
+    []
+  );
+
+  // Bulk update handler for entire vendor settings
+  const handleVendorBulkChange = useCallback(
+    (vendorId: string, newSettings: Partial<VendorSettings>) => {
+      setVendorSettings((prev) => ({
+        ...prev,
+        [vendorId]: {
+          ...prev[vendorId],
+          ...newSettings,
+        },
+      }));
+
+      setDirtyFields((prev) => new Set([...prev, vendorId]));
+    },
+    []
+  );
+
+  // Save handler
+  const handleSave = useCallback(async () => {
+    if (dirtyFields.size === 0) {
+      toast({
+        title: 'No changes to save',
+        status: 'info',
+        duration: 2000,
+      });
+      return;
     }
-  };
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type='email'
-        value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        placeholder='Email'
-        required
-      />
-      <input
-        type='password'
-        value={formData.password}
-        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-        placeholder='Password'
-        required
-      />
-      <label>
-        <input
-          type='checkbox'
-          checked={formData.rememberMe}
-          onChange={(e) =>
-            setFormData({ ...formData, rememberMe: e.target.checked })
-          }
-        />
-        Remember Me
-      </label>
-      <button type='submit' disabled={loginMutation.isPending}>
-        {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
-      </button>
-      {loginMutation.error && <p>Error: {loginMutation.error.message}</p>}
-    </form>
-  );
-}
+    setIsSaving(true);
 
-// 6. useRegister - Handle user registration
-function RegisterForm() {
-  const registerMutation = useRegister({
-    onSuccess: () => {
-      alert(
-        'Registration successful! Please check your email for verification.'
+    try {
+      const vendorsToSave: VendorSavePayload[] = Array.from(dirtyFields).map(
+        (vendorId) => ({
+          id: vendorId,
+          settings: vendorSettings[vendorId],
+        })
       );
-    },
-  });
 
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+      await onSave(vendorsToSave);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await registerMutation.mutateAsync(formData);
-    } catch (error) {
-      console.error('Registration failed:', error);
-    }
-  };
+      // Clear dirty fields after successful save
+      setDirtyFields(new Set());
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type='text'
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        placeholder='Full Name'
-        required
-      />
-      <input
-        type='email'
-        value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        placeholder='Email'
-        required
-      />
-      <input
-        type='password'
-        value={formData.password}
-        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-        placeholder='Password'
-        required
-      />
-      <input
-        type='password'
-        value={formData.confirmPassword}
-        onChange={(e) =>
-          setFormData({ ...formData, confirmPassword: e.target.value })
-        }
-        placeholder='Confirm Password'
-        required
-      />
-      <button type='submit' disabled={registerMutation.isPending}>
-        {registerMutation.isPending ? 'Creating Account...' : 'Register'}
-      </button>
-    </form>
-  );
-}
-
-// 7. useRegisterVendor - Handle vendor registration
-function VendorRegisterForm() {
-  const registerVendorMutation = useRegisterVendor({
-    onSuccess: () => {
-      alert('Vendor registration successful! Please wait for approval.');
-    },
-  });
-
-  const handleSubmit = async (formData: any) => {
-    try {
-      await registerVendorMutation.mutateAsync(formData);
-    } catch (error) {
-      console.error('Vendor registration failed:', error);
-    }
-  };
-
-  return (
-    <div>
-      {/* Similar form structure as regular registration */}
-      <button
-        onClick={() =>
-          handleSubmit({
-            /* form data */
-          })
-        }
-      >
-        Register as Vendor
-      </button>
-    </div>
-  );
-}
-
-// 8. useLogout - Handle user logout
-function LogoutButton() {
-  const logoutMutation = useLogout({
-    onSuccess: () => {
-      console.log('Successfully logged out');
-    },
-  });
-
-  const handleLogout = async () => {
-    try {
-      await logoutMutation.mutateAsync();
-      // User will be redirected automatically
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  return (
-    <button onClick={handleLogout} disabled={logoutMutation.isPending}>
-      {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
-    </button>
-  );
-}
-
-// 9. useForgotPassword - Handle forgot password
-function ForgotPasswordForm() {
-  const forgotPasswordMutation = useForgotPassword({
-    onSuccess: () => {
-      alert('Password reset email sent! Check your inbox.');
-    },
-  });
-
-  const [email, setEmail] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await forgotPasswordMutation.mutateAsync(email);
-    } catch (error) {
-      console.error('Forgot password failed:', error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type='email'
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder='Enter your email'
-        required
-      />
-      <button type='submit' disabled={forgotPasswordMutation.isPending}>
-        {forgotPasswordMutation.isPending ? 'Sending...' : 'Send Reset Email'}
-      </button>
-    </form>
-  );
-}
-
-// 10. useResetPassword - Handle password reset
-function ResetPasswordForm({ token }: { token: string }) {
-  const resetPasswordMutation = useResetPassword({
-    onSuccess: () => {
-      alert('Password reset successful! You can now login.');
-    },
-  });
-
-  const [passwords, setPasswords] = useState({
-    password: '',
-    confirmPassword: '',
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await resetPasswordMutation.mutateAsync({
-        token,
-        ...passwords,
+      toast({
+        title: 'Settings saved successfully',
+        status: 'success',
+        duration: 3000,
       });
     } catch (error) {
-      console.error('Password reset failed:', error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type='password'
-        value={passwords.password}
-        onChange={(e) =>
-          setPasswords({ ...passwords, password: e.target.value })
-        }
-        placeholder='New Password'
-        required
-      />
-      <input
-        type='password'
-        value={passwords.confirmPassword}
-        onChange={(e) =>
-          setPasswords({ ...passwords, confirmPassword: e.target.value })
-        }
-        placeholder='Confirm New Password'
-        required
-      />
-      <button type='submit' disabled={resetPasswordMutation.isPending}>
-        Reset Password
-      </button>
-    </form>
-  );
-}
-
-// 11. useUpdateProfile - Update user profile
-function EditProfileForm() {
-  const updateProfileMutation = useUpdateProfile();
-  const { data: profile } = useProfile();
-
-  const [formData, setFormData] = useState({
-    name: profile?.user.name || '',
-    email: profile?.user.email || '',
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateProfileMutation.mutateAsync(formData);
-      alert('Profile updated successfully!');
-    } catch (error) {
-      console.error('Profile update failed:', error);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type='text'
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        placeholder='Name'
-      />
-      <input
-        type='email'
-        value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        placeholder='Email'
-      />
-      <button type='submit' disabled={updateProfileMutation.isPending}>
-        {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
-      </button>
-    </form>
-  );
-}
-
-// 12. useVerifyEmail - Verify user email
-function EmailVerificationHandler({ token }: { token: string }) {
-  const verifyEmailMutation = useVerifyEmail({
-    onSuccess: () => {
-      alert('Email verified successfully!');
-    },
-    onError: (error) => {
-      alert(`Verification failed: ${error.message}`);
-    },
-  });
-
-  useEffect(() => {
-    if (token) {
-      verifyEmailMutation.mutate(token);
-    }
-  }, [token]);
-
-  if (verifyEmailMutation.isPending) return <div>Verifying email...</div>;
-
-  return <div>Email verification complete</div>;
-}
-
-// 13. useUploadFile - Upload files
-function FileUploadForm() {
-  const uploadFileMutation = useUploadFile();
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const result = await uploadFileMutation.mutateAsync({
-        file,
-        endpoint: '/upload/avatar', // optional custom endpoint
+      toast({
+        title: 'Failed to save settings',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        status: 'error',
+        duration: 5000,
       });
-      console.log('File uploaded:', result);
-    } catch (error) {
-      console.error('Upload failed:', error);
+    } finally {
+      setIsSaving(false);
     }
-  };
+  }, [dirtyFields, vendorSettings, onSave, toast]);
 
-  return (
-    <div>
-      <input type='file' onChange={handleFileUpload} accept='image/*' />
-      {uploadFileMutation.isPending && <div>Uploading...</div>}
-    </div>
+  // Check if vendor has unsaved changes
+  const isVendorDirty = useCallback(
+    (vendorId: string): boolean => dirtyFields.has(vendorId),
+    [dirtyFields]
   );
-}
 
-// 14. useDeactivateUser - Deactivate a user
-function DeactivateUserButton({ userId }: { userId: string }) {
-  const deactivateUserMutation = useDeactivateUser();
+  // Reset specific vendor to original state
+  const handleResetVendor = useCallback(
+    (vendorId: string) => {
+      const originalVendor = vendors.find((v) => v.id === vendorId);
+      if (originalVendor) {
+        setVendorSettings((prev) => ({
+          ...prev,
+          [vendorId]: originalVendor.settings,
+        }));
 
-  const handleDeactivate = async () => {
-    if (confirm('Are you sure you want to deactivate this user?')) {
-      try {
-        await deactivateUserMutation.mutateAsync(userId);
-        alert('User deactivated successfully');
-      } catch (error) {
-        console.error('Deactivation failed:', error);
+        setDirtyFields((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(vendorId);
+          return newSet;
+        });
       }
-    }
+    },
+    [vendors]
+  );
+
+  return (
+    <Box>
+      <Accordion allowMultiple>
+        {vendors.map((vendor) => (
+          <AccordionItem key={vendor.id}>
+            <AccordionButton>
+              <Box flex='1' textAlign='left'>
+                <HStack>
+                  <span>{vendor.name}</span>
+                  {isVendorDirty(vendor.id) && (
+                    <Badge colorScheme='orange' size='sm'>
+                      Unsaved Changes
+                    </Badge>
+                  )}
+                </HStack>
+              </Box>
+              <AccordionIcon />
+            </AccordionButton>
+
+            <AccordionPanel pb={4}>
+              <VStack spacing={4} align='stretch'>
+                <FormControl>
+                  <FormLabel>API Key</FormLabel>
+                  <Input
+                    value={vendorSettings[vendor.id]?.apiKey || ''}
+                    onChange={(e) =>
+                      handleVendorChange(vendor.id, 'apiKey', e.target.value)
+                    }
+                    placeholder='Enter API key'
+                    type='password'
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Endpoint URL</FormLabel>
+                  <Input
+                    value={vendorSettings[vendor.id]?.endpoint || ''}
+                    onChange={(e) =>
+                      handleVendorChange(vendor.id, 'endpoint', e.target.value)
+                    }
+                    placeholder='https://api.example.com'
+                  />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Timeout (seconds)</FormLabel>
+                  <Input
+                    type='number'
+                    value={vendorSettings[vendor.id]?.timeout || 0}
+                    onChange={(e) =>
+                      handleVendorChange(
+                        vendor.id,
+                        'timeout',
+                        parseInt(e.target.value) || 0
+                      )
+                    }
+                    min='0'
+                  />
+                </FormControl>
+
+                <FormControl display='flex' alignItems='center'>
+                  <FormLabel mb='0'>Enable Vendor</FormLabel>
+                  <Switch
+                    isChecked={vendorSettings[vendor.id]?.isEnabled || false}
+                    onChange={(e) =>
+                      handleVendorChange(
+                        vendor.id,
+                        'isEnabled',
+                        e.target.checked
+                      )
+                    }
+                  />
+                </FormControl>
+
+                {isVendorDirty(vendor.id) && (
+                  <HStack justify='flex-end'>
+                    <Button
+                      size='sm'
+                      variant='ghost'
+                      onClick={() => handleResetVendor(vendor.id)}
+                    >
+                      Reset Changes
+                    </Button>
+                  </HStack>
+                )}
+              </VStack>
+            </AccordionPanel>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      <Box mt={6} textAlign='center'>
+        <Button
+          colorScheme='blue'
+          size='lg'
+          onClick={handleSave}
+          isLoading={isSaving}
+          loadingText='Saving...'
+          disabled={dirtyFields.size === 0}
+        >
+          Save All Changes ({dirtyFields.size})
+        </Button>
+      </Box>
+    </Box>
+  );
+};
+
+// Usage example
+const App: React.FC = () => {
+  const [vendors] = useState<Vendor[]>([
+    {
+      id: 'vendor-1',
+      name: 'Payment Gateway A',
+      settings: {
+        apiKey: '',
+        isEnabled: false,
+        endpoint: 'https://api.paymentgateway-a.com',
+        timeout: 30,
+      },
+    },
+    {
+      id: 'vendor-2',
+      name: 'Email Service B',
+      settings: {
+        apiKey: '',
+        isEnabled: true,
+        endpoint: 'https://api.emailservice-b.com',
+        timeout: 15,
+      },
+    },
+  ]);
+
+  const handleSaveVendors = async (
+    vendorsToSave: VendorSavePayload[]
+  ): Promise<void> => {
+    // Simulate API call
+    console.log('Saving vendors:', vendorsToSave);
+
+    // Replace with your actual API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Example API call:
+    // await fetch('/api/vendors/bulk-update', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ vendors: vendorsToSave })
+    // });
   };
 
   return (
-    <button
-      onClick={handleDeactivate}
-      disabled={deactivateUserMutation.isPending}
-      className='bg-red-500 text-white px-4 py-2 rounded'
-    >
-      {deactivateUserMutation.isPending ? 'Deactivating...' : 'Deactivate User'}
-    </button>
+    <VendorSettingsComponent vendors={vendors} onSave={handleSaveVendors} />
   );
+};
+
+export default App;
+
+import React, { useState, useCallback } from 'react';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Switch,
+  VStack,
+  HStack,
+  useToast,
+  Badge,
+} from '@chakra-ui/react';
+
+// Define your vendor setting types
+interface GeneralSettings {
+  companyName: string;
+  email: string;
+  phone: string;
+  isActive: boolean;
 }
 
-// 15. useActivateUser - Activate a user
-function ActivateUserButton({ userId }: { userId: string }) {
-  const activateUserMutation = useActivateUser();
+interface PaymentSettings {
+  paymentMethod: string;
+  accountNumber: string;
+  routingNumber: string;
+}
 
-  const handleActivate = async () => {
+interface NotificationSettings {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  pushNotifications: boolean;
+}
+
+interface VendorSettings {
+  general: GeneralSettings;
+  payment: PaymentSettings;
+  notifications: NotificationSettings;
+}
+
+const VendorSettingsAccordion: React.FC = () => {
+  const toast = useToast();
+
+  // Initial data
+  const [originalSettings] = useState<VendorSettings>({
+    general: {
+      companyName: 'ABC Corp',
+      email: 'contact@abc.com',
+      phone: '123-456-7890',
+      isActive: true,
+    },
+    payment: {
+      paymentMethod: 'Bank Transfer',
+      accountNumber: '1234567890',
+      routingNumber: '987654321',
+    },
+    notifications: {
+      emailNotifications: true,
+      smsNotifications: false,
+      pushNotifications: true,
+    },
+  });
+
+  // Current form data
+  const [settings, setSettings] = useState<VendorSettings>(originalSettings);
+
+  // Track which sections have changes
+  const [changedSections, setChangedSections] = useState<
+    Set<keyof VendorSettings>
+  >(new Set());
+
+  // Generic update function
+  const updateSetting = useCallback(
+    <T extends keyof VendorSettings>(
+      section: T,
+      field: keyof VendorSettings[T],
+      value: any
+    ) => {
+      setSettings((prev) => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [field]: value,
+        },
+      }));
+
+      // Mark section as changed
+      setChangedSections((prev) => new Set(prev).add(section));
+    },
+    []
+  );
+
+  // Check if there are any changes
+  const hasChanges = changedSections.size > 0;
+
+  // Save only changed sections
+  const handleSave = async () => {
+    if (!hasChanges) {
+      toast({
+        title: 'No changes to save',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     try {
-      await activateUserMutation.mutateAsync(userId);
-      alert('User activated successfully');
+      // Create payload with only changed sections
+      const changedData: Partial<VendorSettings> = {};
+      changedSections.forEach((section) => {
+        changedData[section] = settings[section];
+      });
+
+      console.log('Saving only changed sections:', changedData);
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Clear changed sections after successful save
+      setChangedSections(new Set());
+
+      toast({
+        title: 'Settings saved successfully',
+        description: `Updated ${changedSections.size} section(s)`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
     } catch (error) {
-      console.error('Activation failed:', error);
+      toast({
+        title: 'Failed to save settings',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
   return (
-    <button
-      onClick={handleActivate}
-      disabled={activateUserMutation.isPending}
-      className='bg-green-500 text-white px-4 py-2 rounded'
-    >
-      {activateUserMutation.isPending ? 'Activating...' : 'Activate User'}
-    </button>
+    <Box p={4} maxW='600px' mx='auto'>
+      <Accordion allowMultiple>
+        {/* General Settings */}
+        <AccordionItem>
+          <AccordionButton>
+            <Box flex='1' textAlign='left'>
+              <HStack>
+                <span>General Settings</span>
+                {changedSections.has('general') && (
+                  <Badge colorScheme='orange' size='sm'>
+                    Modified
+                  </Badge>
+                )}
+              </HStack>
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+          <AccordionPanel pb={4}>
+            <VStack spacing={4}>
+              <FormControl>
+                <FormLabel>Company Name</FormLabel>
+                <Input
+                  value={settings.general.companyName}
+                  onChange={(e) =>
+                    updateSetting('general', 'companyName', e.target.value)
+                  }
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  type='email'
+                  value={settings.general.email}
+                  onChange={(e) =>
+                    updateSetting('general', 'email', e.target.value)
+                  }
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Phone</FormLabel>
+                <Input
+                  value={settings.general.phone}
+                  onChange={(e) =>
+                    updateSetting('general', 'phone', e.target.value)
+                  }
+                />
+              </FormControl>
+              <FormControl>
+                <HStack>
+                  <FormLabel mb={0}>Active Status</FormLabel>
+                  <Switch
+                    isChecked={settings.general.isActive}
+                    onChange={(e) =>
+                      updateSetting('general', 'isActive', e.target.checked)
+                    }
+                  />
+                </HStack>
+              </FormControl>
+            </VStack>
+          </AccordionPanel>
+        </AccordionItem>
+
+        {/* Payment Settings */}
+        <AccordionItem>
+          <AccordionButton>
+            <Box flex='1' textAlign='left'>
+              <HStack>
+                <span>Payment Settings</span>
+                {changedSections.has('payment') && (
+                  <Badge colorScheme='orange' size='sm'>
+                    Modified
+                  </Badge>
+                )}
+              </HStack>
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+          <AccordionPanel pb={4}>
+            <VStack spacing={4}>
+              <FormControl>
+                <FormLabel>Payment Method</FormLabel>
+                <Input
+                  value={settings.payment.paymentMethod}
+                  onChange={(e) =>
+                    updateSetting('payment', 'paymentMethod', e.target.value)
+                  }
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Account Number</FormLabel>
+                <Input
+                  value={settings.payment.accountNumber}
+                  onChange={(e) =>
+                    updateSetting('payment', 'accountNumber', e.target.value)
+                  }
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Routing Number</FormLabel>
+                <Input
+                  value={settings.payment.routingNumber}
+                  onChange={(e) =>
+                    updateSetting('payment', 'routingNumber', e.target.value)
+                  }
+                />
+              </FormControl>
+            </VStack>
+          </AccordionPanel>
+        </AccordionItem>
+
+        {/* Notification Settings */}
+        <AccordionItem>
+          <AccordionButton>
+            <Box flex='1' textAlign='left'>
+              <HStack>
+                <span>Notification Settings</span>
+                {changedSections.has('notifications') && (
+                  <Badge colorScheme='orange' size='sm'>
+                    Modified
+                  </Badge>
+                )}
+              </HStack>
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+          <AccordionPanel pb={4}>
+            <VStack spacing={4}>
+              <FormControl>
+                <HStack>
+                  <FormLabel mb={0}>Email Notifications</FormLabel>
+                  <Switch
+                    isChecked={settings.notifications.emailNotifications}
+                    onChange={(e) =>
+                      updateSetting(
+                        'notifications',
+                        'emailNotifications',
+                        e.target.checked
+                      )
+                    }
+                  />
+                </HStack>
+              </FormControl>
+              <FormControl>
+                <HStack>
+                  <FormLabel mb={0}>SMS Notifications</FormLabel>
+                  <Switch
+                    isChecked={settings.notifications.smsNotifications}
+                    onChange={(e) =>
+                      updateSetting(
+                        'notifications',
+                        'smsNotifications',
+                        e.target.checked
+                      )
+                    }
+                  />
+                </HStack>
+              </FormControl>
+              <FormControl>
+                <HStack>
+                  <FormLabel mb={0}>Push Notifications</FormLabel>
+                  <Switch
+                    isChecked={settings.notifications.pushNotifications}
+                    onChange={(e) =>
+                      updateSetting(
+                        'notifications',
+                        'pushNotifications',
+                        e.target.checked
+                      )
+                    }
+                  />
+                </HStack>
+              </FormControl>
+            </VStack>
+          </AccordionPanel>
+        </AccordionItem>
+      </Accordion>
+
+      {/* Single Save Button */}
+      <Box mt={6} textAlign='center'>
+        <Button
+          colorScheme={hasChanges ? 'blue' : 'gray'}
+          size='lg'
+          onClick={handleSave}
+          isDisabled={!hasChanges}
+        >
+          Save Changes{' '}
+          {hasChanges &&
+            `(${changedSections.size} section${
+              changedSections.size > 1 ? 's' : ''
+            })`}
+        </Button>
+      </Box>
+    </Box>
   );
-}
+};
 
-// 16. useInvalidateUserTokens - Force logout user by invalidating tokens
-function InvalidateTokensButton({ userId }: { userId: string }) {
-  const invalidateTokensMutation = useInvalidateUserTokens();
-
-  const handleInvalidateTokens = async () => {
-    if (confirm('This will force the user to login again. Continue?')) {
-      try {
-        await invalidateTokensMutation.mutateAsync(userId);
-        alert('User tokens invalidated successfully');
-      } catch (error) {
-        console.error('Token invalidation failed:', error);
-      }
-    }
-  };
-
-  return (
-    <button
-      onClick={handleInvalidateTokens}
-      disabled={invalidateTokensMutation.isPending}
-      className='bg-orange-500 text-white px-4 py-2 rounded'
-    >
-      {invalidateTokensMutation.isPending ? 'Invalidating...' : 'Force Logout'}
-    </button>
-  );
-}
-
-// ====================
-// UTILITY HOOKS USAGE
-// ====================
-
-// 17. useCurrentUser - Get current logged-in user
-function UserGreeting() {
-  const currentUser = useCurrentUser();
-
-  if (!currentUser) return <div>Not logged in</div>;
-
-  return <div>Hello, {currentUser.name}!</div>;
-}
-
-// 18. useProfileCompletion - Get profile completion percentage
-function ProfileCompletionBar() {
-  const profileCompletion = useProfileCompletion();
-
-  return (
-    <div>
-      <div>Profile Completion: {profileCompletion}%</div>
-      <div className='w-full bg-gray-200 rounded-full h-2'>
-        <div
-          className='bg-blue-600 h-2 rounded-full'
-          style={{ width: `${profileCompletion}%` }}
-        ></div>
-      </div>
-    </div>
-  );
-}
-
-// 19. useIsAuthenticated - Check if user is authenticated
-function AuthStatus() {
-  const { isAuthenticated, isLoading } = useIsAuthenticated();
-
-  if (isLoading) return <div>Checking authentication...</div>;
-
-  return <div>Status: {isAuthenticated ? 'Logged In' : 'Not Logged In'}</div>;
-}
-
-// 20. useCanPerformAction - Check if user can perform specific action
-function AdminPanel() {
-  const canManageUsers = useCanPerformAction('MANAGE_USERS');
-  const canViewReports = useCanPerformAction('VIEW_REPORTS');
-
-  return (
-    <div>
-      {canManageUsers && <button>Manage Users</button>}
-      {canViewReports && <button>View Reports</button>}
-      {!canManageUsers && !canViewReports && (
-        <div>You don't have admin permissions</div>
-      )}
-    </div>
-  );
-}
-
-// 21. useHasAnyRole - Check if user has any of the specified roles
-function RoleBasedContent() {
-  const hasAdminOrVendorRole = useHasAnyRole(['ADMIN', 'VENDOR']);
-
-  if (!hasAdminOrVendorRole) {
-    return <div>This content is restricted</div>;
-  }
-
-  return <div>Welcome to the admin/vendor area!</div>;
-}
-
-// 22. useIsAdmin - Check if user is admin
-function AdminOnlyButton() {
-  const isAdmin = useIsAdmin();
-
-  if (!isAdmin) return null;
-
-  return <button>Admin Only Action</button>;
-}
-
-// 23. useCanManageUser - Check management permissions for specific user
-function UserManagementButtons({ userId }: { userId: string }) {
-  const { canDeactivate, canActivate, canInvalidateTokens, canViewStatus } =
-    useCanManageUser(userId);
-
-  return (
-    <div>
-      {canViewStatus && <UserStatusCard userId={userId} />}
-      {canDeactivate && <DeactivateUserButton userId={userId} />}
-      {canActivate && <ActivateUserButton userId={userId} />}
-      {canInvalidateTokens && <InvalidateTokensButton userId={userId} />}
-    </div>
-  );
-}
-
-// 24. useUserActivityStatus - Get user activity status
-function UserActivityIndicator({ userId }: { userId: string }) {
-  const { isActive, isEmailVerified, tokenVersion, lastUpdated } =
-    useUserActivityStatus(userId);
-
-  return (
-    <div className='p-4 border rounded'>
-      <div
-        className={`inline-block w-3 h-3 rounded-full ${
-          isActive ? 'bg-green-500' : 'bg-red-500'
-        }`}
-      ></div>
-      <span className='ml-2'>{isActive ? 'Active' : 'Inactive'}</span>
-
-      {isEmailVerified ? (
-        <div className='text-green-600'>✓ Email Verified</div>
-      ) : (
-        <div className='text-red-600'>✗ Email Not Verified</div>
-      )}
-
-      <div className='text-sm text-gray-500'>
-        Token Version: {tokenVersion}
-        {lastUpdated && (
-          <div>Last Updated: {new Date(lastUpdated).toLocaleDateString()}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// 25. useGoogleLogin - Handle Google OAuth login
-function GoogleLoginButton() {
-  const googleLoginMutation = useGoogleLogin();
-
-  const handleGoogleLogin = () => {
-    googleLoginMutation.mutate();
-  };
-
-  return (
-    <button
-      onClick={handleGoogleLogin}
-      disabled={googleLoginMutation.isPending}
-      className='bg-red-500 text-white px-4 py-2 rounded'
-    >
-      {googleLoginMutation.isPending ? 'Redirecting...' : 'Login with Google'}
-    </button>
-  );
-}
-
-// ====================
-// COMPLETE USAGE EXAMPLE
-// ====================
-
-function CompleteUserManagement() {
-  // Using multiple hooks together
-  const { data: users, isLoading } = useUsers({ page: 1, limit: 10 });
-  const currentUser = useCurrentUser();
-  const isAdmin = useIsAdmin();
-  const deactivateUser = useDeactivateUser();
-  const activateUser = useActivateUser();
-
-  if (isLoading) return <div>Loading...</div>;
-
-  return (
-    <div>
-      <h1>User Management</h1>
-      <p>
-        Logged in as: {currentUser?.name} ({currentUser?.role})
-      </p>
-
-      {isAdmin ? (
-        <div>
-          <h2>All Users ({users?.total})</h2>
-          {users?.users.map((user) => (
-            <div key={user._id} className='border p-4 mb-2'>
-              <div>
-                {user.name} - {user.email}
-              </div>
-              <UserActivityIndicator userId={user._id} />
-              <UserManagementButtons userId={user._id} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div>You need admin privileges to view this page</div>
-      )}
-    </div>
-  );
-}
+export default VendorSettingsAccordion;

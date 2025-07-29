@@ -1,382 +1,388 @@
-// components/auth/LoginForm.js
-import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+// contexts/VendorSettingsContext.tsx
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
-const LoginForm = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const { login, loading, error } = useAuth();
-  const navigate = useNavigate();
+export interface SettingsData {
+  general?: any;
+  location?: any;
+  payment?: any;
+  shipping?: any;
+  seo?: any;
+  policies?: any;
+  support?: any;
+  hours?: any;
+}
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await login(formData);
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Login failed:', error);
-    }
-  };
+interface VendorSettingsContextType {
+  settingsData: SettingsData;
+  changedSections: Set<keyof SettingsData>;
+  updateSettings: <T extends keyof SettingsData>(section: T, data: SettingsData[T]) => void;
+  hasChanges: boolean;
+  saveAllSettings: () => Promise<void>;
+  resetChanges: () => void;
+}
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Email</label>
-        <input
-          type="email"
-          required
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Password</label>
-        <input
-          type="password"
-          required
-          value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
-      </div>
+const VendorSettingsContext = createContext<VendorSettingsContextType | undefined>(undefined);
 
-      {error && (
-        <div className="text-red-600 text-sm">{error}</div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? 'Logging in...' : 'Login'}
-      </button>
-    </form>
-  );
+export const useVendorSettings = () => {
+  const context = useContext(VendorSettingsContext);
+  if (!context) {
+    throw new Error('useVendorSettings must be used within VendorSettingsProvider');
+  }
+  return context;
 };
 
-// components/vendor/VendorRegistrationForm.js
-import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+interface VendorSettingsProviderProps {
+  children: ReactNode;
+  initialData?: SettingsData;
+}
 
-const VendorRegistrationForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    phone: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: ''
-    }
-  });
-  
-  const { register, loading, error } = useAuth();
-  const navigate = useNavigate();
+export const VendorSettingsProvider: React.FC<VendorSettingsProviderProps> = ({ 
+  children, 
+  initialData = {} 
+}) => {
+  const [settingsData, setSettingsData] = useState<SettingsData>(initialData);
+  const [changedSections, setChangedSections] = useState<Set<keyof SettingsData>>(new Set());
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await register(formData, true); // isVendor = true
-      navigate('/vendor/verify-email');
-    } catch (error) {
-      console.error('Vendor registration failed:', error);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const updateSettings = useCallback(<T extends keyof SettingsData>(
+    section: T, 
+    data: SettingsData[T]
+  ) => {
+    setSettingsData(prev => ({
+      ...prev,
+      [section]: data
+    }));
     
-    if (name.includes('address.')) {
-      const addressField = name.split('.')[1];
-      setFormData({
-        ...formData,
-        address: { ...formData.address, [addressField]: value }
+    setChangedSections(prev => new Set(prev).add(section));
+  }, []);
+
+  const hasChanges = changedSections.size > 0;
+
+  const saveAllSettings = useCallback(async () => {
+    if (!hasChanges) return;
+
+    try {
+      // Create payload with only changed sections
+      const changedData: Partial<SettingsData> = {};
+      changedSections.forEach(section => {
+        if (settingsData[section]) {
+          changedData[section] = settingsData[section];
+        }
       });
-    } else {
-      setFormData({ ...formData, [name]: value });
+
+      console.log('Saving changed sections:', changedData);
+      
+      // Replace with your actual API call
+      const response = await fetch('/api/vendor/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changedData)
+      });
+
+      if (!response.ok) throw new Error('Save failed');
+
+      // Clear changed sections after successful save
+      setChangedSections(new Set());
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      throw error;
+    }
+  }, [settingsData, changedSections, hasChanges]);
+
+  const resetChanges = useCallback(() => {
+    setChangedSections(new Set());
+  }, []);
+
+  return (
+    <VendorSettingsContext.Provider value={{
+      settingsData,
+      changedSections,
+      updateSettings,
+      hasChanges,
+      saveAllSettings,
+      resetChanges
+    }}>
+      {children}
+    </VendorSettingsContext.Provider>
+  );
+};
+
+// Updated Setting Component
+import React, { useState } from 'react';
+import {
+  Box,
+  Flex,
+  Button,
+  Stack,
+  Text,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  useToast,
+  Badge,
+  HStack,
+} from '@chakra-ui/react';
+import {
+  CircleArrowRight,
+  SquareDashedBottomCode,
+  ShoppingBasket,
+  Globe,
+  ThumbsUp,
+  Truck,
+  Users,
+  Ambulance,
+} from 'lucide-react';
+import ProfileProgress from '@/components/ui/ProfileProgress';
+import GeneralSetting from '@/components/VendorManagement/StoreSettings/GeneralSetting';
+import StoreLocation from '@/components/VendorManagement/StoreSettings/StoreLocation';
+import PaymentSetting from '@/components/VendorManagement/StoreSettings/PaymentSetting';
+import ShippingSetting from '@/components/VendorManagement/StoreSettings/ShippingSetting';
+import SEOSetting from '@/components/VendorManagement/StoreSettings/SEOSetting';
+import StorePolicies from '@/components/VendorManagement/StoreSettings/StorePolicies';
+import CustomerSupport from '@/components/VendorManagement/StoreSettings/CustomerSupport';
+import StoreHours from '@/components/VendorManagement/StoreSettings/StoreHours';
+import { useVendorProfile } from '@/context/VendorContextService';
+import { VendorSettingsProvider, useVendorSettings } from '@/contexts/VendorSettingsContext';
+
+const tabName = [
+  { name: 'Store', icon: ShoppingBasket, key: 'general' },
+  { name: 'Location', icon: Globe, key: 'location' },
+  { name: 'Payment', icon: SquareDashedBottomCode, key: 'payment' },
+  { name: 'Shipping', icon: Truck, key: 'shipping' },
+  { name: 'SEO', icon: Globe, key: 'seo' },
+  { name: 'Store Policies', icon: Ambulance, key: 'policies' },
+  { name: 'Customer Support', icon: ThumbsUp, key: 'support' },
+  { name: 'Store Hours', icon: ShoppingBasket, key: 'hours' },
+];
+
+const SettingContent: React.FC = () => {
+  const [activeTab, setActiveTab] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const { data } = useVendorProfile();
+  const { hasChanges, saveAllSettings, changedSections } = useVendorSettings();
+  const toast = useToast();
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      await saveAllSettings();
+      toast({
+        title: 'Settings saved successfully',
+        description: `Updated ${changedSections.size} section(s)`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: 'Failed to save settings',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Name</label>
-          <input
-            type="text"
-            name="name"
-            required
-            value={formData.name}
-            onChange={handleInputChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <input
-            type="email"
-            name="email"
-            required
-            value={formData.email}
-            onChange={handleInputChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-          />
-        </div>
-      </div>
+    <Box>
+      <Flex bg='white' align='center' justify='space-between' h={20} p={3}>
+        <Text fontSize='xl' fontWeight='bold' fontFamily='cursive'>
+          Store Settings
+        </Text>
+        <Button
+          leftIcon={<Users />}
+          bg='#203a43'
+          colorScheme='teal'
+          variant='solid'
+        >
+          Social
+        </Button>
+      </Flex>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Password</label>
-        <input
-          type="password"
-          name="password"
-          required
-          value={formData.password}
-          onChange={handleInputChange}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
-      </div>
+      <ProfileProgress
+        percentage={data?.profileCompletion}
+        remainingFields={[]}
+      />
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Phone</label>
-        <input
-          type="tel"
-          name="phone"
-          value={formData.phone}
-          onChange={handleInputChange}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
-      </div>
+      <Stack>
+        <Tabs
+          display={{ base: 'none', md: 'block' }}
+          isFitted
+          variant='enclosed'
+          bg='white'
+          onChange={(index) => setActiveTab(index)}
+          index={activeTab}
+        >
+          <Flex gap={6}>
+            <TabList
+              display='flex'
+              flexDirection='column'
+              gap={3}
+              w='25%'
+              maxH='fit-content'
+              mb='1em'
+              bg='#203a43'
+              color='white'
+            >
+              {tabName.map((tab, idx) => {
+                const Icon = tab.icon;
+                const hasChangesInSection = changedSections.has(tab.key as any);
+                return (
+                  <Tab
+                    display='flex'
+                    justifyContent='space-between'
+                    border='none'
+                    borderBottom='2px solid white'
+                    maxH='12'
+                    key={idx}
+                  >
+                    <Flex align='center' gap={2}>
+                      <Icon size={16} />
+                      <Text>{tab.name}</Text>
+                      {hasChangesInSection && (
+                        <Badge colorScheme="orange" size="sm">●</Badge>
+                      )}
+                    </Flex>
+                    {activeTab === idx && <CircleArrowRight size={16} />}
+                  </Tab>
+                );
+              })}
+            </TabList>
+            <TabPanels>
+              <TabPanel><GeneralSetting /></TabPanel>
+              <TabPanel><StoreLocation /></TabPanel>
+              <TabPanel><PaymentSetting /></TabPanel>
+              <TabPanel><ShippingSetting /></TabPanel>
+              <TabPanel><SEOSetting /></TabPanel>
+              <TabPanel><StorePolicies /></TabPanel>
+              <TabPanel><CustomerSupport /></TabPanel>
+              <TabPanel><StoreHours /></TabPanel>
+            </TabPanels>
+          </Flex>
+        </Tabs>
 
-      <div className="space-y-2">
-        <h3 className="text-lg font-medium">Address</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Street</label>
-            <input
-              type="text"
-              name="address.street"
-              value={formData.address.street}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">City</label>
-            <input
-              type="text"
-              name="address.city"
-              value={formData.address.city}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">State</label>
-            <input
-              type="text"
-              name="address.state"
-              value={formData.address.state}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Zip Code</label>
-            <input
-              type="text"
-              name="address.zipCode"
-              value={formData.address.zipCode}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        </div>
-      </div>
-
-      {error && (
-        <div className="text-red-600 text-sm">{error}</div>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:opacity-50"
-      >
-        {loading ? 'Creating Account...' : 'Register as Vendor'}
-      </button>
-    </form>
+        {/**Mobile View */}
+        <Accordion display={{ base: 'block', md: 'none' }}>
+          {tabName.map((tab, idx) => {
+            const hasChangesInSection = changedSections.has(tab.key as any);
+            return (
+              <AccordionItem key={idx}>
+                <h2>
+                  <AccordionButton
+                    bg='#203a43'
+                    _hover={{ bg: 'teal' }}
+                    borderBottom='2px solid white'
+                  >
+                    <HStack flex='1' textAlign='left' color='white'>
+                      <Text>{tab.name}</Text>
+                      {hasChangesInSection && (
+                        <Badge colorScheme="orange" size="sm">Modified</Badge>
+                      )}
+                    </HStack>
+                  </AccordionButton>
+                </h2>
+                <AccordionPanel pb={4}>
+                  {idx === 0 && <GeneralSetting />}
+                  {idx === 1 && <StoreLocation />}
+                  {idx === 2 && <PaymentSetting />}
+                  {idx === 3 && <ShippingSetting />}
+                  {idx === 4 && <SEOSetting />}
+                  {idx === 5 && <StorePolicies />}
+                  {idx === 6 && <CustomerSupport />}
+                  {idx === 7 && <StoreHours />}
+                </AccordionPanel>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      </Stack>
+      
+      <Box float='right' my={6}>
+        <Button 
+          bg={hasChanges ? '#203a43' : 'gray.400'}
+          colorScheme='teal'
+          isDisabled={!hasChanges}
+          isLoading={isLoading}
+          onClick={handleSave}
+        >
+          SAVE {hasChanges && `(${changedSections.size})`}
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
-// components/vendor/VendorProfileForm.js
-import React, { useState, useEffect } from 'react';
-import { useVendor } from '../../contexts/VendorContext';
+export default function Setting() {
+  return (
+    <VendorSettingsProvider>
+      <SettingContent />
+    </VendorSettingsProvider>
+  );
+}
 
-const VendorProfileForm = () => {
-  const { profile, saveVendorProfile, loading, error } = useVendor();
-  const [formData, setFormData] = useState({
-    businessName: '',
-    businessType: 'company',
-    taxId: '',
-    businessRegistrationNumber: '',
-    businessAddress: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: ''
-    },
-    businessPhone: '',
-    businessEmail: '',
-    bankDetails: {
-      accountName: '',
-      accountNumber: '',
-      bankName: '',
-      routingNumber: ''
-    },
-    paymentTerms: 'net30',
+// Example of how to update one of your setting components
+// components/VendorManagement/StoreSettings/GeneralSetting.tsx
+import React, { useState, useEffect } from 'react';
+import { useVendorSettings } from '@/contexts/VendorSettingsContext';
+import { Box, FormControl, FormLabel, Input, VStack } from '@chakra-ui/react';
+
+interface GeneralSettingsData {
+  storeName: string;
+  storeDescription: string;
+  contactEmail: string;
+  // ... other fields
+}
+
+const GeneralSetting: React.FC = () => {
+  const { settingsData, updateSettings } = useVendorSettings();
+  const [formData, setFormData] = useState<GeneralSettingsData>({
     storeName: '',
     storeDescription: '',
-    businessHours: [
-      { day: 'monday', isOpen: true, openTime: '09:00', closeTime: '17:00' },
-      { day: 'tuesday', isOpen: true, openTime: '09:00', closeTime: '17:00' },
-      { day: 'wednesday', isOpen: true, openTime: '09:00', closeTime: '17:00' },
-      { day: 'thursday', isOpen: true, openTime: '09:00', closeTime: '17:00' },
-      { day: 'friday', isOpen: true, openTime: '09:00', closeTime: '17:00' },
-      { day: 'saturday', isOpen: false, openTime: '09:00', closeTime: '17:00' },
-      { day: 'sunday', isOpen: false, openTime: '09:00', closeTime: '17:00' }
-    ]
+    contactEmail: '',
+    // Initialize with current data or defaults
+    ...settingsData.general
   });
 
-  useEffect(() => {
-    if (profile) {
-      setFormData({ ...formData, ...profile });
-    }
-  }, [profile]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await saveVendorProfile(formData);
-      alert('Profile saved successfully!');
-    } catch (error) {
-      console.error('Failed to save profile:', error);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData({
-        ...formData,
-        [parent]: { ...formData[parent], [child]: value }
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
-  const handleBusinessHoursChange = (index, field, value) => {
-    const updatedHours = [...formData.businessHours];
-    updatedHours[index] = { ...updatedHours[index], [field]: value };
-    setFormData({ ...formData, businessHours: updatedHours });
+  // Update context whenever form data changes
+  const handleFieldChange = (field: keyof GeneralSettingsData, value: string) => {
+    const newData = { ...formData, [field]: value };
+    setFormData(newData);
+    updateSettings('general', newData);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Business Information */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Business Information</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Business Name</label>
-            <input
-              type="text"
-              name="businessName"
-              required
-              value={formData.businessName}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Business Type</label>
-            <select
-              name="businessType"
-              value={formData.businessType}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            >
-              <option value="individual">Individual</option>
-              <option value="company">Company</option>
-              <option value="partnership">Partnership</option>
-              <option value="corporation">Corporation</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Store Information */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Store Information</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Store Name</label>
-            <input
-              type="text"
-              name="storeName"
-              value={formData.storeName}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">Store Description</label>
-            <textarea
-              name="storeDescription"
-              rows="3"
-              value={formData.storeDescription}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Business Hours */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Business Hours</h3>
-        
-        <div className="space-y-2">
-          {formData.businessHours.map((hour, index) => (
-            <div key={hour.day} className="flex items-center space-x-4">
-              <div className="w-20 capitalize">{hour.day}</div>
-              <input
-                type="checkbox"
-                checked={hour.isOpen}
-                onChange={(e) => handleBusinessHoursChange(index, 'isOpen', e.target.checked)}
-                className="rounded"
-              />
-              <span className="text-sm">Open</span>
-              {hour.isOpen && (
-                <>
-                  <input
-                    type="time"
-                    value={hour.open
+    <VStack spacing={4}>
+      <FormControl>
+        <FormLabel>Store Name</FormLabel>
+        <Input
+          value={formData.storeName}
+          onChange={(e) => handleFieldChange('storeName', e.target.value)}
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Store Description</FormLabel>
+        <Input
+          value={formData.storeDescription}
+          onChange={(e) => handleFieldChange('storeDescription', e.target.value)}
+        />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Contact Email</FormLabel>
+        <Input
+          type="email"
+          value={formData.contactEmail}
+          onChange={(e) => handleFieldChange('contactEmail', e.target.value)}
+        />
+      </FormControl>
+    </VStack>
+  );
+};

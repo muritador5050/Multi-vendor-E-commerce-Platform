@@ -5,8 +5,10 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 
-// Public route to get all verified vendors
+// Public routes
 router.get('/', asyncHandler(VendorController.getAllVendors));
+router.get('/top', asyncHandler(VendorController.getTopVendors));
+router.get('/:id', asyncHandler(VendorController.getVendorById));
 
 // Vendor profile routes
 router
@@ -19,14 +21,15 @@ router
   .post(
     authenticate,
     checkRole('vendor', 'create'),
-    asyncHandler(VendorController.upsertVendorProfile)
+    asyncHandler(VendorController.updateVendorData)
   )
   .put(
     authenticate,
     checkRole('vendor', 'edit'),
-    asyncHandler(VendorController.upsertVendorProfile)
+    asyncHandler(VendorController.updateVendorData)
   );
 
+// Profile completion
 router.get(
   '/profile/completion',
   authenticate,
@@ -34,21 +37,21 @@ router.get(
   asyncHandler(VendorController.getProfileCompletion)
 );
 
-router.get(
-  '/top',
+// Settings management
+router.put(
+  '/settings/:settingType',
   authenticate,
-  checkRole('admin', 'read'),
-  asyncHandler(VendorController.getTopVendors)
+  checkRole('vendor', 'edit'),
+  asyncHandler(VendorController.updateSettings)
 );
 
-// Document management routes
-router
-  .route('/documents')
-  .post(
-    authenticate,
-    checkRole('vendor', 'create'),
-    asyncHandler(VendorController.manageDocuments)
-  );
+// Document management routes - CORRECTED
+router.post(
+  '/documents',
+  authenticate,
+  checkRole('vendor', 'create'),
+  asyncHandler(VendorController.manageDocuments)
+);
 
 router.delete(
   '/documents/:documentId',
@@ -63,13 +66,6 @@ router.get(
   authenticate,
   checkRole('admin', 'read'),
   asyncHandler(VendorController.getVendorsForAdmin)
-);
-
-router.put(
-  '/admin/verify/:id',
-  authenticate,
-  checkRole('admin', 'edit'),
-  asyncHandler(VendorController.updateVendorVerificationStatus)
 );
 
 // Account status toggle
@@ -87,12 +83,11 @@ router.put(
   asyncHandler(VendorController.toggleAccountStatus)
 );
 
-// Settings management
 router.put(
-  '/settings/:settingType',
+  '/admin/verify/:id',
   authenticate,
-  checkRole('vendor', 'edit'),
-  asyncHandler(VendorController.updateSettings)
+  checkRole('admin', 'edit'),
+  asyncHandler(VendorController.updateVendorVerificationStatus)
 );
 
 // Statistics routes
@@ -105,7 +100,5 @@ router.get(
   },
   asyncHandler(VendorController.getStatistics)
 );
-
-router.get('/:id', asyncHandler(VendorController.getVendorById));
 
 module.exports = router;

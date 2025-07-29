@@ -3,338 +3,568 @@ const User = require('../models/user.model');
 const EmailService = require('../services/emailService');
 
 class VendorController {
-  static async upsertVendorProfile(req, res) {
+  static async updateVendorData(req, res) {
     const user = await User.findById(req.user.id);
     if (!user || user.role !== 'vendor') {
       return res.status(403).json({
-        message: 'Only users with vendor role can create vendor profiles',
+        message: 'Only users with vendor role can update vendor data',
       });
     }
 
-    const vendor = await Vendor.findOneAndUpdate(
-      { user: req.user.id },
-      { user: req.user.id, ...req.body },
-      { new: true, upsert: true, runValidators: true }
-    ).populate('user', '-password -refreshToken -tokenVersion -_v');
+    try {
+      let vendor = await Vendor.findOne({ user: req.user.id });
+      if (!vendor) {
+        vendor = new Vendor({ user: req.user.id, ...req.body });
+        await vendor.save();
 
-    const isNewVendor =
-      !vendor.createdAt ||
-      vendor.createdAt.getTime() === vendor.updatedAt.getTime();
+        return res.status(201).json({
+          success: true,
+          message: 'Vendor profile created successfully',
+          data: {
+            ...vendor.toObject(),
+            profileCompletion: vendor.calculateProfileCompletion(),
+          },
+        });
+      }
 
-    res.status(isNewVendor ? 201 : 200).json({
-      message: `Vendor profile ${
-        isNewVendor ? 'created' : 'updated'
-      } successfully`,
-      data: {
-        ...vendor.toObject(),
-        profileCompletion: vendor.calculateProfileCompletion(),
-      },
-    });
+      // Update existing vendor
+      Object.assign(vendor, req.body);
+      await vendor.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Vendor profile updated successfully',
+        data: {
+          ...vendor.toObject(),
+          profileCompletion: vendor.calculateProfileCompletion(),
+        },
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: 'Error updating vendor data',
+        error: error.message,
+      });
+    }
+  }
+
+  // Update specific settings category
+  static async updateSettings(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ user: req.user.id });
+
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      const { settingType } = req.params;
+      const settingData = req.body;
+
+      await vendor.updateVendorSettings(settingType, settingData);
+
+      res.json({
+        success: true,
+        message: `${settingType} updated successfully`,
+        data: vendor[settingType],
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
 
   static async getVendorProfile(req, res) {
-    const vendor = await Vendor.findByUserId(req.user.id);
+    try {
+      const vendor = await Vendor.findOne({ user: req.user.id }).populate(
+        'user',
+        '-password -refreshToken -tokenVersion'
+      );
 
-    if (!vendor) {
-      return res.status(404).json({
+      console.log('Profile', vendor);
+
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: {
+          ...vendor.toObject(),
+          profileCompletion: vendor.calculateProfileCompletion(),
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
-        message: 'Vendor profile not found',
+        message: 'Error retrieving vendor profile',
+        error: error.message,
       });
     }
-
-    if (vendor.user.role !== 'vendor') {
-      return res.status(403).json({
-        success: false,
-        message: 'Your role is not vendor',
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Profile retrieved successfully',
-      data: {
-        vendor,
-        profileCompletion: vendor.calculateProfileCompletion(),
-      },
-    });
   }
 
   static async getProfileCompletion(req, res) {
-    const vendor = await Vendor.findByUserId(req.user.id);
+    try {
+      const vendor = await Vendor.findOne({ user: req.user.id });
 
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      const completion = vendor.calculateProfileCompletion();
+
+      res.json({
+        success: true,
+        data: {
+          profileCompletion: completion,
+          isComplete: completion === 100,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error calculating profile completion',
+        error: error.message,
+      });
     }
-
-    const completion = vendor.calculateProfileCompletion();
-
-    res.json({
-      success: true,
-      data: {
-        profileCompletion: completion,
-        isComplete: completion === 100,
-      },
-    });
   }
 
   static async getVendorById(req, res) {
-    const vendor = await Vendor.findByIdentifier(req.params.id);
+    try {
+      const vendor = await Vendor.findByIdentifier(req.params.id);
 
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor not found' });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor not found',
+        });
+      }
+
+      res.json({
+        success: true,
+        data: vendor.getPublicFields(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving vendor',
+        error: error.message,
+      });
     }
-
-    res.json({
-      success: true,
-      data: vendor.getPublicFields(),
-    });
   }
 
   static async getAllVendors(req, res) {
-    const [vendors, count] = await Promise.all([
-      Vendor.find(),
-      Vendor.countDocuments(),
-    ]);
+    try {
+      const [vendors, count] = await Promise.all([
+        Vendor.find({ verificationStatus: 'verified' })
+          .populate('user', 'name email avatar')
+          .select(
+            'generalSettings storeAddress socialMedia storeHours rating reviewCount verificationStatus createdAt'
+          ),
+        Vendor.countDocuments({ verificationStatus: 'verified' }),
+      ]);
 
-    if (!vendors || vendors.length === 0) {
-      return res.status(404).json({
+      if (!vendors || vendors.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No verified vendors found',
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Vendors retrieved successfully',
+        data: {
+          vendors,
+          total: count,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
         success: false,
-        message: 'No verified vendors yet!',
+        message: 'Error retrieving vendors',
+        error: error.message,
       });
     }
-
-    res.json({
-      success: true,
-      message: 'Vendors retrieved successfully',
-      data: {
-        vendors,
-        total: count,
-      },
-    });
   }
 
   static async getTopVendors(req, res) {
-    const limit = parseInt(req.query.limit) || 10;
-    const sortBy = req.query.sortBy || 'rating';
+    try {
+      const limit = parseInt(req.query.limit) || 10;
+      const sortBy = req.query.sortBy || 'rating';
 
-    let sortCriteria;
-    switch (sortBy) {
-      case 'sales':
-        sortCriteria = { totalSales: -1, rating: -1 };
-        break;
-      case 'recent':
-        sortCriteria = { createdAt: -1, rating: -1 };
-        break;
-      default:
-        sortCriteria = { rating: -1, reviewCount: -1 };
-    }
+      let sortCriteria;
+      switch (sortBy) {
+        case 'sales':
+          sortCriteria = { totalRevenue: -1, rating: -1 };
+          break;
+        case 'recent':
+          sortCriteria = { createdAt: -1, rating: -1 };
+          break;
+        default:
+          sortCriteria = { rating: -1, reviewCount: -1 };
+      }
 
-    const topVendors = await Vendor.aggregate([
-      { $match: { isVerified: true } },
-      {
-        $addFields: {
-          topScore: {
-            $add: [
-              { $multiply: ['$rating', 0.4] },
-              { $multiply: [{ $divide: ['$totalSales', 1000] }, 0.3] },
-              { $multiply: [{ $divide: ['$reviewCount', 10] }, 0.3] },
-            ],
+      const topVendors = await Vendor.aggregate([
+        { $match: { verificationStatus: 'verified' } },
+        {
+          $addFields: {
+            topScore: {
+              $add: [
+                { $multiply: ['$rating', 0.4] },
+                { $multiply: [{ $divide: ['$totalRevenue', 1000] }, 0.3] },
+                { $multiply: [{ $divide: ['$reviewCount', 10] }, 0.3] },
+              ],
+            },
           },
         },
-      },
-      { $sort: sortCriteria },
-      { $limit: limit },
-      {
-        $project: {
-          name: 1,
-          email: 1,
-          rating: 1,
-          reviewCount: 1,
-          totalSales: 1,
-          createdAt: 1,
-          profileImage: 1,
-          topScore: 1,
-          isVerified: 1,
+        { $sort: sortCriteria },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'userDetails',
+          },
         },
-      },
-    ]);
+        {
+          $project: {
+            generalSettings: 1,
+            rating: 1,
+            reviewCount: 1,
+            totalRevenue: 1,
+            createdAt: 1,
+            topScore: 1,
+            verificationStatus: 1,
+            'userDetails.name': 1,
+            'userDetails.email': 1,
+            'userDetails.avatar': 1,
+          },
+        },
+      ]);
 
-    res.json({
-      success: true,
-      message: `Top vendors by ${sortBy} retrieved successfully`,
-      data: {
-        vendors: topVendors,
-        total: topVendors.length,
-      },
-    });
+      res.json({
+        success: true,
+        message: `Top vendors by ${sortBy} retrieved successfully`,
+        data: {
+          vendors: topVendors,
+          total: topVendors.length,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving top vendors',
+        error: error.message,
+      });
+    }
   }
 
+  // Admin-specific methods
   static async getVendorsForAdmin(req, res) {
     if (req.user.role !== 'admin') {
-      return res.status(401).json('You have no access to this page');
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Admin privileges required.',
+      });
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
 
-    const result = await Vendor.findWithPagination(req.query, { page, limit });
+      const filter = {};
 
-    if (!result) {
-      return res.status(404).json({ message: 'Vendors not found' });
+      // Add filters based on query parameters
+      if (req.query.verificationStatus) {
+        filter.verificationStatus = req.query.verificationStatus;
+      }
+      if (req.query.businessType) {
+        filter.businessType = req.query.businessType;
+      }
+      if (req.query.search) {
+        filter.$or = [
+          { businessName: { $regex: req.query.search, $options: 'i' } },
+          {
+            'generalSettings.storeName': {
+              $regex: req.query.search,
+              $options: 'i',
+            },
+          },
+        ];
+      }
+
+      const [vendors, total] = await Promise.all([
+        Vendor.find(filter)
+          .populate('user', 'name email avatar createdAt')
+          .skip(skip)
+          .limit(limit)
+          .sort({ createdAt: -1 }),
+        Vendor.countDocuments(filter),
+      ]);
+
+      res.json({
+        success: true,
+        message: 'Vendors retrieved successfully',
+        data: {
+          vendors,
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+          },
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving vendors for admin',
+        error: error.message,
+      });
     }
-    res.json({
-      success: true,
-      message: 'Vendors retrieved successfully',
-      data: result,
-    });
   }
 
   static async updateVendorVerificationStatus(req, res) {
-    const { status, notes } = req.body;
+    try {
+      const { status, notes } = req.body;
 
-    const vendor = await Vendor.updateVerificationStatus(
-      req.params.id,
-      status,
-      notes,
-      req.user.id
-    );
+      if (req.user.id && req.user.role !== 'admin') {
+        return res
+          .status(401)
+          .json({ success: false, message: 'Only admin can verify vendor' });
+      }
 
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor not found' });
+      const vendor = await Vendor.findByIdAndUpdate(
+        req.params.id,
+        {
+          verificationStatus: status,
+          verificationNotes: notes,
+          verifiedAt: status === 'verified' ? new Date() : null,
+          verifiedBy: req.user.id,
+        },
+        { new: true }
+      ).populate('user', 'name email');
+
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor not found',
+        });
+      }
+
+      // Send notification email
+      if (status === 'verified') {
+        await EmailService.sendVendorVerificationEmail(vendor.user, 'approved');
+      } else if (status === 'rejected') {
+        await EmailService.sendVendorVerificationEmail(
+          vendor.user,
+          'rejected',
+          notes
+        );
+      }
+
+      res.json({
+        success: true,
+        message: `Vendor ${status} successfully`,
+        data: vendor,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error updating verification status',
+        error: error.message,
+      });
     }
-
-    // Send notification email
-    if (status === 'verified') {
-      await EmailService.sendVendorVerificationEmail(vendor.user, 'approved');
-    } else if (status === 'rejected') {
-      await EmailService.sendVendorVerificationEmail(
-        vendor.user,
-        'rejected',
-        notes
-      );
-    }
-
-    res.json({
-      message: `Vendor ${status} successfully`,
-      data: { vendor },
-    });
   }
 
   static async manageDocuments(req, res) {
-    const vendor = await Vendor.findByUserId(req.user.id);
+    try {
+      const vendor = await Vendor.findOne({ user: req.user.id });
 
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      if (req.method === 'DELETE') {
+        vendor.verificationDocuments.pull(req.params.documentId);
+      } else {
+        vendor.verificationDocuments.push(...req.body.documents);
+      }
+
+      await vendor.save();
+
+      res.json({
+        success: true,
+        message: `Documents ${
+          req.method === 'DELETE' ? 'deleted' : 'uploaded'
+        } successfully`,
+        data: vendor.verificationDocuments,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error managing documents',
+        error: error.message,
+      });
     }
-
-    const action = req.method === 'DELETE' ? 'remove' : 'add';
-    const data =
-      req.method === 'DELETE'
-        ? { documentId: req.params.documentId }
-        : { documents: req.body.documents };
-
-    if (!data.documentId && !data.documents) {
-      return res.status(400).json({ message: 'Invalid request' });
-    }
-
-    await vendor.manageDocuments(action, data);
-
-    res.json({
-      message: `Documents ${
-        req.method === 'DELETE' ? 'deleted' : 'uploaded'
-      } successfully`,
-      data: {
-        vendor: vendor.verificationDocuments,
-      },
-    });
   }
 
   static async toggleAccountStatus(req, res) {
-    let targetUserId;
+    try {
+      let targetVendorId;
 
-    // Determine which vendor to toggle based on user role
-    if (req.user.role === 'admin') {
-      // Admins can toggle any vendor using req.params.id
-      targetUserId = req.params.id;
-      if (!targetUserId) {
-        return res.status(400).json({
-          message: 'Vendor ID is required for admin operations',
+      if (req.user.role === 'admin') {
+        targetVendorId = req.params.id;
+        if (!targetVendorId) {
+          return res.status(400).json({
+            success: false,
+            message: 'Vendor ID is required for admin operations',
+          });
+        }
+      } else if (req.user.role === 'vendor') {
+        const vendor = await Vendor.findOne({ user: req.user.id });
+        targetVendorId = vendor?._id;
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: 'Insufficient permissions to perform this action',
         });
       }
-    } else if (req.user.role === 'vendor') {
-      // Vendors can only toggle their own account
-      targetUserId = req.user.id;
-    } else {
-      return res.status(403).json({
-        message: 'Insufficient permissions to perform this action',
+
+      const vendor = await Vendor.findById(targetVendorId);
+
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      const isDeactivating = !vendor.deactivatedAt;
+
+      // Vendors can only deactivate their own account, not reactivate
+      if (req.user.role === 'vendor' && !isDeactivating) {
+        return res.status(403).json({
+          success: false,
+          message:
+            'Only admins can reactivate vendor accounts. Please contact support.',
+        });
+      }
+
+      if (isDeactivating) {
+        vendor.deactivationReason = req.body.reason;
+        vendor.deactivatedAt = new Date();
+      } else {
+        vendor.deactivationReason = undefined;
+        vendor.deactivatedAt = undefined;
+      }
+
+      await vendor.save();
+
+      res.json({
+        success: true,
+        message: `Vendor account ${
+          isDeactivating ? 'deactivated' : 'reactivated'
+        } successfully`,
+        data: {
+          deactivated: !!vendor.deactivatedAt,
+          deactivatedAt: vendor.deactivatedAt,
+          deactivationReason: vendor.deactivationReason,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error toggling account status',
+        error: error.message,
       });
     }
-
-    const vendor = await Vendor.findById(targetUserId);
-
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
-    }
-
-    const isDeactivating = !vendor.deactivatedAt;
-
-    // Vendors can only deactivate their own account, not reactivate
-    if (req.user.role === 'vendor' && !isDeactivating) {
-      return res.status(403).json({
-        message:
-          'Only admins can reactivate vendor accounts. Please contact support.',
-      });
-    }
-
-    await vendor.toggleStatus(req.body.reason);
-
-    res.json({
-      message: `Vendor account ${
-        isDeactivating ? 'deactivated' : 'reactivated'
-      } successfully`,
-      data: {
-        deactivated: !!vendor.deactivatedAt,
-        deactivatedAt: vendor.deactivatedAt,
-        deactivationReason: vendor.deactivationReason,
-      },
-    });
-  }
-
-  static async updateSettings(req, res) {
-    const vendor = await Vendor.findByUserId(req.user.id);
-
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
-    }
-
-    await vendor.updateSettings(
-      req.params.settingType,
-      req.body[req.params.settingType]
-    );
-
-    res.json({
-      message: `${req.params.settingType} updated successfully`,
-      data: {
-        vendor: vendor[req.params.settingType],
-      },
-    });
   }
 
   static async getStatistics(req, res) {
-    if (req.params.type === 'admin') {
-      const stats = await Vendor.getAdminStatistics();
-      return res.json({ success: true, data: stats });
-    }
+    try {
+      if (req.params.type === 'admin') {
+        const [
+          totalVendors,
+          verifiedVendors,
+          pendingVendors,
+          rejectedVendors,
+          revenueAggregate,
+          recentRegistrations,
+        ] = await Promise.all([
+          Vendor.countDocuments(),
+          Vendor.countDocuments({ verificationStatus: 'verified' }),
+          Vendor.countDocuments({ verificationStatus: 'pending' }),
+          Vendor.countDocuments({ verificationStatus: 'rejected' }),
+          Vendor.aggregate([
+            { $group: { _id: null, totalRevenue: { $sum: '$totalRevenue' } } },
+          ]),
+          Vendor.find()
+            .populate('user', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(5),
+        ]);
 
-    const vendor = await Vendor.findByUserId(req.user.id);
-    if (!vendor) {
-      return res.status(404).json({ message: 'Vendor profile not found' });
-    }
+        return res.json({
+          success: true,
+          data: {
+            totalVendors,
+            verifiedVendors,
+            pendingVendors,
+            rejectedVendors,
+            totalRevenue:
+              revenueAggregate.length > 0
+                ? revenueAggregate[0].totalRevenue
+                : 0,
+            recentRegistrations,
+          },
+        });
+      }
 
-    res.json({
-      success: true,
-      data: { vendor: vendor.getDashboardStats() },
-    });
+      // Vendor statistics
+      const vendor = await Vendor.findOne({ user: req.user.id });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          totalOrders: vendor.totalOrders || 0,
+          totalRevenue: vendor.totalRevenue || 0,
+          rating: vendor.rating || 0,
+          reviewCount: vendor.reviewCount || 0,
+          verificationStatus: vendor.verificationStatus,
+          profileCompletion: vendor.calculateProfileCompletion(),
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error retrieving statistics',
+        error: error.message,
+      });
+    }
   }
 }
 

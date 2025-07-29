@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box, Container } from '@chakra-ui/react';
-import DashboardHome from '../components/VendorManagement/dashboardHome';
 import Media from '../components/VendorManagement/media';
 import Articles from '../components/VendorManagement/articles';
 import Orders from '../components/VendorManagement/orders';
@@ -20,6 +19,7 @@ import Products from '../components/VendorManagement/Products';
 import StoreNavbar from '../components/VendorManagement/StoreNavbar';
 import StoreSidebar from '../components/VendorManagement/StoreSidebar';
 import CreateProductPage from '../components/VendorManagement/AddProduct';
+import VendorDashboard from '@/components/VendorManagement/VendorDashboard';
 
 export default function StoreManagerDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -40,7 +40,7 @@ export default function StoreManagerDashboard() {
         <Box ml={0} flex='1' transition='margin-left 0.3s ease-in'>
           <Container maxW='7xl' py={4}>
             <Routes>
-              <Route index element={<DashboardHome />} />
+              <Route index element={<VendorDashboard />} />
               <Route path='media' element={<Media />} />
               <Route path='articles' element={<Articles />} />
               <Route path='products' element={<Products />} />

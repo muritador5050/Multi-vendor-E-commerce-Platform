@@ -5,17 +5,10 @@ import {
   CardHeader,
   Heading,
   Text,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Flex,
-  HStack,
   Stack,
-  Stat,
   useColorModeValue,
   Button,
-  Skeleton,
   Badge,
   useToast,
   Divider,
@@ -24,10 +17,9 @@ import {
 } from '@chakra-ui/react';
 import { FiRefreshCw, FiUsers, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { UserTable } from './UserManagementDasboard/UserTable';
-import { useIsAdmin, useUsers } from '@/context/AuthContextService';
+import { useUsers } from '@/context/AuthContextService';
 
 export const CustomersContents = () => {
-  const isAdmin = useIsAdmin();
   const toast = useToast();
 
   // Responsive values
@@ -37,9 +29,8 @@ export const CustomersContents = () => {
   // Color mode values
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const cardBg = useColorModeValue('white', 'gray.700');
-  const statBg = useColorModeValue('gray.50', 'gray.800');
 
-  const { data, isLoading, error, refetch, isFetching } = useUsers();
+  const { data, refetch, isFetching } = useUsers();
 
   const users = data?.users;
   const pagination = data?.pagination || {
@@ -74,130 +65,6 @@ export const CustomersContents = () => {
       });
     }
   };
-
-  // Access control check
-  if (!isAdmin) {
-    return (
-      <Box p={cardPadding} maxW='7xl' mx='auto'>
-        <Alert
-          status='error'
-          borderRadius='lg'
-          variant='subtle'
-          flexDirection='column'
-          alignItems='center'
-          justifyContent='center'
-          textAlign='center'
-          minHeight={{ base: '150px', md: '200px' }}
-        >
-          <AlertIcon boxSize={{ base: '30px', md: '40px' }} mr={0} />
-          <AlertTitle mt={4} mb={1} fontSize={{ base: 'md', md: 'lg' }}>
-            Access Denied
-          </AlertTitle>
-          <AlertDescription maxWidth='sm' fontSize={{ base: 'sm', md: 'md' }}>
-            You don't have administrator privileges to access this panel.
-          </AlertDescription>
-        </Alert>
-      </Box>
-    );
-  }
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <Box p={cardPadding} maxW='7xl' mx='auto'>
-        <Card
-          bg={cardBg}
-          borderRadius='xl'
-          boxShadow='sm'
-          borderWidth='1px'
-          borderColor={borderColor}
-        >
-          <CardHeader>
-            <Stack
-              direction={{ base: 'column', md: 'row' }}
-              justify='space-between'
-              align={{ base: 'flex-start', md: 'center' }}
-              spacing={4}
-            >
-              <Box>
-                <Skeleton height='32px' width='200px' mb={2} />
-                <Skeleton
-                  height='20px'
-                  width={{ base: '250px', md: '300px' }}
-                />
-              </Box>
-              <HStack spacing={2} flexWrap='wrap'>
-                {[1, 2, 3].map((i) => (
-                  <Stat
-                    key={i}
-                    textAlign='center'
-                    minW={{ base: '100px', md: '120px' }}
-                    p={3}
-                    bg={statBg}
-                    borderRadius='lg'
-                  >
-                    <Skeleton height='28px' width='60px' mx='auto' mb={1} />
-                    <Skeleton height='16px' width='80px' mx='auto' />
-                  </Stat>
-                ))}
-              </HStack>
-            </Stack>
-          </CardHeader>
-          <CardBody>
-            <Skeleton
-              height={{ base: '300px', md: '400px' }}
-              borderRadius='md'
-            />
-          </CardBody>
-        </Card>
-      </Box>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <Box p={cardPadding} maxW='7xl' mx='auto'>
-        <Card bg={cardBg} borderRadius='xl' boxShadow='sm'>
-          <CardBody>
-            <Alert
-              status='error'
-              borderRadius='lg'
-              variant='left-accent'
-              flexDirection='column'
-              alignItems='flex-start'
-              minHeight={{ base: '150px', md: '200px' }}
-            >
-              <Flex>
-                <AlertIcon boxSize='24px' mt={1} />
-                <Box ml={3}>
-                  <AlertTitle fontSize={{ base: 'md', md: 'lg' }}>
-                    Error Loading User Data
-                  </AlertTitle>
-                  <AlertDescription mt={2}>
-                    We encountered an issue while fetching user information.
-                    <Text mt={2} fontSize='sm' color='gray.600'>
-                      {error.message || 'Please try again later.'}
-                    </Text>
-                  </AlertDescription>
-                  <Button
-                    mt={4}
-                    colorScheme='red'
-                    variant='outline'
-                    onClick={handleRefresh}
-                    leftIcon={<FiRefreshCw />}
-                    size={{ base: 'sm', md: 'md' }}
-                  >
-                    Retry
-                  </Button>
-                </Box>
-              </Flex>
-            </Alert>
-          </CardBody>
-        </Card>
-      </Box>
-    );
-  }
 
   return (
     <Box p={cardPadding} maxW='7xl' mx='auto'>

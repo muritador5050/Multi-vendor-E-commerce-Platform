@@ -137,9 +137,9 @@ export interface Vendor {
   updatedAt: Date;
 }
 
-// ===== DERIVED INTERFACES =====
-export interface VendorProfile extends Vendor {
-  user: User;
+export interface VendorProfileData {
+  vendor: Vendor;
+  profileCompletion: number;
 }
 
 export interface PublicVendor {

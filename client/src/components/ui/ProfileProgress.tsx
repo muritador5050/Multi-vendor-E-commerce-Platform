@@ -26,7 +26,7 @@ export default function ProfileProgress({
         <VStack align='start' spacing={1}>
           {remainingFields.map((field) => (
             <Text key={field} fontSize='sm' color='gray.600'>
-              • Add your {field}
+              {field}
             </Text>
           ))}
         </VStack>

@@ -9,7 +9,6 @@ const vendorSchema = new mongoose.Schema(
       unique: true,
     },
 
-    // Business Information
     businessName: {
       type: String,
       required: true,
@@ -30,7 +29,53 @@ const vendorSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Business Contact (only if different from user's contact info)
+    // 1. General Settings
+    generalSettings: {
+      storeName: {
+        type: String,
+        trim: true,
+      },
+      storeSlug: {
+        type: String,
+        unique: true,
+        sparse: true,
+        lowercase: true,
+      },
+      storeEmail: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+      storePhone: {
+        type: String,
+        trim: true,
+      },
+      storeLogo: String,
+      shopDescription: {
+        type: String,
+        trim: true,
+        maxlength: 1000,
+      },
+      storeBannerType: {
+        type: String,
+        enum: ['image', 'video', 'slider'],
+        default: 'image',
+      },
+      storeBanner: String,
+    },
+
+    // 2. Store Address
+    storeAddress: {
+      street: String,
+      apartment: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: String,
+      latitude: Number,
+      longitude: Number,
+    },
+
     businessAddress: {
       street: String,
       city: String,
@@ -39,21 +84,132 @@ const vendorSchema = new mongoose.Schema(
       country: String,
     },
 
-    // Financial Information
+    // 3. Bank Details
     bankDetails: {
       accountName: String,
       accountNumber: String,
       bankName: String,
       routingNumber: String,
       swiftCode: String,
+      accountType: {
+        type: String,
+        enum: ['checking', 'savings', 'business'],
+      },
     },
+
+    // 4. Social Media
+    socialMedia: {
+      website: String,
+      facebook: String,
+      instagram: String,
+      twitter: String,
+      linkedin: String,
+      youtube: String,
+      tiktok: String,
+    },
+
+    // 5. Store Policies
+    storePolicies: {
+      returnPolicy: {
+        type: String,
+        maxlength: 2000,
+      },
+      shippingPolicy: {
+        type: String,
+        maxlength: 2000,
+      },
+      privacyPolicy: {
+        type: String,
+        maxlength: 2000,
+      },
+      termsOfService: {
+        type: String,
+        maxlength: 2000,
+      },
+      refundPolicy: {
+        type: String,
+        maxlength: 2000,
+      },
+    },
+
+    // 6. Shipping Rules
+    shippingRules: {
+      freeShippingThreshold: {
+        type: Number,
+        default: 0,
+      },
+      shippingZones: [
+        {
+          name: String,
+          countries: [String],
+          shippingCost: Number,
+          estimatedDelivery: String,
+        },
+      ],
+      processingTime: {
+        min: Number,
+        max: Number,
+        unit: {
+          type: String,
+          enum: ['days', 'weeks'],
+          default: 'days',
+        },
+      },
+    },
+
+    // 7. SEO Settings
+    seoSettings: {
+      metaTitle: {
+        type: String,
+        maxlength: 60,
+      },
+      metaDescription: {
+        type: String,
+        maxlength: 160,
+      },
+      keywords: [String],
+      ogImage: String,
+      structuredData: mongoose.Schema.Types.Mixed,
+    },
+
+    // 8. Store Hours
+    storeHours: [
+      {
+        day: {
+          type: String,
+          enum: [
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+            'sunday',
+          ],
+        },
+        isOpen: {
+          type: Boolean,
+          default: true,
+        },
+        openTime: String,
+        closeTime: String,
+        breaks: [
+          {
+            startTime: String,
+            endTime: String,
+            reason: String,
+          },
+        ],
+      },
+    ],
+
+    // Payment Terms
     paymentTerms: {
       type: String,
       enum: ['net15', 'net30', 'net45', 'net60', 'immediate'],
       default: 'net30',
     },
 
-    // Verification (vendor-specific status)
     verificationStatus: {
       type: String,
       enum: ['pending', 'verified', 'rejected', 'suspended'],
@@ -117,30 +273,11 @@ const vendorSchema = new mongoose.Schema(
       max: 1,
     },
 
-    // Store Information
-    storeName: {
-      type: String,
-      trim: true,
-    },
-    storeDescription: {
-      type: String,
-      trim: true,
-      maxlength: 1000,
-    },
-    storeLogo: String,
-    storeSlug: {
-      type: String,
-      unique: true,
-      sparse: true,
-      lowercase: true,
-    },
-    storeBanner: String,
-
-    // Account Status (vendor-specific deactivation)
+    // Account Status
     deactivationReason: String,
     deactivatedAt: Date,
 
-    // Additional Settings
+    // Notification Settings
     notifications: {
       emailNotifications: {
         type: Boolean,
@@ -154,39 +291,10 @@ const vendorSchema = new mongoose.Schema(
         type: Boolean,
         default: true,
       },
-    },
-
-    // Business Hours
-    businessHours: [
-      {
-        day: {
-          type: String,
-          enum: [
-            'monday',
-            'tuesday',
-            'wednesday',
-            'thursday',
-            'friday',
-            'saturday',
-            'sunday',
-          ],
-        },
-        isOpen: {
-          type: Boolean,
-          default: true,
-        },
-        openTime: String,
-        closeTime: String,
+      marketingEmails: {
+        type: Boolean,
+        default: false,
       },
-    ],
-
-    // Social Media Links
-    socialMedia: {
-      website: String,
-      facebook: String,
-      instagram: String,
-      twitter: String,
-      linkedin: String,
     },
   },
   {
@@ -196,8 +304,13 @@ const vendorSchema = new mongoose.Schema(
   }
 );
 
-vendorSchema.index({ businessName: 'text', storeName: 'text' });
+// Index
+vendorSchema.index({
+  'generalSettings.storeName': 'text',
+  businessName: 'text',
+});
 
+// Virtual for user details
 vendorSchema.virtual('userDetails', {
   ref: 'User',
   localField: 'user',
@@ -206,10 +319,13 @@ vendorSchema.virtual('userDetails', {
   options: { select: 'name email -password -refreshToken -tokenVersion' },
 });
 
-// Pre-save middleware to generate store slug
 vendorSchema.pre('save', function (next) {
-  if (this.isModified('storeName') && this.storeName && !this.storeSlug) {
-    this.storeSlug = this.storeName
+  if (
+    this.isModified('generalSettings.storeName') &&
+    this.generalSettings?.storeName &&
+    !this.generalSettings?.storeSlug
+  ) {
+    this.generalSettings.storeSlug = this.generalSettings.storeName
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
@@ -227,209 +343,57 @@ vendorSchema.statics.findByUserId = function (userId) {
   );
 };
 
-vendorSchema.statics.findVerifiedVendors = function () {
-  return this.find({ verificationStatus: 'verified' }).populate(
-    'user',
-    'name email avatar'
-  );
-};
-
-vendorSchema.statics.findPendingVerification = function () {
-  return this.find({ verificationStatus: 'pending' }).populate(
-    'user',
-    'name email createdAt'
-  );
-};
-
 vendorSchema.statics.findByIdentifier = function (identifier) {
   const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
-  const query = isObjectId ? { _id: identifier } : { storeSlug: identifier };
+  const query = isObjectId
+    ? { _id: identifier }
+    : { 'generalSettings.storeSlug': identifier };
 
   return this.findOne(query).populate('user', 'name email avatar createdAt');
 };
 
-vendorSchema.statics.buildSearchFilter = function (query) {
-  const filter = {};
-
-  // Verification Status Filter
-  if (query.verificationStatus) {
-    filter.verificationStatus = query.verificationStatus;
-  }
-
-  // Business Type Filter
-  if (query.businessType) {
-    filter.businessType = query.businessType;
-  }
-
-  // Payment Terms Filter
-  if (query.paymentTerms) {
-    filter.paymentTerms = query.paymentTerms;
-  }
-
-  if (query.isActive !== undefined) {
-    if (query.isActive === 'true') {
-      filter.deactivatedAt = { $exists: false };
-    } else {
-      filter.deactivatedAt = { $exists: true };
-    }
-  }
-
-  if (query.isVerified !== undefined) {
-    filter.verificationStatus =
-      query.isVerified === 'true' ? 'verified' : { $ne: 'verified' };
-  }
-
-  if (query.minRating) {
-    filter.rating = { $gte: parseFloat(query.minRating) };
-  }
-
-  if (query.minOrders) {
-    filter.totalOrders = { $gte: parseInt(query.minOrders) };
-  }
-
-  if (query.minRevenue) {
-    filter.totalRevenue = { $gte: parseFloat(query.minRevenue) };
-  }
-
-  if (query.city) {
-    filter['businessAddress.city'] = { $regex: query.city, $options: 'i' };
-  }
-  if (query.state) {
-    filter['businessAddress.state'] = { $regex: query.state, $options: 'i' };
-  }
-  if (query.country) {
-    filter['businessAddress.country'] = {
-      $regex: query.country,
-      $options: 'i',
-    };
-  }
-
-  if (query.createdFrom) {
-    filter.createdAt = { $gte: new Date(query.createdFrom) };
-  }
-  if (query.createdTo) {
-    filter.createdAt = { ...filter.createdAt, $lte: new Date(query.createdTo) };
-  }
-
-  if (query.verifiedFrom) {
-    filter.verifiedAt = { $gte: new Date(query.verifiedFrom) };
-  }
-  if (query.verifiedTo) {
-    filter.verifiedAt = {
-      ...filter.verifiedAt,
-      $lte: new Date(query.verifiedTo),
-    };
-  }
-
-  if (query.search) {
-    filter.$or = [
-      { businessName: { $regex: query.search, $options: 'i' } },
-      { storeName: { $regex: query.search, $options: 'i' } },
-      { storeDescription: { $regex: query.search, $options: 'i' } },
-      { taxId: { $regex: query.search, $options: 'i' } },
-      { businessRegistrationNumber: { $regex: query.search, $options: 'i' } },
-      { 'bankDetails.accountName': { $regex: query.search, $options: 'i' } },
-      { 'bankDetails.bankName': { $regex: query.search, $options: 'i' } },
-    ];
-  }
-
-  return filter;
-};
-
-vendorSchema.statics.findWithPagination = async function (query, options) {
-  const filter = this.buildSearchFilter(query);
-  const { page = 1, limit = 10, sort = { createdAt: -1 } } = options;
-  const skip = (page - 1) * limit;
-  const vendors = await this.find(filter, '-password -refreshToken')
-    .skip(skip)
-    .limit(limit)
-    .sort(sort);
-
-  const total = await this.countDocuments(filter);
-
-  return {
-    vendors,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-};
-
-vendorSchema.statics.getAdminStatistics = async function () {
-  const [
-    totalVendors,
-    verifiedVendors,
-    pendingVendors,
-    rejectedVendors,
-    revenueAggregate,
-    recentRegistrations,
-  ] = await Promise.all([
-    this.countDocuments(),
-    this.countDocuments({ verificationStatus: 'verified' }),
-    this.countDocuments({ verificationStatus: 'pending' }),
-    this.countDocuments({ verificationStatus: 'rejected' }),
-    this.aggregate([
-      { $group: { _id: null, totalRevenue: { $sum: '$totalRevenue' } } },
-    ]),
-    this.find().populate('user', 'name email').sort({ createdAt: -1 }).limit(5),
-  ]);
-
-  return {
-    totalVendors,
-    verifiedVendors,
-    pendingVendors,
-    rejectedVendors,
-    totalRevenue:
-      revenueAggregate.length > 0 ? revenueAggregate[0].totalRevenue : 0,
-    recentRegistrations,
-  };
-};
-
-vendorSchema.statics.updateVerificationStatus = function (
-  id,
-  status,
-  notes,
-  verifiedBy
-) {
-  return this.findByIdAndUpdate(
-    id,
-    {
-      verificationStatus: status,
-      verificationNotes: notes,
-      verifiedAt: status === 'verified' ? new Date() : null,
-      verifiedBy,
-    },
-    { new: true }
-  ).populate('user', 'name email');
-};
-
 // Instance Methods
-vendorSchema.methods.updateRating = async function (newRating) {
-  this.rating = newRating;
-  this.reviewCount += 1;
-  return this.save();
-};
+vendorSchema.methods.updateVendorSettings = function (
+  settingType,
+  settingData
+) {
+  const allowedSettings = [
+    'generalSettings',
+    'storeAddress',
+    'bankDetails',
+    'socialMedia',
+    'storePolicies',
+    'shippingRules',
+    'seoSettings',
+    'storeHours',
+    'notifications',
+  ];
 
-vendorSchema.methods.incrementOrders = async function (orderValue = 0) {
-  this.totalOrders += 1;
-  this.totalRevenue += orderValue;
-  return this.save();
+  if (!allowedSettings.includes(settingType)) {
+    throw new Error('Invalid setting type');
+  }
+
+  // Merge existing data with new data for partial updates
+  if (this[settingType] && typeof this[settingType] === 'object') {
+    this[settingType] = { ...this[settingType].toObject(), ...settingData };
+  } else {
+    this[settingType] = settingData;
+  }
+
+  return this.save({ validateBeforeSave: true });
 };
 
 vendorSchema.methods.calculateProfileCompletion = function () {
   const requiredFields = [
     'businessName',
     'businessType',
-    'businessAddress.street',
-    'businessAddress.city',
-    'businessAddress.state',
-    'businessAddress.zipCode',
-    'businessAddress.country',
-    'storeName',
-    'storeDescription',
+    'generalSettings.storeName',
+    'generalSettings.shopDescription',
+    'storeAddress.street',
+    'storeAddress.city',
+    'storeAddress.state',
+    'storeAddress.zipCode',
+    'storeAddress.country',
     'bankDetails.accountName',
     'bankDetails.accountNumber',
     'bankDetails.bankName',
@@ -451,64 +415,16 @@ vendorSchema.methods.getPublicFields = function () {
   return {
     id: this._id,
     businessName: this.businessName,
-    storeName: this.storeName,
-    storeDescription: this.storeDescription,
-    storeLogo: this.storeLogo,
-    storeSlug: this.storeSlug,
+    generalSettings: this.generalSettings,
+    storeAddress: this.storeAddress,
+    socialMedia: this.socialMedia,
+    storeHours: this.storeHours,
     rating: this.rating,
     reviewCount: this.reviewCount,
-    businessHours: this.businessHours,
-    socialMedia: this.socialMedia,
     verificationStatus: this.verificationStatus,
     user: this.user,
     createdAt: this.createdAt,
   };
-};
-
-vendorSchema.methods.getDashboardStats = function () {
-  return {
-    totalOrders: this.totalOrders || 0,
-    totalRevenue: this.totalRevenue || 0,
-    rating: this.rating || 0,
-    reviewCount: this.reviewCount || 0,
-    verificationStatus: this.verificationStatus,
-    profileCompletion: this.calculateProfileCompletion(),
-  };
-};
-
-vendorSchema.methods.toggleStatus = function (reason) {
-  const isDeactivating = !this.deactivatedAt;
-
-  if (isDeactivating) {
-    this.deactivationReason = reason;
-    this.deactivatedAt = new Date();
-  } else {
-    this.deactivationReason = undefined;
-    this.deactivatedAt = undefined;
-  }
-
-  return this.save();
-};
-
-vendorSchema.methods.updateSettings = function (settingType, settingData) {
-  const allowedSettings = ['notifications', 'businessHours', 'socialMedia'];
-
-  if (!allowedSettings.includes(settingType)) {
-    throw new Error('Invalid setting type');
-  }
-
-  this[settingType] = settingData;
-  return this.save({ validateBeforeSave: true });
-};
-
-vendorSchema.methods.manageDocuments = function (action, data) {
-  if (action === 'add' && data.documents) {
-    this.verificationDocuments.push(...data.documents);
-  } else if (action === 'remove' && data.documentId) {
-    this.verificationDocuments.pull(data.documentId);
-  }
-
-  return this.save();
 };
 
 module.exports = mongoose.model('Vendor', vendorSchema);

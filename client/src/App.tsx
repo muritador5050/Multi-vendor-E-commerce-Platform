@@ -50,7 +50,10 @@ function App() {
           <Route
             path='store-manager/*'
             element={
-              <ProtectedRoute allowedRoles={['vendor']} showAccessDenied={true}>
+              <ProtectedRoute
+                allowedRoles={['vendor', 'admin']}
+                showAccessDenied={true}
+              >
                 <StoreManagerDashboard />
               </ProtectedRoute>
             }
