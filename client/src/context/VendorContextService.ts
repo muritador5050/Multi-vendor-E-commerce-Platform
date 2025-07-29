@@ -21,6 +21,9 @@ import type {
   DocumentType,
   TopVendor,
   VendorProfileData,
+  VendorProfile,
+  AllVendorsResponse,
+  singleVendor,
 } from '../type/vendor';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
@@ -46,16 +49,16 @@ export const vendorKeys = {
 // ===== API FUNCTIONS =====
 
 // Profile Management
-async function getVendorProfile(): Promise<ApiResponse<VendorProfileData>> {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<VendorProfileData>
-  >('/vendors/profile');
+async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
+    '/vendors/profile'
+  );
 }
 
-async function upsertVendorProfile(
-  data: VendorProfileUpdate
-): Promise<ApiResponse<Vendor>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
+async function createNewVendorProfile(
+  data: Partial<Vendor>
+): Promise<ApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
     '/vendors/profile',
     {
       method: 'POST',
@@ -65,9 +68,9 @@ async function upsertVendorProfile(
 }
 
 async function updateVendorProfile(
-  data: VendorProfileUpdate
-): Promise<ApiResponse<Vendor>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
+  data: Partial<Vendor>
+): Promise<ApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
     '/vendors/profile',
     {
       method: 'PUT',
@@ -79,20 +82,18 @@ async function updateVendorProfile(
 // Public Vendor Routes
 async function getAllVendors(
   filters: VendorFilters = {}
-): Promise<ApiResponse<Vendor>> {
+): Promise<ApiResponse<AllVendorsResponse>> {
   const queryString = buildQueryString(filters);
   const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
-  const response = await apiClient.publicApiRequest<ApiResponse<Vendor>>(
-    endpoint
-  );
+  const response = await apiClient.publicApiRequest<
+    ApiResponse<AllVendorsResponse>
+  >(endpoint);
   return response;
 }
 
-async function getVendorById(
-  identifier: string
-): Promise<ApiResponse<PublicVendor>> {
-  return await apiClient.publicApiRequest<ApiResponse<PublicVendor>>(
-    `/vendors/${identifier}`
+async function getVendorById(id: string): Promise<ApiResponse<singleVendor>> {
+  return await apiClient.publicApiRequest<ApiResponse<singleVendor>>(
+    `/vendors/${id}`
   );
 }
 
@@ -199,8 +200,6 @@ async function getTopVendors(): Promise<ApiResponse<TopVendor>> {
   return response;
 }
 
-// ===== HOOKS =====
-
 // Profile Hooks
 export const useVendorProfile = () => {
   return useQuery({
@@ -224,7 +223,7 @@ export const useUpsertVendorProfile = () => {
         throw new Error(firstError);
       }
 
-      const response = await upsertVendorProfile(data);
+      const response = await createNewVendorProfile(data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -364,7 +363,6 @@ export const useUpdateSettings = <
   T extends SettingsResponse = SettingsResponse
 >() => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       settingType,
