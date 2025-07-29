@@ -413,7 +413,7 @@ vendorSchema.methods.calculateProfileCompletion = function () {
 
 vendorSchema.methods.getPublicFields = function () {
   return {
-    id: this._id,
+    _id: this._id,
     businessName: this.businessName,
     generalSettings: this.generalSettings,
     storeAddress: this.storeAddress,

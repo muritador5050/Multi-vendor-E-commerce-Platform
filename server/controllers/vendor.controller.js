@@ -84,7 +84,7 @@ class VendorController {
         'user',
         '-password -refreshToken -tokenVersion'
       );
-
+      console.log(req.user.id)
       console.log('Profile', vendor);
 
       if (!vendor) {
@@ -288,7 +288,6 @@ class VendorController {
 
       const filter = {};
 
-      // Add filters based on query parameters
       if (req.query.verificationStatus) {
         filter.verificationStatus = req.query.verificationStatus;
       }

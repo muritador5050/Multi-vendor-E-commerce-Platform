@@ -8,9 +8,17 @@ const { asyncHandler } = require('../utils/asyncHandler');
 // Public routes
 router.get('/', asyncHandler(VendorController.getAllVendors));
 router.get('/top', asyncHandler(VendorController.getTopVendors));
-router.get('/:id', asyncHandler(VendorController.getVendorById));
 
-// Vendor profile routes
+// IMPORTANT: More specific routes MUST come before general ones
+// Profile completion - MOVED UP
+router.get(
+  '/profile/completion',
+  authenticate,
+  checkRole('vendor', 'read'),
+  asyncHandler(VendorController.getProfileCompletion)
+);
+
+// Vendor profile routes - MOVED DOWN
 router
   .route('/profile')
   .get(
@@ -29,14 +37,6 @@ router
     asyncHandler(VendorController.updateVendorData)
   );
 
-// Profile completion
-router.get(
-  '/profile/completion',
-  authenticate,
-  checkRole(['vendor'], 'read'),
-  asyncHandler(VendorController.getProfileCompletion)
-);
-
 // Settings management
 router.put(
   '/settings/:settingType',
@@ -45,7 +45,7 @@ router.put(
   asyncHandler(VendorController.updateSettings)
 );
 
-// Document management routes - CORRECTED
+// Document management routes
 router.post(
   '/documents',
   authenticate,
@@ -100,5 +100,8 @@ router.get(
   },
   asyncHandler(VendorController.getStatistics)
 );
+
+// Generic ID route - MUST be last among GET routes
+router.get('/:id', asyncHandler(VendorController.getVendorById));
 
 module.exports = router;

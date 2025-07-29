@@ -6,6 +6,15 @@ export type BusinessType =
   | 'partnership'
   | 'corporation';
 
+export type SettingType =
+  | 'notifications'
+  | 'storeHours'
+  | 'socialMedia'
+  | 'generalSettings'
+  | 'storePolicies'
+  | 'shippingRules'
+  | 'seoSettings';
+
 export type PaymentTerms = 'net15' | 'net30' | 'net45' | 'net60' | 'immediate';
 
 export type VerificationStatus =
@@ -226,6 +235,7 @@ export interface VendorStats {
   rating: number;
   reviewCount: number;
   verificationStatus: VerificationStatus;
+  profileCompletion: number;
 }
 
 export interface AdminVendorStats {
@@ -288,8 +298,13 @@ export interface DocumentUpload {
 }
 
 export interface AccountStatusToggle {
-  verificationStatus?: boolean;
   reason?: string;
+}
+
+export interface AccountStatusResponse {
+  deactivated: boolean;
+  deactivatedAt?: Date;
+  deactivationReason?: string;
 }
 
 export interface SettingsUpdate {
