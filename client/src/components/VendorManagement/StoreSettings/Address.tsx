@@ -1,5 +1,6 @@
 import React from 'react';
 import { FormControl, FormLabel, Input, Stack, Text } from '@chakra-ui/react';
+import type { StoreAddress } from '@/type/vendor';
 
 const labelStyles = {
   fontFamily: 'mono',
@@ -17,7 +18,18 @@ const fields = [
   { name: 'city', label: 'City/Town', isRequired: false },
   { name: 'postalCode', label: 'Postal/Code', isRequired: false },
 ];
-export default function Address() {
+
+interface AddressProps {
+  data: StoreAddress;
+  onChange: (updates: Partial<StoreAddress>) => void;
+}
+
+export default function Address({ data, onChange }: AddressProps) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange({ [name]: value });
+  };
+
   return (
     <Stack spacing={4}>
       <Text fontSize='2xl' color='teal.700'>
@@ -33,7 +45,13 @@ export default function Address() {
           gap={4}
         >
           <FormLabel {...labelStyles}>{field.label}</FormLabel>
-          <Input flex='1' maxW={{ md: '60%' }} name={field.name} />
+          <Input
+            flex='1'
+            maxW={{ md: '60%' }}
+            name={field.name}
+            value={data[field.name as keyof StoreAddress] || ''}
+            onChange={handleInputChange}
+          />
         </FormControl>
       ))}
     </Stack>

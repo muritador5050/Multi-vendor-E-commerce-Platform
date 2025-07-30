@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Flex,
@@ -14,6 +14,7 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  useToast,
 } from '@chakra-ui/react';
 import {
   CircleArrowRight,
@@ -26,30 +27,224 @@ import {
   Ambulance,
 } from 'lucide-react';
 import ProfileProgress from '@/components/ui/ProfileProgress';
-import GeneralSetting from '@/components/VendorManagement/StoreSettings/GeneralSetting';
+import GeneralSetting, {
+  type GeneralFormData,
+} from '@/components/VendorManagement/StoreSettings/GeneralSetting';
 import StoreLocation from '@/components/VendorManagement/StoreSettings/StoreLocation';
 import PaymentSetting from '@/components/VendorManagement/StoreSettings/PaymentSetting';
 import ShippingSetting from '@/components/VendorManagement/StoreSettings/ShippingSetting';
 import SEOSetting from '@/components/VendorManagement/StoreSettings/SEOSetting';
-import StorePolicies from '@/components/VendorManagement/StoreSettings/StorePolicies';
-import CustomerSupport from '@/components/VendorManagement/StoreSettings/CustomerSupport';
-import StoreHours from '@/components/VendorManagement/StoreSettings/StoreHours';
-import { useVendorProfile } from '@/context/VendorContextService';
 
-const tabName = [
+import {
+  useUpdateSettings,
+  useVendorProfile,
+} from '@/context/VendorContextService';
+import type {
+  Address,
+  BankDetails,
+  SeoSettings,
+  ShippingRules,
+  SocialMedia,
+  StoreAddress,
+  StoreHour,
+  StorePolicies,
+} from '@/type/vendor';
+import StorePoliciesSettings from './StoreSettings/StorePoliciesSettings';
+import StoreHoursSettings from './StoreSettings/StoreHoursSettings';
+import SocialProfile from './StoreSettings/SocialProfile';
+
+interface FormData {
+  generalSettings: GeneralFormData;
+  storeAddress: StoreAddress;
+  businessAddress: Address;
+  bankDetails: BankDetails;
+  socialMedia: SocialMedia;
+  storePolicies: StorePolicies;
+  shippingRules: ShippingRules;
+  seoSettings: SeoSettings;
+  storeHours: StoreHour[];
+}
+
+interface TabItem {
+  name: string;
+  icon: React.ComponentType<{ size?: number }>;
+}
+
+const tabName: TabItem[] = [
   { name: 'Store', icon: ShoppingBasket },
   { name: 'Location', icon: Globe },
   { name: 'Payment', icon: SquareDashedBottomCode },
   { name: 'Shipping', icon: Truck },
   { name: 'SEO', icon: Globe },
   { name: 'Store Policies', icon: Ambulance },
-  { name: 'Customer Support', icon: ThumbsUp },
+  { name: 'Social Handles', icon: ThumbsUp },
   { name: 'Store Hours', icon: ShoppingBasket },
 ];
 
+const SETTINGS_MAPPING: Record<string, keyof FormData> = {
+  generalSettings: 'generalSettings',
+  storeAddress: 'storeAddress',
+  businessAddress: 'businessAddress',
+  bankDetails: 'bankDetails',
+  socialMedia: 'socialMedia',
+  storePolicies: 'storePolicies',
+  shippingRules: 'shippingRules',
+  seoSettings: 'seoSettings',
+  storeHours: 'storeHours',
+};
+
+// Default data structures
+const defaultGeneralSettings: GeneralFormData = {
+  storeName: '',
+  storeSlug: '',
+  storeEmail: '',
+  storePhone: '',
+  storeBannerType: 'image',
+  storeNamePosition: 'At Header',
+  shopDescription: '',
+  storeLogo: null,
+  storeBanner: null,
+  productsPerPage: 10,
+  hideEmail: false,
+  hidePhone: false,
+  hideAddress: false,
+  hideMap: false,
+  hideAbout: false,
+  hidePolicy: false,
+};
+
+// Updated to match schema structure
+const defaultStoreHours: StoreHour[] = [
+  { day: 'monday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+  { day: 'tuesday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+  { day: 'wednesday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+  { day: 'thursday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+  { day: 'friday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+  { day: 'saturday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+  { day: 'sunday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
+];
+
+const defaultAddressData: Address = {
+  street: '',
+  city: '',
+  state: '',
+  zipCode: '',
+  country: '',
+};
+
+const defaultSeoData: SeoSettings = {
+  metaTitle: '',
+  metaDescription: '',
+  keywords: [''],
+};
+
+const defaultSocialMediaData: SocialMedia = {
+  website: '',
+  facebook: '',
+  instagram: '',
+  twitter: '',
+  linkedin: '',
+  youtube: '',
+  tiktok: '',
+};
+
 export default function Setting() {
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<number>(0);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  //Hooks
   const { data } = useVendorProfile();
+  const updateSettings = useUpdateSettings();
+  const toast = useToast();
+
+  const [formData, setFormData] = useState<FormData>({
+    generalSettings: { ...defaultGeneralSettings },
+    storeAddress: { ...defaultAddressData },
+    businessAddress: { ...defaultAddressData },
+    bankDetails: data?.bankDetails || {},
+    socialMedia: { ...defaultSocialMediaData },
+    storePolicies: data?.storePolicies || {},
+    shippingRules: data?.shippingRules || {},
+    seoSettings: { ...defaultSeoData },
+    storeHours: [...defaultStoreHours],
+  });
+
+  // Update formData when data loads
+  useEffect(() => {
+    if (data) {
+      setFormData((prev) => ({
+        ...prev,
+        generalSettings: { ...defaultGeneralSettings, ...data.generalSettings },
+        storeAddress: { ...defaultAddressData, ...data.storeAddress },
+        businessAddress: { ...defaultAddressData, ...data.businessAddress },
+        bankDetails: data.bankDetails || {},
+        socialMedia: data.socialMedia || {},
+        storePolicies: data.storePolicies || {},
+        shippingRules: data.shippingRules || {},
+        seoSettings: data.seoSettings || {},
+        storeHours:
+          data.storeHours && Array.isArray(data.storeHours)
+            ? data.storeHours
+            : defaultStoreHours,
+      }));
+    }
+  }, [data]);
+
+  const updateFormSection = useCallback(
+    <T extends keyof FormData>(section: T, updates: Partial<FormData[T]>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [section]:
+          section === 'storeHours' ? updates : { ...prev[section], ...updates },
+      }));
+      setIsDirty(true);
+    },
+    []
+  );
+
+  // Save all modified sections
+  const handleSaveAll = async (): Promise<void> => {
+    setIsLoading(true);
+    const promises: Promise<unknown>[] = [];
+
+    try {
+      for (const [settingType, schemaKey] of Object.entries(SETTINGS_MAPPING)) {
+        const currentData = formData[schemaKey];
+        const originalData = data?.[schemaKey];
+
+        if (JSON.stringify(currentData) !== JSON.stringify(originalData)) {
+          promises.push(
+            updateSettings.mutateAsync({
+              settingType,
+              data: currentData,
+            })
+          );
+        }
+      }
+
+      // Execute all API calls
+      await Promise.all(promises);
+
+      toast({
+        title: 'Settings Updated',
+        description: 'All settings have been saved successfully',
+        status: 'success',
+        duration: 3000,
+      });
+
+      setIsDirty(false);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to save some settings. Please try again ${error}`,
+        status: 'error',
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Box>
@@ -78,7 +273,7 @@ export default function Setting() {
           isFitted
           variant='enclosed'
           bg='white'
-          onChange={(index) => setActiveTab(index)}
+          onChange={(index: number) => setActiveTab(index)}
           index={activeTab}
         >
           <Flex gap={6}>
@@ -114,28 +309,68 @@ export default function Setting() {
             </TabList>
             <TabPanels>
               <TabPanel>
-                <GeneralSetting />
+                <GeneralSetting
+                  data={formData.generalSettings}
+                  onChange={(updates: Partial<GeneralFormData>) =>
+                    updateFormSection('generalSettings', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <StoreLocation />
+                <StoreLocation
+                  data={formData.storeAddress}
+                  onChange={(updates: Partial<StoreAddress>) =>
+                    updateFormSection('storeAddress', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <PaymentSetting />
+                <PaymentSetting
+                  data={formData.bankDetails}
+                  onChange={(updates: BankDetails) =>
+                    updateFormSection('bankDetails', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <ShippingSetting />
+                <ShippingSetting
+                  data={formData.shippingRules}
+                  onChange={(updates: ShippingRules) =>
+                    updateFormSection('shippingRules', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <SEOSetting />
+                <SEOSetting
+                  data={formData.seoSettings}
+                  onChange={(updates: SeoSettings) =>
+                    updateFormSection('seoSettings', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <StorePolicies />
+                <StorePoliciesSettings
+                  data={formData.storePolicies}
+                  onChange={(updates: Record<string, unknown>) =>
+                    updateFormSection('storePolicies', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <CustomerSupport />
+                <SocialProfile
+                  data={formData.socialMedia}
+                  onChange={(updates: Record<string, unknown>) =>
+                    updateFormSection('socialMedia', updates)
+                  }
+                />
               </TabPanel>
               <TabPanel>
-                <StoreHours />
+                <StoreHoursSettings
+                  data={formData.storeHours}
+                  onChange={(updates: StoreHour[]) =>
+                    updateFormSection('storeHours', updates)
+                  }
+                />
               </TabPanel>
             </TabPanels>
           </Flex>
@@ -153,11 +388,15 @@ export default function Setting() {
                 <Box as='span' flex='1' textAlign='left' color='white'>
                   Store
                 </Box>
-                {/* */}
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <GeneralSetting />
+              <GeneralSetting
+                data={formData.generalSettings}
+                onChange={(updates: Partial<GeneralFormData>) =>
+                  updateFormSection('generalSettings', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
 
@@ -174,7 +413,12 @@ export default function Setting() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <StoreLocation />
+              <StoreLocation
+                data={formData.storeAddress}
+                onChange={(updates: Partial<Address>) =>
+                  updateFormSection('storeAddress', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
 
@@ -191,7 +435,12 @@ export default function Setting() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <PaymentSetting />
+              <PaymentSetting
+                data={formData.bankDetails}
+                onChange={(updates: BankDetails) =>
+                  updateFormSection('bankDetails', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
 
@@ -208,7 +457,12 @@ export default function Setting() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <ShippingSetting />
+              <ShippingSetting
+                data={formData.shippingRules}
+                onChange={(updates: ShippingRules) =>
+                  updateFormSection('shippingRules', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
 
@@ -225,7 +479,12 @@ export default function Setting() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <SEOSetting />
+              <SEOSetting
+                data={formData.seoSettings}
+                onChange={(updates: Record<string, unknown>) =>
+                  updateFormSection('seoSettings', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
           <AccordionItem>
@@ -241,7 +500,12 @@ export default function Setting() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <StorePolicies />
+              <StorePoliciesSettings
+                data={formData.storePolicies}
+                onChange={(updates: StorePolicies) =>
+                  updateFormSection('storePolicies', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
           <AccordionItem>
@@ -252,12 +516,17 @@ export default function Setting() {
                 borderBottom='2px solid  white'
               >
                 <Box as='span' flex='1' textAlign='left' color='white'>
-                  Customer Support
+                  Socialmedia handles
                 </Box>
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <CustomerSupport />
+              <SocialProfile
+                data={formData.socialMedia}
+                onChange={(updates: SocialMedia) =>
+                  updateFormSection('socialMedia', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
           <AccordionItem>
@@ -273,13 +542,25 @@ export default function Setting() {
               </AccordionButton>
             </h2>
             <AccordionPanel pb={4}>
-              <StoreHours />
+              <StoreHoursSettings
+                data={formData.storeHours}
+                onChange={(updates: StoreHour[]) =>
+                  updateFormSection('storeHours', updates)
+                }
+              />
             </AccordionPanel>
           </AccordionItem>
         </Accordion>
       </Stack>
       <Box float='right' my={6}>
-        <Button bg='#203a43' colorScheme='teal'>
+        <Button
+          bg='#203a43'
+          colorScheme='teal'
+          onClick={handleSaveAll}
+          isLoading={isLoading}
+          loadingText='Saving...'
+          isDisabled={!isDirty}
+        >
           SAVE
         </Button>
       </Box>

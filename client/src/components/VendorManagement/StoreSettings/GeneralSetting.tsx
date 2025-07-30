@@ -1,3 +1,4 @@
+import type { GeneralSettings } from '@/type/vendor';
 import GalleryFileUpload from '@/utils/GalleryFileUpload';
 import RichTextEditor from '@/utils/RichTextEditor';
 import {
@@ -18,14 +19,8 @@ import {
   Image,
   Button,
 } from '@chakra-ui/react';
-import React, { useState } from 'react';
 
-interface GeneralFormData {
-  storeName: string;
-  storeSlug: string;
-  storeEmail: string;
-  storePhone: string;
-  bannerType: 'Static Image' | 'Slider' | 'Video';
+export interface GeneralFormData extends GeneralSettings {
   storeNamePosition: 'At Header' | 'On Banner';
   productsPerPage: number;
   hideEmail: boolean;
@@ -34,9 +29,11 @@ interface GeneralFormData {
   hideMap: boolean;
   hideAbout: boolean;
   hidePolicy: boolean;
-  description: string;
-  storeLogo: File | null;
-  storeBanner: File | File[] | null;
+}
+
+interface GeneralSettingProps {
+  data: GeneralFormData;
+  onChange: (update: Partial<GeneralFormData>) => void;
 }
 
 const labelStyles = {
@@ -106,54 +103,61 @@ const checkBoxField = [
   },
 ];
 
-export default function GeneralSetting() {
-  const [formData, setFormData] = useState<GeneralFormData>({
-    storeName: '',
-    storeSlug: '',
-    storeEmail: '',
-    storePhone: '',
-    bannerType: 'Static Image',
-    storeNamePosition: 'At Header',
-    productsPerPage: 10,
-    hideEmail: false,
-    hidePhone: false,
-    hideAddress: false,
-    hideMap: false,
-    hideAbout: false,
-    hidePolicy: false,
-    description: '',
-    storeLogo: null,
-    storeBanner: null,
-  });
+// Helper function to get image source
+const getImageSrc = (file: string | File | null): string => {
+  if (!file) return '';
+  if (typeof file === 'string') return file;
+  return URL.createObjectURL(file);
+};
+
+// Helper function to get multiple image sources
+const getMultipleImageSrcs = (
+  files: string | File | (string | File)[] | null
+) => {
+  if (!files) return [];
+
+  if (Array.isArray(files)) {
+    return files.map((file) =>
+      typeof file === 'string' ? file : URL.createObjectURL(file)
+    );
+  }
+
+  // Single file/string
+  const src = typeof files === 'string' ? files : URL.createObjectURL(files);
+  return [src];
+};
+
+export default function GeneralSetting({
+  data,
+  onChange,
+}: GeneralSettingProps) {
+  //State
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    onChange({ [name]: value });
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+    onChange({ [name]: checked });
   };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    onChange({ [name]: value });
   };
 
   const handleNumberChange = (valueAsString: string, name: string) => {
     const value = parseInt(valueAsString, 10);
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    onChange({ [name]: value });
   };
 
   const handleFile = (
     file: File | File[],
     fieldName: 'storeLogo' | 'storeBanner'
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: file,
-    }));
+    onChange({ [fieldName]: file });
   };
 
   return (
@@ -178,7 +182,7 @@ export default function GeneralSetting() {
               flex='1'
               maxW={{ md: '60%' }}
               name={field.name}
-              value={(formData[field.name] as string) || ''}
+              value={(data[field.name] as string) || ''}
               onChange={handleInputChange}
             />
           </FormControl>
@@ -198,12 +202,12 @@ export default function GeneralSetting() {
             <GalleryFileUpload
               onFileChange={(file) => handleFile(file, 'storeLogo')}
             />
-            {formData.storeLogo && (
+            {data.storeLogo && (
               <Box mt={2}>
                 <Text fontWeight='medium'>Store Logo Preview:</Text>
                 <Box mt={2} position='relative' display='inline-block'>
                   <Image
-                    src={URL.createObjectURL(formData.storeLogo)}
+                    src={getImageSrc(data.storeLogo)}
                     alt='Store Logo'
                     style={{ width: '120px', borderRadius: '8px' }}
                   />
@@ -213,9 +217,7 @@ export default function GeneralSetting() {
                     position='absolute'
                     top='4px'
                     right='4px'
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, storeLogo: null }))
-                    }
+                    onClick={() => onChange({ storeLogo: null })}
                   >
                     Remove
                   </Button>
@@ -236,26 +238,26 @@ export default function GeneralSetting() {
             flex='1'
             maxW={{ md: '60%' }}
             name='bannerType'
-            value={formData.bannerType}
+            value={data.storeBannerType}
             onChange={handleSelectChange}
           >
-            <option value='Static Image'>Static Image</option>
-            <option value='Slider'>Slider</option>
-            <option value='Video'>Video</option>
+            <option value='image'>Image</option>
+            <option value='slider'>Slider</option>
+            <option value='video'>Video</option>
           </Select>
         </FormControl>
         <Box ml={{ md: '340px' }} maxW={{ md: '60%' }}>
-          {formData.bannerType === 'Static Image' && (
+          {data.storeBannerType === 'image' && (
             <Box flex='1' maxW={{ md: '60%' }}>
               <GalleryFileUpload
                 onFileChange={(file) => handleFile(file, 'storeBanner')}
               />
-              {formData.storeBanner && (
+              {data.storeBanner && (
                 <Box mt={4}>
                   <Text fontWeight='medium'>Store Banner Preview:</Text>
                   <Box mt={2} position='relative' display='inline-block'>
                     <Image
-                      src={URL.createObjectURL(formData.storeBanner as File)}
+                      src={getImageSrc(data.storeBanner as string | File)}
                       alt='Store Banner'
                       style={{ width: '120px', borderRadius: '8px' }}
                     />
@@ -265,9 +267,7 @@ export default function GeneralSetting() {
                       position='absolute'
                       top='4px'
                       right='4px'
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, storeBanner: null }))
-                      }
+                      onClick={() => onChange({ storeBanner: null })}
                     >
                       Remove
                     </Button>
@@ -276,23 +276,20 @@ export default function GeneralSetting() {
               )}
             </Box>
           )}
-          {formData.bannerType === 'Slider' && (
+          {data.storeBannerType === 'slider' && (
             <Box flex='1' maxW={{ md: '60%' }}>
               <GalleryFileUpload
                 multiple
                 onFileChange={(file) => handleFile(file, 'storeBanner')}
               />
-              {formData.storeBanner && (
+              {data.storeBanner && (
                 <Box mt={4}>
                   <Text fontWeight='medium'>Store Banner Preview:</Text>
                   <Box display='flex' gap={4} mt={2} flexWrap='wrap'>
-                    {(Array.isArray(formData.storeBanner)
-                      ? formData.storeBanner
-                      : [formData.storeBanner]
-                    ).map((file, idx) => (
+                    {getMultipleImageSrcs(data.storeBanner).map((src, idx) => (
                       <Box key={idx} position='relative'>
                         <Image
-                          src={URL.createObjectURL(file)}
+                          src={src}
                           alt={`Banner ${idx + 1}`}
                           style={{ width: '150px', borderRadius: '8px' }}
                         />
@@ -303,20 +300,25 @@ export default function GeneralSetting() {
                           top='4px'
                           right='4px'
                           onClick={() => {
-                            setFormData((prev) => {
-                              const updatedBanner = Array.isArray(
-                                prev.storeBanner
-                              )
-                                ? prev.storeBanner.filter((_, i) => i !== idx)
-                                : [];
+                            const currentBanner = data.storeBanner;
+                            if (Array.isArray(currentBanner)) {
+                              const updatedBanner = currentBanner.filter(
+                                (_, i) => i !== idx
+                              );
 
-                              return {
-                                ...prev,
-                                storeBanner: updatedBanner.length
-                                  ? updatedBanner
-                                  : null,
-                              };
-                            });
+                              if (updatedBanner.length === 0) {
+                                onChange({ storeBanner: null });
+                              } else {
+                                onChange({
+                                  storeBanner: updatedBanner as
+                                    | string[]
+                                    | File[],
+                                });
+                              }
+                            } else {
+                              // Single item, remove it
+                              onChange({ storeBanner: null });
+                            }
                           }}
                         >
                           Remove
@@ -328,7 +330,7 @@ export default function GeneralSetting() {
               )}
             </Box>
           )}
-          {formData.bannerType === 'Video' && (
+          {data.storeBannerType === 'video' && (
             <Box>
               <Text>Video </Text>
             </Box>
@@ -340,9 +342,9 @@ export default function GeneralSetting() {
           <Text {...labelStyles}>Shop Description</Text>
           <Box flex='1'>
             <RichTextEditor
-              value={formData.description}
+              value={data.shopDescription || ''}
               onChange={(content: string) =>
-                setFormData((prev) => ({ ...prev, description: content }))
+                onChange({ shopDescription: content })
               }
             />
           </Box>
@@ -364,7 +366,7 @@ export default function GeneralSetting() {
             flex='1'
             maxW={{ md: '60%' }}
             name='storeNamePosition'
-            value={formData.storeNamePosition}
+            value={data.storeNamePosition}
             onChange={handleSelectChange}
           >
             <option value='At Header'>At Header</option>
@@ -386,7 +388,7 @@ export default function GeneralSetting() {
             min={1}
             max={20}
             name='productsPerPage'
-            value={formData.productsPerPage}
+            value={data.productsPerPage || ''}
             onChange={(value) => handleNumberChange(value, 'productsPerPage')}
           >
             <NumberInputField />
@@ -405,7 +407,7 @@ export default function GeneralSetting() {
             <Checkbox
               size='lg'
               name={box.name}
-              isChecked={formData[box.name as keyof GeneralFormData] as boolean}
+              isChecked={data[box.name] as boolean}
               onChange={handleCheckboxChange}
             />
           </Flex>

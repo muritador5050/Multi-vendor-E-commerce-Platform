@@ -1,7 +1,7 @@
 import { Editor } from '@tinymce/tinymce-react';
 
 interface RichTextEditorProps {
-  value: string;
+  value: string | undefined;
   onChange: (content: string) => void;
 }
 

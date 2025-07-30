@@ -7,10 +7,10 @@ export type BusinessType =
   | 'corporation';
 
 export type SettingType =
+  | 'generalSettings'
   | 'notifications'
   | 'storeHours'
   | 'socialMedia'
-  | 'generalSettings'
   | 'storePolicies'
   | 'shippingRules'
   | 'seoSettings';
@@ -98,10 +98,10 @@ export interface GeneralSettings {
   storeSlug?: string;
   storeEmail?: string;
   storePhone?: string;
-  storeLogo?: string;
   shopDescription?: string;
   storeBannerType?: StoreBannerType;
-  storeBanner?: string;
+  storeLogo: string | File | null;
+  storeBanner?: string | File | (string | File)[] | null;
 }
 
 export interface ShippingZone {

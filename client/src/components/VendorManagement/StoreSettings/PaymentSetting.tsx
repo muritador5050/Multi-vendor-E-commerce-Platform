@@ -8,6 +8,12 @@ import {
   Text,
   Input,
 } from '@chakra-ui/react';
+import type { BankDetails } from '@/type/vendor';
+
+interface BankDetailsProps {
+  data: BankDetails;
+  onChange: (update: Partial<BankDetails>) => void;
+}
 
 type BankFormField = {
   name: string;
@@ -28,18 +34,16 @@ const bankFields: BankFormField[] = [
   },
   { name: 'bankName', label: 'Bank Name', placeholder: 'Name of Bank' },
   {
-    name: 'bankAddress',
-    label: 'Bank address',
-    placeholder: 'Address of your bank',
+    name: 'accountType',
+    label: 'Account Type',
+    placeholder: 'Type odf the account',
   },
   {
     name: 'routingNumber',
     label: 'Routing Number',
     placeholder: 'Routing Number',
   },
-  { name: 'iban', label: 'IBAN', placeholder: 'IBAN' },
   { name: 'swiftCode', label: 'Swift Code', placeholder: 'Swift code' },
-  { name: 'ifscCode', label: 'IFSC Code', placeholder: 'IFSC code' },
 ];
 
 const styles = {
@@ -51,16 +55,12 @@ const styles = {
   minWidth: { md: '150px' },
 };
 
-export default function PaymentSetting() {
+export default function PaymentSetting({ data, onChange }: BankDetailsProps) {
   const [bannerType, setBannerType] = useState('');
-  const [formData, setFormData] = useState<Record<string, string>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    onChange({ [name]: value });
   };
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -113,7 +113,7 @@ export default function PaymentSetting() {
                 <Input
                   name={field.name}
                   placeholder={field.placeholder}
-                  value={formData[field.name] || ''}
+                  value={data[field.name as keyof BankDetails] || ''}
                   onChange={handleInputChange}
                   flex='1'
                   maxW={{ md: '60%' }}

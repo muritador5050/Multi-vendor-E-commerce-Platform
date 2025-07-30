@@ -1,5 +1,11 @@
 import React from 'react';
 import { Stack, FormControl, FormLabel, Input } from '@chakra-ui/react';
+import type { SocialMedia } from '@/type/vendor';
+
+interface SocialMediaProps {
+  data: SocialMedia;
+  onChange: (update: Partial<SocialMedia>) => void;
+}
 
 const labelStyles = {
   fontFamily: 'mono',
@@ -10,16 +16,24 @@ const labelStyles = {
   minWidth: { md: '150px' },
 };
 
-export default function SocialProfile() {
-  const socialFields = [
-    { label: 'Twitter', placeholder: 'Twitter Handle' },
-    { label: 'Facebook', placeholder: 'Facebook Handle' },
-    { label: 'Instagram', placeholder: 'Instagram Username' },
-    { label: 'YouTube', placeholder: 'YouTube Channel Name' },
-    { label: 'LinkedIn', placeholder: 'LinkedIn Username' },
-    { label: 'Snapchat', placeholder: 'Snapchat ID' },
-    { label: 'Google Plus', placeholder: 'Google Plus Profile ID' },
-  ];
+const socialFields = [
+  { name: 'twitter', label: 'Twitter', placeholder: 'Twitter Handle' },
+  { name: 'facebook', label: 'Facebook', placeholder: 'Facebook Handle' },
+  { name: 'instagram', label: 'Instagram', placeholder: 'Instagram Username' },
+  { name: 'youtube', label: 'YouTube', placeholder: 'YouTube Channel Name' },
+  { name: 'linkedin', label: 'LinkedIn', placeholder: 'LinkedIn Username' },
+  { name: 'tiktok', label: 'Snapchat', placeholder: 'Snapchat ID' },
+  {
+    name: 'website',
+    label: 'Website',
+    placeholder: 'Google Plus Profile ID',
+  },
+];
+export default function SocialProfile({ data, onChange }: SocialMediaProps) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange({ [name]: value });
+  };
 
   return (
     <Stack spacing={4}>
@@ -35,6 +49,8 @@ export default function SocialProfile() {
             placeholder={field.placeholder}
             flex='1'
             maxW={{ md: '60%' }}
+            value={data[field.name as keyof SocialMedia]}
+            onChange={handleInputChange}
           />
         </FormControl>
       ))}

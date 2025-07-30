@@ -146,8 +146,18 @@ export default function VendorDashboard() {
   const lastNDays = generateLastNDays(15);
   const filledData = mergeWithSalesData(lastNDays, dialySalesData);
 
-  if (dailySalesLoading) return <p>Loading daily sales...</p>;
-  if (isAnalyticsLoading) return <p>Loading analytics sales...</p>;
+  if (dailySalesLoading)
+    return (
+      <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
+        Loading daily sales...
+      </Center>
+    );
+  if (isAnalyticsLoading)
+    return (
+      <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
+        Loading analytics sales...
+      </Center>
+    );
   return (
     <Box>
       <Flex
@@ -161,11 +171,7 @@ export default function VendorDashboard() {
         p={6}
       >
         <Stack direction={{ base: 'column', md: 'row' }} align='center' gap={6}>
-          <Avatar
-            size='2xl'
-            name='Vendor name'
-            src={data?.vendor.user.avatar}
-          />
+          <Avatar size='2xl' name='Vendor name' src={data?.user.avatar} />
           <Stat>
             <Text color='teal' fontSize='lg'>
               Welcome to the multivendor-mania Dashboard
@@ -177,7 +183,7 @@ export default function VendorDashboard() {
               fontWeight='bold'
             >
               {' '}
-              {data?.vendor.businessName}
+              {data?.businessName}
             </Text>
             <StatHelpText>{formatLastLogin(new Date())}</StatHelpText>
           </Stat>

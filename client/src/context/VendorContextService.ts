@@ -418,5 +418,5 @@ export const useCurrentVendor = () => {
 
 export const useIsVendorVerified = () => {
   const vendor = useCurrentVendor();
-  return vendor?.vendor.verificationStatus === 'verified';
+  return vendor?.verificationStatus === 'verified';
 };

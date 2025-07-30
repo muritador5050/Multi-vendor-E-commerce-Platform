@@ -8,6 +8,7 @@ import {
   Select,
 } from '@chakra-ui/react';
 import { Country, State } from 'country-state-city';
+import type { StoreAddress } from '@/type/vendor';
 
 interface ICountry {
   name: string;
@@ -28,6 +29,11 @@ interface IState {
   longitude?: string;
 }
 
+interface LocationProps {
+  data: StoreAddress;
+  onChange: (update: Partial<StoreAddress>) => void;
+}
+
 const formLabelStyle = {
   fontFamily: 'mono',
   fontWeight: 'semibold',
@@ -40,34 +46,56 @@ const formLabelStyle = {
 const fields = [
   { name: 'street', label: 'Street', placeholder: 'Street address' },
   {
-    name: 'street2',
-    label: 'Street 2',
+    name: 'apartment',
+    label: 'Apartment',
     placeholder: 'Apartment, suite, unit etc. (optional)',
   },
   { name: 'city', label: 'City/Town', placeholder: 'Town / City' },
   {
-    name: 'PostalCodeZIP',
-    label: 'Postalcode/ZIP',
+    name: 'zipCode',
+    label: 'Postal/ZIP',
     placeholder: 'Postal Code / ZIP',
   },
 ];
 
-export default function StoreLocation() {
+export default function StoreLocation({ data, onChange }: LocationProps) {
   const [countries, setCountries] = useState<ICountry[]>([]);
   const [states, setStates] = useState<IState[]>([]);
-  const [selectedCountryCode, setSelectedCountryCode] = useState('');
-  const [selectedStateCode, setSelectedStateCode] = useState('');
 
   useEffect(() => {
     setCountries(Country.getAllCountries() as ICountry[]);
   }, []);
 
+  // Load states when country changes or component mounts with existing country data
+  useEffect(() => {
+    if (data.country) {
+      const fetchStates = State.getStatesOfCountry(data.country);
+      setStates(fetchStates as IState[]);
+    } else {
+      setStates([]);
+    }
+  }, [data.country]);
+
   const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const countryCode = e.target.value;
-    setSelectedCountryCode(countryCode);
     const fetchStates = State.getStatesOfCountry(countryCode);
     setStates(fetchStates as IState[]);
-    setSelectedStateCode('');
+
+    // Update the data through onChange prop
+    onChange({
+      country: countryCode,
+      state: '', // Reset state when country changes
+    });
+  };
+
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const stateCode = e.target.value;
+    onChange({ state: stateCode });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    onChange({ [name]: value });
   };
 
   return (
@@ -87,6 +115,9 @@ export default function StoreLocation() {
             placeholder={field.placeholder}
             flex='1'
             maxW={{ md: '60%' }}
+            name={field.name}
+            value={data[field.name as keyof StoreAddress] || ''}
+            onChange={handleInputChange}
           />
         </FormControl>
       ))}
@@ -102,7 +133,7 @@ export default function StoreLocation() {
           maxW='60%'
           placeholder='Select country'
           onChange={handleCountryChange}
-          value={selectedCountryCode}
+          value={data.country || ''}
         >
           {countries.map((country) => (
             <option key={country.isoCode} value={country.isoCode}>
@@ -123,8 +154,8 @@ export default function StoreLocation() {
           maxW='60%'
           placeholder='Select state'
           disabled={!states.length}
-          value={selectedStateCode}
-          onChange={(e) => setSelectedStateCode(e.target.value)}
+          value={data.state || ''}
+          onChange={handleStateChange}
         >
           {states.map((state) => (
             <option key={state.isoCode} value={state.isoCode}>

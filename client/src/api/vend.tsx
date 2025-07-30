@@ -347,9 +347,9 @@ import StoreLocation from '@/components/VendorManagement/StoreSettings/StoreLoca
 import PaymentSetting from '@/components/VendorManagement/StoreSettings/PaymentSetting';
 import ShippingSetting from '@/components/VendorManagement/StoreSettings/ShippingSetting';
 import SEOSetting from '@/components/VendorManagement/StoreSettings/SEOSetting';
-import StorePolicies from '@/components/VendorManagement/StoreSettings/StorePolicies';
+import StorePolicies from '@/components/VendorManagement/StoreSettings/StorePoliciesSettings';
 import CustomerSupport from '@/components/VendorManagement/StoreSettings/CustomerSupport';
-import StoreHours from '@/components/VendorManagement/StoreSettings/StoreHours';
+import StoreHours from '@/components/VendorManagement/StoreSettings/StoreHoursSettings';
 import { useVendorProfile } from '@/context/VendorContextService';
 import { useVendorSettings } from '@/hooks/useVendorSettings';
 import { SettingsSection } from '@/types/vendor-settings';
