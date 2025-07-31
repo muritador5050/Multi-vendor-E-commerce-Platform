@@ -24,7 +24,7 @@ const styles = {
 
 interface StoreHoursProps {
   data: StoreHour[];
-  onChange: (updates: StoreHour[]) => void; // Changed from Partial<StoreHour[]> to StoreHour[]
+  onChange: (updates: StoreHour[]) => void;
 }
 
 const daysOfWeek: DayOfWeek[] = [
