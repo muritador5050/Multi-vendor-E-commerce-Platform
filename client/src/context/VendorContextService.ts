@@ -5,7 +5,7 @@ import type {
   VendorStats,
   AdminVendorStats,
   VendorFilters,
-  VendorProfileUpdate,
+  // VendorProfileUpdate,
   VerificationStatusUpdate,
   DocumentUpload,
   AccountStatusToggle,
@@ -221,7 +221,7 @@ export const useCreateVendorProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: VendorProfileUpdate) => createNewVendorProfile(data),
+    mutationFn: (data: Vendor) => createNewVendorProfile(data),
     onSuccess: (data) => {
       queryClient.setQueryData(vendorKeys.profile, data);
       queryClient.invalidateQueries({ queryKey: vendorKeys.all });
@@ -233,7 +233,7 @@ export const useUpdateVendorProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: VendorProfileUpdate) => updateVendorProfile(data),
+    mutationFn: (data: Partial<Vendor>) => updateVendorProfile(data),
     onSuccess: (data) => {
       queryClient.setQueryData(vendorKeys.profile, data);
       queryClient.invalidateQueries({ queryKey: vendorKeys.all });

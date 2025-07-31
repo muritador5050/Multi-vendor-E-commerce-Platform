@@ -1,234 +1,3 @@
-// import React from 'react';
-// import {
-//   Box,
-//   Stack,
-//   Text,
-//   Flex,
-//   Checkbox,
-//   FormControl,
-//   FormLabel,
-//   Input,
-//   IconButton,
-// } from '@chakra-ui/react';
-// import ComboBox from '@/utils/ComboBox';
-// import { CirclePlus, CircleX } from 'lucide-react';
-// import type { StoreHour } from '@/type/vendor';
-
-// const styles = {
-//   fontFamily: 'mono',
-//   fontWeight: 'semibold',
-//   fontSize: 'lg',
-//   color: 'teal.700',
-//   fontStyle: 'italic',
-//   minWidth: { md: '150px' },
-// };
-
-// const daysOfWeek = [
-//   'Monday',
-//   'Tuesday',
-//   'Wednesday',
-//   'Thursday',
-//   'Friday',
-//   'Saturday',
-//   'Sunday',
-// ];
-
-// type Slot = { opening: string; closing: string };
-// type SlotField = keyof Slot;
-
-// interface StoreHoursData {
-//   enableStoreHours: boolean;
-//   disablePurchaseOffTime: boolean;
-//   weekOff: string[];
-//   slots: Record<string, Slot[]>;
-// }
-
-// interface StoreHoursProps {
-//   data: StoreHoursData;
-//   onChange: (updates: Partial<StoreHoursData>) => void;
-// }
-
-// export default function StoreHoursSettings({
-//   data,
-//   onChange,
-// }: StoreHoursProps) {
-//   const handleAddSlot = (day: string) => {
-//     const updatedSlots = {
-//       ...data.slots,
-//       [day]: [...data.slots[day], { opening: '', closing: '' }],
-//     };
-//     onChange({ slots: updatedSlots });
-//   };
-
-//   const handleRemoveSlot = (day: string, index: number) => {
-//     const updatedSlots = {
-//       ...data.slots,
-//       [day]: data.slots[day].filter((_, i) => i !== index),
-//     };
-//     onChange({ slots: updatedSlots });
-//   };
-
-//   const handleSlotChange = (
-//     day: string,
-//     index: number,
-//     field: SlotField,
-//     value: string
-//   ) => {
-//     const updated = [...data.slots[day]];
-//     updated[index][field] = value;
-//     onChange({ slots: { ...data.slots, [day]: updated } });
-//   };
-
-//   const handleCheckboxChange =
-//     (field: 'enableStoreHours' | 'disablePurchaseOffTime') =>
-//     (e: React.ChangeEvent<HTMLInputElement>) => {
-//       onChange({ [field]: e.target.checked });
-//     };
-
-//   return (
-//     <Box>
-//       <Stack>
-//         <Text
-//           fontWeight='semibold'
-//           fontSize='xl'
-//           fontStyle='italic'
-//           color='teal.700'
-//         >
-//           Store Hours Settings
-//         </Text>
-
-//         <FormControl
-//           display={{ base: 'block', md: 'flex' }}
-//           alignItems={{ md: 'center' }}
-//           gap={36}
-//         >
-//           <FormLabel {...styles}>Enable Store Hours</FormLabel>
-//           <Checkbox
-//             size='lg'
-//             isChecked={data.enableStoreHours}
-//             onChange={handleCheckboxChange('enableStoreHours')}
-//           />
-//         </FormControl>
-
-//         <FormControl
-//           display={{ base: 'block', md: 'flex' }}
-//           alignItems={{ md: 'center' }}
-//           gap={1}
-//         >
-//           <FormLabel {...styles}>Disable Purchase During OFF Time</FormLabel>
-//           <Checkbox
-//             size='lg'
-//             isChecked={data.disablePurchaseOffTime}
-//             onChange={handleCheckboxChange('disablePurchaseOffTime')}
-//           />
-//         </FormControl>
-
-//         <FormControl
-//           display={{ base: 'block', md: 'flex' }}
-//           alignItems={{ md: 'center' }}
-//           gap={{ base: 4, md: '170px' }}
-//         >
-//           <FormLabel {...styles}>Set Week OFF</FormLabel>
-//           <Box flex='1' maxW={{ md: '60%' }}>
-//             <ComboBox
-//             // value={data.weekOff}
-//             // onChange={(value) => onChange({ weekOff: value })}
-//             />
-//           </Box>
-//         </FormControl>
-//       </Stack>
-
-//       <Box mt={12}>
-//         <Text
-//           fontWeight='semibold'
-//           fontSize='xl'
-//           fontStyle='italic'
-//           color='teal.700'
-//         >
-//           Daily Basis Opening & Closing Hours
-//         </Text>
-
-//         {daysOfWeek.map((day) => (
-//           <Box key={day} mt={6} ml={{ md: 6 }}>
-//             <Text {...styles}>{day} Time Slots</Text>
-//             {data.slots[day].map((slot, index) => (
-//               <Stack
-//                 key={index}
-//                 spacing={5}
-//                 direction={{ base: 'column', md: 'row' }}
-//                 align='center'
-//                 p={6}
-//                 border='2px solid thistle'
-//                 borderRadius='xl'
-//                 my={4}
-//               >
-//                 <FormControl display='flex' alignItems='center' gap={4}>
-//                   <FormLabel
-//                     fontWeight='semibold'
-//                     fontStyle='italic'
-//                     color='teal.700'
-//                   >
-//                     Opening
-//                   </FormLabel>
-//                   <Input
-//                     type='time'
-//                     w={{ md: 44 }}
-//                     value={slot.opening}
-//                     onChange={(e) =>
-//                       handleSlotChange(day, index, 'opening', e.target.value)
-//                     }
-//                   />
-//                 </FormControl>
-
-//                 <FormControl display='flex' alignItems='center' gap={4}>
-//                   <FormLabel
-//                     fontWeight='semibold'
-//                     fontStyle='italic'
-//                     color='teal.700'
-//                   >
-//                     Closing
-//                   </FormLabel>
-//                   <Input
-//                     type='time'
-//                     w={{ md: 44 }}
-//                     value={slot.closing}
-//                     onChange={(e) =>
-//                       handleSlotChange(day, index, 'closing', e.target.value)
-//                     }
-//                   />
-//                 </FormControl>
-
-//                 <Flex align='center' gap={3}>
-//                   {/* Add Button (only for last slot) */}
-//                   {index === data.slots[day].length - 1 && (
-//                     <IconButton
-//                       icon={<CirclePlus />}
-//                       onClick={() => handleAddSlot(day)}
-//                       aria-label='Add time slot'
-//                       size='xs'
-//                       variant='outline'
-//                     />
-//                   )}
-//                   {/* Remove Button */}
-//                   {data.slots[day].length > 1 && (
-//                     <IconButton
-//                       icon={<CircleX />}
-//                       aria-label='Remove slot'
-//                       onClick={() => handleRemoveSlot(day, index)}
-//                       variant='outline'
-//                       size='xs'
-//                     />
-//                   )}
-//                 </Flex>
-//               </Stack>
-//             ))}
-//           </Box>
-//         ))}
-//       </Box>
-//     </Box>
-//   );
-// }
-
 import React from 'react';
 import {
   Box,
@@ -255,7 +24,7 @@ const styles = {
 
 interface StoreHoursProps {
   data: StoreHour[];
-  onChange: (updates: StoreHour[]) => void;
+  onChange: (updates: StoreHour[]) => void; // Changed from Partial<StoreHour[]> to StoreHour[]
 }
 
 const daysOfWeek: DayOfWeek[] = [
@@ -289,11 +58,7 @@ export default function StoreHoursSettings({
     onChange(updatedData);
   };
 
-  const handleTimeChange = (
-    day: DayOfWeek,
-    field: 'openTime' | 'closeTime',
-    value: string
-  ) => {
+  const handleTimeChange = (day: DayOfWeek, field: string, value: string) => {
     const updatedData = data.map((storeHour) =>
       storeHour.day === day ? { ...storeHour, [field]: value } : storeHour
     );
@@ -374,11 +139,10 @@ export default function StoreHoursSettings({
           Store Hours Settings
         </Text>
 
-        {daysOfWeek.map((day) => {
+        {daysOfWeek.map((day, idx) => {
           const dayData = getDayData(day);
-
           return (
-            <Box key={day} mt={6} ml={{ md: 6 }}>
+            <Box key={idx} mt={6} ml={{ md: 6 }}>
               <Flex align='center' gap={4} mb={4}>
                 <Text {...styles}>{dayDisplayNames[day]}</Text>
                 <Switch

@@ -9,11 +9,6 @@ import {
   Select,
   Stack,
   Text,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
   Checkbox,
   Flex,
   Image,
@@ -32,8 +27,8 @@ export interface GeneralFormData extends GeneralSettings {
 }
 
 interface GeneralSettingProps {
-  data: GeneralFormData;
-  onChange: (update: Partial<GeneralFormData>) => void;
+  data: GeneralSettings;
+  onChange: (update: Partial<GeneralSettings>) => void;
 }
 
 const labelStyles = {
@@ -46,7 +41,7 @@ const labelStyles = {
 };
 
 type FieldConfig = {
-  name: keyof GeneralFormData;
+  name: keyof GeneralSettings;
   label: string;
   placeholder: string;
   isRequired: boolean;
@@ -81,24 +76,21 @@ const fields: FieldConfig[] = [
 
 const checkBoxField = [
   {
-    name: 'hideEmail' as keyof GeneralFormData,
+    name: 'hideEmail',
     label: 'Hide Email from Store',
   },
   {
-    name: 'hidePhone' as keyof GeneralFormData,
+    name: 'hidePhone',
     label: 'Hide Phone from Store',
   },
   {
-    name: 'hideAddress' as keyof GeneralFormData,
+    name: 'hideAddress',
     label: 'Hide Address from Store',
   },
-  { name: 'hideMap' as keyof GeneralFormData, label: 'Hide Map from Store' },
+  { name: 'hideMap', label: 'Hide Map from Store' },
+
   {
-    name: 'hideAbout' as keyof GeneralFormData,
-    label: 'Hide About from Store',
-  },
-  {
-    name: 'hidePolicy' as keyof GeneralFormData,
+    name: 'hidePolicy',
     label: 'Hide Policy from Store',
   },
 ];
@@ -145,11 +137,6 @@ export default function GeneralSetting({
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    onChange({ [name]: value });
-  };
-
-  const handleNumberChange = (valueAsString: string, name: string) => {
-    const value = parseInt(valueAsString, 10);
     onChange({ [name]: value });
   };
 
@@ -366,37 +353,12 @@ export default function GeneralSetting({
             flex='1'
             maxW={{ md: '60%' }}
             name='storeNamePosition'
-            value={data.storeNamePosition}
+            // value={data.storeNamePosition}
             onChange={handleSelectChange}
           >
             <option value='At Header'>At Header</option>
             <option value='On Banner'>On Banner</option>
           </Select>
-        </FormControl>
-
-        {/**Product Per Page */}
-        <FormControl
-          display={{ base: 'block', md: 'flex' }}
-          alignItems={{ md: 'center' }}
-          gap={{ base: 4, md: 44 }}
-        >
-          <FormLabel {...labelStyles}>Products per page</FormLabel>
-          <NumberInput
-            flex='1'
-            maxW={{ md: '60%' }}
-            defaultValue={10}
-            min={1}
-            max={20}
-            name='productsPerPage'
-            value={data.productsPerPage || ''}
-            onChange={(value) => handleNumberChange(value, 'productsPerPage')}
-          >
-            <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
         </FormControl>
 
         {checkBoxField.map((box, idx) => (
@@ -407,7 +369,7 @@ export default function GeneralSetting({
             <Checkbox
               size='lg'
               name={box.name}
-              isChecked={data[box.name] as boolean}
+              // isChecked={data[box.name] as boolean}
               onChange={handleCheckboxChange}
             />
           </Flex>

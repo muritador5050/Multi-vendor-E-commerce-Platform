@@ -49,6 +49,7 @@ export default function SocialProfile({ data, onChange }: SocialMediaProps) {
             placeholder={field.placeholder}
             flex='1'
             maxW={{ md: '60%' }}
+            name={field.name}
             value={data[field.name as keyof SocialMedia]}
             onChange={handleInputChange}
           />

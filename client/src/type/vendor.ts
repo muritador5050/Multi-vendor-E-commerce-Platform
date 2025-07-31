@@ -138,7 +138,7 @@ export interface StoreBreak {
 }
 
 export interface StoreHour {
-  day: DayOfWeek;
+  day?: DayOfWeek;
   isOpen?: boolean;
   openTime?: string;
   closeTime?: string;
@@ -309,7 +309,7 @@ export interface AccountStatusResponse {
 
 export interface SettingsUpdate {
   notifications?: Partial<NotificationSettings>;
-  storeHours?: StoreHour[];
+  storeHours?: Partial<StoreHour[]>;
   socialMedia?: Partial<SocialMedia>;
   generalSettings?: Partial<GeneralSettings>;
   storePolicies?: Partial<StorePolicies>;

@@ -27,9 +27,7 @@ import {
   Ambulance,
 } from 'lucide-react';
 import ProfileProgress from '@/components/ui/ProfileProgress';
-import GeneralSetting, {
-  type GeneralFormData,
-} from '@/components/VendorManagement/StoreSettings/GeneralSetting';
+import GeneralSetting from '@/components/VendorManagement/StoreSettings/GeneralSetting';
 import StoreLocation from '@/components/VendorManagement/StoreSettings/StoreLocation';
 import PaymentSetting from '@/components/VendorManagement/StoreSettings/PaymentSetting';
 import ShippingSetting from '@/components/VendorManagement/StoreSettings/ShippingSetting';
@@ -42,7 +40,10 @@ import {
 import type {
   Address,
   BankDetails,
+  GeneralSettings,
   SeoSettings,
+  SettingsUpdate,
+  SettingType,
   ShippingRules,
   SocialMedia,
   StoreAddress,
@@ -54,7 +55,7 @@ import StoreHoursSettings from './StoreSettings/StoreHoursSettings';
 import SocialProfile from './StoreSettings/SocialProfile';
 
 interface FormData {
-  generalSettings: GeneralFormData;
+  generalSettings: GeneralSettings;
   storeAddress: StoreAddress;
   businessAddress: Address;
   bankDetails: BankDetails;
@@ -94,23 +95,23 @@ const SETTINGS_MAPPING: Record<string, keyof FormData> = {
 };
 
 // Default data structures
-const defaultGeneralSettings: GeneralFormData = {
+const defaultGeneralSettings: GeneralSettings = {
   storeName: '',
   storeSlug: '',
   storeEmail: '',
   storePhone: '',
   storeBannerType: 'image',
-  storeNamePosition: 'At Header',
   shopDescription: '',
   storeLogo: null,
   storeBanner: null,
-  productsPerPage: 10,
-  hideEmail: false,
-  hidePhone: false,
-  hideAddress: false,
-  hideMap: false,
-  hideAbout: false,
-  hidePolicy: false,
+  // storeNamePosition: 'At Header',
+  // productsPerPage: 10,
+  // hideEmail: false,
+  // hidePhone: false,
+  // hideAddress: false,
+  // hideMap: false,
+  // hideAbout: false,
+  // hidePolicy: false,
 };
 
 // Updated to match schema structure
@@ -159,15 +160,15 @@ export default function Setting() {
   const toast = useToast();
 
   const [formData, setFormData] = useState<FormData>({
-    generalSettings: { ...defaultGeneralSettings },
-    storeAddress: { ...defaultAddressData },
-    businessAddress: { ...defaultAddressData },
+    generalSettings: { ...(defaultGeneralSettings || '') },
+    storeAddress: { ...(defaultAddressData || '') },
+    businessAddress: { ...(defaultAddressData || '') },
     bankDetails: data?.bankDetails || {},
-    socialMedia: { ...defaultSocialMediaData },
+    socialMedia: { ...(defaultSocialMediaData || '') },
     storePolicies: data?.storePolicies || {},
     shippingRules: data?.shippingRules || {},
     seoSettings: { ...defaultSeoData },
-    storeHours: [...defaultStoreHours],
+    storeHours: data?.storeHours || [],
   });
 
   // Update formData when data loads
@@ -195,8 +196,20 @@ export default function Setting() {
     <T extends keyof FormData>(section: T, updates: Partial<FormData[T]>) => {
       setFormData((prev) => ({
         ...prev,
-        [section]:
-          section === 'storeHours' ? updates : { ...prev[section], ...updates },
+        [section]: { ...prev[section], ...updates },
+        // section === 'storeHours' ? updates : { ...prev[section], ...updates },
+      }));
+      setIsDirty(true);
+    },
+    []
+  );
+
+  // Fixed handler specifically for StoreHours
+  const handleStoreHoursChange = useCallback(
+    (updatedStoreHours: StoreHour[]) => {
+      setFormData((prev) => ({
+        ...prev,
+        storeHours: updatedStoreHours,
       }));
       setIsDirty(true);
     },
@@ -207,37 +220,35 @@ export default function Setting() {
   const handleSaveAll = async (): Promise<void> => {
     setIsLoading(true);
     const promises: Promise<unknown>[] = [];
-
     try {
       for (const [settingType, schemaKey] of Object.entries(SETTINGS_MAPPING)) {
-        const currentData = formData[schemaKey];
         const originalData = data?.[schemaKey];
+        const currentData = formData[schemaKey];
 
         if (JSON.stringify(currentData) !== JSON.stringify(originalData)) {
           promises.push(
             updateSettings.mutateAsync({
-              settingType,
-              data: currentData,
+              settingType: settingType as SettingType,
+              data: currentData as SettingsUpdate,
             })
           );
         }
       }
-
       // Execute all API calls
       await Promise.all(promises);
-
       toast({
         title: 'Settings Updated',
         description: 'All settings have been saved successfully',
+        position: 'top-right',
         status: 'success',
         duration: 3000,
       });
-
       setIsDirty(false);
     } catch (error) {
       toast({
         title: 'Error',
         description: `Failed to save some settings. Please try again ${error}`,
+        position: 'top-right',
         status: 'error',
         duration: 5000,
       });
@@ -311,7 +322,7 @@ export default function Setting() {
               <TabPanel>
                 <GeneralSetting
                   data={formData.generalSettings}
-                  onChange={(updates: Partial<GeneralFormData>) =>
+                  onChange={(updates: Partial<GeneralSettings>) =>
                     updateFormSection('generalSettings', updates)
                   }
                 />
@@ -367,9 +378,7 @@ export default function Setting() {
               <TabPanel>
                 <StoreHoursSettings
                   data={formData.storeHours}
-                  onChange={(updates: StoreHour[]) =>
-                    updateFormSection('storeHours', updates)
-                  }
+                  onChange={handleStoreHoursChange}
                 />
               </TabPanel>
             </TabPanels>
@@ -393,7 +402,7 @@ export default function Setting() {
             <AccordionPanel pb={4}>
               <GeneralSetting
                 data={formData.generalSettings}
-                onChange={(updates: Partial<GeneralFormData>) =>
+                onChange={(updates: Partial<GeneralSettings>) =>
                   updateFormSection('generalSettings', updates)
                 }
               />
@@ -544,9 +553,7 @@ export default function Setting() {
             <AccordionPanel pb={4}>
               <StoreHoursSettings
                 data={formData.storeHours}
-                onChange={(updates: StoreHour[]) =>
-                  updateFormSection('storeHours', updates)
-                }
+                onChange={handleStoreHoursChange}
               />
             </AccordionPanel>
           </AccordionItem>

@@ -399,7 +399,7 @@ export default function ShippingSettings({
                         onChange={(e) => {
                           if (e.target.value) {
                             handleCountrySelection(index, e.target.value, true);
-                            e.target.value = ''; // Reset select
+                            e.target.value = '';
                           }
                         }}
                       >

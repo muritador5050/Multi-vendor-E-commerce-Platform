@@ -66,7 +66,6 @@ export default function StoreLocation({ data, onChange }: LocationProps) {
     setCountries(Country.getAllCountries() as ICountry[]);
   }, []);
 
-  // Load states when country changes or component mounts with existing country data
   useEffect(() => {
     if (data.country) {
       const fetchStates = State.getStatesOfCountry(data.country);
@@ -80,11 +79,9 @@ export default function StoreLocation({ data, onChange }: LocationProps) {
     const countryCode = e.target.value;
     const fetchStates = State.getStatesOfCountry(countryCode);
     setStates(fetchStates as IState[]);
-
-    // Update the data through onChange prop
     onChange({
       country: countryCode,
-      state: '', // Reset state when country changes
+      state: '',
     });
   };
 
