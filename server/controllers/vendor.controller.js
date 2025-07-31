@@ -84,8 +84,6 @@ class VendorController {
         'user',
         '-password -refreshToken -tokenVersion'
       );
-      console.log(req.user.id)
-      console.log('Profile', vendor);
 
       if (!vendor) {
         return res.status(404).json({

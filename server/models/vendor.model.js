@@ -373,8 +373,9 @@ vendorSchema.methods.updateVendorSettings = function (
     throw new Error('Invalid setting type');
   }
 
-  // Merge existing data with new data for partial updates
-  if (this[settingType] && typeof this[settingType] === 'object') {
+  if (settingType === 'storeHours') {
+    this[settingType] = settingData;
+  } else if (this[settingType] && typeof this[settingType] === 'object') {
     this[settingType] = { ...this[settingType].toObject(), ...settingData };
   } else {
     this[settingType] = settingData;

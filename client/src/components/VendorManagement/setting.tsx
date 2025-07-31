@@ -160,15 +160,15 @@ export default function Setting() {
   const toast = useToast();
 
   const [formData, setFormData] = useState<FormData>({
-    generalSettings: { ...(defaultGeneralSettings || '') },
-    storeAddress: { ...(defaultAddressData || '') },
-    businessAddress: { ...(defaultAddressData || '') },
+    generalSettings: { ...defaultGeneralSettings },
+    storeAddress: { ...defaultAddressData },
+    businessAddress: { ...defaultAddressData },
     bankDetails: data?.bankDetails || {},
-    socialMedia: { ...(defaultSocialMediaData || '') },
+    socialMedia: { ...defaultSocialMediaData },
     storePolicies: data?.storePolicies || {},
     shippingRules: data?.shippingRules || {},
     seoSettings: { ...defaultSeoData },
-    storeHours: data?.storeHours || [],
+    storeHours: data?.storeHours || [...defaultStoreHours],
   });
 
   // Update formData when data loads
