@@ -72,6 +72,8 @@ async function updateVendorProfile(
   );
 }
 
+
+
 // Public Vendor Routes
 async function getAllVendors(
   filters: VendorFilters = {}
@@ -240,6 +242,8 @@ export const useUpdateVendorProfile = () => {
     },
   });
 };
+
+
 
 export const useVendorProfileCompletion = () => {
   return useQuery({

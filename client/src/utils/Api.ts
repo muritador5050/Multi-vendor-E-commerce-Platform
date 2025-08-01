@@ -96,7 +96,6 @@ class ApiClient {
       );
 
       if (!response.ok) {
-        // If it's a 401/403, clear auth immediately
         if (response.status === 401 || response.status === 403) {
           this.clearAuthAndRedirect();
         }
@@ -108,7 +107,6 @@ class ApiClient {
 
       const data: { accessToken: string } = await response.json();
 
-      // Validate the token exists
       if (!data.accessToken) {
         throw new ApiError('Invalid token response', 401);
       }
@@ -119,11 +117,9 @@ class ApiClient {
       if (error instanceof DOMException && error.name === 'AbortError') {
         throw new ApiError('Request timeout. Please try again.', 408);
       }
-      // On API errors, rethrow
       if (error instanceof ApiError) {
         throw error;
       }
-      // On network errors, don't clear auth immediately
       throw new ApiError('Network error during token refresh', 500);
     }
   }
@@ -271,13 +267,11 @@ class ApiClient {
     try {
       let token = localStorage.getItem('accessToken');
 
-      // Preemptive refresh if token is about to expire
       if (token && !this.isTokenValid(token)) {
         token = await this.refreshToken();
       }
 
       const headers: HeadersInit = {
-        // 'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       };

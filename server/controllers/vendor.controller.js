@@ -1,10 +1,14 @@
 const Vendor = require('../models/vendor.model');
 const User = require('../models/user.model');
 const EmailService = require('../services/emailService');
+const path = require('path');
+const { BACKEND_URL } = require('../configs/index');
 
+//Controller
 class VendorController {
   static async updateVendorData(req, res) {
     const user = await User.findById(req.user.id);
+
     if (!user || user.role !== 'vendor') {
       return res.status(403).json({
         message: 'Only users with vendor role can update vendor data',
@@ -13,6 +17,7 @@ class VendorController {
 
     try {
       let vendor = await Vendor.findOne({ user: req.user.id });
+
       if (!vendor) {
         vendor = new Vendor({ user: req.user.id, ...req.body });
         await vendor.save();
@@ -48,7 +53,35 @@ class VendorController {
     }
   }
 
-  // Update specific settings category
+  // static async updateSettings(req, res) {
+  //   try {
+  //     const vendor = await Vendor.findOne({ user: req.user.id });
+
+  //     if (!vendor) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Vendor profile not found',
+  //       });
+  //     }
+
+  //     const { settingType } = req.params;
+  //     const settingData = req.body;
+
+  //     await vendor.updateVendorSettings(settingType, settingData);
+
+  //     res.json({
+  //       success: true,
+  //       message: `${settingType} updated successfully`,
+  //       data: vendor[settingType],
+  //     });
+  //   } catch (error) {
+  //     res.status(400).json({
+  //       success: false,
+  //       message: error.message,
+  //     });
+  //   }
+  // }
+
   static async updateSettings(req, res) {
     try {
       const vendor = await Vendor.findOne({ user: req.user.id });
@@ -61,7 +94,18 @@ class VendorController {
       }
 
       const { settingType } = req.params;
-      const settingData = req.body;
+      let settingData = req.body;
+
+      if (settingType === 'generalSettings') {
+        if (req.files) {
+          if (req.files.storeLogo && req.files.storeLogo[0]) {
+            settingData.storeLogo = `${BACKEND_URL}/uploads/storeLogo/${req.files.storeLogo[0].filename}`;
+          }
+          if (req.files.storeBanner && req.files.storeBanner[0]) {
+            settingData.storeBanner = `${BACKEND_URL}/uploads/storeBanner/${req.files.storeBanner[0].filename}`;
+          }
+        }
+      }
 
       await vendor.updateVendorSettings(settingType, settingData);
 

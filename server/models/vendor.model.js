@@ -50,18 +50,18 @@ const vendorSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
-      storeLogo: String,
       shopDescription: {
         type: String,
         trim: true,
         maxlength: 1000,
       },
+      storeLogo: String,
+      storeBanner: String,
       storeBannerType: {
         type: String,
         enum: ['image', 'video', 'slider'],
         default: 'image',
       },
-      storeBanner: String,
     },
 
     // 2. Store Address

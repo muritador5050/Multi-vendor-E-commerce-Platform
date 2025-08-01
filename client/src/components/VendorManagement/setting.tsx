@@ -104,14 +104,6 @@ const defaultGeneralSettings: GeneralSettings = {
   shopDescription: '',
   storeLogo: null,
   storeBanner: null,
-  // storeNamePosition: 'At Header',
-  // productsPerPage: 10,
-  // hideEmail: false,
-  // hidePhone: false,
-  // hideAddress: false,
-  // hideMap: false,
-  // hideAbout: false,
-  // hidePolicy: false,
 };
 
 // Updated to match schema structure
@@ -171,7 +163,6 @@ export default function Setting() {
     storeHours: data?.storeHours || [...defaultStoreHours],
   });
 
-  // Update formData when data loads
   useEffect(() => {
     if (data) {
       setFormData((prev) => ({
@@ -197,7 +188,6 @@ export default function Setting() {
       setFormData((prev) => ({
         ...prev,
         [section]: { ...prev[section], ...updates },
-        // section === 'storeHours' ? updates : { ...prev[section], ...updates },
       }));
       setIsDirty(true);
     },
@@ -216,7 +206,6 @@ export default function Setting() {
     []
   );
 
-  // Save all modified sections
   const handleSaveAll = async (): Promise<void> => {
     setIsLoading(true);
     const promises: Promise<unknown>[] = [];
@@ -256,6 +245,8 @@ export default function Setting() {
       setIsLoading(false);
     }
   };
+
+ 
 
   return (
     <Box>

@@ -33,10 +33,6 @@ export const authKeys = {
   onlineUsers: () => [...authKeys.users(), 'online'] as const,
 };
 
-// =============================================
-// 3. API FUNCTIONS (Authentication Related)
-// =============================================
-
 /**
  * Register a new user
  */
@@ -175,10 +171,6 @@ async function sendEmailVerificationLink() {
   );
 }
 
-// =============================================
-// 4. API FUNCTIONS (User Management)
-// =============================================
-
 /**
  * Fetch paginated list of users
  */
@@ -241,10 +233,6 @@ async function deleteUser(id: string) {
   });
 }
 
-// =============================================
-// 5. API FUNCTIONS (User Status Management)
-// =============================================
-
 /**
  * Deactivate a user
  */
@@ -292,10 +280,6 @@ async function getUserStatus(id: string) {
   );
 }
 
-// =============================================
-// 6. API FUNCTIONS (Online Status Management)
-// =============================================
-
 /**
  * Set user as online
  */
@@ -340,10 +324,6 @@ function getOnlineUsers() {
   );
 }
 
-// =============================================
-// 7. UTILITY FUNCTIONS
-// =============================================
-
 /**
  * Check if user is authenticated
  */
@@ -384,15 +364,8 @@ function validateRegistration(
  * Upload file to server
  */
 async function uploadAvatar<T = unknown>(file: File) {
-  console.log('File to upload:', file.name, file.size, file.type);
-
   const formData = new FormData();
   formData.append('avatar', file);
-
-  // Log FormData contents (for debugging)
-  for (const [key, value] of formData.entries()) {
-    console.log('FormData entry:', key, value);
-  }
   return apiClient.authenticatedApiRequest<ApiResponse<T>>(
     '/auth/users/avatar',
     {
@@ -401,10 +374,6 @@ async function uploadAvatar<T = unknown>(file: File) {
     }
   );
 }
-
-// =============================================
-// 8. QUERY HOOKS (Data Fetching)
-// =============================================
 
 /**
  * Fetch paginated list of users

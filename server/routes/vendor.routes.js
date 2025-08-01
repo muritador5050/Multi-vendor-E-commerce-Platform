@@ -4,13 +4,12 @@ const VendorController = require('../controllers/vendor.controller');
 const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
+const uploadVendorImages = require('../middlewares/uploadVendorImages');
 
 // Public routes
 router.get('/', asyncHandler(VendorController.getAllVendors));
 router.get('/top', asyncHandler(VendorController.getTopVendors));
 
-// IMPORTANT: More specific routes MUST come before general ones
-// Profile completion - MOVED UP
 router.get(
   '/profile/completion',
   authenticate,
@@ -18,7 +17,6 @@ router.get(
   asyncHandler(VendorController.getProfileCompletion)
 );
 
-// Vendor profile routes - MOVED DOWN
 router
   .route('/profile')
   .get(
@@ -29,11 +27,13 @@ router
   .post(
     authenticate,
     checkRole('vendor', 'create'),
+    uploadVendorImages,
     asyncHandler(VendorController.updateVendorData)
   )
   .put(
     authenticate,
     checkRole('vendor', 'edit'),
+
     asyncHandler(VendorController.updateVendorData)
   );
 
@@ -42,6 +42,7 @@ router.put(
   '/settings/:settingType',
   authenticate,
   checkRole('vendor', 'edit'),
+  uploadVendorImages,
   asyncHandler(VendorController.updateSettings)
 );
 
@@ -101,7 +102,6 @@ router.get(
   asyncHandler(VendorController.getStatistics)
 );
 
-// Generic ID route - MUST be last among GET routes
 router.get('/:id', asyncHandler(VendorController.getVendorById));
 
 module.exports = router;

@@ -1,13 +1,27 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { BACKEND_URL } = require('../configs/index');
 
+//UploadConfig
 const uploadConfigs = {
   avatar: {
     path: 'uploads/avatars/',
     fileSize: 5 * 1024 * 1024, // 5MB
     allowedTypes: /jpeg|jpg|png|gif|webp/,
     filenamePrefix: (req) => req.user?.id || 'user',
+  },
+  storeLogo: {
+    path: 'uploads/storeLogo/',
+    fileSize: 15 * 1024 * 1024,
+    allowedTypes: /jpeg|jpg|png|gif|webp/,
+    filenamePrefix: (req) => req.user?.id || 'storeLogo',
+  },
+  storeBanner: {
+    path: 'uploads/storeBanner/',
+    fileSize: 15 * 1024 * 1024,
+    allowedTypes: /jpeg|jpg|png|gif|webp/,
+    filenamePrefix: (req) => req.user?.id || 'storeBanner',
   },
   categoryImage: {
     path: 'uploads/categories/',
@@ -75,11 +89,80 @@ const createUploadHandler = (uploadType) => {
   });
 };
 
+const vendorImagesUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      let uploadPath;
+      if (file.fieldname === 'storeLogo') {
+        uploadPath = uploadConfigs.storeLogo.path;
+      } else if (file.fieldname === 'storeBanner') {
+        uploadPath = uploadConfigs.storeBanner.path;
+      } else {
+        return cb(new Error('Invalid field name'), false);
+      }
+
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+      let config, prefix;
+
+      // Get config based on field name
+      if (file.fieldname === 'storeLogo') {
+        config = uploadConfigs.storeLogo;
+        prefix = config.filenamePrefix(req);
+      } else if (file.fieldname === 'storeBanner') {
+        config = uploadConfigs.storeBanner;
+        prefix = config.filenamePrefix(req);
+      }
+
+      const uniqueName = `${prefix}_${Date.now()}${path.extname(
+        file.originalname
+      )}`;
+      cb(null, uniqueName);
+    },
+  }),
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15MB (largest of the two)
+  },
+  fileFilter: (req, file, cb) => {
+    let config;
+
+    // Get config based on field name
+    if (file.fieldname === 'storeLogo') {
+      config = uploadConfigs.storeLogo;
+    } else if (file.fieldname === 'storeBanner') {
+      config = uploadConfigs.storeBanner;
+    } else {
+      return cb(new Error('Invalid field name'), false);
+    }
+
+    const allowedTypes = config.allowedTypes;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(
+        new Error(`Only image files are allowed for ${file.fieldname}!`),
+        false
+      );
+    }
+  },
+});
+
 // Create upload handlers
 const avatarUpload = createUploadHandler('avatar');
 const categoryImageUpload = createUploadHandler('categoryImage');
 const productImageUpload = createUploadHandler('productImage');
 const blogImageUpload = createUploadHandler('blogImage');
+const storeLogoUpload = createUploadHandler('storeLogo');
+const storeBannerUpload = createUploadHandler('storeBanner');
 
 // Helper function to delete file
 const deleteFile = (filePath) => {
@@ -169,7 +252,9 @@ module.exports = {
   categoryImageUpload,
   productImageUpload,
   blogImageUpload,
-
+  storeBannerUpload,
+  storeLogoUpload,
+  vendorImagesUpload,
   // Delete functions
   deleteFile,
   deleteAvatar,
