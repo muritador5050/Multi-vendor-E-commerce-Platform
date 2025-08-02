@@ -1,41 +1,47 @@
-import type { ApiResponse } from './ApiResponse';
-
-export interface CreateProductData {
-  name: string;
-  description: string;
-  price: number;
-  discount: number;
-  quantityInStock: number;
-  images: string[];
-  categoryId: string;
-  attributes: Record<string, unknown>;
-}
 export interface Product {
   _id: string;
   name: string;
   description: string;
+  slug: string;
   price: number;
   discount: number;
   quantityInStock: number;
   images: string[];
-  category: {
-    _id: string;
-    name: string;
-    slug: string;
-    image: string;
-  };
-  attributes: Record<string, unknown>;
+  category: string;
+  attributes: Record<string, string>;
   averageRating: number;
   totalReviews: number;
   isActive: boolean;
-  vendor: {
-    _id: string;
-    name: string;
-    email: string;
-  };
+  isDeleted: boolean;
+  vendor?: string;
   createdAt: string;
   updatedAt: string;
-  slug: string;
+}
+
+export interface CreateProductInput {
+  name: string;
+  description?: string;
+  slug?: string;
+  price: number;
+  discount?: number;
+  quantityInStock?: number;
+  images?: string[];
+  category: string;
+  attributes?: Record<string, string>;
+  averageRating?: number;
+  totalReviews?: number;
+  isActive?: boolean;
+  isDeleted?: boolean;
+  vendor?: string;
+}
+
+export interface CreateProductResponse {
+  data: CreateProductInput;
+  count: number;
+}
+
+export interface UpdateProductInput extends Partial<CreateProductInput> {
+  _id: string;
 }
 
 export interface ProductQueryParams {
@@ -61,28 +67,20 @@ export interface Pagination {
   hasPrev: boolean;
 }
 
-// Specific response types
-export type ProductResponse = ApiResponse<Product>;
-export type ProductListResponse = ApiResponse<{
-  products: Product[];
-  pagination: Pagination;
-}>;
-
-// Form and query interfaces
-export interface ProductFormData {
-  name: string;
-  description: string;
-  price: number;
-  discount?: number;
-  quantityInStock: number;
-  images: string[];
-  categoryId: string;
-  attributes?: Record<string, unknown>;
-  isActive?: boolean;
+export interface ProductPopulated extends Omit<Product, 'category' | 'vendor'> {
+  category: {
+    _id: string;
+    name: string;
+  };
+  vendor?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
 }
 
-export interface ProductPaginatedResponse<T> {
-  products: T[];
+export interface ProductPaginatedResponse {
+  products: Product[];
   pagination: {
     total: number;
     page: number;

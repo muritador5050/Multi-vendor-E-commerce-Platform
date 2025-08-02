@@ -85,7 +85,6 @@ export const UserDetailsDrawer = ({
   const updateEmailMutation = useUpdateProfile();
   const { handleRoleChange } = useUserActions();
 
-  // Use the shared user actions hook
   const {
     handleUserAction,
     isActivating,
@@ -93,7 +92,6 @@ export const UserDetailsDrawer = ({
     isInvalidatingTokens,
   } = useUserActions();
 
-  // Initialize email state when user data is loaded
   useEffect(() => {
     if (user?.email) {
       setEmail(user.email);

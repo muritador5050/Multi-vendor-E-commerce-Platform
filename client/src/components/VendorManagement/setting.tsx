@@ -100,10 +100,9 @@ const defaultGeneralSettings: GeneralSettings = {
   storeSlug: '',
   storeEmail: '',
   storePhone: '',
-  storeBannerType: 'image',
   shopDescription: '',
-  storeLogo: null,
-  storeBanner: null,
+  storeLogo: '',
+  storeBanner: '',
 };
 
 // Updated to match schema structure
@@ -245,8 +244,6 @@ export default function Setting() {
       setIsLoading(false);
     }
   };
-
- 
 
   return (
     <Box>

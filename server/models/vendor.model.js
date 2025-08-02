@@ -57,11 +57,6 @@ const vendorSchema = new mongoose.Schema(
       },
       storeLogo: String,
       storeBanner: String,
-      storeBannerType: {
-        type: String,
-        enum: ['image', 'video', 'slider'],
-        default: 'image',
-      },
     },
 
     // 2. Store Address

@@ -68,8 +68,9 @@ export default function ProductCard({
   };
 
   // Calculate discounted price
-  const discountedPrice = product.discount
-    ? product.price - (product.price * product.discount) / 100
+  const discount = product.discount ?? 0;
+  const discountedPrice = discount
+    ? product.price - (product.price * discount) / 100
     : product.price;
 
   return (
@@ -131,7 +132,7 @@ export default function ProductCard({
             <Text color='gray.500' as={product.discount ? 's' : undefined}>
               ${product.price.toFixed(2)}
             </Text>
-            {product.discount > 0 && (
+            {discount > 0 && (
               <Text color='teal.600' fontWeight='bold'>
                 ${discountedPrice.toFixed(2)}
               </Text>

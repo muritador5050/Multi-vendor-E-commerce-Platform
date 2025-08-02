@@ -53,35 +53,6 @@ class VendorController {
     }
   }
 
-  // static async updateSettings(req, res) {
-  //   try {
-  //     const vendor = await Vendor.findOne({ user: req.user.id });
-
-  //     if (!vendor) {
-  //       return res.status(404).json({
-  //         success: false,
-  //         message: 'Vendor profile not found',
-  //       });
-  //     }
-
-  //     const { settingType } = req.params;
-  //     const settingData = req.body;
-
-  //     await vendor.updateVendorSettings(settingType, settingData);
-
-  //     res.json({
-  //       success: true,
-  //       message: `${settingType} updated successfully`,
-  //       data: vendor[settingType],
-  //     });
-  //   } catch (error) {
-  //     res.status(400).json({
-  //       success: false,
-  //       message: error.message,
-  //     });
-  //   }
-  // }
-
   static async updateSettings(req, res) {
     try {
       const vendor = await Vendor.findOne({ user: req.user.id });

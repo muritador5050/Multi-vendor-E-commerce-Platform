@@ -332,6 +332,101 @@ class ApiClient {
   }
 
   /**
+   * Authenticated API request with FormData support for file uploads
+   */
+  public async authenticatedFormDataRequest<T = unknown>(
+    endpoint: string,
+    data: Record<string, any>,
+    files?: { [key: string]: File | File[] },
+    options: Omit<RequestInit, 'body'> = {}
+  ): Promise<T> {
+    try {
+      let token = localStorage.getItem('accessToken');
+
+      if (token && !this.isTokenValid(token)) {
+        token = await this.refreshToken();
+      }
+
+      const formData = new FormData();
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (
+            typeof value === 'object' &&
+            !(value instanceof File) &&
+            !(value instanceof Blob)
+          ) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      if (files) {
+        Object.entries(files).forEach(([key, fileValue]) => {
+          if (Array.isArray(fileValue)) {
+            fileValue.forEach((file) => {
+              formData.append(key, file);
+            });
+          } else if (fileValue) {
+            formData.append(key, fileValue);
+          }
+        });
+      }
+
+      const headers: HeadersInit = {
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      };
+
+      const config: RequestInit = {
+        ...options,
+        method: options.method || 'POST',
+        headers,
+        credentials: 'include',
+        body: formData,
+      };
+
+      const response = await this.fetchWithTimeout(
+        `${apiBase}${endpoint}`,
+        config
+      );
+
+      if (
+        response.status === 401 &&
+        !endpoint.includes('/auth/refresh-token')
+      ) {
+        const newToken = await this.refreshToken();
+
+        const retryHeaders = {
+          ...config.headers,
+          Authorization: `Bearer ${newToken}`,
+        };
+
+        const retryConfig: RequestInit = {
+          ...config,
+          headers: retryHeaders,
+        };
+
+        const retryResponse = await this.fetchWithTimeout(
+          `${apiBase}${endpoint}`,
+          retryConfig
+        );
+        return this.handleResponse<T>(retryResponse);
+      }
+
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new ApiError('Request timeout. Please try again.', 408);
+      }
+      throw new ApiError('Network error', 500);
+    }
+  }
+
+  /**
    * Utility method to check if user is authenticated
    */
   public isAuthenticated(): boolean {

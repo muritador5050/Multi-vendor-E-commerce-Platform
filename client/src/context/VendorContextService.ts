@@ -72,8 +72,6 @@ async function updateVendorProfile(
   );
 }
 
-
-
 // Public Vendor Routes
 async function getAllVendors(
   filters: VendorFilters = {}
@@ -116,15 +114,25 @@ async function deleteDocument(
 // Settings Management
 async function updateSettings<T extends SettingsResponse>(
   settingType: SettingType,
-  data: SettingsUpdate
+  data: SettingsUpdate,
+  files?: { storeLogo?: File; storeBanner?: File }
 ): Promise<ApiResponse<T>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
-    `/vendors/settings/${settingType}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }
-  );
+  if (files && Object.keys(files).length > 0) {
+    return await apiClient.authenticatedFormDataRequest<ApiResponse<T>>(
+      `/vendors/settings/${settingType}`,
+      data,
+      files,
+      { method: 'PUT' }
+    );
+  } else {
+    return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
+      `/vendors/settings/${settingType}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  }
 }
 
 // Account Status - Fixed URL bug
@@ -243,8 +251,6 @@ export const useUpdateVendorProfile = () => {
   });
 };
 
-
-
 export const useVendorProfileCompletion = () => {
   return useQuery({
     queryKey: vendorKeys.completion,
@@ -324,10 +330,12 @@ export const useUpdateSettings = <
     mutationFn: ({
       settingType,
       data,
+      files,
     }: {
       settingType: SettingType;
       data: SettingsUpdate;
-    }) => updateSettings<T>(settingType, data),
+      files?: { storeLogo?: File; storeBanner?: File };
+    }) => updateSettings<T>(settingType, data, files),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
       queryClient.invalidateQueries({

@@ -9,6 +9,7 @@ import {
   useDisclosure,
   Button,
   HStack,
+  IconButton,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ProductCard from '../components/ProductCard';
@@ -16,6 +17,7 @@ import ProductFilters, { type FilterState } from '../components/ProductFilters';
 import ProductQuickView from '../components/ProductQuickView';
 import type { Product, ProductQueryParams } from '@/type/product';
 import { useProducts } from '@/context/ProductContextService';
+import { RefreshCcw } from 'lucide-react';
 
 interface SortOption {
   value: string;
@@ -52,7 +54,7 @@ export default function ShopPage() {
 
   const queryParams: ProductQueryParams = {
     page: currentPage,
-    limit: 10,
+    limit: 12,
     sort: sortBy,
     minPrice: filters.priceRange[0],
     maxPrice: filters.priceRange[1],
@@ -67,7 +69,8 @@ export default function ShopPage() {
   };
 
   // Use React Query hook
-  const { data, isLoading, error } = useProducts(queryParams);
+  const { data, isLoading, error, refetch, isRefetching } =
+    useProducts(queryParams);
 
   const products = data?.products || [];
   const pagination = data?.pagination || {
@@ -147,18 +150,28 @@ export default function ShopPage() {
                 ? 'Loading...'
                 : `Showing ${products.length} of ${pagination.total} results`}
             </Text>
-            <Select
-              placeholder='Sort by'
-              w='20%'
-              value={sortBy}
-              onChange={handleSortChange}
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+            <HStack spacing={3}>
+              <IconButton
+                aria-label='refresh'
+                size='sm'
+                variant='outline'
+                onClick={() => refetch()}
+                isLoading={isRefetching}
+                icon={<RefreshCcw />}
+              />
+              <Select
+                placeholder='Sort by'
+                w='200px'
+                value={sortBy}
+                onChange={handleSortChange}
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </HStack>
           </Flex>
 
           {/* Error Message */}
@@ -170,7 +183,7 @@ export default function ShopPage() {
 
           {/* Products Grid */}
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-            {products.map((product) => (
+            {products.map((product: Product) => (
               <ProductCard
                 key={product._id}
                 product={product}

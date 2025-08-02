@@ -1,214 +1,123 @@
 import type { ApiResponse } from '@/type/ApiResponse';
 import type {
-  CreateProductData,
+  CreateProductInput,
+  CreateProductResponse,
   Product,
   ProductPaginatedResponse,
   ProductQueryParams,
 } from '@/type/product';
 import { apiClient } from '@/utils/Api';
+import { ApiError } from '@/utils/ApiError';
 import { buildQueryString } from '@/utils/QueryString';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const fetchProducts = async (
-  params: ProductQueryParams = {}
-): Promise<ProductPaginatedResponse<Product>> => {
-  const queryString = buildQueryString(params);
-  const url = `/products${queryString ? `?${queryString}` : ''}`;
-
-  const response = await apiClient.publicApiRequest<
-    ApiResponse<ProductPaginatedResponse<Product>>
-  >(url);
-
-  return (
-    response.data || {
-      products: [],
-      pagination: {
-        total: 0,
-        page: 1,
-        pages: 0,
-        hasNext: false,
-        hasPrev: false,
-        limit: 10,
-      },
-    }
-  );
+const productKeys = {
+  all: ['product'] as const,
+  items: (params?: ProductQueryParams) => ['product', 'items', params] as const,
+  item: (id: string) => ['product', 'item', id] as const,
+  category: (slug: string, params?: ProductQueryParams) =>
+    ['product', 'category', slug, params] as const,
+  vendor: (id: string, params?: ProductQueryParams) =>
+    ['product', 'vendor', id, params] as const,
+  vendorProducts: (params?: ProductQueryParams) =>
+    ['product', 'vendor-products', params] as const,
 };
 
-const fetchProductById = async (id: string): Promise<Product | null> => {
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<Product>
-  >(`/products/${id}`);
-  return response.data || null;
+// API Functions
+const fetchProducts = async (
+  params: ProductQueryParams = {}
+): Promise<ApiResponse<ProductPaginatedResponse>> => {
+  const queryString = buildQueryString(params);
+  const url = `/products${queryString ? `?${queryString}` : ''}`;
+  return await apiClient.publicApiRequest<
+    ApiResponse<ProductPaginatedResponse>
+  >(url);
+};
+
+const fetchProductById = async (id: string): Promise<ApiResponse<Product>> => {
+  return await apiClient.authenticatedApiRequest<ApiResponse<Product>>(
+    `/products/${id}`
+  );
 };
 
 const fetchProductsByCategory = async (
   categorySlug: string,
   params: Omit<ProductQueryParams, 'category'> = {}
-): Promise<ProductPaginatedResponse<Product>> => {
+): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
   const url = `/products/category/${categorySlug}${
     queryString ? `?${queryString}` : ''
   }`;
-
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<ProductPaginatedResponse<Product>>
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<ProductPaginatedResponse>
   >(url);
-
-  return (
-    response.data || {
-      products: [],
-      pagination: {
-        total: 0,
-        page: 1,
-        pages: 0,
-        hasNext: false,
-        hasPrev: false,
-        limit: 10,
-      },
-    }
-  );
 };
 
-const fetchProductByVendor = async (
+//Admin function
+const getVendorProductsForAdmin = async (
   vendorId: string,
   params: Omit<ProductQueryParams, 'vendor'> = {}
-): Promise<ProductPaginatedResponse<Product>> => {
+): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
   const url = `/products/vendor/${vendorId}${
     queryString ? `?${queryString}` : ''
   }`;
-
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<ProductPaginatedResponse<Product>>
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<ProductPaginatedResponse>
   >(url);
-
-  return (
-    response.data || {
-      products: [],
-      pagination: {
-        total: 0,
-        page: 1,
-        pages: 0,
-        hasNext: false,
-        hasPrev: false,
-        limit: 10,
-      },
-    }
-  );
 };
 
-const fetchVendorProducts = async (
+const getOwnVendorProducts = async (
   params: Omit<ProductQueryParams, 'vendor'> = {}
-): Promise<ProductPaginatedResponse<Product>> => {
+): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
   const url = `/products/vendor/my-products${
     queryString ? `?${queryString}` : ''
   }`;
-
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<ProductPaginatedResponse<Product>>
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<ProductPaginatedResponse>
   >(url);
+};
 
-  return (
-    response.data || {
-      products: [],
-      pagination: {
-        total: 0,
-        page: 1,
-        pages: 0,
-        hasNext: false,
-        hasPrev: false,
-        limit: 10,
-      },
-    }
+const createProduct = async (products: CreateProductInput, files?: File[]) => {
+  return await apiClient.authenticatedFormDataRequest<
+    ApiResponse<CreateProductResponse>
+  >(
+    '/products',
+    products,
+    files && files.length > 0 ? { productImage: files } : undefined
   );
 };
 
-const createProduct = async (
-  product: CreateProductData | CreateProductData[]
-): Promise<Product[]> => {
-  if (!product) {
-    throw new Error('Product data is required');
-  }
-
-  const productData = Array.isArray(product) ? product : [product];
-  for (const prod of productData) {
-    if (!prod.name || !prod.price) {
-      throw new Error('Product name and price are required');
-    }
-  }
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<Product[]>
-  >('/products', {
-    method: 'POST',
-    body: JSON.stringify(productData),
-  });
-
-  if (response.data) {
-    return Array.isArray(response.data) ? response.data : [response.data];
-  }
-
-  if (response.success) {
-    return [];
-  }
-
-  throw new Error(response.message || 'Failed to create product');
-};
-
-const toggleProductActive = async (id: string): Promise<Product> => {
-  if (!id) {
-    throw new Error('Product ID is null or undefined');
-  }
-
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<Product>
-  >(`/products/${id}/toggle-active`, {
-    method: 'PATCH',
-  });
-
-  if (!response.data) {
-    throw new Error('No data returned from toggle product active');
-  }
-
-  return response.data;
+const toggleProductStatus = async (
+  id: string
+): Promise<ApiResponse<{ id: string; isActive: boolean }>> => {
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<{ id: string; isActive: boolean }>
+  >(`/products/${id}/status`, { method: 'PATCH' });
 };
 
 const updateProduct = async (
   id: string,
-  product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>
-): Promise<Product> => {
-  if (!id) {
-    throw new Error('Product ID is required');
-  }
-
-  if (!product || Object.keys(product).length === 0) {
-    throw new Error('Product data is required');
-  }
-
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<Product>
-  >(`/products/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(product),
-  });
-
-  if (!response.data) {
-    throw new Error('No data returned from update product');
-  }
-
-  return response.data;
+  product: Partial<Product>,
+  files?: File[]
+): Promise<ApiResponse<Product>> => {
+  return await apiClient.authenticatedFormDataRequest<ApiResponse<Product>>(
+    `/products/${id}`,
+    product,
+    files ? { images: files } : undefined,
+    {
+      method: 'PUT',
+    }
+  );
 };
 
 const deleteProduct = async (id: string): Promise<void> => {
-  if (!id) {
-    throw new Error('Product ID is required');
-  }
+  if (!id) throw new Error('Product ID is required');
 
   const response = await apiClient.authenticatedApiRequest<ApiResponse<null>>(
     `/products/${id}`,
-    {
-      method: 'DELETE',
-    }
+    { method: 'DELETE' }
   );
 
   if (!response.success) {
@@ -216,202 +125,208 @@ const deleteProduct = async (id: string): Promise<void> => {
   }
 };
 
-const productKeys = {
-  all: ['product'] as const,
-  items: () => [...productKeys.all, 'items'] as const,
-  item: (id: string) => [...productKeys.all, 'item', id] as const,
-  category: (slug: string) => [...productKeys.all, 'category', slug] as const,
-  vendor: (id: string) => [...productKeys.all, 'vendor', id] as const,
-  vendorProducts: () => [...productKeys.all, 'vendor-products'] as const,
-};
+// Utilities
+// const getEmptyPaginatedResponse = (): ProductPaginatedResponse => ({
+//   products: [],
+//   pagination: {
+//     total: 0,
+//     page: 1,
+//     pages: 0,
+//     hasNext: false,
+//     hasPrev: false,
+//     limit: 10,
+//   },
+// });
 
-const STALE_TIME = 1000 * 60 * 5;
+const STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
-const useProducts = (params: ProductQueryParams = {}) => {
+// React Query Hooks
+export const useProducts = (params: ProductQueryParams = {}) => {
   return useQuery({
-    queryKey: [...productKeys.items(), params],
+    queryKey: productKeys.items(params),
     queryFn: () => fetchProducts(params),
+    select: (data) => data.data,
     staleTime: STALE_TIME,
+    retry: (failureCount, error) => {
+      if (
+        error instanceof ApiError &&
+        error.status >= 400 &&
+        error.status < 500
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 };
 
-const useProductById = (id: string) => {
+export const useProductById = (id: string) => {
   return useQuery({
     queryKey: productKeys.item(id),
     queryFn: () => fetchProductById(id),
+    select: (data) => data.data,
     staleTime: STALE_TIME,
     enabled: !!id,
   });
 };
 
-const useProductsByCategory = (
+export const useProductsByCategory = (
   categorySlug: string,
   params: Omit<ProductQueryParams, 'category'> = {}
 ) => {
   return useQuery({
-    queryKey: [...productKeys.category(categorySlug), params],
+    queryKey: productKeys.category(categorySlug, params),
     queryFn: () => fetchProductsByCategory(categorySlug, params),
     staleTime: STALE_TIME,
     enabled: !!categorySlug,
   });
 };
 
-const useProductByVendor = (
+export const useVendorProductsForAdmin = (
   vendorId: string,
   params: Omit<ProductQueryParams, 'vendor'> = {}
 ) => {
   return useQuery({
-    queryKey: [...productKeys.vendor(vendorId), params],
-    queryFn: () => fetchProductByVendor(vendorId, params),
+    queryKey: productKeys.vendor(vendorId, params),
+    queryFn: () => getVendorProductsForAdmin(vendorId, params),
     staleTime: STALE_TIME,
     enabled: !!vendorId,
   });
 };
 
-const useVendorProducts = (params: Omit<ProductQueryParams, 'vendor'> = {}) => {
+export const useOwnVendorProducts = (
+  params: Omit<ProductQueryParams, 'vendor'> = {}
+) => {
   return useQuery({
-    queryKey: [...productKeys.vendorProducts(), params],
-    queryFn: () => fetchVendorProducts(params),
+    queryKey: productKeys.vendorProducts(params),
+    queryFn: () => getOwnVendorProducts(params),
+    select: (data) => data.data,
     staleTime: STALE_TIME,
   });
 };
 
-const useCreateProduct = () => {
+export const useCreateProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: createProduct,
+    mutationFn: ({
+      data,
+      files,
+    }: {
+      data: CreateProductInput;
+      files?: File[];
+    }) => createProduct(data, files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
-    onError: (error) => {
-      console.error('Create product error:', error);
-    },
   });
 };
 
-const useToggleProductActive = () => {
+export const useToggleProductStatus = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    Product,
-    Error,
-    string,
-    { previousProduct: Product | null }
-  >({
-    mutationFn: toggleProductActive,
-
-    onMutate: async (productId) => {
-      await queryClient.cancelQueries({
-        queryKey: productKeys.item(productId),
-      });
-
-      const previousProduct = queryClient.getQueryData<Product>(
-        productKeys.item(productId)
+  return useMutation({
+    mutationFn: toggleProductStatus,
+    onSuccess: (data, productId) => {
+      queryClient.setQueryData(
+        productKeys.item(productId),
+        (oldData: Product) =>
+          oldData ? { ...oldData, isActive: data.data?.isActive } : oldData
       );
 
-      if (previousProduct) {
-        queryClient.setQueryData<Product>(productKeys.item(productId), {
-          ...previousProduct,
-          isActive: !previousProduct.isActive,
-        });
-      }
-
-      return { previousProduct: previousProduct || null };
+      // Refresh product lists
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
+  });
+};
 
-    onError: (_error, productId, context) => {
-      if (context?.previousProduct) {
+export const useToggleProductStatusAlternative = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: toggleProductStatus,
+    onSuccess: (data, productId) => {
+      const { data: responseData } = data || {};
+
+      if (responseData && typeof responseData.isActive === 'boolean') {
         queryClient.setQueryData<Product>(
           productKeys.item(productId),
-          context.previousProduct
+          (oldData) =>
+            oldData ? { ...oldData, isActive: responseData.isActive } : oldData
         );
       }
-    },
-    onSettled: (data, _error, productId) => {
-      queryClient.invalidateQueries({
-        queryKey: productKeys.item(productId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: productKeys.items(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: productKeys.vendorProducts(),
-      });
 
-      if (data?.category) {
-        queryClient.invalidateQueries({
-          queryKey: productKeys.category(data.category._id),
-        });
-      }
-      if (data?.vendor) {
-        queryClient.invalidateQueries({
-          queryKey: productKeys.vendor(data.vendor._id),
-        });
-      }
+      queryClient.invalidateQueries({
+        queryKey: productKeys.all,
+        exact: false,
+      });
     },
   });
 };
 
-const useUpdateProduct = () => {
+// If you want to handle errors more gracefully:
+export const useToggleProductStatusWithErrorHandling = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    Product,
-    Error,
-    {
-      id: string;
-      product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>;
-    }
-  >({
-    mutationFn: ({ id, product }) => updateProduct(id, product),
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(productKeys.item(variables.id), data);
-      queryClient.invalidateQueries({ queryKey: productKeys.items() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+  return useMutation({
+    mutationFn: toggleProductStatus,
+    onSuccess: (data, productId) => {
+      try {
+        const isActive = data?.data?.isActive;
 
-      if (data?.category) {
-        queryClient.invalidateQueries({
-          queryKey: productKeys.category(data.category._id),
-        });
+        if (typeof isActive === 'boolean') {
+          queryClient.setQueryData<Product>(
+            productKeys.item(productId),
+            (oldData) => (oldData ? { ...oldData, isActive } : oldData)
+          );
+        } else {
+          console.warn('Invalid response data structure:', data);
+        }
+      } catch (error) {
+        console.error('Error updating query data:', error);
       }
-      if (data?.vendor) {
-        queryClient.invalidateQueries({
-          queryKey: productKeys.vendor(data.vendor._id),
-        });
-      }
+
+      // Always invalidate queries to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: productKeys.all,
+        exact: false,
+      });
     },
     onError: (error) => {
-      console.error('Update product error:', error);
+      console.error('Failed to toggle product status:', error);
     },
   });
 };
 
-const useDeleteProduct = () => {
+export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, string>({
+  return useMutation({
+    mutationFn: ({
+      id,
+      product,
+      files,
+    }: {
+      id: string;
+      product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>;
+      files?: File[];
+    }) => updateProduct(id, product, files),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(productKeys.item(variables.id), data);
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+};
+
+export const useDeleteProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: deleteProduct,
     onSuccess: (_, deletedId) => {
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
-      queryClient.invalidateQueries({ queryKey: productKeys.items() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
-    },
-    onError: (error) => {
-      console.error('Delete product error:', error);
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
   });
-};
-
-export {
-  useProducts,
-  useProductById,
-  useProductsByCategory,
-  useProductByVendor,
-  useToggleProductActive,
-  useVendorProducts,
-  useCreateProduct,
-  useUpdateProduct,
-  useDeleteProduct,
 };
 
 export type { ProductQueryParams, ProductPaginatedResponse };

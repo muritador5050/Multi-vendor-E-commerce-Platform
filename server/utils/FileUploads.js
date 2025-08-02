@@ -1,7 +1,6 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { BACKEND_URL } = require('../configs/index');
 
 //UploadConfig
 const uploadConfigs = {
@@ -89,6 +88,7 @@ const createUploadHandler = (uploadType) => {
   });
 };
 
+/** ====VENDOR UPLOAD DATA==== */
 const vendorImagesUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
@@ -125,7 +125,7 @@ const vendorImagesUpload = multer({
     },
   }),
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB (largest of the two)
+    fileSize: 15 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     let config;

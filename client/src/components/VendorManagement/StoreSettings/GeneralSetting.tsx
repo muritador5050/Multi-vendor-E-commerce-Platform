@@ -14,6 +14,7 @@ import {
   Image,
   Button,
 } from '@chakra-ui/react';
+import { useState } from 'react';
 
 export interface GeneralFormData extends GeneralSettings {
   storeNamePosition: 'At Header' | 'On Banner';
@@ -124,6 +125,7 @@ export default function GeneralSetting({
   onChange,
 }: GeneralSettingProps) {
   //State
+  const [bannerType, setBannerType] = useState('image');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -144,7 +146,8 @@ export default function GeneralSetting({
     file: File | File[],
     fieldName: 'storeLogo' | 'storeBanner'
   ) => {
-    onChange({ [fieldName]: file });
+    const singleFile = Array.isArray(file) ? file[0] : file;
+    onChange({ [fieldName]: singleFile });
   };
 
   return (
@@ -225,8 +228,8 @@ export default function GeneralSetting({
             flex='1'
             maxW={{ md: '60%' }}
             name='bannerType'
-            value={data.storeBannerType}
-            onChange={handleSelectChange}
+            value={bannerType}
+            onChange={(e) => setBannerType(e.target.value)}
           >
             <option value='image'>Image</option>
             <option value='slider'>Slider</option>
@@ -234,7 +237,7 @@ export default function GeneralSetting({
           </Select>
         </FormControl>
         <Box ml={{ md: '340px' }} maxW={{ md: '60%' }}>
-          {data.storeBannerType === 'image' && (
+          {bannerType === 'image' && (
             <Box flex='1' maxW={{ md: '60%' }}>
               <GalleryFileUpload
                 onFileChange={(file) => handleFile(file, 'storeBanner')}
@@ -263,10 +266,9 @@ export default function GeneralSetting({
               )}
             </Box>
           )}
-          {data.storeBannerType === 'slider' && (
+          {bannerType === 'slider' && (
             <Box flex='1' maxW={{ md: '60%' }}>
               <GalleryFileUpload
-                multiple
                 onFileChange={(file) => handleFile(file, 'storeBanner')}
               />
               {data.storeBanner && (
@@ -303,7 +305,6 @@ export default function GeneralSetting({
                                 });
                               }
                             } else {
-                              // Single item, remove it
                               onChange({ storeBanner: null });
                             }
                           }}

@@ -20,9 +20,9 @@ export default function GalleryFileUpload({
     if (!files) return;
 
     if (multiple) {
-      onFileChange(Array.from(files)); // send array of files
+      onFileChange(Array.from(files));
     } else {
-      onFileChange(files[0]); // send single file
+      onFileChange(files[0]);
     }
   };
 

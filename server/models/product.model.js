@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const Category = require('./category.model');
+const fs = require('fs');
 
 /**
  * @openapi
@@ -81,8 +82,8 @@ const productSchema = new mongoose.Schema(
     },
     quantityInStock: {
       type: Number,
-      default: 0,
-      min: 0,
+      default: 1,
+      min: 1,
     },
     images: [
       {
@@ -138,55 +139,158 @@ productSchema.query.paginate = function ({ page, limit }) {
 };
 
 // Auto-generate slug
-productSchema.pre('save', async function (next) {
-  if (this.isModified('name') || this.isNew) {
-    this.slug = slugify(this.name, { lower: true, strict: true });
-  }
-  next();
-});
+// productSchema.pre('save', async function (next) {
+//   if (this.isModified('name') || this.isNew) {
+//     this.slug = slugify(this.name, { lower: true, strict: true });
+//   }
+//   next();
+// });
 
 // ============ STATIC METHODS ============
 
-// Create products with validation
+// Updated createProducts static method
 productSchema.statics.createProducts = async function (productsData, vendorId) {
   const productsArray = Array.isArray(productsData)
     ? productsData
     : [productsData];
 
-  // Validate categories
-  const categoryIds = productsArray
-    .map((p) => p.categoryId)
-    .filter(Boolean)
-    .map((id) => new mongoose.Types.ObjectId(id));
+  const isSingle = !Array.isArray(productsData);
+
+  const categoryIds = [
+    ...new Set(productsArray.map((p) => p.category).filter(Boolean)),
+  ];
 
   if (categoryIds.length > 0) {
     const existingCategories = await Category.find({
       _id: { $in: categoryIds },
-    });
-    if (existingCategories.length !== categoryIds.length) {
-      throw new Error('One or more categories do not exist');
+    }).select('_id');
+
+    const existingIds = new Set(
+      existingCategories.map((c) => c._id.toString())
+    );
+    const invalidCategories = categoryIds.filter((id) => !existingIds.has(id));
+
+    if (invalidCategories.length > 0) {
+      throw new Error(`Categories not found: ${invalidCategories.join(', ')}`);
     }
   }
 
-  // Process products data
-  const processedProducts = productsArray.map((productData) => {
-    const processed = { ...productData };
-    if (processed.categoryId) {
-      processed.category = new mongoose.Types.ObjectId(processed.categoryId);
-      delete processed.categoryId;
+  // Generate slugs for each product and ensure uniqueness
+  const processedProducts = await Promise.all(
+    productsArray.map(async (productData) => {
+      const baseSlug = slugify(productData.name, { lower: true, strict: true });
+      let uniqueSlug = baseSlug;
+      let counter = 1;
+
+      // Check if slug already exists and make it unique
+      while (await this.findOne({ slug: uniqueSlug })) {
+        uniqueSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
+      return {
+        ...productData,
+        vendor: vendorId,
+        slug: uniqueSlug, // Add the generated slug
+        images: Array.isArray(productData.images)
+          ? productData.images
+          : productData.images
+          ? [productData.images]
+          : [],
+      };
+    })
+  );
+
+  const createdProducts = await this.insertMany(processedProducts);
+
+  const populatedProducts = await this.find({
+    _id: { $in: createdProducts.map((p) => p._id) },
+  }).populate([
+    { path: 'category', select: 'name slug image' },
+    { path: 'vendor', select: 'name email' },
+  ]);
+
+  return isSingle ? populatedProducts[0] : populatedProducts;
+};
+productSchema.statics.updateProductById = async function (
+  id,
+  updateData,
+  user
+) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error('Invalid product ID format');
+  }
+
+  const currentProduct = await this.findOne({ _id: id, isDeleted: false });
+  if (!currentProduct) {
+    throw new Error(
+      user.role === 'admin'
+        ? 'Product not found or deleted'
+        : 'Product not found, deleted, or you do not have permission'
+    );
+  }
+
+  // Verify ownership if not admin
+  if (user.role !== 'admin' && currentProduct.vendor.toString() !== user.id) {
+    throw new Error('You do not have permission to update this product');
+  }
+
+  // Handle category validation
+  if (updateData.category) {
+    const categoryExists = await Category.exists({ _id: updateData.category });
+    if (!categoryExists) {
+      throw new Error('Category does not exist');
     }
-    processed.vendor = vendorId;
-    return processed;
-  });
+  }
 
-  const createdProducts = await this.create(processedProducts);
-  const productsIds = Array.isArray(createdProducts)
-    ? createdProducts.map((p) => p._id)
-    : [createdProducts._id];
+  // Handle image deletions
+  if (updateData.imagesToDelete && Array.isArray(updateData.imagesToDelete)) {
+    // Verify the images to delete actually exist in current images
+    const invalidDeletions = updateData.imagesToDelete.filter(
+      (img) => !currentProduct.images.includes(img)
+    );
 
-  return this.find({ _id: { $in: productsIds } })
-    .populate('category', 'name slug image')
-    .populate('vendor', 'name email');
+    if (invalidDeletions.length > 0) {
+      throw new Error(
+        `Cannot delete non-existent images: ${invalidDeletions.join(', ')}`
+      );
+    }
+
+    // Delete files from storage
+    await Promise.all(
+      updateData.imagesToDelete.map((imagePath) =>
+        fs.promises.unlink(imagePath).catch(() => {})
+      )
+    );
+
+    // Remove deleted images from current product images
+    currentProduct.images = currentProduct.images.filter(
+      (img) => !updateData.imagesToDelete.includes(img)
+    );
+
+    delete updateData.imagesToDelete;
+  }
+
+  if (updateData.images && Array.isArray(updateData.images)) {
+    const existingImages = currentProduct.images || [];
+    updateData.images = [...updateData.images, ...existingImages];
+  }
+
+  // Perform update
+  const updatedProduct = await this.findByIdAndUpdate(
+    id,
+    { $set: updateData },
+    {
+      new: true,
+      runValidators: true,
+      populate: [
+        { path: 'category', select: 'name slug image' },
+        { path: 'vendor', select: 'name email' },
+      ],
+    }
+  );
+
+  return updatedProduct;
 };
 
 // Build filter for product queries
@@ -324,50 +428,6 @@ productSchema.statics.findActiveById = async function (id) {
     .lean();
 };
 
-// Update product with validation
-productSchema.statics.updateProductById = async function (
-  id,
-  updateData,
-  user
-) {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error('Invalid product ID format');
-  }
-
-  // Validate category if provided
-  if (updateData.categoryId) {
-    const category = await Category.findById(updateData.categoryId);
-    if (!category) {
-      throw new Error('Category does not exist');
-    }
-    updateData.category = updateData.categoryId;
-    delete updateData.categoryId;
-  }
-
-  const filter = { _id: id, isDeleted: false };
-  if (user.role !== 'admin') {
-    filter.vendor = user.id;
-  }
-
-  const product = await this.findOneAndUpdate(
-    filter,
-    { $set: updateData },
-    { new: true, runValidators: true }
-  )
-    .populate('category', 'name slug image')
-    .populate('vendor', 'name email');
-
-  if (!product) {
-    const message =
-      user.role === 'admin'
-        ? 'Product not found or deleted'
-        : 'Product not found, deleted, or you do not have permission to update this product';
-    throw new Error(message);
-  }
-
-  return product;
-};
-
 // Soft delete product
 productSchema.statics.softDeleteById = async function (id, user) {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -435,7 +495,7 @@ productSchema.statics.getProductsByVendor = async function (
 // ============ INSTANCE METHODS ============
 
 // Toggle active status
-productSchema.methods.toggleActive = async function () {
+productSchema.methods.toggleStatus = async function () {
   this.isActive = !this.isActive;
   return this.save();
 };

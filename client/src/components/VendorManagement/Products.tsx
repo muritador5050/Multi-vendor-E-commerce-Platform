@@ -1,30 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
-  useToggleProductActive,
-  useVendorProducts,
+  useOwnVendorProducts,
+  useProductById,
+  useToggleProductStatus,
+  useUpdateProduct,
 } from '@/context/ProductContextService';
 import {
   Box,
   Image,
-  Stack,
   Text,
-  SimpleGrid,
-  Card,
-  CardBody,
   Badge,
   Flex,
   Heading,
   Button,
   IconButton,
-  useBreakpointValue,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
   Input,
   FormControl,
   FormLabel,
@@ -50,32 +39,194 @@ import {
   HStack,
   Divider,
   Tag,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Spinner,
+  Center,
+  Select,
+  useDisclosure,
+  SimpleGrid,
+  AspectRatio,
+  CloseButton,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import {
   Eye,
-  Edit,
   Trash2,
   Package,
   Star,
-  User,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
 } from 'lucide-react';
 import type { Product } from '@/type/product';
 import { useNavigate } from 'react-router-dom';
 
+// Interface for handling new image files
+interface ImageFile {
+  file: File;
+  preview: string;
+  id: string;
+}
+
+// Image Gallery Component
+const ImageGallery = ({
+  existingImages,
+  newImages,
+  onRemoveExisting,
+  onRemoveNew,
+  onAddImages,
+  isEditing,
+}: {
+  existingImages: string[];
+  newImages: ImageFile[];
+  onRemoveExisting: (imageUrl: string) => void;
+  onRemoveNew: (imageId: string) => void;
+  onAddImages: () => void;
+  isEditing: boolean;
+}) => {
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+  return (
+    <Box>
+      <FormLabel>Product Images</FormLabel>
+      <SimpleGrid columns={2} spacing={3}>
+        {/* Existing Images */}
+        {existingImages.map((imageUrl, index) => (
+          <AspectRatio key={`existing-${index}`} ratio={1}>
+            <Box
+              position='relative'
+              borderWidth={1}
+              borderColor={borderColor}
+              borderRadius='md'
+              overflow='hidden'
+            >
+              <Image
+                src={imageUrl}
+                alt={`Product image ${index + 1}`}
+                w='100%'
+                h='100%'
+                objectFit='cover'
+                fallbackSrc='/placeholder-image.jpg'
+              />
+              {isEditing && (
+                <CloseButton
+                  position='absolute'
+                  top={1}
+                  right={1}
+                  size='sm'
+                  bg='red.500'
+                  color='white'
+                  _hover={{ bg: 'red.600' }}
+                  onClick={() => onRemoveExisting(imageUrl)}
+                />
+              )}
+            </Box>
+          </AspectRatio>
+        ))}
+
+        {/* New Images */}
+        {newImages.map((image) => (
+          <AspectRatio key={image.id} ratio={1}>
+            <Box
+              position='relative'
+              borderWidth={1}
+              borderColor='blue.300'
+              borderStyle='dashed'
+              borderRadius='md'
+              overflow='hidden'
+            >
+              <Image
+                src={image.preview}
+                alt='New product image'
+                w='100%'
+                h='100%'
+                objectFit='cover'
+              />
+              {isEditing && (
+                <CloseButton
+                  position='absolute'
+                  top={1}
+                  right={1}
+                  size='sm'
+                  bg='red.500'
+                  color='white'
+                  _hover={{ bg: 'red.600' }}
+                  onClick={() => onRemoveNew(image.id)}
+                />
+              )}
+              <Badge
+                position='absolute'
+                bottom={1}
+                left={1}
+                colorScheme='blue'
+                size='sm'
+              >
+                New
+              </Badge>
+            </Box>
+          </AspectRatio>
+        ))}
+
+        {/* Add Image Button */}
+        {isEditing && (
+          <AspectRatio ratio={1}>
+            <Button
+              variant='outline'
+              borderWidth={2}
+              borderStyle='dashed'
+              borderColor={borderColor}
+              h='100%'
+              onClick={onAddImages}
+              _hover={{
+                borderColor: 'blue.400',
+                bg: 'blue.50',
+              }}
+            >
+              <VStack spacing={2}>
+                <Plus size={24} />
+                <Text fontSize='sm'>Add Image</Text>
+              </VStack>
+            </Button>
+          </AspectRatio>
+        )}
+      </SimpleGrid>
+    </Box>
+  );
+};
+
 export default function Products() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product>();
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Image editing states
+  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const navigate = useNavigate();
-  const { data, isLoading } = useVendorProducts({
+
+  const { data, isLoading } = useOwnVendorProducts({
     page: currentPage,
     limit: 10,
   });
-  const toggleMutation = useToggleProductActive();
+
+  const {
+    data: selectedProductData,
+    isLoading: isSelectedProductLoading,
+    error: selectedProductError,
+  } = useProductById(selectedProductId);
+
+  const toggleMutation = useToggleProductStatus();
+  const updateMutation = useUpdateProduct();
 
   const pagination = data?.pagination || {
     total: 0,
@@ -85,15 +236,11 @@ export default function Products() {
     hasPrev: false,
     limit: 10,
   };
+
   const {
-    isOpen: isViewOpen,
-    onOpen: onViewOpen,
-    onClose: onViewClose,
-  } = useDisclosure();
-  const {
-    isOpen: isEditOpen,
-    onOpen: onEditOpen,
-    onClose: onEditClose,
+    isOpen: isDrawerOpen,
+    onOpen: onDrawerOpen,
+    onClose: onDrawerClose,
   } = useDisclosure();
   const {
     isOpen: isDeleteOpen,
@@ -101,18 +248,96 @@ export default function Products() {
     onClose: onDeleteClose,
   } = useDisclosure();
 
-  const columns = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 4 });
   const toast = useToast();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
+  // Categories for select dropdown
+  const categories = [
+    'Electronics',
+    'Clothing',
+    'Home & Garden',
+    'Sports',
+    'Books',
+    'Toys',
+    'Health & Beauty',
+    'Automotive',
+    'Food & Beverages',
+    'Other',
+  ];
+
+  // Handle image selection
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+
+    files.forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const newImage: ImageFile = {
+            file,
+            preview: reader.result as string,
+            id: `new-${Date.now()}-${Math.random()}`,
+          };
+          setSelectedImages((prev) => [...prev, newImage]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle image removal
+  const handleRemoveImage = (imageId: string, isExisting = false) => {
+    if (isExisting) {
+      // Mark existing image for deletion
+      setImagesToDelete((prev) => [...prev, imageId]);
+      // Remove from editing product images
+      if (editingProduct) {
+        setEditingProduct({
+          ...editingProduct,
+          images: editingProduct.images.filter((img) => img !== imageId),
+        });
+      }
+    } else {
+      // Remove new image from selectedImages
+      setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
+      // Clean up preview URL
+      const imageToRemove = selectedImages.find((img) => img.id === imageId);
+      if (imageToRemove) {
+        URL.revokeObjectURL(imageToRemove.preview);
+      }
+    }
+  };
+
   const handleView = (product: Product) => {
-    setSelectedProduct(product);
-    onViewOpen();
+    setSelectedProductId(product._id);
+    setIsEditMode(false);
+    onDrawerOpen();
   };
 
   const handleEdit = (product: Product) => {
+    setSelectedProductId(product._id);
     setEditingProduct({ ...product });
-    onEditOpen();
+    setSelectedImages([]);
+    setImagesToDelete([]);
+    setIsEditMode(true);
+    onDrawerOpen();
+  };
+
+  const handleDrawerClose = () => {
+    onDrawerClose();
+    setSelectedProductId('');
+    setEditingProduct(null);
+    setIsEditMode(false);
+
+    // Clean up image previews
+    selectedImages.forEach((img) => URL.revokeObjectURL(img.preview));
+    setSelectedImages([]);
+    setImagesToDelete([]);
   };
 
   const handleDelete = (product: Product) => {
@@ -122,32 +347,63 @@ export default function Products() {
 
   const handlePreviousPage = () => {
     if (pagination.hasPrev) {
-      setCurrentPage(() => currentPage - 1);
+      setCurrentPage(currentPage - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleNextPage = () => {
     if (pagination.hasNext) {
-      setCurrentPage(() => currentPage + 1);
+      setCurrentPage(currentPage + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
-  const handleSaveEdit = () => {
-    // Implement save logic here
-    toast({
-      title: 'Product updated',
-      description: `${editingProduct?.name} has been updated successfully.`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
-    onEditClose();
-  };
+  const handleSaveEdit = useCallback(() => {
+    if (!editingProduct) return;
+
+    // Prepare files for upload (only new images)
+    const filesToUpload = selectedImages.map((img) => img.file);
+
+    updateMutation.mutateAsync(
+      {
+        id: editingProduct._id,
+        product: {
+          name: editingProduct.name,
+          description: editingProduct.description,
+          price: editingProduct.price,
+          quantityInStock: editingProduct.quantityInStock,
+          discount: editingProduct.discount,
+          category: editingProduct.category,
+          images: editingProduct.images,
+        },
+        files: filesToUpload.length > 0 ? filesToUpload : undefined,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Product updated',
+            description: `${editingProduct.name} has been updated successfully.`,
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+          handleDrawerClose();
+        },
+        onError: (error) => {
+          toast({
+            title: 'Update failed',
+            description: error?.message || 'Failed to update product.',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
+          });
+        },
+      }
+    );
+  }, [editingProduct, selectedImages, imagesToDelete, updateMutation, toast]);
 
   const handleConfirmDelete = () => {
-    // Implement delete logic here
     toast({
       title: 'Product deleted',
       description: `${productToDelete?.name} has been deleted.`,
@@ -158,15 +414,35 @@ export default function Products() {
     onDeleteClose();
   };
 
-  const handleToggleStatus = (product: Product) => {
-    setLoadingProductId(product._id);
-    toggleMutation.mutate(product._id, {
-      onSettled: () => setLoadingProductId(null),
-    });
-  };
-
-  const isLoadingActive = (productId: string) =>
-    toggleMutation.isPending && loadingProductId === productId;
+  const handleToggleStatus = useCallback(
+    (productId: string, productName: string, currentStatus: boolean) => {
+      toggleMutation.mutate(productId, {
+        onSuccess: () => {
+          toast({
+            title: 'Status Updated',
+            description: `${productName} has been ${
+              currentStatus ? 'deactivated' : 'activated'
+            }.`,
+            status: 'success',
+            duration: 3000,
+            position: 'top-right',
+            isClosable: true,
+          });
+        },
+        onError: () => {
+          toast({
+            title: 'Error',
+            description: 'Failed to update product status.',
+            status: 'error',
+            duration: 3000,
+            position: 'top-right',
+            isClosable: true,
+          });
+        },
+      });
+    },
+    [toggleMutation, toast]
+  );
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -215,7 +491,19 @@ export default function Products() {
     );
   };
 
-  if (isLoading) return <Text textAlign='center'>Loading please wait...</Text>;
+  if (isLoading)
+    return (
+      <Center textAlign='center' fontSize='lg'>
+        Loading please wait...
+      </Center>
+    );
+
+  if (!data?.products || data.products.length === 0)
+    return (
+      <Center textAlign='center' py={10} color={'gray.400'}>
+        <Text fontSize='lg'>No products found</Text>
+      </Center>
+    );
 
   return (
     <Box>
@@ -242,161 +530,150 @@ export default function Products() {
         </Flex>
       </Flex>
 
-      <SimpleGrid columns={columns} spacing={6}>
-        {data?.products.map((product: Product) => {
-          const stockStatus = getStockStatus(product.quantityInStock);
-          return (
-            <Card
-              key={product._id}
-              bg={'teal.800'}
-              borderColor={'gray.200'}
-              borderWidth='1px'
-              borderRadius='lg'
-              overflow='hidden'
-              _hover={{
-                transform: 'translateY(-2px)',
-                boxShadow: 'lg',
-                transition: 'all 0.2s',
-              }}
-            >
-              <Box position='relative'>
-                <Image
-                  src={product.images[0]}
-                  alt={product.name}
-                  w='100%'
-                  h='200px'
-                  objectFit='cover'
-                />
-                {product.discount > 0 && (
-                  <Badge
-                    position='absolute'
-                    top={2}
-                    right={2}
-                    colorScheme='red'
-                    fontSize='sm'
-                    borderRadius='full'
-                    px={2}
-                    py={1}
-                  >
-                    -{product.discount}%
-                  </Badge>
-                )}
-                <Badge
-                  position='absolute'
-                  top={2}
-                  left={2}
-                  colorScheme={getStatusColor(product.isActive)}
-                  fontSize='xs'
-                  borderRadius='full'
-                  px={2}
-                  py={1}
-                >
-                  {product.isActive ? 'Active' : 'Inactive'}
-                </Badge>
-              </Box>
-
-              <CardBody color='white'>
-                <Stack spacing={3}>
-                  <Box>
-                    <Heading size='md' noOfLines={2} mb={1}>
-                      {product.name}
-                    </Heading>
+      <TableContainer>
+        <Table variant='simple' bg='white' borderRadius='lg' overflow='hidden'>
+          <Thead bg='gray.50'>
+            <Tr>
+              <Th>Product</Th>
+              <Th>Category</Th>
+              <Th>Price</Th>
+              <Th>Stock</Th>
+              <Th>Status</Th>
+              <Th>Rating</Th>
+              <Th>Vendor</Th>
+              <Th>Actions</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {data?.products.map((pdt) => {
+              const stockStatus = getStockStatus(pdt.quantityInStock);
+              const discount = pdt.discount ?? 0;
+              const averageRating = pdt.averageRating ?? 0;
+              return (
+                <Tr key={pdt._id} _hover={{ bg: 'gray.50' }}>
+                  <Td>
+                    <HStack spacing={3}>
+                      <Image
+                        src={pdt.images?.[0] || '/placeholder-image.jpg'}
+                        alt={pdt.name}
+                        w='50px'
+                        h='50px'
+                        objectFit='cover'
+                        borderRadius='md'
+                        fallbackSrc='/placeholder-image.jpg'
+                      />
+                      <VStack align='start' spacing={1}>
+                        <Text fontWeight='medium' noOfLines={1} maxW='200px'>
+                          {pdt.name}
+                        </Text>
+                        <Text
+                          fontSize='sm'
+                          color='gray.500'
+                          noOfLines={1}
+                          maxW='200px'
+                        >
+                          {pdt.description}
+                        </Text>
+                        {discount > 0 && (
+                          <Badge colorScheme='red' size='sm'>
+                            -{discount}%
+                          </Badge>
+                        )}
+                      </VStack>
+                    </HStack>
+                  </Td>
+                  <Td>
                     <Tag size='sm' colorScheme='blue' variant='subtle'>
-                      {product.category.name}
+                      {pdt.category?.name || 'No Category'}
                     </Tag>
-                  </Box>
-
-                  <Text fontSize='sm' noOfLines={2} minH='40px'>
-                    {product.description}
-                  </Text>
-
-                  <HStack justify='space-between'>
+                  </Td>
+                  <Td>
                     <VStack align='start' spacing={1}>
-                      <Text fontSize='xs' color={stockStatus.color}>
-                        {stockStatus.text}
-                      </Text>
-                      <Badge colorScheme={stockStatus.color} size='sm'>
-                        {product.quantityInStock}
-                      </Badge>
-                    </VStack>
-                    <VStack align='end' spacing={1}>
-                      <Text fontSize='xs'>Reviews</Text>
-                      <Text fontSize='sm' fontWeight='medium'>
-                        {product.totalReviews}
-                      </Text>
-                    </VStack>
-                  </HStack>
-
-                  {product.averageRating > 0 && (
-                    <Box>{renderRating(product.averageRating)}</Box>
-                  )}
-
-                  <Box>
-                    <Flex align='center' gap={2}>
-                      {product.discount > 0 ? (
+                      {discount > 0 ? (
                         <>
-                          <Text
-                            fontSize='lg'
-                            fontWeight='bold'
-                            color='green.500'
-                          >
+                          <Text fontWeight='bold' color='green.500'>
                             {formatPrice(
-                              calculateDiscountedPrice(
-                                product.price,
-                                product.discount
-                              )
+                              calculateDiscountedPrice(pdt.price, discount)
                             )}
                           </Text>
-                          <Text fontSize='sm' textDecoration='line-through'>
-                            {formatPrice(product.price)}
+                          <Text
+                            fontSize='xs'
+                            textDecoration='line-through'
+                            color='gray.400'
+                          >
+                            {formatPrice(pdt.price)}
                           </Text>
                         </>
                       ) : (
-                        <Text fontSize='lg' fontWeight='bold' color='green.500'>
-                          {formatPrice(product.price)}
+                        <Text fontWeight='bold' color='green.500'>
+                          {formatPrice(pdt.price)}
                         </Text>
                       )}
-                    </Flex>
-                  </Box>
-
-                  <Box>
-                    <HStack spacing={2}>
-                      <User size={12} />
-                      <Text fontSize='xs' color={'gray.400'}>
-                        {product.vendor.name}
+                    </VStack>
+                  </Td>
+                  <Td>
+                    <VStack align='start' spacing={1}>
+                      <Badge colorScheme={stockStatus.color} size='sm'>
+                        {pdt.quantityInStock}
+                      </Badge>
+                      <Text fontSize='xs' color={`${stockStatus.color}.500`}>
+                        {stockStatus.text}
                       </Text>
-                    </HStack>
-                  </Box>
-
-                  <Flex justify='space-between' align='center' pt={2}>
-                    <Button
-                      size='sm'
-                      isDisabled={isLoadingActive(product._id)}
-                      colorScheme={product.isActive ? 'red' : 'green'}
-                      variant='outline'
-                      onClick={() => handleToggleStatus(product)}
-                      isLoading={isLoadingActive(product._id)}
-                      loadingText={
-                        product.isActive ? 'Deactivating...' : 'Activating...'
-                      }
-                    >
-                      {product.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
-
-                    <Flex gap={1}>
+                    </VStack>
+                  </Td>
+                  <Td>
+                    <VStack align='start' spacing={2}>
+                      <Badge
+                        colorScheme={getStatusColor(pdt.isActive)}
+                        size='sm'
+                        p={2}
+                        borderRadius='xl'
+                      >
+                        {pdt.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Button
+                        size='xs'
+                        colorScheme={pdt.isActive ? 'red' : 'green'}
+                        variant='outline'
+                        disabled={toggleMutation.isPending}
+                        onClick={() =>
+                          handleToggleStatus(pdt._id, pdt.name, pdt.isActive)
+                        }
+                        isLoading={toggleMutation.isPending}
+                        loadingText={
+                          pdt.isActive ? 'Deactivating...' : 'Activating...'
+                        }
+                      >
+                        {pdt.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    </VStack>
+                  </Td>
+                  <Td>
+                    <VStack align='start' spacing={1}>
+                      {averageRating > 0 && renderRating(averageRating)}
+                      <Text fontSize='xs' color='gray.500'>
+                        {pdt.totalReviews || 0} reviews
+                      </Text>
+                    </VStack>
+                  </Td>
+                  <Td>
+                    <VStack align='start' spacing={1}>
+                      <Text fontSize='sm' fontWeight='medium'>
+                        {pdt.vendor?.name || 'Unknown Vendor'}
+                      </Text>
+                      <Text fontSize='xs' color='gray.500'>
+                        {pdt.vendor?.email || 'No Email'}
+                      </Text>
+                    </VStack>
+                  </Td>
+                  <Td>
+                    <HStack spacing={1}>
                       <IconButton
                         aria-label='View product details'
                         icon={<Eye size={14} />}
                         size='sm'
                         variant='ghost'
-                        onClick={() => handleView(product)}
-                      />
-                      <IconButton
-                        aria-label='Edit product'
-                        icon={<Edit size={14} />}
-                        size='sm'
-                        variant='ghost'
-                        onClick={() => handleEdit(product)}
+                        onClick={() => handleView(pdt)}
                       />
                       <IconButton
                         aria-label='Delete product'
@@ -404,263 +681,331 @@ export default function Products() {
                         size='sm'
                         variant='ghost'
                         colorScheme='red'
-                        onClick={() => handleDelete(product)}
+                        onClick={() => handleDelete(pdt)}
                       />
-                    </Flex>
-                  </Flex>
-                </Stack>
-              </CardBody>
-            </Card>
-          );
-        })}
-      </SimpleGrid>
+                    </HStack>
+                  </Td>
+                </Tr>
+              );
+            })}
+          </Tbody>
+        </Table>
+      </TableContainer>
 
-      {(!data?.products || data.products.length === 0) && (
-        <Box textAlign='center' py={10} color={'gray.400'}>
-          <Text fontSize='lg'>No products found</Text>
-        </Box>
-      )}
-
-      {/* View Product Drawer */}
+      {/* Unified Drawer for View/Edit */}
       <Drawer
-        isOpen={isViewOpen}
+        isOpen={isDrawerOpen}
         placement='right'
-        onClose={onViewClose}
+        onClose={handleDrawerClose}
         size='md'
       >
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
-          <DrawerHeader>Product Details</DrawerHeader>
+          <DrawerHeader>
+            {isEditMode ? 'Edit Product' : 'Product Details'}
+          </DrawerHeader>
           <DrawerBody>
-            {selectedProduct && (
-              <VStack spacing={4} align='stretch'>
-                <Image
-                  src={selectedProduct.images[0]}
-                  alt={selectedProduct.name}
-                  w='100%'
-                  h='250px'
-                  objectFit='cover'
-                  borderRadius='md'
-                />
-                <Heading size='md'>{selectedProduct.name}</Heading>
-                <Text color={'gray.400'}>{selectedProduct.description}</Text>
-
-                <Divider />
-
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Category:</Text>
-                  <Badge colorScheme='blue'>
-                    {selectedProduct.category.name}
-                  </Badge>
-                </HStack>
-
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Price:</Text>
-                  <Text>{formatPrice(selectedProduct.price)}</Text>
-                </HStack>
-
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Stock:</Text>
-                  <Badge
-                    colorScheme={
-                      getStockStatus(selectedProduct.quantityInStock).color
-                    }
+            {isSelectedProductLoading ? (
+              <Center py={10}>
+                <VStack spacing={4}>
+                  <Spinner size='lg' />
+                  <Text>Loading product details...</Text>
+                </VStack>
+              </Center>
+            ) : selectedProductError ? (
+              <Center py={10}>
+                <VStack spacing={4}>
+                  <Text color='red.500'>Error loading product details</Text>
+                  <Button
+                    size='sm'
+                    onClick={() => setSelectedProductId(selectedProductId)}
                   >
-                    {selectedProduct.quantityInStock}
-                  </Badge>
-                </HStack>
+                    Retry
+                  </Button>
+                </VStack>
+              </Center>
+            ) : selectedProductData || editingProduct ? (
+              <VStack spacing={4} align='stretch'>
+                {isEditMode && editingProduct ? (
+                  // Edit Form
+                  <>
+                    {/* Image Gallery Section */}
+                    <ImageGallery
+                      existingImages={editingProduct.images || []}
+                      newImages={selectedImages}
+                      onRemoveExisting={(imageUrl) =>
+                        handleRemoveImage(imageUrl, true)
+                      }
+                      onRemoveNew={(imageId) =>
+                        handleRemoveImage(imageId, false)
+                      }
+                      onAddImages={() => fileInputRef.current?.click()}
+                      isEditing={true}
+                    />
 
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Status:</Text>
-                  <Badge colorScheme={getStatusColor(selectedProduct.isActive)}>
-                    {selectedProduct.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </HStack>
+                    {/* Hidden File Input */}
+                    <Input
+                      ref={fileInputRef}
+                      type='file'
+                      multiple
+                      accept='image/*'
+                      display='none'
+                      onChange={handleImageSelect}
+                    />
 
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Rating:</Text>
-                  <Box>{renderRating(selectedProduct.averageRating)}</Box>
-                </HStack>
+                    <FormControl>
+                      <FormLabel>Product Name</FormLabel>
+                      <Input
+                        value={editingProduct.name}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            name: e.target.value,
+                          })
+                        }
+                      />
+                    </FormControl>
 
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Total Reviews:</Text>
-                  <Text>{selectedProduct.totalReviews}</Text>
-                </HStack>
+                    <FormControl>
+                      <FormLabel>Description</FormLabel>
+                      <Textarea
+                        value={editingProduct.description}
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            description: e.target.value,
+                          })
+                        }
+                      />
+                    </FormControl>
 
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Vendor:</Text>
-                  <VStack spacing={0} align='end'>
-                    <Text fontSize='sm'>{selectedProduct.vendor.name}</Text>
-                    <Text fontSize='xs' color={'gray.400'}>
-                      {selectedProduct.vendor.email}
+                    <FormControl>
+                      <FormLabel>Category</FormLabel>
+                      <Select
+                        value={
+                          editingProduct.category?.name ||
+                          editingProduct.category ||
+                          ''
+                        }
+                        onChange={(e) =>
+                          setEditingProduct({
+                            ...editingProduct,
+                            category: e.target.value,
+                          })
+                        }
+                      >
+                        <option value=''>Select a category</option>
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <HStack spacing={4} w='100%'>
+                      <FormControl>
+                        <FormLabel>Price</FormLabel>
+                        <NumberInput
+                          value={editingProduct.price}
+                          onChange={(valueString) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              price: parseFloat(valueString) || 0,
+                            })
+                          }
+                        >
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+
+                      <FormControl>
+                        <FormLabel>Stock</FormLabel>
+                        <NumberInput
+                          value={editingProduct.quantityInStock}
+                          onChange={(valueString) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              quantityInStock: parseInt(valueString) || 0,
+                            })
+                          }
+                        >
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+                    </HStack>
+
+                    <HStack spacing={4} w='100%'>
+                      <FormControl>
+                        <FormLabel>Discount (%)</FormLabel>
+                        <NumberInput
+                          value={editingProduct.discount || 0}
+                          onChange={(valueString) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              discount: parseInt(valueString) || 0,
+                            })
+                          }
+                          max={100}
+                          min={0}
+                        >
+                          <NumberInputField />
+                        </NumberInput>
+                      </FormControl>
+
+                      <FormControl display='flex' alignItems='center'>
+                        <FormLabel mb='0'>Active Status</FormLabel>
+                        <Switch
+                          isChecked={editingProduct.isActive}
+                          onChange={(e) =>
+                            setEditingProduct({
+                              ...editingProduct,
+                              isActive: e.target.checked,
+                            })
+                          }
+                        />
+                      </FormControl>
+                    </HStack>
+                  </>
+                ) : (
+                  // View Mode
+                  <>
+                    <ImageGallery
+                      existingImages={selectedProductData?.images || []}
+                      newImages={[]}
+                      onRemoveExisting={() => {}}
+                      onRemoveNew={() => {}}
+                      onAddImages={() => {}}
+                      isEditing={false}
+                    />
+
+                    <Heading size='md'>{selectedProductData?.name}</Heading>
+                    <Text color={'gray.400'}>
+                      {selectedProductData?.description}
                     </Text>
-                  </VStack>
-                </HStack>
 
-                {selectedProduct.discount > 0 && (
-                  <HStack justify='space-between'>
-                    <Text fontWeight='medium'>Discount:</Text>
-                    <Badge colorScheme='red'>{selectedProduct.discount}%</Badge>
-                  </HStack>
+                    <Divider />
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Category:</Text>
+                      <Badge colorScheme='blue'>
+                        {selectedProductData?.category?.name || 'No Category'}
+                      </Badge>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Price:</Text>
+                      <Text>
+                        {formatPrice(selectedProductData?.price || 0)}
+                      </Text>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Stock:</Text>
+                      <Badge
+                        colorScheme={
+                          getStockStatus(
+                            selectedProductData?.quantityInStock || 0
+                          ).color
+                        }
+                      >
+                        {selectedProductData?.quantityInStock || 0}
+                      </Badge>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Status:</Text>
+                      <Badge
+                        colorScheme={getStatusColor(
+                          selectedProductData?.isActive || false
+                        )}
+                      >
+                        {selectedProductData?.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Rating:</Text>
+                      <Box>
+                        {renderRating(selectedProductData?.averageRating || 0)}
+                      </Box>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Total Reviews:</Text>
+                      <Text>{selectedProductData?.totalReviews || 0}</Text>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Vendor:</Text>
+                      <VStack spacing={0} align='end'>
+                        <Text fontSize='sm'>
+                          {selectedProductData?.vendor?.name || 'Unknown'}
+                        </Text>
+                        <Text fontSize='xs' color={'gray.400'}>
+                          {selectedProductData?.vendor?.email || 'No Email'}
+                        </Text>
+                      </VStack>
+                    </HStack>
+
+                    {selectedProductData?.discount &&
+                      selectedProductData.discount > 0 && (
+                        <HStack justify='space-between'>
+                          <Text fontWeight='medium'>Discount:</Text>
+                          <Badge colorScheme='red'>
+                            {selectedProductData.discount}%
+                          </Badge>
+                        </HStack>
+                      )}
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Created:</Text>
+                      <Text fontSize='sm'>
+                        {formatDate(selectedProductData?.createdAt || '')}
+                      </Text>
+                    </HStack>
+
+                    <HStack justify='space-between'>
+                      <Text fontWeight='medium'>Updated:</Text>
+                      <Text fontSize='sm'>
+                        {formatDate(selectedProductData?.updatedAt || '')}
+                      </Text>
+                    </HStack>
+                  </>
                 )}
-
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Created:</Text>
-                  <Text fontSize='sm'>
-                    {formatDate(selectedProduct.createdAt)}
-                  </Text>
-                </HStack>
-
-                <HStack justify='space-between'>
-                  <Text fontWeight='medium'>Updated:</Text>
-                  <Text fontSize='sm'>
-                    {formatDate(selectedProduct.updatedAt)}
-                  </Text>
-                </HStack>
               </VStack>
-            )}
+            ) : null}
           </DrawerBody>
           <DrawerFooter>
-            <Button variant='outline' mr={3} onClick={onViewClose}>
-              Close
+            <Button variant='outline' mr={3} onClick={handleDrawerClose}>
+              {isEditMode ? 'Cancel' : 'Close'}
             </Button>
-            <Button
-              colorScheme='blue'
-              onClick={() => {
-                onViewClose();
-                if (selectedProduct) {
-                  handleEdit(selectedProduct);
-                }
-              }}
-            >
-              Edit Product
-            </Button>
+            {isEditMode ? (
+              <Button
+                colorScheme='blue'
+                onClick={handleSaveEdit}
+                isLoading={updateMutation.isPending}
+                loadingText='Saving...'
+              >
+                Save Changes
+              </Button>
+            ) : (
+              <Button
+                colorScheme='blue'
+                isDisabled={!selectedProductData}
+                onClick={() => {
+                  if (selectedProductData) {
+                    handleEdit(selectedProductData);
+                  }
+                }}
+              >
+                Edit Product
+              </Button>
+            )}
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-
-      {/* Edit Product Modal */}
-      <Modal isOpen={isEditOpen} onClose={onEditClose} size='lg'>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit Product</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {editingProduct && (
-              <VStack spacing={4}>
-                <FormControl>
-                  <FormLabel>Product Name</FormLabel>
-                  <Input
-                    value={editingProduct.name}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        name: e.target.value,
-                      })
-                    }
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Description</FormLabel>
-                  <Textarea
-                    value={editingProduct.description}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </FormControl>
-
-                <HStack spacing={4} w='100%'>
-                  <FormControl>
-                    <FormLabel>Price</FormLabel>
-                    <NumberInput
-                      value={editingProduct.price}
-                      onChange={(valueString) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          price: parseFloat(valueString) || 0,
-                        })
-                      }
-                    >
-                      <NumberInputField />
-                    </NumberInput>
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Stock</FormLabel>
-                    <NumberInput
-                      value={editingProduct.quantityInStock}
-                      onChange={(valueString) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          quantityInStock: parseInt(valueString) || 0,
-                        })
-                      }
-                    >
-                      <NumberInputField />
-                    </NumberInput>
-                  </FormControl>
-                </HStack>
-
-                <HStack spacing={4} w='100%'>
-                  <FormControl>
-                    <FormLabel>Discount (%)</FormLabel>
-                    <NumberInput
-                      value={editingProduct.discount}
-                      onChange={(valueString) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          discount: parseInt(valueString) || 0,
-                        })
-                      }
-                      max={100}
-                      min={0}
-                    >
-                      <NumberInputField />
-                    </NumberInput>
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Status</FormLabel>
-                    <Switch
-                      isChecked={editingProduct.isActive}
-                      onChange={(e) =>
-                        setEditingProduct({
-                          ...editingProduct,
-                          isActive: e.target.checked,
-                        })
-                      }
-                    />
-                  </FormControl>
-                </HStack>
-
-                <FormControl>
-                  <FormLabel>Category</FormLabel>
-                  <Text fontSize='sm' color={'gray.400'}>
-                    {editingProduct.category.name}
-                  </Text>
-                  <Text fontSize='xs' color={'gray.400'}>
-                    Category changes require separate API call
-                  </Text>
-                </FormControl>
-              </VStack>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant='ghost' mr={3} onClick={onEditClose}>
-              Cancel
-            </Button>
-            <Button colorScheme='blue' onClick={handleSaveEdit}>
-              Save Changes
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog
@@ -688,32 +1033,31 @@ export default function Products() {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+
+      {/* Pagination */}
       {!isLoading && pagination.pages > 1 && (
         <Flex justifyContent='center' mt={8}>
           <HStack spacing={2}>
-            {/* Previous Button */}
             <Button
               size='sm'
               variant='outline'
               onClick={handlePreviousPage}
               isDisabled={!pagination.hasPrev}
-              leftIcon={<ChevronLeftIcon />}
+              leftIcon={<ChevronLeft />}
             >
               Previous
             </Button>
 
-            {/* Current Page Info */}
             <Text px={4} color='gray.600' fontSize='sm'>
               Page {pagination.page} of {pagination.pages}
             </Text>
 
-            {/* Next Button */}
             <Button
               size='sm'
               variant='outline'
               onClick={handleNextPage}
               isDisabled={!pagination.hasNext}
-              rightIcon={<ChevronRightIcon />}
+              rightIcon={<ChevronRight />}
             >
               Next
             </Button>

@@ -47,29 +47,16 @@ router
   .post(
     authenticate,
     checkRole('vendor', 'create'),
+    (req, res, next) => {
+      productImageUpload.array('productImage', 5)(req, res, (err) => {
+        if (err) {
+          return handleUploadError(err, req, res, next);
+        }
+        next();
+      });
+    },
     asyncHandler(ProductsController.createProduct)
   );
-
-router.post(
-  '/upload-image',
-  authenticate,
-  (req, res, next) => {
-    productImageUpload.array('productImage', 5)(req, res, (err) => {
-      if (err) {
-        return handleUploadError(err, req, res, next);
-      }
-      next();
-    });
-  },
-  asyncHandler(ProductsController.uploadProductImage)
-);
-
-router.delete(
-  '/delete-image',
-  authenticate,
-  checkRole(['admin', 'vendor'], 'delete'),
-  asyncHandler(ProductsController.deleteProductImage)
-);
 
 /**
  * @openapi
@@ -155,10 +142,10 @@ router.get(
 );
 
 router.patch(
-  '/:id/toggle-active',
+  '/:id/status',
   authenticate,
   checkRole(['admin', 'vendor'], 'edit'),
-  asyncHandler(ProductsController.toggleProductActive)
+  asyncHandler(ProductsController.toggleProductStatus)
 );
 
 /**
@@ -229,6 +216,14 @@ router
   .put(
     authenticate,
     checkRole(['admin', 'vendor'], 'edit'),
+    (req, res, next) => {
+      productImageUpload.array('productImage', 5)(req, res, (err) => {
+        if (err) {
+          return handleUploadError(err, req, res, next);
+        }
+        next();
+      });
+    },
     asyncHandler(ProductsController.updateProduct)
   )
   .delete(

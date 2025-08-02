@@ -18,7 +18,7 @@ import Notices from '../components/VendorManagement/Notices';
 import Products from '../components/VendorManagement/Products';
 import StoreNavbar from '../components/VendorManagement/StoreNavbar';
 import StoreSidebar from '../components/VendorManagement/StoreSidebar';
-import CreateProductPage from '../components/VendorManagement/AddProduct';
+import CreateProductPage from '../components/VendorManagement/CreateProduct';
 import VendorDashboard from '@/components/VendorManagement/VendorDashboard';
 
 export default function StoreManagerDashboard() {
