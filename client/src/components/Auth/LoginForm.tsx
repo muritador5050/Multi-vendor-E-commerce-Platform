@@ -31,7 +31,6 @@ export default function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false);
   const loginMutation = useLogin();
 
-  // Load saved email and remember me preference on component mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('savedEmail');
     const savedRememberMe = localStorage.getItem('rememberMe') === 'true';

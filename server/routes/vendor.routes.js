@@ -16,18 +16,26 @@ router.get(
   asyncHandler(VendorController.getProfileCompletion)
 );
 
+// Add this route to your vendor routes
+router.get(
+  '/profile-status',
+  authenticate,
+  asyncHandler(VendorController.getVendorProfileStatus)
+);
+
+router.post(
+  '/onboarding',
+  authenticate,
+  checkRole('vendor', 'create'),
+  uploadVendorImages,
+  asyncHandler(VendorController.updateVendorData)
+);
 router
   .route('/profile')
   .get(
     authenticate,
     checkRole('vendor', 'read'),
     asyncHandler(VendorController.getVendorProfile)
-  )
-  .post(
-    authenticate,
-    checkRole('vendor', 'create'),
-    uploadVendorImages,
-    asyncHandler(VendorController.updateVendorData)
   )
   .put(
     authenticate,

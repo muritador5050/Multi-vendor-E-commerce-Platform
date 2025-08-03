@@ -56,7 +56,6 @@ function OAuthCallback() {
     const userParam = params.get('user');
     const error = params.get('error');
 
-    // Add a minimum loading time for better UX
     const minLoadingTime = 2500;
     const startTime = Date.now();
 

@@ -20,6 +20,8 @@ import ProductCategoryPage from './pages/ProductCategoryPage';
 import AdminDashboard from './components/AdminManagement/AdminDashboardLayout';
 import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 import { EmailVerificationPage } from './components/Auth/EmailVerification';
+import CreateVendorProfile from './components/VendorManagement/CreateVendorProfile';
+import { VendorProfileGuard } from './ProtectedRoute/VendorProfileGuard';
 
 //App
 function App() {
@@ -47,6 +49,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path='/vendors/onboarding' element={<CreateVendorProfile />} />
           <Route
             path='store-manager/*'
             element={
@@ -54,7 +58,9 @@ function App() {
                 allowedRoles={['vendor', 'admin']}
                 showAccessDenied={true}
               >
-                <StoreManagerDashboard />
+                <VendorProfileGuard>
+                  <StoreManagerDashboard />
+                </VendorProfileGuard>
               </ProtectedRoute>
             }
           />

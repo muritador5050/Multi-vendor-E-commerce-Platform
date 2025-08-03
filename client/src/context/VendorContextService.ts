@@ -18,7 +18,7 @@ import type {
   AccountStatusResponse,
   VendorPaginateResponse,
 } from '../type/vendor';
-import type { ApiResponse } from '@/type/ApiResponse';
+import type { ApiResponse, VendorApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
 
@@ -48,28 +48,36 @@ async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
   );
 }
 
+async function getVendorProfileStatus(): Promise<
+  VendorApiResponse<VendorProfile | null>
+> {
+  return await apiClient.authenticatedApiRequest<
+    VendorApiResponse<VendorProfile | null>
+  >('/vendors/profile-status', {
+    method: 'GET',
+  });
+}
+
 async function createNewVendorProfile(
   data: Partial<Vendor>
-): Promise<ApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
-    '/vendors/profile',
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  );
+): Promise<VendorApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<
+    VendorApiResponse<VendorProfile>
+  >('/vendors/onboarding', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 async function updateVendorProfile(
   data: Partial<Vendor>
-): Promise<ApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
-    '/vendors/profile',
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }
-  );
+): Promise<VendorApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest<
+    VendorApiResponse<VendorProfile>
+  >('/vendors/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 }
 
 // Public Vendor Routes
@@ -78,9 +86,9 @@ async function getAllVendors(
 ): Promise<ApiResponse<AllVendorsResponse>> {
   const queryString = buildQueryString(filters);
   const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
-  return await apiClient.publicApiRequest<ApiResponse<AllVendorsResponse>>(
-    endpoint
-  );
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<AllVendorsResponse>
+  >(endpoint);
 }
 
 async function getVendorById(id: string): Promise<ApiResponse<singleVendor>> {
@@ -116,7 +124,6 @@ async function updateSettings<T extends SettingsResponse>(
   data: SettingsUpdate,
   files?: { storeLogo?: File; storeBanner?: File }
 ): Promise<ApiResponse<T>> {
-
   const hasFiles =
     files &&
     Object.keys(files).some(
@@ -140,7 +147,6 @@ async function updateSettings<T extends SettingsResponse>(
     );
   }
 }
-
 
 // Account Status - Fixed URL bug
 async function AccountDeactivateByVendor(
@@ -230,6 +236,14 @@ export const useVendorProfile = () => {
     queryFn: getVendorProfile,
     select: (data) => data.data,
     enabled: apiClient.isAuthenticated(),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useVendorProfileStatus = () => {
+  return useQuery({
+    queryKey: vendorKeys.profile,
+    queryFn: getVendorProfileStatus,
     staleTime: 5 * 60 * 1000,
   });
 };

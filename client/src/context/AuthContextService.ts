@@ -426,16 +426,61 @@ export const useUserById = (id: string) => {
 /**
  * Fetch current user's profile
  */
+// export const useProfile = () => {
+//   const forceLogout = useForceLogout();
+//   return useQuery({
+//     queryKey: authKeys.profile(),
+//     queryFn: async () => {
+//       const response = await getProfile();
+//       return response.data;
+//     },
+//     enabled: isAuthenticated(),
+//     staleTime: 5 * 60 * 1000,
+//     networkMode:'online',
+//     retry: (failureCount, error) => {
+//       if (
+//         error instanceof ApiError &&
+//         error.status >= 400 &&
+//         error.status < 500
+//       ) {
+//         return false;
+//       }
+//       return failureCount < 3;
+//     },
+//   });
+// };
+
 export const useProfile = () => {
   return useQuery({
     queryKey: authKeys.profile(),
     queryFn: async () => {
-      const response = await getProfile();
-      return response.data;
+      try {
+        const response = await getProfile();
+        return response.data;
+      } catch (error) {
+        if (
+          error instanceof ApiError &&
+          (error.status === 401 || error.status === 403)
+        ) {
+          console.warn(
+            'Profile fetch failed - authentication error:',
+            error.message
+          );
+          throw error;
+        }
+        throw error;
+      }
     },
     enabled: isAuthenticated(),
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: (failureCount, error) => {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403)
+      ) {
+        return false;
+      }
       if (
         error instanceof ApiError &&
         error.status >= 400 &&
@@ -443,8 +488,10 @@ export const useProfile = () => {
       ) {
         return false;
       }
-      return failureCount < 3;
+      return failureCount < 2;
     },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    networkMode: 'online',
   });
 };
 
@@ -1083,9 +1130,26 @@ export const useProfileCompletion = () => {
 /**
  * Check if user is authenticated
  */
+// export const useIsAuthenticated = () => {
+//   const { data, isLoading } = useProfile();
+//   return { isAuthenticated: !!data?.user, isLoading };
+// };
+
 export const useIsAuthenticated = () => {
-  const { data, isLoading } = useProfile();
-  return { isAuthenticated: !!data?.user, isLoading };
+  const { data, isLoading, error, failureCount } = useProfile();
+  const hasAuthError =
+    error instanceof ApiError && (error.status === 401 || error.status === 403);
+  const hasTooManyFailures = failureCount >= 2 && error;
+
+  const isRefreshing = apiClient.isTokenRefreshing();
+
+  return {
+    isAuthenticated: !!data?.user && !hasAuthError,
+    isLoading:
+      (isLoading || isRefreshing) && !hasAuthError && !hasTooManyFailures,
+    error: hasAuthError ? error : null,
+    isRefreshing,
+  };
 };
 
 /**
@@ -1120,11 +1184,12 @@ export const useForceLogout = () => {
   const queryClient = useQueryClient();
 
   return (message?: string) => {
+    apiClient.stopHeartbeat();
     clearAuth();
     queryClient.clear();
     const url = message
       ? `/my-account?message=${encodeURIComponent(message)}`
-      : '/';
+      : '/my-account';
     navigate(url, { replace: true });
   };
 };

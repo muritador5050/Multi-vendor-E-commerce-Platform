@@ -6,6 +6,54 @@ const { BACKEND_URL } = require('../configs/index');
 
 //Controller
 class VendorController {
+  // static async updateVendorData(req, res) {
+  //   const user = await User.findById(req.user.id);
+
+  //   if (!user || user.role !== 'vendor') {
+  //     return res.status(403).json({
+  //       message: 'Only users with vendor role can create or update vendor data',
+  //     });
+  //   }
+
+  //   try {
+  //     let vendor = await Vendor.findOne({ user: req.user.id });
+
+  //     if (!vendor) {
+  //       vendor = new Vendor({ user: req.user.id, ...req.body });
+  //       await vendor.save();
+
+  //       return res.status(201).json({
+  //         success: true,
+  //         message: 'Vendor profile created successfully',
+  //         data: {
+  //           ...vendor.toObject(),
+  //           profileCompletion: vendor.calculateProfileCompletion(),
+  //         },
+  //       });
+  //     }
+
+  //     // Update existing vendor
+  //     Object.assign(vendor, req.body);
+  //     await vendor.save();
+
+  //     res.status(200).json({
+  //       success: true,
+  //       message: 'Vendor profile updated successfully',
+  //       data: {
+  //         ...vendor.toObject(),
+  //         profileCompletion: vendor.calculateProfileCompletion(),
+  //       },
+  //     });
+  //   } catch (error) {
+  //     res.status(400).json({
+  //       success: false,
+  //       message: 'Error updating vendor data',
+  //       error: error.message,
+  //     });
+  //   }
+  // }
+
+  // Your existing method with small modification
   static async updateVendorData(req, res) {
     const user = await User.findById(req.user.id);
 
@@ -24,11 +72,13 @@ class VendorController {
 
         return res.status(201).json({
           success: true,
+          hasVendorProfile: true,
           message: 'Vendor profile created successfully',
           data: {
             ...vendor.toObject(),
             profileCompletion: vendor.calculateProfileCompletion(),
           },
+          redirectTo: '/store-manager',
         });
       }
 
@@ -38,16 +88,50 @@ class VendorController {
 
       res.status(200).json({
         success: true,
+        hasVendorProfile: true,
         message: 'Vendor profile updated successfully',
         data: {
           ...vendor.toObject(),
           profileCompletion: vendor.calculateProfileCompletion(),
         },
+        redirectTo: '/store-manager',
       });
     } catch (error) {
       res.status(400).json({
         success: false,
         message: 'Error updating vendor data',
+        error: error.message,
+      });
+    }
+  }
+
+  static async getVendorProfileStatus(req, res) {
+    const user = await User.findById(req.user.id);
+
+    if (!user || user.role !== 'vendor') {
+      return res.status(403).json({
+        message: 'Only users with vendor role can access vendor data',
+      });
+    }
+
+    try {
+      const vendor = await Vendor.findOne({ user: req.user.id });
+      const hasVendorProfile = vendor !== null;
+
+      res.status(200).json({
+        success: true,
+        hasVendorProfile, 
+        data: vendor
+          ? {
+              ...vendor.toObject(),
+              profileCompletion: vendor.calculateProfileCompletion(),
+            }
+          : null,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: 'Error fetching vendor profile status',
         error: error.message,
       });
     }
@@ -252,14 +336,13 @@ class VendorController {
         data: {
           vendors,
           pagination: {
-            
             total: count,
             page: parseInt(page),
             limit: parseInt(limit),
             totalPages: Math.ceil(count / parseInt(limit)),
             hasNextPage: parseInt(page) < Math.ceil(count / parseInt(limit)),
             hasPrevPage: parseInt(page) > 1,
-          }
+          },
         },
       });
     } catch (error) {

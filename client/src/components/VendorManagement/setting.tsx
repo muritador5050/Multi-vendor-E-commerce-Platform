@@ -41,6 +41,7 @@ import type {
   Address,
   BankDetails,
   GeneralSettings,
+  NotificationSettings,
   SeoSettings,
   SettingsUpdate,
   SettingType,
@@ -57,7 +58,7 @@ import SocialProfile from './StoreSettings/SocialProfile';
 interface FormData {
   generalSettings: GeneralSettings;
   storeAddress: StoreAddress;
-  businessAddress: Address;
+  notifications: NotificationSettings;
   bankDetails: BankDetails;
   socialMedia: SocialMedia;
   storePolicies: StorePolicies;
@@ -85,13 +86,13 @@ const tabName: TabItem[] = [
 const SETTINGS_MAPPING: Record<string, keyof FormData> = {
   generalSettings: 'generalSettings',
   storeAddress: 'storeAddress',
-  businessAddress: 'businessAddress',
   bankDetails: 'bankDetails',
   socialMedia: 'socialMedia',
   storePolicies: 'storePolicies',
   shippingRules: 'shippingRules',
   seoSettings: 'seoSettings',
   storeHours: 'storeHours',
+  // notifications: 'notifications',
 };
 
 // Default data structures
@@ -124,6 +125,13 @@ const defaultAddressData: Address = {
   country: '',
 };
 
+const defaultNotification: NotificationSettings = {
+  emailNotifications: true,
+  smsNotifications: false,
+  orderNotifications: true,
+  marketingEmails: false,
+};
+
 const defaultSeoData: SeoSettings = {
   metaTitle: '',
   metaDescription: '',
@@ -153,7 +161,7 @@ export default function Setting() {
   const [formData, setFormData] = useState<FormData>({
     generalSettings: { ...defaultGeneralSettings },
     storeAddress: { ...defaultAddressData },
-    businessAddress: { ...defaultAddressData },
+    notifications: { ...defaultNotification },
     bankDetails: data?.bankDetails || {},
     socialMedia: { ...defaultSocialMediaData },
     storePolicies: data?.storePolicies || {},
@@ -168,7 +176,7 @@ export default function Setting() {
         ...prev,
         generalSettings: { ...defaultGeneralSettings, ...data.generalSettings },
         storeAddress: { ...defaultAddressData, ...data.storeAddress },
-        businessAddress: { ...defaultAddressData, ...data.businessAddress },
+        notifications: { ...defaultNotification, ...data.notifications },
         bankDetails: data.bankDetails || {},
         socialMedia: data.socialMedia || {},
         storePolicies: data.storePolicies || {},
@@ -236,7 +244,6 @@ export default function Setting() {
               ...(typeof storeBanner === 'string' && { storeBanner }),
             };
 
-           
             promises.push(
               updateSettings.mutateAsync({
                 settingType: settingType as SettingType,
@@ -254,7 +261,6 @@ export default function Setting() {
           }
         }
       }
-
       // Execute all API calls
       await Promise.all(promises);
 

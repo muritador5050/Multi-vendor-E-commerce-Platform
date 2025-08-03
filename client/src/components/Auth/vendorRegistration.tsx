@@ -50,7 +50,7 @@ function VendorRegistration() {
         duration: 6000,
         isClosable: true,
       });
-      setTimeout(() => navigate('/my-account'), 3000);
+      setTimeout(() => navigate('/my-account'), 2500);
       setUser({
         name: '',
         email: '',

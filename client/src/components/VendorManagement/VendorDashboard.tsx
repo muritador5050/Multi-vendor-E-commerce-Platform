@@ -124,6 +124,7 @@ export default function VendorDashboard() {
   const { data: dailySales, isLoading: dailySalesLoading } =
     useDailySalesReport();
   const { data: storeAnalytics } = useProductSalesReport();
+
   //Stats
   if (!stats) return null;
   const cards = getDashboardCards(stats);
@@ -158,6 +159,7 @@ export default function VendorDashboard() {
         Loading analytics sales...
       </Center>
     );
+
   return (
     <Box>
       <Flex

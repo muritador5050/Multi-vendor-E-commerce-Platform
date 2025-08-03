@@ -130,47 +130,10 @@ class ApiClient {
   private clearAuthAndRedirect(): void {
     localStorage.removeItem('accessToken');
     this.refreshAttempts = 0;
-    // Only redirect if not already on login page
     if (!window.location.pathname.includes('/my-account')) {
       window.location.href = '/my-account';
     }
   }
-
-  /**
-   * Handle response and extract data
-   */
-  // private async handleResponse<T>(response: Response): Promise<T> {
-  //   // Rate limiting handling
-  //   if (response.status === 429) {
-  //     const retryAfter = response.headers.get('Retry-After') || '60';
-  //     throw new ApiError(
-  //       `Too many requests. Try again in ${retryAfter} seconds.`,
-  //       429,
-  //       response
-  //     );
-  //   }
-
-  //   if (!response.ok) {
-  //     let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-  //     try {
-  //       const errorData = await response.json();
-  //       errorMessage = errorData.message || errorData.error || errorMessage;
-  //     } catch {
-  //       // Keep original error message if JSON parsing fails
-  //     }
-  //     throw new ApiError(errorMessage, response.status, response);
-  //   }
-
-  //   // Handle empty responses gracefully
-  //   const contentType = response.headers.get('content-type');
-  //   if (contentType && contentType.includes('application/json')) {
-  //     return response.json();
-  //   }
-
-  //   // For non-JSON responses, return as text or empty object
-  //   const text = await response.text();
-  //   return (text ? text : {}) as T;
-  // }
 
   /**
    * Handle response and extract data
@@ -450,6 +413,19 @@ class ApiClient {
     localStorage.removeItem('rememberMe');
     localStorage.removeItem('savedEmail');
     this.refreshAttempts = 0;
+
+    // Dispatch custom event to notify React components
+    window.dispatchEvent(
+      new CustomEvent('auth:logout', {
+        detail: { reason: 'token_expired' },
+      })
+    );
+
+    if (!window.location.pathname.includes('/my-account')) {
+      window.location.href =
+        '/my-account?message=' +
+        encodeURIComponent('Your session has expired. Please login again.');
+    }
   }
 
   /**
@@ -465,6 +441,10 @@ class ApiClient {
     }
 
     this.heartbeatInterval = setInterval(async () => {
+      if (this.isRefreshing) {
+        // Skip heartbeat during token refresh
+        return;
+      }
       try {
         await this.authenticatedApiRequest('/auth/heartbeat', {
           method: 'POST',

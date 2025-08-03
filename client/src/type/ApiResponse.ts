@@ -4,3 +4,12 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   errors?: string[];
 }
+
+export interface VendorApiResponse<T = unknown> {
+  success?: boolean;
+  hasVendorProfile?: boolean;
+  message?: string;
+  data?: T;
+  redirectTo: string;
+  errors?: string[];
+}
