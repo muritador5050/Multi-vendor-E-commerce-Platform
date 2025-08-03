@@ -112,12 +112,46 @@ async function deleteDocument(
 }
 
 // Settings Management
+// async function updateSettings<T extends SettingsResponse>(
+//   settingType: SettingType,
+//   data: SettingsUpdate,
+//   files?: { storeLogo?: File; storeBanner?: File }
+// ): Promise<ApiResponse<T>> {
+//   if (files && Object.keys(files).length > 0) {
+//     return await apiClient.authenticatedFormDataRequest<ApiResponse<T>>(
+//       `/vendors/settings/${settingType}`,
+//       data,
+//       files,
+//       { method: 'PUT' }
+//     );
+//   } else {
+//     return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
+//       `/vendors/settings/${settingType}`,
+//       {
+//         method: 'PUT',
+//         body: JSON.stringify(data),
+//       }
+//     );
+//   }
+// }
+
+
 async function updateSettings<T extends SettingsResponse>(
   settingType: SettingType,
   data: SettingsUpdate,
   files?: { storeLogo?: File; storeBanner?: File }
 ): Promise<ApiResponse<T>> {
-  if (files && Object.keys(files).length > 0) {
+  console.log('updateSettings called with:', { settingType, data, files });
+
+  // Check if we have any files
+  const hasFiles =
+    files &&
+    Object.keys(files).some(
+      (key) => files[key as keyof typeof files] instanceof File
+    );
+
+  if (hasFiles) {
+    console.log('Using FormData request');
     return await apiClient.authenticatedFormDataRequest<ApiResponse<T>>(
       `/vendors/settings/${settingType}`,
       data,
@@ -125,6 +159,7 @@ async function updateSettings<T extends SettingsResponse>(
       { method: 'PUT' }
     );
   } else {
+    console.log('Using JSON request');
     return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
       `/vendors/settings/${settingType}`,
       {
@@ -134,6 +169,7 @@ async function updateSettings<T extends SettingsResponse>(
     );
   }
 }
+
 
 // Account Status - Fixed URL bug
 async function AccountDeactivateByVendor(

@@ -17,18 +17,22 @@ export default function GalleryFileUpload({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+
+    if (!files || files.length === 0) {
+      return;
+    }
 
     if (multiple) {
-      onFileChange(Array.from(files));
+      const fileArray = Array.from(files);
+      onFileChange(fileArray);
     } else {
-      onFileChange(files[0]);
+      const singleFile = files[0];
+      onFileChange(singleFile);
     }
   };
 
   return (
     <>
-      {/* Hidden input */}
       <Input
         type='file'
         ref={fileInputRef}
@@ -38,7 +42,6 @@ export default function GalleryFileUpload({
         multiple={multiple}
       />
 
-      {/* Custom styled box acting like a button */}
       <Box
         onClick={handleClick}
         cursor='pointer'

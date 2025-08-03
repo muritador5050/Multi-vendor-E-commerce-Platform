@@ -944,10 +944,6 @@ export const useInvalidateUserTokens = () => {
   });
 };
 
-// =============================================
-// 12. MUTATION HOOKS (Online Status Management)
-// =============================================
-
 /**
  * Set user online mutation
  */
@@ -1162,10 +1158,6 @@ export const useUserActivityStatus = (userId: string) => {
     lastUpdated: userStatus?.updatedAt,
   };
 };
-
-// =============================================
-// 14. ONLINE STATUS HOOKS
-// =============================================
 
 /**
  * Manage user online status

@@ -216,7 +216,7 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
     },
   });
 };

@@ -207,7 +207,7 @@ export default function GeneralSetting({
                     position='absolute'
                     top='4px'
                     right='4px'
-                    onClick={() => onChange({ storeLogo: null })}
+                    onClick={() => onChange({ storeLogo: '' })}
                   >
                     Remove
                   </Button>
@@ -257,7 +257,7 @@ export default function GeneralSetting({
                       position='absolute'
                       top='4px'
                       right='4px'
-                      onClick={() => onChange({ storeBanner: null })}
+                      onClick={() => onChange({ storeBanner: '' })}
                     >
                       Remove
                     </Button>
@@ -296,7 +296,7 @@ export default function GeneralSetting({
                               );
 
                               if (updatedBanner.length === 0) {
-                                onChange({ storeBanner: null });
+                                onChange({ storeBanner: '' });
                               } else {
                                 onChange({
                                   storeBanner: updatedBanner as
@@ -305,7 +305,7 @@ export default function GeneralSetting({
                                 });
                               }
                             } else {
-                              onChange({ storeBanner: null });
+                              onChange({ storeBanner: '' });
                             }
                           }}
                         >
