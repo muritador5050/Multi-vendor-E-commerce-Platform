@@ -205,46 +205,6 @@ export default function Setting() {
     []
   );
 
-  // const handleSaveAll = async (): Promise<void> => {
-  //   setIsLoading(true);
-  //   const promises: Promise<unknown>[] = [];
-  //   try {
-  //     for (const [settingType, schemaKey] of Object.entries(SETTINGS_MAPPING)) {
-  //       const originalData = data?.[schemaKey];
-  //       const currentData = formData[schemaKey];
-
-  //       if (JSON.stringify(currentData) !== JSON.stringify(originalData)) {
-  //         promises.push(
-  //           updateSettings.mutateAsync({
-  //             settingType: settingType as SettingType,
-  //             data: currentData as SettingsUpdate,
-  //           })
-  //         );
-  //       }
-  //     }
-  //     // Execute all API calls
-  //     await Promise.all(promises);
-  //     toast({
-  //       title: 'Settings Updated',
-  //       description: 'All settings have been saved successfully',
-  //       position: 'top-right',
-  //       status: 'success',
-  //       duration: 3000,
-  //     });
-  //     setIsDirty(false);
-  //   } catch (error) {
-  //     toast({
-  //       title: 'Error',
-  //       description: `Failed to save some settings. Please try again ${error}`,
-  //       position: 'top-right',
-  //       status: 'error',
-  //       duration: 5000,
-  //     });
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const handleSaveAll = async (): Promise<void> => {
     setIsLoading(true);
     const promises: Promise<unknown>[] = [];
@@ -255,14 +215,11 @@ export default function Setting() {
         const currentData = formData[schemaKey];
 
         if (JSON.stringify(currentData) !== JSON.stringify(originalData)) {
-          // Special handling for generalSettings with files
           if (settingType === 'generalSettings') {
             const generalData = currentData as GeneralSettings;
 
-            // Separate files from regular form data
             const { storeLogo, storeBanner, ...regularData } = generalData;
 
-            // Prepare files object only if files are File objects
             const files: { storeLogo?: File; storeBanner?: File } = {};
 
             if (storeLogo instanceof File) {
@@ -273,16 +230,13 @@ export default function Setting() {
               files.storeBanner = storeBanner;
             }
 
-            // Include string URLs in regular data if they're not File objects
             const dataToSend = {
               ...regularData,
               ...(typeof storeLogo === 'string' && { storeLogo }),
               ...(typeof storeBanner === 'string' && { storeBanner }),
             };
 
-            console.log('General settings - Regular data:', dataToSend);
-            console.log('General settings - Files:', files);
-
+           
             promises.push(
               updateSettings.mutateAsync({
                 settingType: settingType as SettingType,
@@ -291,7 +245,6 @@ export default function Setting() {
               })
             );
           } else {
-            // Regular handling for other settings
             promises.push(
               updateSettings.mutateAsync({
                 settingType: settingType as SettingType,

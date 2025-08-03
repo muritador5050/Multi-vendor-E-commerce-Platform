@@ -6,9 +6,8 @@ const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 const uploadVendorImages = require('../middlewares/uploadVendorImages');
 
-// Public routes
-router.get('/', asyncHandler(VendorController.getAllVendors));
-router.get('/top', asyncHandler(VendorController.getTopVendors));
+router.get('/', authenticate, asyncHandler(VendorController.getAllVendors));
+router.get('/top', authenticate, asyncHandler(VendorController.getTopVendors));
 
 router.get(
   '/profile/completion',

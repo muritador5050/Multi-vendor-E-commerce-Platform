@@ -11,7 +11,7 @@ class VendorController {
 
     if (!user || user.role !== 'vendor') {
       return res.status(403).json({
-        message: 'Only users with vendor role can update vendor data',
+        message: 'Only users with vendor role can create or update vendor data',
       });
     }
 
@@ -103,7 +103,7 @@ class VendorController {
       if (!vendor) {
         return res.status(404).json({
           success: false,
-          message: 'Vendor profile not found',
+          message: 'Vendor profile not found or Yet to create a one.',
         });
       }
 
@@ -179,19 +179,70 @@ class VendorController {
 
   static async getAllVendors(req, res) {
     try {
+      // Extract query parameters
+      const {
+        verificationStatus,
+        businessType,
+        minRating,
+        city,
+        state,
+        country,
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+      } = req.query;
+
+      // Build query object
+      const query = {};
+
+      if (verificationStatus) {
+        query.verificationStatus = verificationStatus;
+      }
+
+      if (businessType) {
+        query.businessType = businessType;
+      }
+
+      if (minRating) {
+        query.rating = { $gte: parseFloat(minRating) };
+      }
+
+      if (city) {
+        query['storeAddress.city'] = new RegExp(city, 'i');
+      }
+
+      if (state) {
+        query['storeAddress.state'] = new RegExp(state, 'i');
+      }
+
+      if (country) {
+        query['storeAddress.country'] = new RegExp(country, 'i');
+      }
+
+      // Build sort object
+      const sort = {};
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+      // Calculate pagination
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
       const [vendors, count] = await Promise.all([
-        Vendor.find({ verificationStatus: 'verified' })
+        Vendor.find(query)
           .populate('user', 'name email avatar')
           .select(
-            'generalSettings storeAddress socialMedia storeHours rating reviewCount verificationStatus createdAt'
-          ),
-        Vendor.countDocuments({ verificationStatus: 'verified' }),
+            'businessName businessType generalSettings storeAddress socialMedia storeHours rating reviewCount verificationStatus totalOrders commission createdAt'
+          )
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit)),
+        Vendor.countDocuments(query),
       ]);
 
       if (!vendors || vendors.length === 0) {
         return res.status(404).json({
           success: false,
-          message: 'No verified vendors found',
+          message: 'No vendors found matching the criteria',
         });
       }
 
@@ -200,7 +251,15 @@ class VendorController {
         message: 'Vendors retrieved successfully',
         data: {
           vendors,
-          total: count,
+          pagination: {
+            
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: parseInt(page) < Math.ceil(count / parseInt(limit)),
+            hasPrevPage: parseInt(page) > 1,
+          }
         },
       });
     } catch (error) {
