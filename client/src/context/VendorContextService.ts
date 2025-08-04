@@ -5,9 +5,7 @@ import type {
   VendorStats,
   AdminVendorStats,
   VendorFilters,
-  // VendorProfileUpdate,
   VerificationStatusUpdate,
-  DocumentUpload,
   AccountStatusToggle,
   SettingsUpdate,
   SettingsResponse,
@@ -17,6 +15,7 @@ import type {
   SettingType,
   AccountStatusResponse,
   VendorPaginateResponse,
+  VendorDocumentType,
 } from '../type/vendor';
 import type { ApiResponse, VendorApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
@@ -59,7 +58,7 @@ async function getVendorProfileStatus(): Promise<
 }
 
 async function createNewVendorProfile(
-  data: Partial<Vendor>
+  data: Partial<Omit<Vendor, '_id'>>
 ): Promise<VendorApiResponse<VendorProfile>> {
   return await apiClient.authenticatedApiRequest<
     VendorApiResponse<VendorProfile>
@@ -67,6 +66,32 @@ async function createNewVendorProfile(
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+// Document Management
+
+async function uploadDocuments(
+  type: VendorDocumentType,
+  files: File[]
+): Promise<ApiResponse<VendorDocument>> {
+  return await apiClient.authenticatedFormDataRequest<
+    ApiResponse<VendorDocument>
+  >('/vendors/documents', { type }, { documents: files });
+}
+
+async function getDocuments(): Promise<ApiResponse<VendorDocument[]>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
+    '/vendors/documents'
+  );
+}
+
+async function deleteDocument(
+  documentId: string
+): Promise<ApiResponse<VendorDocument[]>> {
+  return await apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
+    `/vendors/documents/${documentId}`,
+    { method: 'DELETE' }
+  );
 }
 
 async function updateVendorProfile(
@@ -94,28 +119,6 @@ async function getAllVendors(
 async function getVendorById(id: string): Promise<ApiResponse<singleVendor>> {
   return await apiClient.publicApiRequest<ApiResponse<singleVendor>>(
     `/vendors/${id}`
-  );
-}
-
-// Document Management
-async function uploadDocuments(
-  data: DocumentUpload
-): Promise<ApiResponse<VendorDocument[]>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
-    '/vendors/documents',
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  );
-}
-
-async function deleteDocument(
-  documentId: string
-): Promise<ApiResponse<VendorDocument[]>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorDocument[]>>(
-    `/vendors/documents/${documentId}`,
-    { method: 'DELETE' }
   );
 }
 
@@ -240,6 +243,15 @@ export const useVendorProfile = () => {
   });
 };
 
+export const useVendorDocuments = () => {
+  return useQuery({
+    queryKey: vendorKeys.documents,
+    queryFn: getDocuments,
+    select: (data) => data.data,
+    enabled: apiClient.isAuthenticated(),
+  });
+};
+
 export const useVendorProfileStatus = () => {
   return useQuery({
     queryKey: vendorKeys.profile,
@@ -252,7 +264,8 @@ export const useCreateVendorProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Vendor) => createNewVendorProfile(data),
+    mutationFn: (data: Partial<Omit<Vendor, '_id'>>) =>
+      createNewVendorProfile(data),
     onSuccess: (data) => {
       queryClient.setQueryData(vendorKeys.profile, data);
       queryClient.invalidateQueries({ queryKey: vendorKeys.all });
@@ -319,9 +332,14 @@ export const useVendorById = (id: string) => {
 // Document Management Hooks
 export const useUploadDocuments = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (data: DocumentUpload) => uploadDocuments(data),
+    mutationFn: ({
+      type,
+      files,
+    }: {
+      type: VendorDocumentType;
+      files: File[];
+    }) => uploadDocuments(type, files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
       queryClient.invalidateQueries({ queryKey: vendorKeys.documents });

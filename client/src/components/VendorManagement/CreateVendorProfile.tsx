@@ -30,13 +30,17 @@ import {
   Image,
   IconButton,
   Flex,
+  useToast,
 } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
-import { useCreateVendorProfile } from '@/context/VendorContextService';
-import type { DocumentType } from '@/type/vendor';
+import {
+  useCreateVendorProfile,
+  useUploadDocuments,
+} from '@/context/VendorContextService';
+import type { VendorDocumentType, Vendor, BusinessType } from '@/type/vendor';
 
 interface DocumentData {
-  type: DocumentType;
+  type: VendorDocumentType;
   file: File | null;
   preview: string | null;
 }
@@ -142,7 +146,7 @@ const DocumentsStep: React.FC<{
   formData: FormData;
   setFormData: React.Dispatch<React.SetStateAction<FormData>>;
   handleFileChange: (index: number, file: File | null) => void;
-  handleDocumentTypeChange: (index: number, type: DocumentType) => void;
+  handleDocumentTypeChange: (index: number, type: VendorDocumentType) => void;
   removeDocument: (index: number) => void;
   addDocument: () => void;
 }> = ({
@@ -178,7 +182,10 @@ const DocumentsStep: React.FC<{
             <Select
               value={doc.type}
               onChange={(e) =>
-                handleDocumentTypeChange(index, e.target.value as DocumentType)
+                handleDocumentTypeChange(
+                  index,
+                  e.target.value as VendorDocumentType
+                )
               }
               focusBorderColor='teal.400'
               borderColor='gray.300'
@@ -301,7 +308,12 @@ const CreateVendorProfile: React.FC = () => {
     verificationDocuments: [],
   });
 
-  const { data, error, isPending } = useCreateVendorProfile();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const toast = useToast();
+
+  // Separate the hooks for different API calls
+  const createVendorMutation = useCreateVendorProfile();
+  const uploadDocumentsMutation = useUploadDocuments();
 
   const handleNext = (): void => {
     if (activeStep < steps.length - 1) {
@@ -315,12 +327,115 @@ const CreateVendorProfile: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+  const validateBusinessInfo = (): boolean => {
+    if (!formData.businessName.trim() || !formData.businessType) {
+      toast({
+        title: 'Validation Error',
+        description: 'Business name and type are required.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const validateDocuments = (): boolean => {
+    if (formData.verificationDocuments.length === 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'At least one document is required.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return false;
+    }
+
+    const hasInvalidDocuments = formData.verificationDocuments.some(
+      (doc) => !doc.file || !doc.type
+    );
+
+    if (hasInvalidDocuments) {
+      toast({
+        title: 'Validation Error',
+        description: 'All documents must have a type and file selected.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
+
     if (activeStep === 0) {
-      handleNext();
+      // First step: validate business info
+      if (validateBusinessInfo()) {
+        handleNext();
+      }
     } else {
-      console.log('Form submitted:', formData);
+      // Second step: validate documents and submit everything
+      if (!validateDocuments()) {
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      try {
+        // Step 1: Create vendor profile with business info only
+        const vendorProfileData: Partial<Omit<Vendor, '_id'>> = {
+          businessName: formData.businessName,
+          businessType: formData.businessType as BusinessType,
+          taxId: formData.taxId,
+          businessRegistrationNumber: formData.businessRegistrationNumber,
+        };
+
+        await createVendorMutation.mutateAsync(vendorProfileData);
+
+        // Step 2: Upload documents for each document type
+        const uploadPromises = formData.verificationDocuments.map(
+          async (doc) => {
+            if (doc.file) {
+              return uploadDocumentsMutation.mutateAsync({
+                type: doc.type,
+                files: [doc.file],
+              });
+            }
+          }
+        );
+
+        await Promise.all(uploadPromises);
+
+        toast({
+          title: 'Success!',
+          description: 'Vendor profile created successfully.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+
+        // Reset form or redirect user
+        console.log('Vendor profile created successfully!');
+      } catch (error) {
+        console.error('Error creating vendor profile:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to create vendor profile. Please try again.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -360,7 +475,7 @@ const CreateVendorProfile: React.FC = () => {
 
   const handleDocumentTypeChange = (
     index: number,
-    type: DocumentType
+    type: VendorDocumentType
   ): void => {
     const updatedDocuments = [...formData.verificationDocuments];
     updatedDocuments[index].type = type;
@@ -414,10 +529,14 @@ const CreateVendorProfile: React.FC = () => {
 
             <Divider borderColor='teal.200' />
 
-            {error && (
+            {(createVendorMutation.error || uploadDocumentsMutation.error) && (
               <Alert status='error' borderRadius='md'>
                 <AlertIcon />
-                <Text>Something went wrong</Text>
+                <Text>
+                  {createVendorMutation.error?.message ||
+                    uploadDocumentsMutation.error?.message ||
+                    'Something went wrong'}
+                </Text>
               </Alert>
             )}
 
@@ -443,7 +562,7 @@ const CreateVendorProfile: React.FC = () => {
                   variant='outline'
                   colorScheme='teal'
                   onClick={handlePrevious}
-                  isDisabled={activeStep === 0}
+                  isDisabled={activeStep === 0 || isSubmitting}
                   size='lg'
                 >
                   Previous
@@ -453,7 +572,11 @@ const CreateVendorProfile: React.FC = () => {
                   type='submit'
                   colorScheme='teal'
                   size='lg'
-                  isLoading={isPending}
+                  isLoading={
+                    isSubmitting ||
+                    createVendorMutation.isPending ||
+                    uploadDocumentsMutation.isPending
+                  }
                   loadingText={
                     activeStep === 0 ? 'Next...' : 'Creating Profile...'
                   }

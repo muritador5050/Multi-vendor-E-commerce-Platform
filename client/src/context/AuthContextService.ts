@@ -426,30 +426,6 @@ export const useUserById = (id: string) => {
 /**
  * Fetch current user's profile
  */
-// export const useProfile = () => {
-//   const forceLogout = useForceLogout();
-//   return useQuery({
-//     queryKey: authKeys.profile(),
-//     queryFn: async () => {
-//       const response = await getProfile();
-//       return response.data;
-//     },
-//     enabled: isAuthenticated(),
-//     staleTime: 5 * 60 * 1000,
-//     networkMode:'online',
-//     retry: (failureCount, error) => {
-//       if (
-//         error instanceof ApiError &&
-//         error.status >= 400 &&
-//         error.status < 500
-//       ) {
-//         return false;
-//       }
-//       return failureCount < 3;
-//     },
-//   });
-// };
-
 export const useProfile = () => {
   return useQuery({
     queryKey: authKeys.profile(),

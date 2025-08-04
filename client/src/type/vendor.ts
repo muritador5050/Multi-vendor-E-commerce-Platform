@@ -23,7 +23,7 @@ export type VerificationStatus =
   | 'rejected'
   | 'suspended';
 
-export type DocumentType =
+export type VendorDocumentType =
   | 'business_license'
   | 'tax_certificate'
   | 'bank_statement'

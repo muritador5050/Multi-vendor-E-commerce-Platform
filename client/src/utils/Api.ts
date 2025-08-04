@@ -299,7 +299,7 @@ class ApiClient {
    */
   public async authenticatedFormDataRequest<T = unknown>(
     endpoint: string,
-    data: Record<string, any>,
+    data: Record<string, any | string>,
     files?: { [key: string]: File | File[] },
     options: Omit<RequestInit, 'body'> = {}
   ): Promise<T> {
