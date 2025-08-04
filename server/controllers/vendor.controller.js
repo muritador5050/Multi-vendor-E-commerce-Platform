@@ -3,57 +3,14 @@ const User = require('../models/user.model');
 const EmailService = require('../services/emailService');
 const path = require('path');
 const { BACKEND_URL } = require('../configs/index');
+const {
+  deleteFile,
+  uploadResponse,
+  uploadConfigs,
+} = require('../utils/FileUploads');
 
 //Controller
 class VendorController {
-  // static async updateVendorData(req, res) {
-  //   const user = await User.findById(req.user.id);
-
-  //   if (!user || user.role !== 'vendor') {
-  //     return res.status(403).json({
-  //       message: 'Only users with vendor role can create or update vendor data',
-  //     });
-  //   }
-
-  //   try {
-  //     let vendor = await Vendor.findOne({ user: req.user.id });
-
-  //     if (!vendor) {
-  //       vendor = new Vendor({ user: req.user.id, ...req.body });
-  //       await vendor.save();
-
-  //       return res.status(201).json({
-  //         success: true,
-  //         message: 'Vendor profile created successfully',
-  //         data: {
-  //           ...vendor.toObject(),
-  //           profileCompletion: vendor.calculateProfileCompletion(),
-  //         },
-  //       });
-  //     }
-
-  //     // Update existing vendor
-  //     Object.assign(vendor, req.body);
-  //     await vendor.save();
-
-  //     res.status(200).json({
-  //       success: true,
-  //       message: 'Vendor profile updated successfully',
-  //       data: {
-  //         ...vendor.toObject(),
-  //         profileCompletion: vendor.calculateProfileCompletion(),
-  //       },
-  //     });
-  //   } catch (error) {
-  //     res.status(400).json({
-  //       success: false,
-  //       message: 'Error updating vendor data',
-  //       error: error.message,
-  //     });
-  //   }
-  // }
-
-  // Your existing method with small modification
   static async updateVendorData(req, res) {
     const user = await User.findById(req.user.id);
 
@@ -120,7 +77,7 @@ class VendorController {
 
       res.status(200).json({
         success: true,
-        hasVendorProfile, 
+        hasVendorProfile,
         data: vendor
           ? {
               ...vendor.toObject(),
@@ -545,10 +502,106 @@ class VendorController {
     }
   }
 
-  static async manageDocuments(req, res) {
+  // static async manageDocuments(req, res) {
+
+  //   try {
+  //     const vendor = await Vendor.findOne({ user: req.user.id });
+
+  //     if (!vendor) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: 'Vendor profile not found',
+  //       });
+  //     }
+
+  //     if (req.method === 'DELETE') {
+  //       vendor.verificationDocuments.pull(req.params.documentId);
+  //     } else {
+  //       vendor.verificationDocuments.push(...req.body.documents);
+  //     }
+
+  //     await vendor.save();
+
+  //     res.json({
+  //       success: true,
+  //       message: `Documents ${
+  //         req.method === 'DELETE' ? 'deleted' : 'uploaded'
+  //       } successfully`,
+  //       data: vendor.verificationDocuments,
+  //     });
+  //   } catch (error) {
+  //     res.status(500).json({
+  //       success: false,
+  //       message: 'Error managing documents',
+  //       error: error.message,
+  //     });
+  //   }
+  // }
+
+  static async uploadDocuments(req, res) {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No documents uploaded',
+        });
+      }
+
+      const vendor = await Vendor.findOne({ user: req.user.id });
+      if (!vendor) {
+        // Cleanup uploaded files if vendor not found
+        await Promise.all(
+          req.files.map((file) =>
+            deleteFile(path.join(uploadConfigs.documents.path, file.filename))
+          )
+        );
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      // Process each uploaded file
+      const savedDocuments = req.files.map((file) => {
+        const docUrl = `${BACKEND_URL}/uploads/vendor/documents/${file.filename}`;
+
+        return {
+          type: req.body.type || 'other',
+          filename: file.filename,
+          url: docUrl,
+          uploadedAt: new Date(),
+        };
+      });
+
+      vendor.verificationDocuments.push(...savedDocuments);
+      await vendor.save();
+
+      // Return response matching schema
+      return res.status(200).json({
+        success: true,
+        message: 'Documents uploaded successfully',
+        data: savedDocuments,
+      });
+    } catch (error) {
+      if (req.files?.length) {
+        await Promise.all(
+          req.files.map((file) =>
+            deleteFile(path.join(uploadConfigs.documents.path, file.filename))
+          )
+        );
+      }
+      res.status(500).json({
+        success: false,
+        message: 'Error uploading documents',
+        error: error.message,
+      });
+    }
+  }
+
+  // Delete document
+  static async deleteDocument(req, res) {
     try {
       const vendor = await Vendor.findOne({ user: req.user.id });
-
       if (!vendor) {
         return res.status(404).json({
           success: false,
@@ -556,25 +609,53 @@ class VendorController {
         });
       }
 
-      if (req.method === 'DELETE') {
-        vendor.verificationDocuments.pull(req.params.documentId);
-      } else {
-        vendor.verificationDocuments.push(...req.body.documents);
+      const document = vendor.verificationDocuments.id(req.params.documentId);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Document not found',
+        });
       }
 
+      // Delete the physical file
+      await deleteFile(document.path);
+
+      // Remove from array
+      vendor.verificationDocuments.pull(req.params.documentId);
       await vendor.save();
 
       res.json({
         success: true,
-        message: `Documents ${
-          req.method === 'DELETE' ? 'deleted' : 'uploaded'
-        } successfully`,
+        message: 'Document deleted successfully',
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error deleting document',
+        error: error.message,
+      });
+    }
+  }
+
+  // Get documents
+  static async getDocuments(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ user: req.user.id });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Vendor profile not found',
+        });
+      }
+
+      res.json({
+        success: true,
         data: vendor.verificationDocuments,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: 'Error managing documents',
+        message: 'Error fetching documents',
         error: error.message,
       });
     }

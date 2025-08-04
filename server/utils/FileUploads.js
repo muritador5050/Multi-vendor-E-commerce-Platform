@@ -22,9 +22,19 @@ const uploadConfigs = {
     allowedTypes: /jpeg|jpg|png|gif|webp/,
     filenamePrefix: (req) => req.user?.id || 'storeBanner',
   },
+
+  documents: {
+    path: 'uploads/vendor/documents/',
+    fileSize: 15 * 1024 * 1024,
+    allowedTypes: /jpeg|jpg|png|pdf/,
+    filenamePrefix: (req) => req.user?.id || 'vendor-doc',
+    fieldName: 'documents',
+    maxCount: 5,
+  },
+
   categoryImage: {
     path: 'uploads/categories/',
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 10 * 1024 * 1024,
     allowedTypes: /jpeg|jpg|png|gif|webp/,
     filenamePrefix: (req) => req.body?.categoryId || 'category',
   },
@@ -163,6 +173,7 @@ const productImageUpload = createUploadHandler('productImage');
 const blogImageUpload = createUploadHandler('blogImage');
 const storeLogoUpload = createUploadHandler('storeLogo');
 const storeBannerUpload = createUploadHandler('storeBanner');
+const vendorDocumentsUpload = createUploadHandler('documents');
 
 // Helper function to delete file
 const deleteFile = (filePath) => {
@@ -255,6 +266,7 @@ module.exports = {
   storeBannerUpload,
   storeLogoUpload,
   vendorImagesUpload,
+  vendorDocumentsUpload,
   // Delete functions
   deleteFile,
   deleteAvatar,

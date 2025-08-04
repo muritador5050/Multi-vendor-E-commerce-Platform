@@ -37,7 +37,6 @@ export const VendorProfileGuard = ({
     return <Center>Checking vendor profile...</Center>;
   }
 
-  // Handle error state
   if (isError) {
     return <Center>Error checking vendor profile. Please try again.</Center>;
   }

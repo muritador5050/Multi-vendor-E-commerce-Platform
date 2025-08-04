@@ -5,6 +5,10 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 const { asyncHandler } = require('../utils/asyncHandler');
 const uploadVendorImages = require('../middlewares/uploadVendorImages');
+const {
+  vendorDocumentsUpload,
+  handleUploadError,
+} = require('../utils/FileUploads');
 
 router.get('/', authenticate, asyncHandler(VendorController.getAllVendors));
 router.get('/top', authenticate, asyncHandler(VendorController.getTopVendors));
@@ -16,7 +20,6 @@ router.get(
   asyncHandler(VendorController.getProfileCompletion)
 );
 
-// Add this route to your vendor routes
 router.get(
   '/profile-status',
   authenticate,
@@ -58,14 +61,23 @@ router.post(
   '/documents',
   authenticate,
   checkRole('vendor', 'create'),
-  asyncHandler(VendorController.manageDocuments)
+  vendorDocumentsUpload.array('documents', 5),
+  asyncHandler(VendorController.uploadDocuments),
+  handleUploadError
+);
+
+router.get(
+  '/documents',
+  authenticate,
+  checkRole('vendor', 'read'),
+  asyncHandler(VendorController.getDocuments)
 );
 
 router.delete(
   '/documents/:documentId',
   authenticate,
   checkRole('vendor', 'delete'),
-  asyncHandler(VendorController.manageDocuments)
+  asyncHandler(VendorController.deleteDocument)
 );
 
 // Admin routes

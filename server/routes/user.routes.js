@@ -251,15 +251,17 @@ router.get(
 router.post(
   '/users/avatar',
   authenticate,
-  (req, res, next) => {
-    avatarUpload.single('avatar')(req, res, (err) => {
-      if (err) {
-        return handleUploadError(err, req, res, next);
-      }
-      next();
-    });
-  },
-  asyncHandler(UserController.uploadAvatar)
+  // (req, res, next) => {
+  //   avatarUpload.single('avatar')(req, res, (err) => {
+  //     if (err) {
+  //       return handleUploadError(err, req, res, next);
+  //     }
+  //     next();
+  //   });
+  // },
+  avatarUpload.single('avatar'),
+  asyncHandler(UserController.uploadAvatar),
+  handleUploadError
 );
 
 router.delete(
