@@ -228,8 +228,8 @@ router
   )
   .delete(
     authenticate,
-    checkRole(['admin', 'vendor'], 'edit'),
+    checkRole(['vendor', 'admin'], 'edit'),
     asyncHandler(ProductsController.deleteProduct)
-  ); // Admin or Vendor: Delete product
+  );
 
 module.exports = router;

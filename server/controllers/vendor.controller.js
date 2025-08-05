@@ -502,41 +502,7 @@ class VendorController {
     }
   }
 
-  // static async manageDocuments(req, res) {
-
-  //   try {
-  //     const vendor = await Vendor.findOne({ user: req.user.id });
-
-  //     if (!vendor) {
-  //       return res.status(404).json({
-  //         success: false,
-  //         message: 'Vendor profile not found',
-  //       });
-  //     }
-
-  //     if (req.method === 'DELETE') {
-  //       vendor.verificationDocuments.pull(req.params.documentId);
-  //     } else {
-  //       vendor.verificationDocuments.push(...req.body.documents);
-  //     }
-
-  //     await vendor.save();
-
-  //     res.json({
-  //       success: true,
-  //       message: `Documents ${
-  //         req.method === 'DELETE' ? 'deleted' : 'uploaded'
-  //       } successfully`,
-  //       data: vendor.verificationDocuments,
-  //     });
-  //   } catch (error) {
-  //     res.status(500).json({
-  //       success: false,
-  //       message: 'Error managing documents',
-  //       error: error.message,
-  //     });
-  //   }
-  // }
+  
 
   static async uploadDocuments(req, res) {
     try {

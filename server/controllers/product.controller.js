@@ -4,50 +4,6 @@ const fs = require('fs');
 const { BACKEND_URL } = require('../configs/index');
 
 class ProductsController {
-  // static async createProduct(req, res) {
-  //   try {
-  //     const images =
-  //       req.files?.map(
-  //         (file) => `${BACKEND_URL}/uploads/products/${file.filename}`
-  //       ) || [];
-
-  //     const isBulk = Array.isArray(req.body.products);
-  //     let productData;
-
-  //     if (isBulk) {
-  //       productData = req.body.products.map((product, index) => ({
-  //         ...product,
-  //         images: index === 0 ? images : product.images || [],
-  //       }));
-  //     } else {
-  //       productData = {
-  //         ...req.body,
-  //         images,
-  //       };
-  //     }
-
-  //     const result = await Product.createProducts(productData, req.user.id);
-
-  //     return res.status(201).json({
-  //       success: true,
-  //       message: `Product${isBulk ? 's' : ''} created successfully`,
-  //       data: result,
-  //       count: Array.isArray(result) ? result.length : 1,
-  //     });
-  //   } catch (error) {
-  //     if (req.files?.length > 0) {
-  //       req.files.forEach((file) => {
-  //         fs.unlink(file.path, () => {});
-  //       });
-  //     }
-
-  //     return res.status(400).json({
-  //       success: false,
-  //       message: error.message,
-  //     });
-  //   }
-  // }
-
   static async createProduct(req, res) {
     try {
       const images =
@@ -111,6 +67,7 @@ class ProductsController {
       });
     }
   }
+
   static async updateProduct(req, res) {
     const { id } = req.params;
 
