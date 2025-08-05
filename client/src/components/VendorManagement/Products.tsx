@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
+  useDeleteProduct,
   useOwnVendorProducts,
   useProductById,
   useToggleProductStatus,
@@ -64,14 +65,14 @@ import {
   ChevronRight,
   Plus,
 } from 'lucide-react';
-import type { Product } from '@/type/product';
+import type { ProductPopulated } from '@/type/product';
 import { useNavigate } from 'react-router-dom';
+import { useCategories } from '@/context/CategoryContextService';
 
-// Interface for handling new image files
 interface ImageFile {
+  id: string;
   file: File;
   preview: string;
-  id: string;
 }
 
 // Image Gallery Component
@@ -200,11 +201,13 @@ const ImageGallery = ({
   );
 };
 
-export default function Products() {
+export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productToDelete, setProductToDelete] = useState<Product>();
+  const [editingProduct, setEditingProduct] = useState<ProductPopulated | null>(
+    null
+  );
+  const [productToDelete, setProductToDelete] = useState<ProductPopulated>();
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Image editing states
@@ -227,7 +230,11 @@ export default function Products() {
 
   const toggleMutation = useToggleProductStatus();
   const updateMutation = useUpdateProduct();
+  const { data: categories } = useCategories();
 
+  const deleteMutation = useDeleteProduct();
+
+  //Pagination
   const pagination = data?.pagination || {
     total: 0,
     page: 1,
@@ -250,20 +257,6 @@ export default function Products() {
 
   const toast = useToast();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
-
-  // Categories for select dropdown
-  const categories = [
-    'Electronics',
-    'Clothing',
-    'Home & Garden',
-    'Sports',
-    'Books',
-    'Toys',
-    'Health & Beauty',
-    'Automotive',
-    'Food & Beverages',
-    'Other',
-  ];
 
   // Handle image selection
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,9 +286,7 @@ export default function Products() {
   // Handle image removal
   const handleRemoveImage = (imageId: string, isExisting = false) => {
     if (isExisting) {
-      // Mark existing image for deletion
       setImagesToDelete((prev) => [...prev, imageId]);
-      // Remove from editing product images
       if (editingProduct) {
         setEditingProduct({
           ...editingProduct,
@@ -303,23 +294,50 @@ export default function Products() {
         });
       }
     } else {
-      // Remove new image from selectedImages
-      setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
-      // Clean up preview URL
       const imageToRemove = selectedImages.find((img) => img.id === imageId);
       if (imageToRemove) {
         URL.revokeObjectURL(imageToRemove.preview);
       }
+      setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
     }
   };
 
-  const handleView = (product: Product) => {
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      deleteMutation.mutate(productToDelete._id, {
+        onSuccess: (response) => {
+          toast({
+            title: 'Product deleted',
+            description:
+              response?.message || `${productToDelete.name} has been deleted.`,
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+          onDeleteClose();
+          setProductToDelete(undefined); // Clear the state
+        },
+        onError: (error) => {
+          console.error('Delete error:', error);
+          toast({
+            title: 'Delete failed',
+            description: 'Failed',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        },
+      });
+    }
+  };
+
+  const handleView = (product: ProductPopulated) => {
     setSelectedProductId(product._id);
     setIsEditMode(false);
     onDrawerOpen();
   };
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: ProductPopulated) => {
     setSelectedProductId(product._id);
     setEditingProduct({ ...product });
     setSelectedImages([]);
@@ -328,7 +346,7 @@ export default function Products() {
     onDrawerOpen();
   };
 
-  const handleDrawerClose = () => {
+  const handleDrawerClose = useCallback(() => {
     onDrawerClose();
     setSelectedProductId('');
     setEditingProduct(null);
@@ -338,9 +356,9 @@ export default function Products() {
     selectedImages.forEach((img) => URL.revokeObjectURL(img.preview));
     setSelectedImages([]);
     setImagesToDelete([]);
-  };
+  }, [onDrawerClose, selectedImages]);
 
-  const handleDelete = (product: Product) => {
+  const handleDelete = (product: ProductPopulated) => {
     setProductToDelete(product);
     onDeleteOpen();
   };
@@ -362,21 +380,21 @@ export default function Products() {
   const handleSaveEdit = useCallback(() => {
     if (!editingProduct) return;
 
-    // Prepare files for upload (only new images)
+    const productData = {
+      name: editingProduct.name,
+      description: editingProduct.description,
+      price: editingProduct.price,
+      quantityInStock: editingProduct.quantityInStock,
+      discount: editingProduct.discount,
+      category: editingProduct.category._id,
+    };
+
     const filesToUpload = selectedImages.map((img) => img.file);
 
     updateMutation.mutateAsync(
       {
         id: editingProduct._id,
-        product: {
-          name: editingProduct.name,
-          description: editingProduct.description,
-          price: editingProduct.price,
-          quantityInStock: editingProduct.quantityInStock,
-          discount: editingProduct.discount,
-          category: editingProduct.category,
-          images: editingProduct.images,
-        },
+        product: productData,
         files: filesToUpload.length > 0 ? filesToUpload : undefined,
       },
       {
@@ -401,18 +419,13 @@ export default function Products() {
         },
       }
     );
-  }, [editingProduct, selectedImages, imagesToDelete, updateMutation, toast]);
-
-  const handleConfirmDelete = () => {
-    toast({
-      title: 'Product deleted',
-      description: `${productToDelete?.name} has been deleted.`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
-    onDeleteClose();
-  };
+  }, [
+    editingProduct,
+    selectedImages,
+    updateMutation,
+    toast,
+    handleDrawerClose,
+  ]);
 
   const handleToggleStatus = useCallback(
     (productId: string, productName: string, currentStatus: boolean) => {
@@ -545,7 +558,7 @@ export default function Products() {
             </Tr>
           </Thead>
           <Tbody>
-            {data?.products.map((pdt) => {
+            {data.products.map((pdt) => {
               const stockStatus = getStockStatus(pdt.quantityInStock);
               const discount = pdt.discount ?? 0;
               const averageRating = pdt.averageRating ?? 0;
@@ -584,7 +597,7 @@ export default function Products() {
                   </Td>
                   <Td>
                     <Tag size='sm' colorScheme='blue' variant='subtle'>
-                      {pdt.category?.name || 'No Category'}
+                      {pdt.category.name || 'No Category'}
                     </Tag>
                   </Td>
                   <Td>
@@ -782,26 +795,31 @@ export default function Products() {
 
                     <FormControl>
                       <FormLabel>Category</FormLabel>
-                      <Select
-                        value={
-                          editingProduct.category?.name ||
-                          editingProduct.category ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          setEditingProduct({
-                            ...editingProduct,
-                            category: e.target.value,
-                          })
-                        }
-                      >
-                        <option value=''>Select a category</option>
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </Select>
+                      {categories ? (
+                        <Select
+                          value={editingProduct.category?._id || ''}
+                          onChange={(e) => {
+                            const selectedCategory = categories.find(
+                              (c) => c._id === e.target.value
+                            );
+                            if (selectedCategory) {
+                              setEditingProduct({
+                                ...editingProduct,
+                                category: selectedCategory,
+                              });
+                            }
+                          }}
+                        >
+                          <option value=''>Select a category</option>
+                          {categories.map((ctg) => (
+                            <option key={ctg._id} value={ctg._id}>
+                              {ctg.name}
+                            </option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Spinner size='sm' />
+                      )}
                     </FormControl>
 
                     <HStack spacing={4} w='100%'>

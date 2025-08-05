@@ -1,3 +1,6 @@
+import type { Category } from './Category';
+import type { Vendor } from './vendor';
+
 export interface Product {
   _id: string;
   name: string;
@@ -7,13 +10,13 @@ export interface Product {
   discount: number;
   quantityInStock: number;
   images: string[];
-  category: string;
+  category: Category;
   attributes: Record<string, string>;
   averageRating: number;
   totalReviews: number;
   isActive: boolean;
   isDeleted: boolean;
-  vendor?: string;
+  vendor?: Vendor;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,7 +29,7 @@ export interface CreateProductInput {
   discount?: number;
   quantityInStock?: number;
   images?: string[];
-  category: string;
+  category: Category | string;
   attributes?: Record<string, string>;
   averageRating?: number;
   totalReviews?: number;
@@ -41,7 +44,7 @@ export interface CreateProductResponse {
 }
 
 export interface UpdateProductInput extends Partial<CreateProductInput> {
-  _id: string;
+  _id?: string;
 }
 
 export interface ProductQueryParams {
@@ -68,10 +71,7 @@ export interface Pagination {
 }
 
 export interface ProductPopulated extends Omit<Product, 'category' | 'vendor'> {
-  category: {
-    _id: string;
-    name: string;
-  };
+  category: Category;
   vendor?: {
     _id: string;
     name: string;
@@ -80,7 +80,7 @@ export interface ProductPopulated extends Omit<Product, 'category' | 'vendor'> {
 }
 
 export interface ProductPaginatedResponse {
-  products: Product[];
+  products: ProductPopulated[];
   pagination: {
     total: number;
     page: number;

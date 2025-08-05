@@ -328,8 +328,8 @@ const CreateProductPage: React.FC = () => {
                   gap={4}
                   w='full'
                 >
-                  <FormControl isInvalid={!!errors[index]?.name}>
-                    <FormLabel>Product Name *</FormLabel>
+                  <FormControl isRequired isInvalid={!!errors[index]?.name}>
+                    <FormLabel>Product Name </FormLabel>
                     <Input
                       value={product.name}
                       onChange={(e) =>
@@ -340,8 +340,8 @@ const CreateProductPage: React.FC = () => {
                     <FormErrorMessage>{errors[index]?.name}</FormErrorMessage>
                   </FormControl>
 
-                  <FormControl isInvalid={!!errors[index]?.category}>
-                    <FormLabel>Category *</FormLabel>
+                  <FormControl isRequired isInvalid={!!errors[index]?.category}>
+                    <FormLabel>Category</FormLabel>
                     <Select
                       value={product.category}
                       onChange={(e) =>
@@ -379,8 +379,8 @@ const CreateProductPage: React.FC = () => {
                   gap={4}
                   w='full'
                 >
-                  <FormControl isInvalid={!!errors[index]?.price}>
-                    <FormLabel>Price *</FormLabel>
+                  <FormControl isRequired isInvalid={!!errors[index]?.price}>
+                    <FormLabel>Price</FormLabel>
                     <Input
                       type='number'
                       value={product.price}
@@ -410,7 +410,10 @@ const CreateProductPage: React.FC = () => {
                     </FormErrorMessage>
                   </FormControl>
 
-                  <FormControl isInvalid={!!errors[index]?.quantityInStock}>
+                  <FormControl
+                    isRequired
+                    isInvalid={!!errors[index]?.quantityInStock}
+                  >
                     <FormLabel>Stock Quantity</FormLabel>
                     <Input
                       type='number'

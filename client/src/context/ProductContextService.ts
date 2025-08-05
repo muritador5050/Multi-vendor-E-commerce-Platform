@@ -4,7 +4,9 @@ import type {
   CreateProductResponse,
   Product,
   ProductPaginatedResponse,
+  ProductPopulated,
   ProductQueryParams,
+  UpdateProductInput,
 } from '@/type/product';
 import { apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
@@ -34,8 +36,10 @@ const fetchProducts = async (
   >(url);
 };
 
-const fetchProductById = async (id: string): Promise<ApiResponse<Product>> => {
-  return await apiClient.authenticatedApiRequest<ApiResponse<Product>>(
+const fetchProductById = async (
+  id: string
+): Promise<ApiResponse<ProductPopulated>> => {
+  return await apiClient.authenticatedApiRequest<ApiResponse<ProductPopulated>>(
     `/products/${id}`
   );
 };
@@ -99,46 +103,24 @@ const toggleProductStatus = async (
 
 const updateProduct = async (
   id: string,
-  product: Partial<Product>,
+  product: UpdateProductInput,
   files?: File[]
-): Promise<ApiResponse<Product>> => {
-  return await apiClient.authenticatedFormDataRequest<ApiResponse<Product>>(
-    `/products/${id}`,
-    product,
-    files ? { images: files } : undefined,
-    {
-      method: 'PUT',
-    }
-  );
+): Promise<ApiResponse<ProductPopulated>> => {
+  return await apiClient.authenticatedFormDataRequest<
+    ApiResponse<ProductPopulated>
+  >(`/products/${id}`, product, files ? { productImage: files } : undefined, {
+    method: 'PUT',
+  });
 };
 
-const deleteProduct = async (id: string): Promise<void> => {
-  if (!id) throw new Error('Product ID is required');
-
-  const response = await apiClient.authenticatedApiRequest<ApiResponse<null>>(
-    `/products/${id}`,
-    { method: 'DELETE' }
-  );
-
-  if (!response.success) {
-    throw new Error(response.message || 'Failed to delete product');
-  }
+const deleteProduct = async (
+  id: string
+): Promise<{ success: boolean; message: string }> => {
+  return await apiClient.authenticatedApiRequest<{
+    success: boolean;
+    message: string;
+  }>(`/products/${id}`, { method: 'DELETE' });
 };
-
-// Utilities
-// const getEmptyPaginatedResponse = (): ProductPaginatedResponse => ({
-//   products: [],
-//   pagination: {
-//     total: 0,
-//     page: 1,
-//     pages: 0,
-//     hasNext: false,
-//     hasPrev: false,
-//     limit: 10,
-//   },
-// });
-
-const STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
 // React Query Hooks
 export const useProducts = (params: ProductQueryParams = {}) => {
@@ -146,7 +128,7 @@ export const useProducts = (params: ProductQueryParams = {}) => {
     queryKey: productKeys.items(params),
     queryFn: () => fetchProducts(params),
     select: (data) => data.data,
-    staleTime: STALE_TIME,
+    staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
       if (
         error instanceof ApiError &&
@@ -165,7 +147,7 @@ export const useProductById = (id: string) => {
     queryKey: productKeys.item(id),
     queryFn: () => fetchProductById(id),
     select: (data) => data.data,
-    staleTime: STALE_TIME,
+    staleTime: 5 * 60 * 1000,
     enabled: !!id,
   });
 };
@@ -177,7 +159,7 @@ export const useProductsByCategory = (
   return useQuery({
     queryKey: productKeys.category(categorySlug, params),
     queryFn: () => fetchProductsByCategory(categorySlug, params),
-    staleTime: STALE_TIME,
+    staleTime: 5 * 60 * 1000,
     enabled: !!categorySlug,
   });
 };
@@ -189,7 +171,7 @@ export const useVendorProductsForAdmin = (
   return useQuery({
     queryKey: productKeys.vendor(vendorId, params),
     queryFn: () => getVendorProductsForAdmin(vendorId, params),
-    staleTime: STALE_TIME,
+    staleTime: 5 * 60 * 1000,
     enabled: !!vendorId,
   });
 };
@@ -201,7 +183,7 @@ export const useOwnVendorProducts = (
     queryKey: productKeys.vendorProducts(params),
     queryFn: () => getOwnVendorProducts(params),
     select: (data) => data.data,
-    staleTime: STALE_TIME,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -216,6 +198,7 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
     },
   });
@@ -232,74 +215,13 @@ export const useToggleProductStatus = () => {
         (oldData: Product) =>
           oldData ? { ...oldData, isActive: data.data?.isActive } : oldData
       );
-
-      // Refresh product lists
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
-    },
-  });
-};
-
-export const useToggleProductStatusAlternative = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: toggleProductStatus,
-    onSuccess: (data, productId) => {
-      const { data: responseData } = data || {};
-
-      if (responseData && typeof responseData.isActive === 'boolean') {
-        queryClient.setQueryData<Product>(
-          productKeys.item(productId),
-          (oldData) =>
-            oldData ? { ...oldData, isActive: responseData.isActive } : oldData
-        );
-      }
-
-      queryClient.invalidateQueries({
-        queryKey: productKeys.all,
-        exact: false,
-      });
-    },
-  });
-};
-
-// If you want to handle errors more gracefully:
-export const useToggleProductStatusWithErrorHandling = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: toggleProductStatus,
-    onSuccess: (data, productId) => {
-      try {
-        const isActive = data?.data?.isActive;
-
-        if (typeof isActive === 'boolean') {
-          queryClient.setQueryData<Product>(
-            productKeys.item(productId),
-            (oldData) => (oldData ? { ...oldData, isActive } : oldData)
-          );
-        } else {
-          console.warn('Invalid response data structure:', data);
-        }
-      } catch (error) {
-        console.error('Error updating query data:', error);
-      }
-
-      // Always invalidate queries to ensure data consistency
-      queryClient.invalidateQueries({
-        queryKey: productKeys.all,
-        exact: false,
-      });
-    },
-    onError: (error) => {
-      console.error('Failed to toggle product status:', error);
+      queryClient.invalidateQueries({ queryKey: productKeys.item(productId) });
     },
   });
 };
 
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({
       id,
@@ -307,24 +229,32 @@ export const useUpdateProduct = () => {
       files,
     }: {
       id: string;
-      product: Partial<Omit<Product, '_id' | 'createdAt' | 'updatedAt'>>;
+      product: UpdateProductInput;
       files?: File[];
     }) => updateProduct(id, product, files),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(productKeys.item(variables.id), data);
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: productKeys.item(variables.id),
+      });
     },
   });
 };
 
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: deleteProduct,
-    onSuccess: (_, deletedId) => {
+    onSuccess: (_response, deletedId) => {
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
+
       queryClient.invalidateQueries({ queryKey: productKeys.all });
+
+      queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
+    },
+    onError: (error) => {
+      console.error('Delete product error:', error);
     },
   });
 };
