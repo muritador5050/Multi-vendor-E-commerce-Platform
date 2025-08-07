@@ -58,9 +58,9 @@ function App() {
                 allowedRoles={['vendor', 'admin']}
                 showAccessDenied={true}
               >
-                <VendorProfileGuard>
-                  <StoreManagerDashboard />
-                </VendorProfileGuard>
+                {/* <VendorProfileGuard> */}
+                <StoreManagerDashboard />
+                {/* </VendorProfileGuard> */}
               </ProtectedRoute>
             }
           />

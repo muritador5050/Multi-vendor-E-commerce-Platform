@@ -1,6 +1,26 @@
 import type { Category } from './Category';
 import type { Vendor } from './vendor';
 
+export interface ProductDocument {
+  _id: string;
+  name: string;
+  description: string;
+  slug: string;
+  price: number;
+  discount: number;
+  quantityInStock: number;
+  images: string[];
+  category: string;
+  attributes: Record<string, string>;
+  averageRating: number;
+  totalReviews: number;
+  isActive: boolean;
+  isDeleted: boolean;
+  vendor?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -21,30 +41,32 @@ export interface Product {
   updatedAt: string;
 }
 
-export interface CreateProductInput {
+export interface CreateProductRequest {
   name: string;
   description?: string;
-  slug?: string;
   price: number;
   discount?: number;
   quantityInStock?: number;
-  images?: string[];
-  category: Category | string;
+  images: string[];
+  category: string;
   attributes?: Record<string, string>;
-  averageRating?: number;
-  totalReviews?: number;
-  isActive?: boolean;
-  isDeleted?: boolean;
   vendor?: string;
 }
 
-export interface CreateProductResponse {
-  data: CreateProductInput;
-  count: number;
+export interface UpdateProductRequest extends Partial<CreateProductRequest> {
+  _id: string;
 }
 
-export interface UpdateProductInput extends Partial<CreateProductInput> {
-  _id?: string;
+export interface ProductFormData {
+  name: string;
+  description: string;
+  price: number;
+  discount: number;
+  quantityInStock: number;
+  images: string[];
+  categoryId: string;
+  attributes: Record<string, string>;
+  vendorId?: string;
 }
 
 export interface ProductQueryParams {
@@ -68,25 +90,10 @@ export interface Pagination {
   pages: number;
   hasNext: boolean;
   hasPrev: boolean;
-}
-
-export interface ProductPopulated extends Omit<Product, 'category' | 'vendor'> {
-  category: Category;
-  vendor?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
+  limit: number;
 }
 
 export interface ProductPaginatedResponse {
-  products: ProductPopulated[];
-  pagination: {
-    total: number;
-    page: number;
-    pages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-    limit: number;
-  };
+  products: Product[];
+  pagination: Pagination;
 }

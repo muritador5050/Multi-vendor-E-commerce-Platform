@@ -65,7 +65,7 @@ import {
   ChevronRight,
   Plus,
 } from 'lucide-react';
-import type { ProductPopulated } from '@/type/product';
+import type { CreateProductInput, ProductPopulated } from '@/type/product';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/context/CategoryContextService';
 
@@ -201,6 +201,7 @@ const ImageGallery = ({
   );
 };
 
+//Vendor Products Component
 export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProductId, setSelectedProductId] = useState<string>('');
@@ -217,7 +218,7 @@ export default function VendorProducts() {
 
   const navigate = useNavigate();
 
-  const { data, isLoading } = useOwnVendorProducts({
+  const { data: vendorProducts, isLoading } = useOwnVendorProducts({
     page: currentPage,
     limit: 10,
   });
@@ -235,7 +236,7 @@ export default function VendorProducts() {
   const deleteMutation = useDeleteProduct();
 
   //Pagination
-  const pagination = data?.pagination || {
+  const pagination = vendorProducts?.pagination || {
     total: 0,
     page: 1,
     pages: 0,
@@ -315,13 +316,12 @@ export default function VendorProducts() {
             isClosable: true,
           });
           onDeleteClose();
-          setProductToDelete(undefined); // Clear the state
+          setProductToDelete(undefined);
         },
         onError: (error) => {
-          console.error('Delete error:', error);
           toast({
             title: 'Delete failed',
-            description: 'Failed',
+            description: error?.message || 'Failed to delete product.',
             status: 'error',
             duration: 5000,
             isClosable: true,
@@ -380,18 +380,39 @@ export default function VendorProducts() {
   const handleSaveEdit = useCallback(() => {
     if (!editingProduct) return;
 
-    const productData = {
+    const productData: Partial<CreateProductInput> = {
       name: editingProduct.name,
       description: editingProduct.description,
       price: editingProduct.price,
       quantityInStock: editingProduct.quantityInStock,
       discount: editingProduct.discount,
-      category: editingProduct.category._id,
+      category:
+        typeof editingProduct.category === 'object'
+          ? editingProduct.category._id
+          : editingProduct.category,
     };
 
+    if (!productData.category) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a category for the product.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (imagesToDelete.length > 0) {
+      (
+        productData as CreateProductInput & { imagesToDelete: string[] }
+      ).imagesToDelete = imagesToDelete;
+    }
+
+    // Prepare files to upload (new images)
     const filesToUpload = selectedImages.map((img) => img.file);
 
-    updateMutation.mutateAsync(
+    updateMutation.mutate(
       {
         id: editingProduct._id,
         product: productData,
@@ -409,6 +430,7 @@ export default function VendorProducts() {
           handleDrawerClose();
         },
         onError: (error) => {
+          console.error('Update error:', error);
           toast({
             title: 'Update failed',
             description: error?.message || 'Failed to update product.',
@@ -422,6 +444,7 @@ export default function VendorProducts() {
   }, [
     editingProduct,
     selectedImages,
+    imagesToDelete,
     updateMutation,
     toast,
     handleDrawerClose,
@@ -511,13 +534,6 @@ export default function VendorProducts() {
       </Center>
     );
 
-  if (!data?.products || data.products.length === 0)
-    return (
-      <Center textAlign='center' py={10} color={'gray.400'}>
-        <Text fontSize='lg'>No products found</Text>
-      </Center>
-    );
-
   return (
     <Box>
       <Flex
@@ -558,149 +574,161 @@ export default function VendorProducts() {
             </Tr>
           </Thead>
           <Tbody>
-            {data.products.map((pdt) => {
-              const stockStatus = getStockStatus(pdt.quantityInStock);
-              const discount = pdt.discount ?? 0;
-              const averageRating = pdt.averageRating ?? 0;
-              return (
-                <Tr key={pdt._id} _hover={{ bg: 'gray.50' }}>
-                  <Td>
-                    <HStack spacing={3}>
-                      <Image
-                        src={pdt.images?.[0] || '/placeholder-image.jpg'}
-                        alt={pdt.name}
-                        w='50px'
-                        h='50px'
-                        objectFit='cover'
-                        borderRadius='md'
-                        fallbackSrc='/placeholder-image.jpg'
-                      />
-                      <VStack align='start' spacing={1}>
-                        <Text fontWeight='medium' noOfLines={1} maxW='200px'>
-                          {pdt.name}
-                        </Text>
-                        <Text
-                          fontSize='sm'
-                          color='gray.500'
-                          noOfLines={1}
-                          maxW='200px'
-                        >
-                          {pdt.description}
-                        </Text>
-                        {discount > 0 && (
-                          <Badge colorScheme='red' size='sm'>
-                            -{discount}%
-                          </Badge>
-                        )}
-                      </VStack>
-                    </HStack>
-                  </Td>
-                  <Td>
-                    <Tag size='sm' colorScheme='blue' variant='subtle'>
-                      {pdt.category.name || 'No Category'}
-                    </Tag>
-                  </Td>
-                  <Td>
-                    <VStack align='start' spacing={1}>
-                      {discount > 0 ? (
-                        <>
-                          <Text fontWeight='bold' color='green.500'>
-                            {formatPrice(
-                              calculateDiscountedPrice(pdt.price, discount)
-                            )}
+            {vendorProducts?.products.length === 0 ? (
+              <Tr>
+                <Td colSpan={8} textAlign='center' py={10}>
+                  <Center color='gray.500' fontSize='xl'>
+                    No products available
+                  </Center>
+                </Td>
+              </Tr>
+            ) : (
+              vendorProducts?.products.map((pdt) => {
+                const stockStatus = getStockStatus(pdt.quantityInStock);
+                const discount = pdt.discount ?? 0;
+                const averageRating = pdt.averageRating ?? 0;
+                return (
+                  <Tr key={pdt._id} _hover={{ bg: 'gray.50' }}>
+                    <Td>
+                      <HStack spacing={3}>
+                        <Image
+                          src={pdt.images?.[0] || '/placeholder-image.jpg'}
+                          alt={pdt.name}
+                          w='50px'
+                          h='50px'
+                          objectFit='cover'
+                          borderRadius='md'
+                          fallbackSrc='/placeholder-image.jpg'
+                        />
+                        <VStack align='start' spacing={1}>
+                          <Text fontWeight='medium' noOfLines={1} maxW='200px'>
+                            {pdt.name}
                           </Text>
                           <Text
-                            fontSize='xs'
-                            textDecoration='line-through'
-                            color='gray.400'
+                            fontSize='sm'
+                            color='gray.500'
+                            noOfLines={1}
+                            maxW='200px'
                           >
+                            {pdt.description}
+                          </Text>
+                          {discount > 0 && (
+                            <Badge colorScheme='red' size='sm'>
+                              -{discount}%
+                            </Badge>
+                          )}
+                        </VStack>
+                      </HStack>
+                    </Td>
+                    <Td>
+                      <Tag size='sm' colorScheme='blue' variant='subtle'>
+                        {pdt.category.name || 'No Category'}
+                      </Tag>
+                    </Td>
+                    <Td>
+                      <VStack align='start' spacing={1}>
+                        {discount > 0 ? (
+                          <>
+                            <Text fontWeight='bold' color='green.500'>
+                              {formatPrice(
+                                calculateDiscountedPrice(pdt.price, discount)
+                              )}
+                            </Text>
+                            <Text
+                              fontSize='xs'
+                              textDecoration='line-through'
+                              color='gray.400'
+                            >
+                              {formatPrice(pdt.price)}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text fontWeight='bold' color='green.500'>
                             {formatPrice(pdt.price)}
                           </Text>
-                        </>
-                      ) : (
-                        <Text fontWeight='bold' color='green.500'>
-                          {formatPrice(pdt.price)}
+                        )}
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <VStack align='start' spacing={1}>
+                        <Badge colorScheme={stockStatus.color} size='sm'>
+                          {pdt.quantityInStock}
+                        </Badge>
+                        <Text fontSize='xs' color={`${stockStatus.color}.500`}>
+                          {stockStatus.text}
                         </Text>
-                      )}
-                    </VStack>
-                  </Td>
-                  <Td>
-                    <VStack align='start' spacing={1}>
-                      <Badge colorScheme={stockStatus.color} size='sm'>
-                        {pdt.quantityInStock}
-                      </Badge>
-                      <Text fontSize='xs' color={`${stockStatus.color}.500`}>
-                        {stockStatus.text}
-                      </Text>
-                    </VStack>
-                  </Td>
-                  <Td>
-                    <VStack align='start' spacing={2}>
-                      <Badge
-                        colorScheme={getStatusColor(pdt.isActive)}
-                        size='sm'
-                        p={2}
-                        borderRadius='xl'
-                      >
-                        {pdt.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                      <Button
-                        size='xs'
-                        colorScheme={pdt.isActive ? 'red' : 'green'}
-                        variant='outline'
-                        disabled={toggleMutation.isPending}
-                        onClick={() =>
-                          handleToggleStatus(pdt._id, pdt.name, pdt.isActive)
-                        }
-                        isLoading={toggleMutation.isPending}
-                        loadingText={
-                          pdt.isActive ? 'Deactivating...' : 'Activating...'
-                        }
-                      >
-                        {pdt.isActive ? 'Deactivate' : 'Activate'}
-                      </Button>
-                    </VStack>
-                  </Td>
-                  <Td>
-                    <VStack align='start' spacing={1}>
-                      {averageRating > 0 && renderRating(averageRating)}
-                      <Text fontSize='xs' color='gray.500'>
-                        {pdt.totalReviews || 0} reviews
-                      </Text>
-                    </VStack>
-                  </Td>
-                  <Td>
-                    <VStack align='start' spacing={1}>
-                      <Text fontSize='sm' fontWeight='medium'>
-                        {pdt.vendor?.name || 'Unknown Vendor'}
-                      </Text>
-                      <Text fontSize='xs' color='gray.500'>
-                        {pdt.vendor?.email || 'No Email'}
-                      </Text>
-                    </VStack>
-                  </Td>
-                  <Td>
-                    <HStack spacing={1}>
-                      <IconButton
-                        aria-label='View product details'
-                        icon={<Eye size={14} />}
-                        size='sm'
-                        variant='ghost'
-                        onClick={() => handleView(pdt)}
-                      />
-                      <IconButton
-                        aria-label='Delete product'
-                        icon={<Trash2 size={14} />}
-                        size='sm'
-                        variant='ghost'
-                        colorScheme='red'
-                        onClick={() => handleDelete(pdt)}
-                      />
-                    </HStack>
-                  </Td>
-                </Tr>
-              );
-            })}
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <VStack align='start' spacing={2}>
+                        <Badge
+                          colorScheme={getStatusColor(pdt.isActive)}
+                          size='sm'
+                          p={2}
+                          borderRadius='xl'
+                        >
+                          {pdt.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                        <Button
+                          size='xs'
+                          colorScheme={pdt.isActive ? 'red' : 'green'}
+                          variant='outline'
+                          isLoading={
+                            toggleMutation.variables === pdt._id &&
+                            toggleMutation.isPending
+                          }
+                          loadingText={
+                            pdt.isActive ? 'Deactivating...' : 'Activating...'
+                          }
+                          onClick={() =>
+                            handleToggleStatus(pdt._id, pdt.name, pdt.isActive)
+                          }
+                        >
+                          {pdt.isActive ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <VStack align='start' spacing={1}>
+                        {averageRating > 0 && renderRating(averageRating)}
+                        <Text fontSize='xs' color='gray.500'>
+                          {pdt.totalReviews || 0} reviews
+                        </Text>
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <VStack align='start' spacing={1}>
+                        <Text fontSize='sm' fontWeight='medium'>
+                          {pdt.vendor?.name || 'Unknown Vendor'}
+                        </Text>
+                        <Text fontSize='xs' color='gray.500'>
+                          {pdt.vendor?.email || 'No Email'}
+                        </Text>
+                      </VStack>
+                    </Td>
+                    <Td>
+                      <HStack spacing={1}>
+                        <IconButton
+                          aria-label='View product details'
+                          icon={<Eye size={14} />}
+                          size='sm'
+                          variant='ghost'
+                          onClick={() => handleView(pdt)}
+                        />
+                        <IconButton
+                          aria-label='Delete product'
+                          icon={<Trash2 size={14} />}
+                          size='sm'
+                          variant='ghost'
+                          colorScheme='red'
+                          onClick={() => handleDelete(pdt)}
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                );
+              })
+            )}
           </Tbody>
         </Table>
       </TableContainer>
@@ -756,7 +784,6 @@ export default function VendorProducts() {
                       onAddImages={() => fileInputRef.current?.click()}
                       isEditing={true}
                     />
-
                     {/* Hidden File Input */}
                     <Input
                       ref={fileInputRef}
@@ -766,7 +793,6 @@ export default function VendorProducts() {
                       display='none'
                       onChange={handleImageSelect}
                     />
-
                     <FormControl>
                       <FormLabel>Product Name</FormLabel>
                       <Input
@@ -779,7 +805,6 @@ export default function VendorProducts() {
                         }
                       />
                     </FormControl>
-
                     <FormControl>
                       <FormLabel>Description</FormLabel>
                       <Textarea
@@ -792,19 +817,27 @@ export default function VendorProducts() {
                         }
                       />
                     </FormControl>
-
+                    // Replace your Category FormControl section with this fixed
+                    version:
                     <FormControl>
                       <FormLabel>Category</FormLabel>
                       {categories ? (
                         <Select
-                          value={editingProduct.category?._id || ''}
+                          value={
+                            typeof editingProduct.category === 'object'
+                              ? editingProduct.category._id
+                              : editingProduct.category || ''
+                          }
                           onChange={(e) => {
+                            const selectedCategoryId = e.target.value;
                             const selectedCategory = categories.find(
-                              (c) => c._id === e.target.value
+                              (c) => c._id === selectedCategoryId
                             );
+
                             if (selectedCategory) {
                               setEditingProduct({
                                 ...editingProduct,
+
                                 category: selectedCategory,
                               });
                             }
@@ -821,7 +854,6 @@ export default function VendorProducts() {
                         <Spinner size='sm' />
                       )}
                     </FormControl>
-
                     <HStack spacing={4} w='100%'>
                       <FormControl>
                         <FormLabel>Price</FormLabel>
@@ -853,7 +885,6 @@ export default function VendorProducts() {
                         </NumberInput>
                       </FormControl>
                     </HStack>
-
                     <HStack spacing={4} w='100%'>
                       <FormControl>
                         <FormLabel>Discount (%)</FormLabel>
@@ -1044,7 +1075,13 @@ export default function VendorProducts() {
               <Button ref={cancelRef} onClick={onDeleteClose}>
                 Cancel
               </Button>
-              <Button colorScheme='red' onClick={handleConfirmDelete} ml={3}>
+              <Button
+                colorScheme='red'
+                isLoading={deleteMutation.isPending}
+                loadingText='Deleting...'
+                onClick={handleConfirmDelete}
+                ml={3}
+              >
                 Delete
               </Button>
             </AlertDialogFooter>

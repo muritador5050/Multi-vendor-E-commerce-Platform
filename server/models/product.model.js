@@ -12,7 +12,7 @@ const fs = require('fs');
  *       required:
  *         - name
  *         - price
- *         - category
+ *         - categoryId
  *       properties:
  *         name:
  *           type: string
@@ -39,7 +39,7 @@ const fs = require('fs');
  *           items:
  *             type: string
  *             example: "https://example.com/image.jpg"
- *         category:
+ *         categoryId:
  *           type: string
  *           example: "60d5f484f1b2c8b8f8e4c8b8"
  *         attributes:
@@ -82,16 +82,17 @@ const productSchema = new mongoose.Schema(
     },
     quantityInStock: {
       type: Number,
-      default: 1,
+      default: 5,
       min: 1,
     },
     images: [
       {
         type: String,
+        required: true,
         trim: true,
       },
     ],
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       required: true,
@@ -118,7 +119,7 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    vendor: {
+    vendorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
@@ -127,208 +128,167 @@ const productSchema = new mongoose.Schema(
 );
 
 // Indexes for better performance
-productSchema.index({ category: 1 });
+productSchema.index({ categoryId: 1 });
 productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ price: 1 });
 productSchema.index({ isActive: 1, isDeleted: 1 });
 
-// Query helper
-productSchema.query.paginate = function ({ page, limit }) {
+// ============ MIDDLEWARE ============
+
+// Pre-save middleware for slug generation
+productSchema.pre('save', async function (next) {
+  if (!this.isModified('name') && this.slug) {
+    return next();
+  }
+
+  if (!this.name || typeof this.name !== 'string') {
+    return next(new Error('Product name is required and must be a string'));
+  }
+
+  try {
+    const baseSlug = slugify(this.name.trim(), { lower: true, strict: true });
+    let uniqueSlug = baseSlug;
+    let counter = 1;
+
+    // Check for existing slug and make it unique
+    while (
+      await this.constructor.findOne({
+        slug: uniqueSlug,
+        _id: { $ne: this._id }, // Exclude current document for updates
+      })
+    ) {
+      uniqueSlug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    this.slug = uniqueSlug;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Pre-save middleware for category validation
+productSchema.pre('save', async function (next) {
+  if (this.categoryId && this.isModified('categoryId')) {
+    const categoryExists = await Category.findById(this.categoryId);
+    if (!categoryExists) {
+      return next(new Error(`Category with ID ${this.categoryId} not found`));
+    }
+  }
+  next();
+});
+
+// Pre-save middleware to normalize images array
+productSchema.pre('save', function (next) {
+  if (this.images && !Array.isArray(this.images)) {
+    this.images = this.images ? [this.images] : [];
+  }
+  next();
+});
+
+// ============ QUERY HELPERS ============
+
+productSchema.query.paginate = function ({ page = 1, limit = 10 }) {
   const skip = limit * (page - 1);
   return this.skip(skip).limit(limit);
 };
 
-// Auto-generate slug
-// productSchema.pre('save', async function (next) {
-//   if (this.isModified('name') || this.isNew) {
-//     this.slug = slugify(this.name, { lower: true, strict: true });
-//   }
-//   next();
-// });
+productSchema.query.active = function () {
+  return this.where({ isDeleted: false, isActive: true });
+};
+
+productSchema.query.byVendor = function (vendorId) {
+  return this.where({ vendorId: vendorId });
+};
 
 // ============ STATIC METHODS ============
 
-// Updated createProducts static method
 productSchema.statics.createProducts = async function (productsData, vendorId) {
   const productsArray = Array.isArray(productsData)
     ? productsData
     : [productsData];
 
-  const isSingle = !Array.isArray(productsData);
-
-  const categoryIds = [
-    ...new Set(productsArray.map((p) => p.category).filter(Boolean)),
-  ];
-
-  if (categoryIds.length > 0) {
-    const existingCategories = await Category.find({
-      _id: { $in: categoryIds },
-    }).select('_id');
-
-    const existingIds = new Set(
-      existingCategories.map((c) => c._id.toString())
-    );
-    const invalidCategories = categoryIds.filter((id) => !existingIds.has(id));
-
-    if (invalidCategories.length > 0) {
-      throw new Error(`Categories not found: ${invalidCategories.join(', ')}`);
-    }
+  if (productsArray.length === 0) {
+    throw new Error('No products provided');
   }
 
-  // Generate slugs for each product and ensure uniqueness
-  const processedProducts = await Promise.all(
-    productsArray.map(async (productData) => {
-      const baseSlug = slugify(productData.name, { lower: true, strict: true });
-      let uniqueSlug = baseSlug;
-      let counter = 1;
+  const productsToCreate = productsArray.map((product) => ({
+    ...product,
+    vendorId: vendorId,
+  }));
 
-      // Check if slug already exists and make it unique
-      while (await this.findOne({ slug: uniqueSlug })) {
-        uniqueSlug = `${baseSlug}-${counter}`;
-        counter++;
-      }
-
-      return {
-        ...productData,
-        vendor: vendorId,
-        slug: uniqueSlug, // Add the generated slug
-        images: Array.isArray(productData.images)
-          ? productData.images
-          : productData.images
-          ? [productData.images]
-          : [],
-      };
-    })
-  );
-
-  const createdProducts = await this.insertMany(processedProducts);
+  const createdProducts = await this.create(productsToCreate);
 
   const populatedProducts = await this.find({
     _id: { $in: createdProducts.map((p) => p._id) },
-  }).populate([
-    { path: 'category', select: 'name slug image' },
-    { path: 'vendor', select: 'name email' },
-  ]);
+  })
+    .populate('categoryId', 'name slug image')
+    .populate('vendorId', 'name email')
+    .lean();
 
-  return isSingle ? populatedProducts[0] : populatedProducts;
+  return Array.isArray(productsData) ? populatedProducts : populatedProducts[0];
 };
-productSchema.statics.updateProductById = async function (
-  id,
-  updateData,
-  user
-) {
+
+productSchema.statics.updateById = async function (id, updateData, user) {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error('Invalid product ID format');
   }
 
-  const currentProduct = await this.findOne({ _id: id, isDeleted: false });
-  if (!currentProduct) {
-    throw new Error(
-      user.role === 'admin'
-        ? 'Product not found or deleted'
-        : 'Product not found, deleted, or you do not have permission'
-    );
+  const product = await this.findOne({ _id: id, isDeleted: false });
+  if (!product) {
+    throw new Error('Product not found or deleted');
   }
 
-  // Verify ownership if not admin
-  if (user.role !== 'admin' && currentProduct.vendor.toString() !== user.id) {
+  // Check permissions
+  if (user.role !== 'admin' && product.vendorId.toString() !== user.id) {
     throw new Error('You do not have permission to update this product');
   }
 
-  // Handle category validation
-  if (updateData.category) {
-    const categoryExists = await Category.exists({ _id: updateData.category });
-    if (!categoryExists) {
-      throw new Error('Category does not exist');
-    }
+  // Merge new images with existing ones
+  if (updateData.images?.length) {
+    updateData.images = [...updateData.images, ...(product.images || [])];
   }
 
-  // Handle image deletions
-  if (updateData.imagesToDelete && Array.isArray(updateData.imagesToDelete)) {
-    // Verify the images to delete actually exist in current images
-    const invalidDeletions = updateData.imagesToDelete.filter(
-      (img) => !currentProduct.images.includes(img)
-    );
-
-    if (invalidDeletions.length > 0) {
-      throw new Error(
-        `Cannot delete non-existent images: ${invalidDeletions.join(', ')}`
-      );
-    }
-
-    // Delete files from storage
-    await Promise.all(
-      updateData.imagesToDelete.map((imagePath) =>
-        fs.promises.unlink(imagePath).catch(() => {})
-      )
-    );
-
-    // Remove deleted images from current product images
-    currentProduct.images = currentProduct.images.filter(
-      (img) => !updateData.imagesToDelete.includes(img)
-    );
-
-    delete updateData.imagesToDelete;
-  }
-
-  if (updateData.images && Array.isArray(updateData.images)) {
-    const existingImages = currentProduct.images || [];
-    updateData.images = [...updateData.images, ...existingImages];
-  }
-
-  // Perform update
-  const updatedProduct = await this.findByIdAndUpdate(
-    id,
-    { $set: updateData },
-    {
-      new: true,
-      runValidators: true,
-      populate: [
-        { path: 'category', select: 'name slug image' },
-        { path: 'vendor', select: 'name email' },
-      ],
-    }
-  );
-
-  return updatedProduct;
+  // Update and return populated document
+  return this.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+    populate: [
+      { path: 'categoryId', select: 'name slug image' },
+      { path: 'vendorId', select: 'name email' },
+    ],
+  });
 };
 
-// Build filter for product queries
-productSchema.statics.buildFilter = async function (queryParams) {
-  const { category, minPrice, maxPrice, search, isActive, vendor } =
-    queryParams;
+// Build advanced filter
+productSchema.statics.buildFilter = function (queryParams) {
+  const {
+    category,
+    minPrice,
+    maxPrice,
+    search,
+    isActive,
+    vendorId,
+    material,
+    size,
+    color,
+  } = queryParams;
 
   const filter = { isDeleted: false };
 
-  if (isActive !== undefined) {
-    filter.isActive = isActive === 'true';
-  }
+  // Basic filters
+  if (isActive !== undefined) filter.isActive = isActive === 'true';
+  if (vendorId) filter.vendorId = vendorId;
 
-  if (category) {
-    let categoryFilter;
-    if (mongoose.Types.ObjectId.isValid(category)) {
-      categoryFilter = await Category.findById(category);
-    } else {
-      categoryFilter = await Category.findOne({ slug: category });
-    }
-
-    if (categoryFilter) {
-      filter.category = categoryFilter._id;
-    } else {
-      return { filter, categoryNotFound: true };
-    }
-  }
-
+  // Price range filter
   if (minPrice || maxPrice) {
     filter.price = {};
     if (minPrice) filter.price.$gte = parseFloat(minPrice);
     if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
   }
 
-  if (vendor) {
-    filter.vendor = vendor;
-  }
-
+  // Search filter
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: 'i' } },
@@ -337,26 +297,56 @@ productSchema.statics.buildFilter = async function (queryParams) {
     ];
   }
 
-  // Handle known attributes
-  const knownAttributes = ['material', 'size', 'color'];
-  knownAttributes.forEach((attr) => {
-    if (queryParams[attr]) {
-      filter[`attributes.${attr}`] = {
-        $regex: queryParams[attr],
-        $options: 'i',
-      };
-    }
-  });
+  // Attribute filters
+  [
+    { key: 'material', value: material },
+    { key: 'size', value: size },
+    { key: 'color', value: color },
+  ]
+    .filter((attr) => attr.value)
+    .forEach((attr) => {
+      filter[`attributes.${attr.key}`] = { $regex: attr.value, $options: 'i' };
+    });
 
-  return { filter, categoryNotFound: false };
+  return {
+    filter,
+    categoryPromise: category ? this.resolveCategoryFilter(category) : null,
+  };
 };
 
-// Get paginated products
-productSchema.statics.getPaginatedProducts = async function (filter, options) {
+// Helper to resolve category filter
+productSchema.statics.resolveCategoryFilter = async function (category) {
+  const categoryDoc = mongoose.Types.ObjectId.isValid(category)
+    ? await Category.findById(category)
+    : await Category.findOne({ slug: category });
+
+  return categoryDoc?._id;
+};
+
+// Get paginated products with advanced filtering
+productSchema.statics.getPaginated = async function (
+  queryParams = {},
+  options = {}
+) {
   const { page = 1, limit = 10, sort = '-createdAt' } = options;
 
   const pageNum = Math.max(1, parseInt(page));
   const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+
+  const { filter, categoryPromise } = this.buildFilter(queryParams);
+
+  // Resolve category filter if needed
+  if (categoryPromise) {
+    const categoryId = await categoryPromise;
+    if (categoryId) {
+      filter.categoryId = categoryId;
+    } else {
+      return {
+        products: [],
+        pagination: { total: 0, page: pageNum, pages: 0 },
+      };
+    }
+  }
 
   const total = await this.countDocuments(filter);
   const skip = (pageNum - 1) * limitNum;
@@ -365,79 +355,43 @@ productSchema.statics.getPaginatedProducts = async function (filter, options) {
     .sort(sort)
     .skip(skip)
     .limit(limitNum)
-    .populate('category', 'name slug image')
-    .populate('vendor', 'name email')
+    .populate('categoryId', 'name slug image')
+    .populate('vendorId', 'name email')
     .lean();
-
-  const totalPages = Math.ceil(total / limitNum);
 
   return {
     products,
     pagination: {
       total,
       page: pageNum,
-      pages: totalPages,
-      hasNext: pageNum < totalPages,
+      pages: Math.ceil(total / limitNum),
+      hasNext: pageNum < Math.ceil(total / limitNum),
       hasPrev: pageNum > 1,
       limit: limitNum,
     },
   };
 };
 
-// Find category by slug or ID
-productSchema.statics.findCategoryBySlugOrId = async function (identifier) {
-  if (mongoose.Types.ObjectId.isValid(identifier)) {
-    return Category.findById(identifier);
-  }
-  return Category.findOne({ slug: identifier });
-};
-
-// Get products by category
-productSchema.statics.getProductsByCategory = async function (
-  categoryId,
-  options
-) {
-  const { minPrice, maxPrice } = options;
-
-  const filter = {
-    category: categoryId,
-    isDeleted: false,
-  };
-
-  if (minPrice || maxPrice) {
-    filter.price = {};
-    if (minPrice) filter.price.$gte = parseFloat(minPrice);
-    if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
-  }
-
-  return this.getPaginatedProducts(filter, options);
-};
-
-// Find active product by ID
+// Get single product by ID
 productSchema.statics.findActiveById = async function (id) {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error('Invalid product ID format');
   }
 
-  return this.findOne({
-    _id: id,
-    isDeleted: false,
-  })
-    .populate('category', 'name slug image')
-    .populate('vendor', 'name email')
+  return this.findOne({ _id: id, isDeleted: false })
+    .populate('categoryId', 'name slug image')
+    .populate('vendorId', 'name email')
     .lean();
 };
 
 // Soft delete product
-productSchema.statics.softDeleteById = async function (id, user) {
+productSchema.statics.softDelete = async function (id, user) {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error('Invalid product ID format');
   }
 
   const filter = { _id: id, isDeleted: false };
-  if (user.role !== 'admin') {
-    filter.vendor = user.id;
-  }
+  if (user.role !== 'admin') filter.vendorId = user.id;
 
   const product = await this.findOneAndUpdate(
     filter,
@@ -446,66 +400,43 @@ productSchema.statics.softDeleteById = async function (id, user) {
   );
 
   if (!product) {
-    const message =
+    throw new Error(
       user.role === 'admin'
         ? 'Product not found or already deleted'
-        : 'Product not found or you do not have permission to delete this product';
-    throw new Error(message);
+        : 'Product not found or you do not have permission to delete this product'
+    );
   }
 
   return product;
 };
 
 // Get vendor products
-productSchema.statics.getProductsByVendor = async function (
+productSchema.statics.getByVendor = function (
   vendorId,
-  queryParams,
-  options
+  queryParams = {},
+  options = {}
 ) {
-  const { isActive, category, search } = queryParams;
+  return this.getPaginated({ ...queryParams, vendorId: vendorId }, options);
+};
 
-  const filter = {
-    vendor: vendorId,
-    isDeleted: false,
-  };
-
-  if (isActive !== undefined) {
-    filter.isActive = isActive === 'true';
-  }
-
-  if (category) {
-    const selectedCategory = await Category.findOne({
-      $or: [{ slug: category }, { _id: category }],
-    });
-    if (selectedCategory) {
-      filter.category = selectedCategory._id;
-    }
-  }
-
-  if (search) {
-    filter.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { description: { $regex: search, $options: 'i' } },
-    ];
-  }
-
-  return this.getPaginatedProducts(filter, options);
+// Get products by category
+productSchema.statics.getByCategory = function (categoryId, options = {}) {
+  return this.getPaginated({ category: categoryId }, options);
 };
 
 // ============ INSTANCE METHODS ============
 
 // Toggle active status
-productSchema.methods.toggleStatus = async function () {
+productSchema.methods.toggleStatus = function () {
   this.isActive = !this.isActive;
   return this.save();
 };
 
 // Calculate discounted price
 productSchema.methods.getDiscountedPrice = function () {
-  if (this.discount > 0) {
-    return this.price * (1 - this.discount / 100);
-  }
-  return this.price;
+  return this.discount > 0
+    ? this.price * (1 - this.discount / 100)
+    : this.price;
 };
 
 // Check if product is in stock

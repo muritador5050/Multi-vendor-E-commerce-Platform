@@ -15,11 +15,11 @@ import Messages from '../components/VendorManagement/Messages';
 import Enquiry from '../components/VendorManagement/Enquiry';
 import Knowledgebase from '../components/VendorManagement/Knowledgebase';
 import Notices from '../components/VendorManagement/Notices';
-import Products from '../components/VendorManagement/Products';
 import StoreNavbar from '../components/VendorManagement/StoreNavbar';
 import StoreSidebar from '../components/VendorManagement/StoreSidebar';
 import CreateProductPage from '../components/VendorManagement/CreateProduct';
 import VendorDashboard from '@/components/VendorManagement/VendorDashboard';
+import VendorProducts from '@/components/VendorManagement/Products';
 
 export default function StoreManagerDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -43,7 +43,7 @@ export default function StoreManagerDashboard() {
               <Route index element={<VendorDashboard />} />
               <Route path='media' element={<Media />} />
               <Route path='articles' element={<Articles />} />
-              <Route path='products' element={<Products />} />
+              <Route path='products' element={<VendorProducts />} />
               <Route path='create-product' element={<CreateProductPage />} />
               <Route path='orders' element={<Orders />} />
               <Route path='payments' element={<Payments />} />

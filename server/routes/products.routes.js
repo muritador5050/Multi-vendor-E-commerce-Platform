@@ -213,7 +213,7 @@ router.patch(
 router
   .route('/:id')
   .get(asyncHandler(ProductsController.getProductById))
-  .put(
+  .patch(
     authenticate,
     checkRole(['admin', 'vendor'], 'edit'),
     (req, res, next) => {

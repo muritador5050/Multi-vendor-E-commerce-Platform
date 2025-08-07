@@ -1,12 +1,10 @@
 import type { ApiResponse } from '@/type/ApiResponse';
 import type {
   CreateProductInput,
-  CreateProductResponse,
   Product,
   ProductPaginatedResponse,
   ProductPopulated,
   ProductQueryParams,
-  UpdateProductInput,
 } from '@/type/product';
 import { apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
@@ -26,7 +24,7 @@ const productKeys = {
 };
 
 // API Functions
-const fetchProducts = async (
+const getAllProducts = async (
   params: ProductQueryParams = {}
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
@@ -36,10 +34,8 @@ const fetchProducts = async (
   >(url);
 };
 
-const fetchProductById = async (
-  id: string
-): Promise<ApiResponse<ProductPopulated>> => {
-  return await apiClient.authenticatedApiRequest<ApiResponse<ProductPopulated>>(
+const fetchProductById = async (id: string): Promise<ApiResponse<Product>> => {
+  return await apiClient.authenticatedApiRequest<ApiResponse<Product>>(
     `/products/${id}`
   );
 };
@@ -47,14 +43,12 @@ const fetchProductById = async (
 const fetchProductsByCategory = async (
   categorySlug: string,
   params: Omit<ProductQueryParams, 'category'> = {}
-): Promise<ApiResponse<ProductPaginatedResponse>> => {
+): Promise<ApiResponse<Product[]>> => {
   const queryString = buildQueryString(params);
   const url = `/products/category/${categorySlug}${
     queryString ? `?${queryString}` : ''
   }`;
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<ProductPaginatedResponse>
-  >(url);
+  return await apiClient.authenticatedApiRequest<ApiResponse<Product[]>>(url);
 };
 
 //Admin function
@@ -85,7 +79,7 @@ const getOwnVendorProducts = async (
 
 const createProduct = async (products: CreateProductInput, files?: File[]) => {
   return await apiClient.authenticatedFormDataRequest<
-    ApiResponse<CreateProductResponse>
+    ApiResponse<Product | Product[]>
   >(
     '/products',
     products,
@@ -103,14 +97,17 @@ const toggleProductStatus = async (
 
 const updateProduct = async (
   id: string,
-  product: UpdateProductInput,
+  product: Partial<CreateProductInput>,
   files?: File[]
-): Promise<ApiResponse<ProductPopulated>> => {
-  return await apiClient.authenticatedFormDataRequest<
-    ApiResponse<ProductPopulated>
-  >(`/products/${id}`, product, files ? { productImage: files } : undefined, {
-    method: 'PUT',
-  });
+): Promise<ApiResponse<Product>> => {
+  return await apiClient.authenticatedFormDataRequest<ApiResponse<Product>>(
+    `/products/${id}`,
+    product,
+    files ? { productImage: files } : undefined,
+    {
+      method: 'PATCH',
+    }
+  );
 };
 
 const deleteProduct = async (
@@ -126,7 +123,7 @@ const deleteProduct = async (
 export const useProducts = (params: ProductQueryParams = {}) => {
   return useQuery({
     queryKey: productKeys.items(params),
-    queryFn: () => fetchProducts(params),
+    queryFn: () => getAllProducts(params),
     select: (data) => data.data,
     staleTime: 5 * 60 * 1000,
     retry: (failureCount, error) => {
@@ -159,6 +156,7 @@ export const useProductsByCategory = (
   return useQuery({
     queryKey: productKeys.category(categorySlug, params),
     queryFn: () => fetchProductsByCategory(categorySlug, params),
+    select: (data) => data.data,
     staleTime: 5 * 60 * 1000,
     enabled: !!categorySlug,
   });
@@ -171,6 +169,7 @@ export const useVendorProductsForAdmin = (
   return useQuery({
     queryKey: productKeys.vendor(vendorId, params),
     queryFn: () => getVendorProductsForAdmin(vendorId, params),
+    select: (data) => data.data,
     staleTime: 5 * 60 * 1000,
     enabled: !!vendorId,
   });
@@ -198,8 +197,8 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
+      // Invalidate all product-related queries to trigger fresh fetch
       queryClient.invalidateQueries({ queryKey: productKeys.all });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
     },
   });
 };
@@ -209,13 +208,56 @@ export const useToggleProductStatus = () => {
 
   return useMutation({
     mutationFn: toggleProductStatus,
-    onSuccess: (data, productId) => {
-      queryClient.setQueryData(
-        productKeys.item(productId),
-        (oldData: Product) =>
-          oldData ? { ...oldData, isActive: data.data?.isActive } : oldData
+    onMutate: async (productId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: productKeys.item(productId),
+      });
+
+      // Snapshot the previous value
+      const previousProduct = queryClient.getQueryData<ProductPopulated>(
+        productKeys.item(productId)
       );
-      queryClient.invalidateQueries({ queryKey: productKeys.item(productId) });
+
+      // Optimistically update the cache
+      if (previousProduct) {
+        queryClient.setQueryData<ProductPopulated>(
+          productKeys.item(productId),
+          {
+            ...previousProduct,
+            isActive: !previousProduct.isActive,
+          }
+        );
+      }
+
+      // Return context for rollback
+      return { previousProduct };
+    },
+    onSuccess: (response, productId) => {
+      // Update with the actual server response
+      queryClient.setQueryData<ProductPopulated>(
+        productKeys.item(productId),
+        (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            isActive: response.data?.isActive ?? oldData.isActive,
+          };
+        }
+      );
+
+      // Invalidate list queries to refresh them
+      queryClient.invalidateQueries({ queryKey: productKeys.items() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+    },
+    onError: (_error, productId, context) => {
+      // Rollback on error
+      if (context?.previousProduct) {
+        queryClient.setQueryData(
+          productKeys.item(productId),
+          context.previousProduct
+        );
+      }
     },
   });
 };
@@ -229,15 +271,39 @@ export const useUpdateProduct = () => {
       files,
     }: {
       id: string;
-      product: UpdateProductInput;
+      product: Partial<CreateProductInput>;
       files?: File[];
     }) => updateProduct(id, product, files),
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(productKeys.item(variables.id), data);
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: productKeys.item(variables.id),
-      });
+    onMutate: async ({ id, product }) => {
+      await queryClient.cancelQueries({ queryKey: productKeys.item(id) });
+
+      const previousProduct = queryClient.getQueryData(productKeys.item(id));
+
+      // Optimistically update the cache
+      if (previousProduct) {
+        queryClient.setQueryData(productKeys.item(id), {
+          ...previousProduct,
+          ...product,
+        });
+      }
+
+      return { previousProduct };
+    },
+    onSuccess: (response, variables) => {
+      queryClient.setQueryData(productKeys.item(variables.id), response.data);
+
+      // Invalidate list queries
+      queryClient.invalidateQueries({ queryKey: productKeys.items() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+    },
+    onError: (_error, variables, context) => {
+      // Rollback on error
+      if (context?.previousProduct) {
+        queryClient.setQueryData(
+          productKeys.item(variables.id),
+          context.previousProduct
+        );
+      }
     },
   });
 };
@@ -246,14 +312,38 @@ export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteProduct,
-    onSuccess: (_response, deletedId) => {
+    onMutate: async (deletedId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: productKeys.item(deletedId),
+      });
+
+      // Snapshot the previous value for rollback
+      const previousProduct = queryClient.getQueryData<ProductPopulated>(
+        productKeys.item(deletedId)
+      );
+
+      // Optimistically remove from cache
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
 
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
-
-      queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
+      return { previousProduct };
     },
-    onError: (error) => {
+    onSuccess: (_response, deletedId) => {
+      // Ensure product is removed from cache
+      queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
+
+      // Invalidate list queries to refresh them
+      queryClient.invalidateQueries({ queryKey: productKeys.items() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+    },
+    onError: (error, deletedId, context) => {
+      // Rollback - restore the product if deletion failed
+      if (context?.previousProduct) {
+        queryClient.setQueryData(
+          productKeys.item(deletedId),
+          context.previousProduct
+        );
+      }
       console.error('Delete product error:', error);
     },
   });
