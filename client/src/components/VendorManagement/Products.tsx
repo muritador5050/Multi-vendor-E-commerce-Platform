@@ -2,19 +2,16 @@ import React, { useState, useCallback, useRef } from 'react';
 import {
   useDeleteProduct,
   useOwnVendorProducts,
-  useProductById,
   useToggleProductStatus,
   useUpdateProduct,
 } from '@/context/ProductContextService';
 import {
   Box,
-  Image,
   Text,
   Badge,
   Flex,
   Heading,
   Button,
-  IconButton,
   Input,
   FormControl,
   FormLabel,
@@ -39,7 +36,6 @@ import {
   VStack,
   HStack,
   Divider,
-  Tag,
   Table,
   Thead,
   Tbody,
@@ -51,199 +47,61 @@ import {
   Center,
   Select,
   useDisclosure,
-  SimpleGrid,
-  AspectRatio,
-  CloseButton,
-  useColorModeValue,
 } from '@chakra-ui/react';
-import {
-  Eye,
-  Trash2,
-  Package,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-} from 'lucide-react';
-import type { CreateProductInput, ProductPopulated } from '@/type/product';
+import { Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/context/CategoryContextService';
+import type {
+  CreateProductRequest,
+  Product,
+  ProductDocument,
+} from '@/type/product';
+import { ImageGallery, type ImageFile } from './Utils/ImageGallery';
+import {
+  formatDate,
+  formatPrice,
+  getStatusColor,
+  getStockStatus,
+  renderRating,
+} from './Utils/UtilityFunc';
+import { ProductRow } from './Utils/ProductRows';
 
-interface ImageFile {
-  id: string;
-  file: File;
-  preview: string;
-}
-
-// Image Gallery Component
-const ImageGallery = ({
-  existingImages,
-  newImages,
-  onRemoveExisting,
-  onRemoveNew,
-  onAddImages,
-  isEditing,
+// Detail item component for cleaner view mode
+const DetailItem = ({
+  label,
+  children,
 }: {
-  existingImages: string[];
-  newImages: ImageFile[];
-  onRemoveExisting: (imageUrl: string) => void;
-  onRemoveNew: (imageId: string) => void;
-  onAddImages: () => void;
-  isEditing: boolean;
-}) => {
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <HStack justify='space-between'>
+    <Text fontWeight='medium'>{label}:</Text>
+    {children}
+  </HStack>
+);
 
-  return (
-    <Box>
-      <FormLabel>Product Images</FormLabel>
-      <SimpleGrid columns={2} spacing={3}>
-        {/* Existing Images */}
-        {existingImages.map((imageUrl, index) => (
-          <AspectRatio key={`existing-${index}`} ratio={1}>
-            <Box
-              position='relative'
-              borderWidth={1}
-              borderColor={borderColor}
-              borderRadius='md'
-              overflow='hidden'
-            >
-              <Image
-                src={imageUrl}
-                alt={`Product image ${index + 1}`}
-                w='100%'
-                h='100%'
-                objectFit='cover'
-                fallbackSrc='/placeholder-image.jpg'
-              />
-              {isEditing && (
-                <CloseButton
-                  position='absolute'
-                  top={1}
-                  right={1}
-                  size='sm'
-                  bg='red.500'
-                  color='white'
-                  _hover={{ bg: 'red.600' }}
-                  onClick={() => onRemoveExisting(imageUrl)}
-                />
-              )}
-            </Box>
-          </AspectRatio>
-        ))}
-
-        {/* New Images */}
-        {newImages.map((image) => (
-          <AspectRatio key={image.id} ratio={1}>
-            <Box
-              position='relative'
-              borderWidth={1}
-              borderColor='blue.300'
-              borderStyle='dashed'
-              borderRadius='md'
-              overflow='hidden'
-            >
-              <Image
-                src={image.preview}
-                alt='New product image'
-                w='100%'
-                h='100%'
-                objectFit='cover'
-              />
-              {isEditing && (
-                <CloseButton
-                  position='absolute'
-                  top={1}
-                  right={1}
-                  size='sm'
-                  bg='red.500'
-                  color='white'
-                  _hover={{ bg: 'red.600' }}
-                  onClick={() => onRemoveNew(image.id)}
-                />
-              )}
-              <Badge
-                position='absolute'
-                bottom={1}
-                left={1}
-                colorScheme='blue'
-                size='sm'
-              >
-                New
-              </Badge>
-            </Box>
-          </AspectRatio>
-        ))}
-
-        {/* Add Image Button */}
-        {isEditing && (
-          <AspectRatio ratio={1}>
-            <Button
-              variant='outline'
-              borderWidth={2}
-              borderStyle='dashed'
-              borderColor={borderColor}
-              h='100%'
-              onClick={onAddImages}
-              _hover={{
-                borderColor: 'blue.400',
-                bg: 'blue.50',
-              }}
-            >
-              <VStack spacing={2}>
-                <Plus size={24} />
-                <Text fontSize='sm'>Add Image</Text>
-              </VStack>
-            </Button>
-          </AspectRatio>
-        )}
-      </SimpleGrid>
-    </Box>
-  );
-};
-
-//Vendor Products Component
 export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedProductId, setSelectedProductId] = useState<string>('');
-  const [editingProduct, setEditingProduct] = useState<ProductPopulated | null>(
-    null
-  );
-  const [productToDelete, setProductToDelete] = useState<ProductPopulated>();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-
-  // Image editing states
   const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
+  // API hooks
   const { data: vendorProducts, isLoading } = useOwnVendorProducts({
     page: currentPage,
     limit: 10,
   });
 
-  const {
-    data: selectedProductData,
-    isLoading: isSelectedProductLoading,
-    error: selectedProductError,
-  } = useProductById(selectedProductId);
-
   const toggleMutation = useToggleProductStatus();
   const updateMutation = useUpdateProduct();
-  const { data: categories } = useCategories();
-
   const deleteMutation = useDeleteProduct();
-
-  //Pagination
-  const pagination = vendorProducts?.pagination || {
-    total: 0,
-    page: 1,
-    pages: 0,
-    hasNext: false,
-    hasPrev: false,
-    limit: 10,
-  };
+  const { data: categories } = useCategories();
 
   const {
     isOpen: isDrawerOpen,
@@ -257,98 +115,100 @@ export default function VendorProducts() {
   } = useDisclosure();
 
   const toast = useToast();
-  const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
-  // Handle image selection
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
+  // Pagination object with default values
+  const pagination = vendorProducts?.pagination || {
+    total: 0,
+    page: 1,
+    pages: 0,
+    hasNext: false,
+    hasPrev: false,
+    limit: 10,
+  };
 
-    files.forEach((file) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const newImage: ImageFile = {
-            file,
-            preview: reader.result as string,
-            id: `new-${Date.now()}-${Math.random()}`,
+  // Image handling
+  const handleImageSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files || []);
+
+      files.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const newImage: ImageFile = {
+              file,
+              preview: reader.result as string,
+              id: `new-${Date.now()}-${Math.random()}`,
+            };
+            setSelectedImages((prev) => [...prev, newImage]);
           };
-          setSelectedImages((prev) => [...prev, newImage]);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    // Reset the input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  // Handle image removal
-  const handleRemoveImage = (imageId: string, isExisting = false) => {
-    if (isExisting) {
-      setImagesToDelete((prev) => [...prev, imageId]);
-      if (editingProduct) {
-        setEditingProduct({
-          ...editingProduct,
-          images: editingProduct.images.filter((img) => img !== imageId),
-        });
-      }
-    } else {
-      const imageToRemove = selectedImages.find((img) => img.id === imageId);
-      if (imageToRemove) {
-        URL.revokeObjectURL(imageToRemove.preview);
-      }
-      setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
-    }
-  };
-
-  const handleConfirmDelete = () => {
-    if (productToDelete) {
-      deleteMutation.mutate(productToDelete._id, {
-        onSuccess: (response) => {
-          toast({
-            title: 'Product deleted',
-            description:
-              response?.message || `${productToDelete.name} has been deleted.`,
-            status: 'success',
-            duration: 3000,
-            isClosable: true,
-          });
-          onDeleteClose();
-          setProductToDelete(undefined);
-        },
-        onError: (error) => {
-          toast({
-            title: 'Delete failed',
-            description: error?.message || 'Failed to delete product.',
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
-        },
+          reader.readAsDataURL(file);
+        }
       });
-    }
-  };
 
-  const handleView = (product: ProductPopulated) => {
-    setSelectedProductId(product._id);
-    setIsEditMode(false);
-    onDrawerOpen();
-  };
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    []
+  );
 
-  const handleEdit = (product: ProductPopulated) => {
-    setSelectedProductId(product._id);
-    setEditingProduct({ ...product });
-    setSelectedImages([]);
-    setImagesToDelete([]);
-    setIsEditMode(true);
-    onDrawerOpen();
-  };
+  const handleRemoveImage = useCallback(
+    (imageId: string, isExisting = false) => {
+      if (isExisting) {
+        setImagesToDelete((prev) => [...prev, imageId]);
+        if (editingProduct) {
+          setEditingProduct({
+            ...editingProduct,
+            images: editingProduct.images.filter((img) => img !== imageId),
+          });
+        }
+      } else {
+        const imageToRemove = selectedImages.find((img) => img.id === imageId);
+        if (imageToRemove) {
+          URL.revokeObjectURL(imageToRemove.preview);
+        }
+        setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
+      }
+    },
+    [editingProduct, selectedImages]
+  );
+
+  // Product actions
+  const handleView = useCallback(
+    (product: Product) => {
+      setSelectedProduct(product);
+      setIsEditMode(false);
+      onDrawerOpen();
+    },
+    [onDrawerOpen]
+  );
+
+  const handleEdit = useCallback(
+    (product: Product) => {
+      setSelectedProduct(product as Product);
+      setEditingProduct({ ...product });
+      setSelectedImages([]);
+      setImagesToDelete([]);
+      setIsEditMode(true);
+      onDrawerOpen();
+    },
+    [onDrawerOpen]
+  );
+
+  const handleDelete = useCallback(
+    (product: Product) => {
+      setProductToDelete(product);
+      onDeleteOpen();
+    },
+    [onDeleteOpen]
+  );
 
   const handleDrawerClose = useCallback(() => {
     onDrawerClose();
-    setSelectedProductId('');
+    setSelectedProduct(null);
     setEditingProduct(null);
     setIsEditMode(false);
 
@@ -358,38 +218,46 @@ export default function VendorProducts() {
     setImagesToDelete([]);
   }, [onDrawerClose, selectedImages]);
 
-  const handleDelete = (product: ProductPopulated) => {
-    setProductToDelete(product);
-    onDeleteOpen();
-  };
+  const handleToggleStatus = useCallback(
+    (productId: string) => {
+      const product = vendorProducts?.products.find((p) => p._id === productId);
 
-  const handlePreviousPage = () => {
-    if (pagination.hasPrev) {
-      setCurrentPage(currentPage - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handleNextPage = () => {
-    if (pagination.hasNext) {
-      setCurrentPage(currentPage + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+      toggleMutation.mutate(productId, {
+        onSuccess: () => {
+          toast({
+            title: 'Status Updated',
+            description: `${product?.name || 'Product'} has been ${
+              product?.isActive ? 'deactivated' : 'activated'
+            }.`,
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+        },
+        onError: () => {
+          toast({
+            title: 'Error',
+            description: 'Failed to update product status.',
+            status: 'error',
+            duration: 3000,
+            isClosable: true,
+          });
+        },
+      });
+    },
+    [toggleMutation, toast, vendorProducts?.products]
+  );
 
   const handleSaveEdit = useCallback(() => {
     if (!editingProduct) return;
 
-    const productData: Partial<CreateProductInput> = {
+    const productData: Partial<CreateProductRequest> = {
       name: editingProduct.name,
       description: editingProduct.description,
       price: editingProduct.price,
       quantityInStock: editingProduct.quantityInStock,
       discount: editingProduct.discount,
-      category:
-        typeof editingProduct.category === 'object'
-          ? editingProduct.category._id
-          : editingProduct.category,
+      category: editingProduct.category._id,
     };
 
     if (!productData.category) {
@@ -403,13 +271,6 @@ export default function VendorProducts() {
       return;
     }
 
-    if (imagesToDelete.length > 0) {
-      (
-        productData as CreateProductInput & { imagesToDelete: string[] }
-      ).imagesToDelete = imagesToDelete;
-    }
-
-    // Prepare files to upload (new images)
     const filesToUpload = selectedImages.map((img) => img.file);
 
     updateMutation.mutate(
@@ -430,7 +291,6 @@ export default function VendorProducts() {
           handleDrawerClose();
         },
         onError: (error) => {
-          console.error('Update error:', error);
           toast({
             title: 'Update failed',
             description: error?.message || 'Failed to update product.',
@@ -444,95 +304,64 @@ export default function VendorProducts() {
   }, [
     editingProduct,
     selectedImages,
-    imagesToDelete,
     updateMutation,
     toast,
     handleDrawerClose,
   ]);
 
-  const handleToggleStatus = useCallback(
-    (productId: string, productName: string, currentStatus: boolean) => {
-      toggleMutation.mutate(productId, {
-        onSuccess: () => {
+  const handleConfirmDelete = useCallback(() => {
+    if (productToDelete) {
+      deleteMutation.mutate(productToDelete._id, {
+        onSuccess: (response) => {
           toast({
-            title: 'Status Updated',
-            description: `${productName} has been ${
-              currentStatus ? 'deactivated' : 'activated'
-            }.`,
+            title: 'Product deleted',
+            description:
+              response?.message || `${productToDelete.name} has been deleted.`,
             status: 'success',
             duration: 3000,
-            position: 'top-right',
             isClosable: true,
           });
+          onDeleteClose();
+          setProductToDelete(null);
         },
-        onError: () => {
+        onError: (error) => {
           toast({
-            title: 'Error',
-            description: 'Failed to update product status.',
+            title: 'Delete failed',
+            description: error?.message || 'Failed to delete product.',
             status: 'error',
-            duration: 3000,
-            position: 'top-right',
+            duration: 5000,
             isClosable: true,
           });
         },
       });
-    },
-    [toggleMutation, toast]
-  );
+    }
+  }, [deleteMutation, toast, onDeleteClose, productToDelete]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(price);
-  };
+  // Pagination handlers
+  const handlePreviousPage = useCallback(() => {
+    if (pagination.hasPrev) {
+      setCurrentPage(currentPage - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [pagination.hasPrev, currentPage]);
 
-  const calculateDiscountedPrice = (price: number, discount: number) => {
-    return price - (price * discount) / 100;
-  };
+  const handleNextPage = useCallback(() => {
+    if (pagination.hasNext) {
+      setCurrentPage(currentPage + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [pagination.hasNext, currentPage]);
 
-  const getStatusColor = (isActive: boolean) => {
-    return isActive ? 'green' : 'red';
-  };
-
-  const getStockStatus = (stock: number) => {
-    if (stock === 0) return { text: 'Out of Stock', color: 'red' };
-    if (stock < 10) return { text: 'Low Stock', color: 'orange' };
-    return { text: 'In Stock', color: 'green' };
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const renderRating = (rating: number) => {
+  if (isLoading) {
     return (
-      <HStack spacing={1}>
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            size={12}
-            fill={i < Math.floor(rating) ? '#F6AD55' : 'none'}
-            color={i < Math.floor(rating) ? '#F6AD55' : '#CBD5E0'}
-          />
-        ))}
-        <Text fontSize='xs' color={'gray.300'}>
-          ({rating.toFixed(1)})
-        </Text>
-      </HStack>
-    );
-  };
-
-  if (isLoading)
-    return (
-      <Center textAlign='center' fontSize='lg'>
-        Loading please wait...
+      <Center py={20}>
+        <VStack spacing={4}>
+          <Spinner size='xl' />
+          <Text>Loading products...</Text>
+        </VStack>
       </Center>
     );
+  }
 
   return (
     <Box>
@@ -546,17 +375,15 @@ export default function VendorProducts() {
         <Heading size='lg' fontWeight='bold'>
           Products Catalog
         </Heading>
-        <Flex gap={4} direction={{ base: 'column', sm: 'row' }}>
-          <Button
-            leftIcon={<Package size={16} />}
-            colorScheme='blue'
-            size='md'
-            w={{ base: 'full', sm: 'auto' }}
-            onClick={() => navigate('/store-manager/create-product')}
-          >
-            Add Product
-          </Button>
-        </Flex>
+        <Button
+          leftIcon={<Package size={16} />}
+          colorScheme='blue'
+          size='md'
+          w={{ base: 'full', sm: 'auto' }}
+          onClick={() => navigate('/store-manager/create-product')}
+        >
+          Add Product
+        </Button>
       </Flex>
 
       <TableContainer>
@@ -583,195 +410,43 @@ export default function VendorProducts() {
                 </Td>
               </Tr>
             ) : (
-              vendorProducts?.products.map((pdt) => {
-                const stockStatus = getStockStatus(pdt.quantityInStock);
-                const discount = pdt.discount ?? 0;
-                const averageRating = pdt.averageRating ?? 0;
-                return (
-                  <Tr key={pdt._id} _hover={{ bg: 'gray.50' }}>
-                    <Td>
-                      <HStack spacing={3}>
-                        <Image
-                          src={pdt.images?.[0] || '/placeholder-image.jpg'}
-                          alt={pdt.name}
-                          w='50px'
-                          h='50px'
-                          objectFit='cover'
-                          borderRadius='md'
-                          fallbackSrc='/placeholder-image.jpg'
-                        />
-                        <VStack align='start' spacing={1}>
-                          <Text fontWeight='medium' noOfLines={1} maxW='200px'>
-                            {pdt.name}
-                          </Text>
-                          <Text
-                            fontSize='sm'
-                            color='gray.500'
-                            noOfLines={1}
-                            maxW='200px'
-                          >
-                            {pdt.description}
-                          </Text>
-                          {discount > 0 && (
-                            <Badge colorScheme='red' size='sm'>
-                              -{discount}%
-                            </Badge>
-                          )}
-                        </VStack>
-                      </HStack>
-                    </Td>
-                    <Td>
-                      <Tag size='sm' colorScheme='blue' variant='subtle'>
-                        {pdt.category.name || 'No Category'}
-                      </Tag>
-                    </Td>
-                    <Td>
-                      <VStack align='start' spacing={1}>
-                        {discount > 0 ? (
-                          <>
-                            <Text fontWeight='bold' color='green.500'>
-                              {formatPrice(
-                                calculateDiscountedPrice(pdt.price, discount)
-                              )}
-                            </Text>
-                            <Text
-                              fontSize='xs'
-                              textDecoration='line-through'
-                              color='gray.400'
-                            >
-                              {formatPrice(pdt.price)}
-                            </Text>
-                          </>
-                        ) : (
-                          <Text fontWeight='bold' color='green.500'>
-                            {formatPrice(pdt.price)}
-                          </Text>
-                        )}
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <VStack align='start' spacing={1}>
-                        <Badge colorScheme={stockStatus.color} size='sm'>
-                          {pdt.quantityInStock}
-                        </Badge>
-                        <Text fontSize='xs' color={`${stockStatus.color}.500`}>
-                          {stockStatus.text}
-                        </Text>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <VStack align='start' spacing={2}>
-                        <Badge
-                          colorScheme={getStatusColor(pdt.isActive)}
-                          size='sm'
-                          p={2}
-                          borderRadius='xl'
-                        >
-                          {pdt.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Button
-                          size='xs'
-                          colorScheme={pdt.isActive ? 'red' : 'green'}
-                          variant='outline'
-                          isLoading={
-                            toggleMutation.variables === pdt._id &&
-                            toggleMutation.isPending
-                          }
-                          loadingText={
-                            pdt.isActive ? 'Deactivating...' : 'Activating...'
-                          }
-                          onClick={() =>
-                            handleToggleStatus(pdt._id, pdt.name, pdt.isActive)
-                          }
-                        >
-                          {pdt.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <VStack align='start' spacing={1}>
-                        {averageRating > 0 && renderRating(averageRating)}
-                        <Text fontSize='xs' color='gray.500'>
-                          {pdt.totalReviews || 0} reviews
-                        </Text>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <VStack align='start' spacing={1}>
-                        <Text fontSize='sm' fontWeight='medium'>
-                          {pdt.vendor?.name || 'Unknown Vendor'}
-                        </Text>
-                        <Text fontSize='xs' color='gray.500'>
-                          {pdt.vendor?.email || 'No Email'}
-                        </Text>
-                      </VStack>
-                    </Td>
-                    <Td>
-                      <HStack spacing={1}>
-                        <IconButton
-                          aria-label='View product details'
-                          icon={<Eye size={14} />}
-                          size='sm'
-                          variant='ghost'
-                          onClick={() => handleView(pdt)}
-                        />
-                        <IconButton
-                          aria-label='Delete product'
-                          icon={<Trash2 size={14} />}
-                          size='sm'
-                          variant='ghost'
-                          colorScheme='red'
-                          onClick={() => handleDelete(pdt)}
-                        />
-                      </HStack>
-                    </Td>
-                  </Tr>
-                );
-              })
+              vendorProducts?.products.map((product) => (
+                <ProductRow
+                  key={product._id}
+                  product={product}
+                  onView={handleView}
+                  onDelete={handleDelete}
+                  onToggleStatus={handleToggleStatus}
+                  isTogglingStatus={
+                    toggleMutation.variables === product._id &&
+                    toggleMutation.isPending
+                  }
+                />
+              ))
             )}
           </Tbody>
         </Table>
       </TableContainer>
 
-      {/* Unified Drawer for View/Edit */}
-      <Drawer
-        isOpen={isDrawerOpen}
-        placement='right'
-        onClose={handleDrawerClose}
-        size='md'
-      >
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader>
-            {isEditMode ? 'Edit Product' : 'Product Details'}
-          </DrawerHeader>
-          <DrawerBody>
-            {isSelectedProductLoading ? (
-              <Center py={10}>
-                <VStack spacing={4}>
-                  <Spinner size='lg' />
-                  <Text>Loading product details...</Text>
-                </VStack>
-              </Center>
-            ) : selectedProductError ? (
-              <Center py={10}>
-                <VStack spacing={4}>
-                  <Text color='red.500'>Error loading product details</Text>
-                  <Button
-                    size='sm'
-                    onClick={() => setSelectedProductId(selectedProductId)}
-                  >
-                    Retry
-                  </Button>
-                </VStack>
-              </Center>
-            ) : selectedProductData || editingProduct ? (
+      {/* Drawer for viewing/editing product */}
+      {selectedProduct && (
+        <Drawer
+          isOpen={isDrawerOpen}
+          placement='right'
+          onClose={handleDrawerClose}
+          size='md'
+        >
+          <DrawerOverlay />
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader>
+              {isEditMode ? 'Edit Product' : 'Product Details'}
+            </DrawerHeader>
+            <DrawerBody>
               <VStack spacing={4} align='stretch'>
                 {isEditMode && editingProduct ? (
                   // Edit Form
                   <>
-                    {/* Image Gallery Section */}
                     <ImageGallery
                       existingImages={editingProduct.images || []}
                       newImages={selectedImages}
@@ -784,7 +459,6 @@ export default function VendorProducts() {
                       onAddImages={() => fileInputRef.current?.click()}
                       isEditing={true}
                     />
-                    {/* Hidden File Input */}
                     <Input
                       ref={fileInputRef}
                       type='file'
@@ -793,6 +467,7 @@ export default function VendorProducts() {
                       display='none'
                       onChange={handleImageSelect}
                     />
+
                     <FormControl>
                       <FormLabel>Product Name</FormLabel>
                       <Input
@@ -805,6 +480,7 @@ export default function VendorProducts() {
                         }
                       />
                     </FormControl>
+
                     <FormControl>
                       <FormLabel>Description</FormLabel>
                       <Textarea
@@ -817,30 +493,21 @@ export default function VendorProducts() {
                         }
                       />
                     </FormControl>
-                    // Replace your Category FormControl section with this fixed
-                    version:
+
                     <FormControl>
                       <FormLabel>Category</FormLabel>
                       {categories ? (
                         <Select
                           value={
-                            typeof editingProduct.category === 'object'
-                              ? editingProduct.category._id
-                              : editingProduct.category || ''
+                            typeof editingProduct.category === 'string'
+                              ? editingProduct.category
+                              : editingProduct.category._id || ''
                           }
                           onChange={(e) => {
-                            const selectedCategoryId = e.target.value;
-                            const selectedCategory = categories.find(
-                              (c) => c._id === selectedCategoryId
-                            );
-
-                            if (selectedCategory) {
-                              setEditingProduct({
-                                ...editingProduct,
-
-                                category: selectedCategory,
-                              });
-                            }
+                            setEditingProduct({
+                              ...editingProduct,
+                              category: e.target.value,
+                            });
                           }}
                         >
                           <option value=''>Select a category</option>
@@ -854,6 +521,7 @@ export default function VendorProducts() {
                         <Spinner size='sm' />
                       )}
                     </FormControl>
+
                     <HStack spacing={4} w='100%'>
                       <FormControl>
                         <FormLabel>Price</FormLabel>
@@ -885,6 +553,7 @@ export default function VendorProducts() {
                         </NumberInput>
                       </FormControl>
                     </HStack>
+
                     <HStack spacing={4} w='100%'>
                       <FormControl>
                         <FormLabel>Discount (%)</FormLabel>
@@ -921,7 +590,7 @@ export default function VendorProducts() {
                   // View Mode
                   <>
                     <ImageGallery
-                      existingImages={selectedProductData?.images || []}
+                      existingImages={selectedProduct.images || []}
                       newImages={[]}
                       onRemoveExisting={() => {}}
                       onRemoveNew={() => {}}
@@ -929,132 +598,117 @@ export default function VendorProducts() {
                       isEditing={false}
                     />
 
-                    <Heading size='md'>{selectedProductData?.name}</Heading>
-                    <Text color={'gray.400'}>
-                      {selectedProductData?.description}
-                    </Text>
-
+                    <Heading size='md'>{selectedProduct.name}</Heading>
+                    <Text color='gray.400'>{selectedProduct.description}</Text>
                     <Divider />
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Category:</Text>
+                    <DetailItem label='Category'>
                       <Badge colorScheme='blue'>
-                        {selectedProductData?.category?.name || 'No Category'}
+                        {typeof selectedProduct.category === 'string'
+                          ? selectedProduct.category
+                          : selectedProduct.category?.name || 'No Category'}
                       </Badge>
-                    </HStack>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Price:</Text>
-                      <Text>
-                        {formatPrice(selectedProductData?.price || 0)}
-                      </Text>
-                    </HStack>
+                    <DetailItem label='Price'>
+                      <Text>{formatPrice(selectedProduct.price || 0)}</Text>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Stock:</Text>
+                    <DetailItem label='Stock'>
                       <Badge
                         colorScheme={
-                          getStockStatus(
-                            selectedProductData?.quantityInStock || 0
-                          ).color
+                          getStockStatus(selectedProduct.quantityInStock || 0)
+                            .color
                         }
                       >
-                        {selectedProductData?.quantityInStock || 0}
+                        {selectedProduct.quantityInStock || 0}
                       </Badge>
-                    </HStack>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Status:</Text>
+                    <DetailItem label='Status'>
                       <Badge
                         colorScheme={getStatusColor(
-                          selectedProductData?.isActive || false
+                          selectedProduct.isActive || false
                         )}
                       >
-                        {selectedProductData?.isActive ? 'Active' : 'Inactive'}
+                        {selectedProduct.isActive ? 'Active' : 'Inactive'}
                       </Badge>
-                    </HStack>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Rating:</Text>
+                    <DetailItem label='Rating'>
                       <Box>
-                        {renderRating(selectedProductData?.averageRating || 0)}
+                        {renderRating(selectedProduct.averageRating || 0)}
                       </Box>
-                    </HStack>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Total Reviews:</Text>
-                      <Text>{selectedProductData?.totalReviews || 0}</Text>
-                    </HStack>
+                    <DetailItem label='Total Reviews'>
+                      <Text>{selectedProduct.totalReviews || 0}</Text>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Vendor:</Text>
+                    <DetailItem label='Vendor'>
                       <VStack spacing={0} align='end'>
                         <Text fontSize='sm'>
-                          {selectedProductData?.vendor?.name || 'Unknown'}
+                          {selectedProduct.vendor?.name || 'Unknown'}
                         </Text>
-                        <Text fontSize='xs' color={'gray.400'}>
-                          {selectedProductData?.vendor?.email || 'No Email'}
+                        <Text fontSize='xs' color='gray.400'>
+                          {selectedProduct.vendor?.email || 'No Email'}
                         </Text>
                       </VStack>
-                    </HStack>
+                    </DetailItem>
 
-                    {selectedProductData?.discount &&
-                      selectedProductData.discount > 0 && (
-                        <HStack justify='space-between'>
-                          <Text fontWeight='medium'>Discount:</Text>
+                    {selectedProduct.discount &&
+                      selectedProduct.discount > 0 && (
+                        <DetailItem label='Discount'>
                           <Badge colorScheme='red'>
-                            {selectedProductData.discount}%
+                            {selectedProduct.discount}%
                           </Badge>
-                        </HStack>
+                        </DetailItem>
                       )}
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Created:</Text>
+                    <DetailItem label='Created'>
                       <Text fontSize='sm'>
-                        {formatDate(selectedProductData?.createdAt || '')}
+                        {formatDate(selectedProduct.createdAt || '')}
                       </Text>
-                    </HStack>
+                    </DetailItem>
 
-                    <HStack justify='space-between'>
-                      <Text fontWeight='medium'>Updated:</Text>
+                    <DetailItem label='Updated'>
                       <Text fontSize='sm'>
-                        {formatDate(selectedProductData?.updatedAt || '')}
+                        {formatDate(selectedProduct.updatedAt || '')}
                       </Text>
-                    </HStack>
+                    </DetailItem>
                   </>
                 )}
               </VStack>
-            ) : null}
-          </DrawerBody>
-          <DrawerFooter>
-            <Button variant='outline' mr={3} onClick={handleDrawerClose}>
-              {isEditMode ? 'Cancel' : 'Close'}
-            </Button>
-            {isEditMode ? (
-              <Button
-                colorScheme='blue'
-                onClick={handleSaveEdit}
-                isLoading={updateMutation.isPending}
-                loadingText='Saving...'
-              >
-                Save Changes
+            </DrawerBody>
+            <DrawerFooter>
+              <Button variant='outline' mr={3} onClick={handleDrawerClose}>
+                {isEditMode ? 'Cancel' : 'Close'}
               </Button>
-            ) : (
-              <Button
-                colorScheme='blue'
-                isDisabled={!selectedProductData}
-                onClick={() => {
-                  if (selectedProductData) {
-                    handleEdit(selectedProductData);
-                  }
-                }}
-              >
-                Edit Product
-              </Button>
-            )}
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+              {isEditMode ? (
+                <Button
+                  colorScheme='blue'
+                  onClick={handleSaveEdit}
+                  isLoading={updateMutation.isPending}
+                  loadingText='Saving...'
+                >
+                  Save Changes
+                </Button>
+              ) : (
+                <Button
+                  colorScheme='blue'
+                  onClick={() => {
+                    if (selectedProduct) {
+                      handleEdit(selectedProduct);
+                    }
+                  }}
+                >
+                  Edit Product
+                </Button>
+              )}
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

@@ -92,7 +92,7 @@ const productSchema = new mongoose.Schema(
         trim: true,
       },
     ],
-    categoryId: {
+    category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       required: true,
@@ -119,7 +119,7 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    vendorId: {
+    vendor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
@@ -128,7 +128,7 @@ const productSchema = new mongoose.Schema(
 );
 
 // Indexes for better performance
-productSchema.index({ categoryId: 1 });
+productSchema.index({ category: 1 });
 productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ price: 1 });
 productSchema.index({ isActive: 1, isDeleted: 1 });
@@ -170,10 +170,10 @@ productSchema.pre('save', async function (next) {
 
 // Pre-save middleware for category validation
 productSchema.pre('save', async function (next) {
-  if (this.categoryId && this.isModified('categoryId')) {
-    const categoryExists = await Category.findById(this.categoryId);
+  if (this.category && this.isModified('category')) {
+    const categoryExists = await Category.findById(this.category);
     if (!categoryExists) {
-      return next(new Error(`Category with ID ${this.categoryId} not found`));
+      return next(new Error(`Category with ID ${this.category} not found`));
     }
   }
   next();
@@ -199,7 +199,7 @@ productSchema.query.active = function () {
 };
 
 productSchema.query.byVendor = function (vendorId) {
-  return this.where({ vendorId: vendorId });
+  return this.where({ vendor: vendorId });
 };
 
 // ============ STATIC METHODS ============
@@ -215,7 +215,7 @@ productSchema.statics.createProducts = async function (productsData, vendorId) {
 
   const productsToCreate = productsArray.map((product) => ({
     ...product,
-    vendorId: vendorId,
+    vendor: vendorId,
   }));
 
   const createdProducts = await this.create(productsToCreate);
@@ -223,8 +223,8 @@ productSchema.statics.createProducts = async function (productsData, vendorId) {
   const populatedProducts = await this.find({
     _id: { $in: createdProducts.map((p) => p._id) },
   })
-    .populate('categoryId', 'name slug image')
-    .populate('vendorId', 'name email')
+    .populate('category', 'name slug image')
+    .populate('vendor', 'name email')
     .lean();
 
   return Array.isArray(productsData) ? populatedProducts : populatedProducts[0];
@@ -241,7 +241,7 @@ productSchema.statics.updateById = async function (id, updateData, user) {
   }
 
   // Check permissions
-  if (user.role !== 'admin' && product.vendorId.toString() !== user.id) {
+  if (user.role !== 'admin' && product.vendor.toString() !== user.id) {
     throw new Error('You do not have permission to update this product');
   }
 
@@ -255,8 +255,8 @@ productSchema.statics.updateById = async function (id, updateData, user) {
     new: true,
     runValidators: true,
     populate: [
-      { path: 'categoryId', select: 'name slug image' },
-      { path: 'vendorId', select: 'name email' },
+      { path: 'category', select: 'name slug image' },
+      { path: 'vendor', select: 'name email' },
     ],
   });
 };
@@ -269,7 +269,7 @@ productSchema.statics.buildFilter = function (queryParams) {
     maxPrice,
     search,
     isActive,
-    vendorId,
+    vendor,
     material,
     size,
     color,
@@ -279,7 +279,7 @@ productSchema.statics.buildFilter = function (queryParams) {
 
   // Basic filters
   if (isActive !== undefined) filter.isActive = isActive === 'true';
-  if (vendorId) filter.vendorId = vendorId;
+  if (vendor) filter.vendor = vendor;
 
   // Price range filter
   if (minPrice || maxPrice) {
@@ -339,7 +339,7 @@ productSchema.statics.getPaginated = async function (
   if (categoryPromise) {
     const categoryId = await categoryPromise;
     if (categoryId) {
-      filter.categoryId = categoryId;
+      filter.category = categoryId;
     } else {
       return {
         products: [],
@@ -355,8 +355,8 @@ productSchema.statics.getPaginated = async function (
     .sort(sort)
     .skip(skip)
     .limit(limitNum)
-    .populate('categoryId', 'name slug image')
-    .populate('vendorId', 'name email')
+    .populate('category', 'name slug image')
+    .populate('vendor', 'name email')
     .lean();
 
   return {
@@ -379,8 +379,8 @@ productSchema.statics.findActiveById = async function (id) {
   }
 
   return this.findOne({ _id: id, isDeleted: false })
-    .populate('categoryId', 'name slug image')
-    .populate('vendorId', 'name email')
+    .populate('category', 'name slug image')
+    .populate('vendor', 'name email')
     .lean();
 };
 
@@ -391,7 +391,7 @@ productSchema.statics.softDelete = async function (id, user) {
   }
 
   const filter = { _id: id, isDeleted: false };
-  if (user.role !== 'admin') filter.vendorId = user.id;
+  if (user.role !== 'admin') filter.vendor = user.id;
 
   const product = await this.findOneAndUpdate(
     filter,
@@ -416,7 +416,7 @@ productSchema.statics.getByVendor = function (
   queryParams = {},
   options = {}
 ) {
-  return this.getPaginated({ ...queryParams, vendorId: vendorId }, options);
+  return this.getPaginated({ ...queryParams, vendor: vendorId }, options);
 };
 
 // Get products by category

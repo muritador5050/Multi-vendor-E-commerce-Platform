@@ -1,5 +1,22 @@
-import type { Category } from './Category';
-import type { Vendor } from './vendor';
+export interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  slug: string;
+  price: number;
+  discount: number;
+  quantityInStock: number;
+  images: string[];
+  category: { _id: string; name: string; slug?: string; image?: string };
+  attributes: Record<string, string>;
+  averageRating: number;
+  totalReviews: number;
+  isActive: boolean;
+  isDeleted: boolean;
+  vendor?: { _id: string; name: string; email: string };
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ProductDocument {
   _id: string;
@@ -15,30 +32,10 @@ export interface ProductDocument {
   averageRating: number;
   totalReviews: number;
   isActive: boolean;
-  isDeleted: boolean;
+  isDeleted?: boolean;
   vendor?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  slug: string;
-  price: number;
-  discount: number;
-  quantityInStock: number;
-  images: string[];
-  category: Category;
-  attributes: Record<string, string>;
-  averageRating: number;
-  totalReviews: number;
-  isActive: boolean;
-  isDeleted: boolean;
-  vendor?: Vendor;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateProductRequest {
@@ -46,8 +43,8 @@ export interface CreateProductRequest {
   description?: string;
   price: number;
   discount?: number;
-  quantityInStock?: number;
-  images: string[];
+  quantityInStock: number;
+  images?: string[];
   category: string;
   attributes?: Record<string, string>;
   vendor?: string;
@@ -63,8 +60,8 @@ export interface ProductFormData {
   price: number;
   discount: number;
   quantityInStock: number;
-  images: string[];
-  categoryId: string;
+  images: File[];
+  category: string;
   attributes: Record<string, string>;
   vendorId?: string;
 }

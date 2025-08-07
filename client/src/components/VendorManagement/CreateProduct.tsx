@@ -27,12 +27,8 @@ import {
 import { AddIcon, CloseIcon, AttachmentIcon } from '@chakra-ui/icons';
 import { useCategories } from '@/context/CategoryContextService';
 import { useCreateProduct } from '@/context/ProductContextService';
-import type { CreateProductInput } from '@/type/product';
-
-interface Category {
-  _id: string;
-  name: string;
-}
+import type { ProductFormData } from '@/type/product';
+import type { Category } from '@/type/Category';
 
 interface FormErrors {
   name?: string;
@@ -40,18 +36,6 @@ interface FormErrors {
   category?: string;
   discount?: string;
   quantityInStock?: string;
-  images?: string;
-}
-
-interface ProductFormData {
-  name: string;
-  description: string;
-  price: string;
-  discount: string;
-  quantityInStock: string;
-  category: string;
-  images: File[];
-  attributes: Record<string, string>;
 }
 
 const CreateProductPage: React.FC = () => {
@@ -59,9 +43,9 @@ const CreateProductPage: React.FC = () => {
     {
       name: '',
       description: '',
-      price: '',
-      discount: '0',
-      quantityInStock: '0',
+      price: 0,
+      discount: 0,
+      quantityInStock: 0,
       category: '',
       images: [],
       attributes: {},
@@ -82,9 +66,9 @@ const CreateProductPage: React.FC = () => {
   const createEmptyProduct = (): ProductFormData => ({
     name: '',
     description: '',
-    price: '',
-    discount: '0',
-    quantityInStock: '0',
+    price: 0,
+    discount: 0,
+    quantityInStock: 0,
     category: '',
     images: [],
     attributes: {},
@@ -115,7 +99,7 @@ const CreateProductPage: React.FC = () => {
   const updateProduct = (
     index: number,
     field: keyof ProductFormData,
-    value: string | File[] | Record<string, string>
+    value: string | number | (string | File)[] | Record<string, string>
   ) => {
     const updated = [...formData];
     updated[index] = { ...updated[index], [field]: value };
@@ -203,8 +187,11 @@ const CreateProductPage: React.FC = () => {
         productErrors.name = 'Product name is required';
       }
 
-      const price = parseFloat(product.price);
-      if (!product.price || isNaN(price) || price <= 0) {
+      if (
+        !product.price ||
+        isNaN(Number(product.price)) ||
+        Number(product.price) <= 0
+      ) {
         productErrors.price = 'Valid price is required';
       }
 
@@ -212,7 +199,7 @@ const CreateProductPage: React.FC = () => {
         productErrors.category = 'Category is required';
       }
 
-      const discount = parseFloat(product.discount);
+      const discount = Number(product.discount);
       if (
         product.discount &&
         (isNaN(discount) || discount < 0 || discount > 100)
@@ -220,7 +207,7 @@ const CreateProductPage: React.FC = () => {
         productErrors.discount = 'Discount must be between 0 and 100';
       }
 
-      const stock = parseInt(product.quantityInStock);
+      const stock = Number(product.quantityInStock);
       if (product.quantityInStock && (isNaN(stock) || stock < 0)) {
         productErrors.quantityInStock = 'Stock quantity cannot be negative';
       }
@@ -240,19 +227,19 @@ const CreateProductPage: React.FC = () => {
 
     try {
       const promises = formData.map((product) => {
-        const productData: CreateProductInput = {
+        const productData = {
           name: product.name.trim(),
           description: product.description.trim(),
-          price: parseFloat(product.price),
-          discount: parseFloat(product.discount) || 0,
-          quantityInStock: parseInt(product.quantityInStock) || 0,
+          price: Number(product.price),
+          discount: Number(product.discount) || 0,
+          quantityInStock: Number(product.quantityInStock) || 1,
           category: product.category,
           attributes: product.attributes,
         };
 
         return createProduct.mutateAsync({
           data: productData,
-          files: product.images.length > 0 ? product.images : undefined,
+          files: product?.images.length > 0 ? product.images : undefined,
         });
       });
 
@@ -329,7 +316,7 @@ const CreateProductPage: React.FC = () => {
                   w='full'
                 >
                   <FormControl isRequired isInvalid={!!errors[index]?.name}>
-                    <FormLabel>Product Name </FormLabel>
+                    <FormLabel>Product Name</FormLabel>
                     <Input
                       value={product.name}
                       onChange={(e) =>
@@ -385,7 +372,7 @@ const CreateProductPage: React.FC = () => {
                       type='number'
                       value={product.price}
                       onChange={(e) =>
-                        updateProduct(index, 'price', e.target.value)
+                        updateProduct(index, 'price', Number(e.target.value))
                       }
                       placeholder='0.00'
                       step='0.01'
@@ -399,7 +386,7 @@ const CreateProductPage: React.FC = () => {
                       type='number'
                       value={product.discount}
                       onChange={(e) =>
-                        updateProduct(index, 'discount', e.target.value)
+                        updateProduct(index, 'discount', Number(e.target.value))
                       }
                       placeholder='0'
                       min='0'
@@ -419,7 +406,11 @@ const CreateProductPage: React.FC = () => {
                       type='number'
                       value={product.quantityInStock}
                       onChange={(e) =>
-                        updateProduct(index, 'quantityInStock', e.target.value)
+                        updateProduct(
+                          index,
+                          'quantityInStock',
+                          Number(e.target.value)
+                        )
                       }
                       placeholder='0'
                       min='0'
@@ -452,18 +443,18 @@ const CreateProductPage: React.FC = () => {
                       Select Images
                     </Button>
                     <Text fontSize='sm' color='gray.500'>
-                      {product.images.length} file
-                      {product.images.length !== 1 ? 's' : ''} selected
+                      {product.images?.length} file
+                      {product.images?.length !== 1 ? 's' : ''} selected
                     </Text>
                   </HStack>
 
-                  {product.images.length > 0 && (
+                  {product.images?.length > 0 && (
                     <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-                      {product.images.map((file, imageIndex) => (
+                      {product.images?.map((file, imageIndex) => (
                         <Box key={imageIndex} position='relative'>
                           <Image
                             src={URL.createObjectURL(file)}
-                            alt={file.name}
+                            alt={`Product image ${imageIndex + 1}`}
                             w='full'
                             h='100px'
                             objectFit='cover'
@@ -497,7 +488,11 @@ const CreateProductPage: React.FC = () => {
                       onChange={(e) =>
                         setAttributeInput((prev) => ({
                           ...prev,
-                          [index]: { ...prev[index], key: e.target.value },
+                          [index]: {
+                            ...prev[index],
+                            key: e.target.value,
+                            value: prev[index]?.value || '',
+                          },
                         }))
                       }
                       placeholder='Attribute name'
@@ -507,7 +502,11 @@ const CreateProductPage: React.FC = () => {
                       onChange={(e) =>
                         setAttributeInput((prev) => ({
                           ...prev,
-                          [index]: { ...prev[index], value: e.target.value },
+                          [index]: {
+                            ...prev[index],
+                            value: e.target.value,
+                            key: prev[index]?.key || '',
+                          },
                         }))
                       }
                       placeholder='Attribute value'

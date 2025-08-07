@@ -1,9 +1,8 @@
 import type { ApiResponse } from '@/type/ApiResponse';
 import type {
-  CreateProductInput,
+  CreateProductRequest,
   Product,
   ProductPaginatedResponse,
-  ProductPopulated,
   ProductQueryParams,
 } from '@/type/product';
 import { apiClient } from '@/utils/Api';
@@ -42,7 +41,7 @@ const fetchProductById = async (id: string): Promise<ApiResponse<Product>> => {
 
 const fetchProductsByCategory = async (
   categorySlug: string,
-  params: Omit<ProductQueryParams, 'category'> = {}
+  params: Omit<ProductQueryParams, 'categoryId'> = {}
 ): Promise<ApiResponse<Product[]>> => {
   const queryString = buildQueryString(params);
   const url = `/products/category/${categorySlug}${
@@ -66,7 +65,7 @@ const getVendorProductsForAdmin = async (
 };
 
 const getOwnVendorProducts = async (
-  params: Omit<ProductQueryParams, 'vendor'> = {}
+  params: Omit<ProductQueryParams, 'vendorId'> = {}
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
   const url = `/products/vendor/my-products${
@@ -77,7 +76,10 @@ const getOwnVendorProducts = async (
   >(url);
 };
 
-const createProduct = async (products: CreateProductInput, files?: File[]) => {
+const createProduct = async (
+  products: CreateProductRequest,
+  files?: File[]
+) => {
   return await apiClient.authenticatedFormDataRequest<
     ApiResponse<Product | Product[]>
   >(
@@ -97,7 +99,7 @@ const toggleProductStatus = async (
 
 const updateProduct = async (
   id: string,
-  product: Partial<CreateProductInput>,
+  product: Partial<CreateProductRequest>,
   files?: File[]
 ): Promise<ApiResponse<Product>> => {
   return await apiClient.authenticatedFormDataRequest<ApiResponse<Product>>(
@@ -193,11 +195,10 @@ export const useCreateProduct = () => {
       data,
       files,
     }: {
-      data: CreateProductInput;
+      data: CreateProductRequest;
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
-      // Invalidate all product-related queries to trigger fresh fetch
       queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
   });
@@ -215,19 +216,16 @@ export const useToggleProductStatus = () => {
       });
 
       // Snapshot the previous value
-      const previousProduct = queryClient.getQueryData<ProductPopulated>(
+      const previousProduct = queryClient.getQueryData<Product>(
         productKeys.item(productId)
       );
 
       // Optimistically update the cache
       if (previousProduct) {
-        queryClient.setQueryData<ProductPopulated>(
-          productKeys.item(productId),
-          {
-            ...previousProduct,
-            isActive: !previousProduct.isActive,
-          }
-        );
+        queryClient.setQueryData<Product>(productKeys.item(productId), {
+          ...previousProduct,
+          isActive: !previousProduct.isActive,
+        });
       }
 
       // Return context for rollback
@@ -235,7 +233,7 @@ export const useToggleProductStatus = () => {
     },
     onSuccess: (response, productId) => {
       // Update with the actual server response
-      queryClient.setQueryData<ProductPopulated>(
+      queryClient.setQueryData<Product>(
         productKeys.item(productId),
         (oldData) => {
           if (!oldData) return oldData;
@@ -271,7 +269,7 @@ export const useUpdateProduct = () => {
       files,
     }: {
       id: string;
-      product: Partial<CreateProductInput>;
+      product: Partial<CreateProductRequest>;
       files?: File[];
     }) => updateProduct(id, product, files),
     onMutate: async ({ id, product }) => {
@@ -319,7 +317,7 @@ export const useDeleteProduct = () => {
       });
 
       // Snapshot the previous value for rollback
-      const previousProduct = queryClient.getQueryData<ProductPopulated>(
+      const previousProduct = queryClient.getQueryData<Product>(
         productKeys.item(deletedId)
       );
 
