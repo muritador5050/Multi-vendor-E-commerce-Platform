@@ -207,7 +207,7 @@ const vendorSchema = new mongoose.Schema(
 
     verificationStatus: {
       type: String,
-      enum: ['pending', 'verified', 'rejected', 'suspended'],
+      enum: ['pending', 'approved', 'rejected', 'suspended'],
       default: 'pending',
       index: true,
     },

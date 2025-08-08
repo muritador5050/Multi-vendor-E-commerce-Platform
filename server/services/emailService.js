@@ -372,13 +372,14 @@ class EmailService {
 
   async sendVendorVerificationEmail(user, status, notes = null) {
     const dashboardUrl = `${process.env.FRONTEND_URL}/store-manager`;
+    const supportEmail = process.env.SUPPORT_EMAIL || 'support@example.com';
 
     let html, text, subject;
 
-    if (status === 'approved') {
-      subject = 'Vendor Account Approved - Welcome to Our Platform!';
-
-      html = `
+    switch (status) {
+      case 'approved':
+        subject = 'Vendor Account Approved - Welcome to Our Platform!';
+        html = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -416,15 +417,15 @@ class EmailService {
               </div>
               <div class="footer">
                 <p>&copy; ${new Date().getFullYear()} ${
-        process.env.APP_NAME
-      }. All rights reserved.</p>
+          process.env.APP_NAME
+        }. All rights reserved.</p>
               </div>
             </div>
           </body>
         </html>
       `;
 
-      text = `
+        text = `
         Congratulations ${user.name}!
         
         Your vendor account has been approved and verified!
@@ -443,10 +444,13 @@ class EmailService {
         
         ${process.env.APP_NAME}
       `;
-    } else if (status === 'rejected') {
-      subject = 'Vendor Account Application - Action Required';
+        text = `Your existing approved text template`;
+        break;
 
-      html = `
+      case 'rejected':
+        subject = 'Vendor Account Application - Action Required';
+
+        html = `
         <!DOCTYPE html>
         <html>
           <head>
@@ -501,15 +505,15 @@ class EmailService {
               </div>
               <div class="footer">
                 <p>&copy; ${new Date().getFullYear()} ${
-        process.env.APP_NAME
-      }. All rights reserved.</p>
+          process.env.APP_NAME
+        }. All rights reserved.</p>
               </div>
             </div>
           </body>
         </html>
       `;
 
-      text = `
+        text = `
         Hello ${user.name},
         
         Thank you for your interest in becoming a vendor on our platform. After reviewing your application, we need some additional information or corrections before we can approve your account.
@@ -526,6 +530,184 @@ class EmailService {
         
         ${process.env.APP_NAME}
       `;
+        break;
+
+      case 'suspended':
+        subject = 'Important: Your Vendor Account Has Been Suspended';
+        html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #ff9800; color: white; padding: 20px; text-align: center; }
+              .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+              .button { display: inline-block; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+              .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+              .warning-icon { font-size: 48px; color: #ff9800; text-align: center; margin-bottom: 20px; }
+              .notes-section { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⚠️ Vendor Account Suspended</h1>
+              </div>
+              <div class="content">
+                <div class="warning-icon">🚫</div>
+                <h2>Hello ${user.name},</h2>
+                <p>We regret to inform you that your vendor account has been <strong>temporarily suspended</strong> on our platform.</p>
+                
+                ${
+                  notes
+                    ? `
+                <div class="notes-section">
+                  <h3>Reason for Suspension:</h3>
+                  <p><strong>${notes}</strong></p>
+                </div>
+                `
+                    : ''
+                }
+                
+                <p>During this suspension period:</p>
+                <ul>
+                  <li>Your products will not be visible to customers</li>
+                  <li>You won't be able to receive new orders</li>
+                  <li>Pending orders will be placed on hold</li>
+                </ul>
+                
+                <p><strong>Next Steps:</strong></p>
+                <ol>
+                  <li>Review our vendor guidelines and terms of service</li>
+                  <li>Address the issues mentioned above</li>
+                  <li>Contact our support team to appeal the suspension</li>
+                </ol>
+                
+                <p>If you believe this suspension was made in error, please contact us immediately at <a href="mailto:${supportEmail}">${supportEmail}</a>.</p>
+                
+                <p>We value your partnership and hope to resolve this matter promptly.</p>
+              </div>
+              <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} ${
+          process.env.APP_NAME
+        }. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+        text = `
+        Important: Your Vendor Account Has Been Suspended
+        
+        Hello ${user.name},
+        
+        We regret to inform you that your vendor account has been temporarily suspended on our platform.
+        
+        ${notes ? `Reason for Suspension: ${notes}` : ''}
+        
+        During this suspension period:
+        - Your products will not be visible to customers
+        - You won't be able to receive new orders
+        - Pending orders will be placed on hold
+        
+        Next Steps:
+        1. Review our vendor guidelines and terms of service
+        2. Address the issues mentioned above
+        3. Contact our support team to appeal the suspension
+        
+        If you believe this suspension was made in error, please contact us immediately at ${supportEmail}.
+        
+        We value your partnership and hope to resolve this matter promptly.
+        
+        ${process.env.APP_NAME}
+      `;
+        break;
+
+      case 'pending':
+        subject = 'Your Vendor Application is Under Review';
+        html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #2196F3; color: white; padding: 20px; text-align: center; }
+              .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
+              .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+              .info-icon { font-size: 48px; color: #2196F3; text-align: center; margin-bottom: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>Vendor Application Received</h1>
+              </div>
+              <div class="content">
+                <div class="info-icon">⏳</div>
+                <h2>Hello ${user.name},</h2>
+                <p>Thank you for submitting your vendor application to ${
+                  process.env.APP_NAME
+                }!</p>
+                <p>We're currently reviewing your application and will notify you once the verification process is complete.</p>
+                
+                <p><strong>What to expect next:</strong></p>
+                <ul>
+                  <li>Our team will review your business information and documents</li>
+                  <li>Verification typically takes 2-3 business days</li>
+                  <li>You'll receive an email notification once a decision is made</li>
+                </ul>
+                
+                <p>In the meantime, you can:</p>
+                <ul>
+                  <li>Ensure all your contact information is up-to-date</li>
+                  <li>Prepare your product catalog for quick onboarding</li>
+                  <li>Review our vendor guidelines and policies</li>
+                </ul>
+                
+                <p>If you have any questions or need to update your application, please contact our support team at <a href="mailto:${supportEmail}">${supportEmail}</a>.</p>
+                
+                <p>We appreciate your patience and look forward to working with you!</p>
+              </div>
+              <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} ${
+          process.env.APP_NAME
+        }. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+        text = `
+        Your Vendor Application is Under Review
+        
+        Hello ${user.name},
+        
+        Thank you for submitting your vendor application to ${process.env.APP_NAME}!
+        
+        We're currently reviewing your application and will notify you once the verification process is complete.
+        
+        What to expect next:
+        - Our team will review your business information and documents
+        - Verification typically takes 2-3 business days
+        - You'll receive an email notification once a decision is made
+        
+        In the meantime, you can:
+        - Ensure all your contact information is up-to-date
+        - Prepare your product catalog for quick onboarding
+        - Review our vendor guidelines and policies
+        
+        If you have any questions, please contact our support team at ${supportEmail}.
+        
+        We appreciate your patience and look forward to working with you!
+        
+        ${process.env.APP_NAME}
+      `;
+        break;
+
+      default:
+        throw new Error(`Unknown vendor status: ${status}`);
     }
 
     await this.sendEmail({

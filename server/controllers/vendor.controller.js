@@ -1,13 +1,11 @@
+const mongoose = require('mongoose');
 const Vendor = require('../models/vendor.model');
 const User = require('../models/user.model');
+const Product = require('../models/product.model');
 const EmailService = require('../services/emailService');
 const path = require('path');
 const { BACKEND_URL } = require('../configs/index');
-const {
-  deleteFile,
-  uploadResponse,
-  uploadConfigs,
-} = require('../utils/FileUploads');
+const { deleteFile, uploadConfigs } = require('../utils/FileUploads');
 
 //Controller
 class VendorController {
@@ -450,59 +448,133 @@ class VendorController {
   }
 
   static async updateVendorVerificationStatus(req, res) {
+    const session = await mongoose.startSession();
+
     try {
       const { status, comment } = req.body;
+      const validStatuses = ['approved', 'rejected', 'suspended', 'pending'];
 
+      // Validate status
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'Invalid status. Must be one of: approved, rejected, suspended, pending',
+        });
+      }
+
+      // Authorization check
       if (req.user.id && req.user.role !== 'admin') {
         return res
           .status(401)
           .json({ success: false, message: 'Only admin can verify vendor' });
       }
 
-      const vendor = await Vendor.findByIdAndUpdate(
-        req.params.id,
-        {
-          verificationStatus: status,
-          verificationNotes: comment,
-          verifiedAt: status === 'verified' ? new Date() : null,
-          verifiedBy: req.user.id,
-        },
-        { new: true }
-      ).populate('user', 'name email');
+      // Prepare update data
+      const updateData = {
+        verificationStatus: status,
+        verificationNotes: comment,
+        verifiedAt: null,
+        verifiedBy: req.user.id,
+      };
 
-      if (!vendor) {
+      if (status === 'approved') {
+        updateData.verifiedAt = new Date();
+      }
+
+      const result = await session.withTransaction(async () => {
+        const vendor = await Vendor.findByIdAndUpdate(
+          req.params.id,
+          updateData,
+          {
+            new: true,
+            session,
+          }
+        ).populate('user', 'name email');
+
+        if (!vendor) {
+          throw new Error('Vendor not found');
+        }
+
+        if (status !== 'approved') {
+          await Product.updateMany(
+            { vendor: vendor._id },
+            { isActive: false },
+            { session }
+          );
+        } else {
+          await Product.updateMany(
+            { vendor: vendor._id },
+            { isActive: true },
+            { session }
+          );
+        }
+
+        return vendor;
+      });
+
+      try {
+        switch (status) {
+          case 'approved':
+            await EmailService.sendVendorVerificationEmail(
+              result.user,
+              'approved',
+              comment
+            );
+            break;
+          case 'rejected':
+            await EmailService.sendVendorVerificationEmail(
+              result.user,
+              'rejected',
+              comment
+            );
+            break;
+          case 'suspended':
+            await EmailService.sendVendorVerificationEmail(
+              result.user,
+              'suspended',
+              comment
+            );
+            break;
+          case 'pending':
+            await EmailService.sendVendorVerificationEmail(
+              result.user,
+              'pending',
+              comment
+            );
+            break;
+        }
+      } catch (emailError) {
+        console.error('Error sending verification email:', emailError);
+      }
+
+      res.json({
+        success: true,
+        message: `Vendor status updated to ${status} successfully`,
+        data: {
+          verificationStatus: result.verificationStatus,
+          verifiedAt: result.verifiedAt,
+          verifiedBy: result.verifiedBy,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating vendor status:', error);
+
+      // Handle specific error cases
+      if (error.message === 'Vendor not found') {
         return res.status(404).json({
           success: false,
           message: 'Vendor not found',
         });
       }
 
-      // Send notification email
-      if (status === 'verified') {
-        await EmailService.sendVendorVerificationEmail(vendor.user, 'approved');
-      } else if (status === 'rejected') {
-        await EmailService.sendVendorVerificationEmail(
-          vendor.user,
-          'rejected',
-          comment
-        );
-      }
-
-      res.json({
-        success: true,
-        message: `Vendor ${status} successfully`,
-        data: {
-          verificationStatus: vendor.verificationStatus,
-          verifiedAt: vendor.verifiedAt,
-          verifiedBy: vendor.verifiedBy,
-        },
-      });
-    } catch (error) {
       res.status(500).json({
         success: false,
         message: 'Error updating verification status',
         error: error.message,
       });
+    } finally {
+      await session.endSession();
     }
   }
 

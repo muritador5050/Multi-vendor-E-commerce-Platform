@@ -167,7 +167,7 @@ const VendorsTable = () => {
         </Text>
         <Flex gap={4}>
           <Select placeholder='All Status' w='150px' variant='outline'>
-            <option value='verified'>Verified</option>
+            <option value='approved'>Approved</option>
             <option value='pending'>Pending</option>
             <option value='rejected'>Rejected</option>
             <option value='suspended'>Suspended</option>
@@ -443,7 +443,7 @@ const VendorsTable = () => {
               >
                 <option value='pending'>Pending</option>
                 <option value='rejected'>Rejected</option>
-                <option value='Verified'>Verified</option>
+                <option value='approved'>approved</option>
                 <option value='suspended'>Suspended</option>
               </Select>
             </FormControl>
