@@ -40,7 +40,7 @@ router
     checkRole('vendor', 'read'),
     asyncHandler(VendorController.getVendorProfile)
   )
-  .put(
+  .patch(
     authenticate,
     checkRole('vendor', 'edit'),
 
@@ -48,7 +48,7 @@ router
   );
 
 // Settings management
-router.put(
+router.patch(
   '/settings/:settingType',
   authenticate,
   checkRole('vendor', 'edit'),
@@ -89,21 +89,21 @@ router.get(
 );
 
 // Account status toggle
-router.put(
+router.patch(
   '/toggle-status',
   authenticate,
   checkRole('vendor', 'edit'),
   asyncHandler(VendorController.toggleAccountStatus)
 );
 
-router.put(
+router.patch(
   '/toggle-status/:id',
   authenticate,
   checkRole('admin', 'edit'),
   asyncHandler(VendorController.toggleAccountStatus)
 );
 
-router.put(
+router.patch(
   '/admin/verify/:id',
   authenticate,
   checkRole('admin', 'edit'),

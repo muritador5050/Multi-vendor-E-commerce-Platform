@@ -57,7 +57,7 @@ class ProductsController {
   static async getProductsByCategorySlug(req, res) {
     const { slug } = req.params;
 
-    const result = await Product.getByCategory(slug, req.query);
+    const result = await Product.getByCategory({ category: slug }, req.query);
 
     return res.status(200).json({
       success: true,
@@ -93,6 +93,16 @@ class ProductsController {
       });
     }
 
+    if (
+      req.user.role !== 'admin' &&
+      product.vendor.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to modify this product',
+      });
+    }
+
     const updatedProduct = await product.toggleStatus();
 
     return res.status(200).json({
@@ -108,11 +118,15 @@ class ProductsController {
   }
 
   static async deleteProduct(req, res) {
-    await Product.softDelete(req.params.id, req.user);
+    const deletedProduct = await Product.softDelete(req.params.id, req.user);
 
     return res.status(200).json({
       success: true,
       message: 'Product deleted successfully',
+      data: {
+        id: deletedProduct._id,
+        name: deletedProduct.name,
+      },
     });
   }
 

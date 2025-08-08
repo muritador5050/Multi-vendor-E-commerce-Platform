@@ -271,9 +271,9 @@ class VendorController {
       const [vendors, count] = await Promise.all([
         Vendor.find(query)
           .populate('user', 'name email avatar')
-          .select(
-            'businessName businessType generalSettings storeAddress socialMedia storeHours rating reviewCount verificationStatus totalOrders commission createdAt'
-          )
+          // .select(
+          //   'businessRegistrationNumber businessName businessType generalSettings storeAddress socialMedia storeHours rating reviewCount verificationStatus totalOrders commission createdAt'
+          // )
           .sort(sort)
           .skip(skip)
           .limit(parseInt(limit)),
@@ -451,7 +451,7 @@ class VendorController {
 
   static async updateVendorVerificationStatus(req, res) {
     try {
-      const { status, notes } = req.body;
+      const { status, comment } = req.body;
 
       if (req.user.id && req.user.role !== 'admin') {
         return res
@@ -463,7 +463,7 @@ class VendorController {
         req.params.id,
         {
           verificationStatus: status,
-          verificationNotes: notes,
+          verificationNotes: comment,
           verifiedAt: status === 'verified' ? new Date() : null,
           verifiedBy: req.user.id,
         },
@@ -484,14 +484,18 @@ class VendorController {
         await EmailService.sendVendorVerificationEmail(
           vendor.user,
           'rejected',
-          notes
+          comment
         );
       }
 
       res.json({
         success: true,
         message: `Vendor ${status} successfully`,
-        data: vendor,
+        data: {
+          verificationStatus: vendor.verificationStatus,
+          verifiedAt: vendor.verifiedAt,
+          verifiedBy: vendor.verifiedBy,
+        },
       });
     } catch (error) {
       res.status(500).json({
@@ -501,8 +505,6 @@ class VendorController {
       });
     }
   }
-
-  
 
   static async uploadDocuments(req, res) {
     try {

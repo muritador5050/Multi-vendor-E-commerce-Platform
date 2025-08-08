@@ -51,11 +51,7 @@ import {
 import { Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCategories } from '@/context/CategoryContextService';
-import type {
-  CreateProductRequest,
-  Product,
-  ProductDocument,
-} from '@/type/product';
+import type { CreateProductRequest, Product } from '@/type/product';
 import { ImageGallery, type ImageFile } from './Utils/ImageGallery';
 import {
   formatDate,
@@ -251,16 +247,13 @@ export default function VendorProducts() {
   const handleSaveEdit = useCallback(() => {
     if (!editingProduct) return;
 
-    const productData: Partial<CreateProductRequest> = {
-      name: editingProduct.name,
-      description: editingProduct.description,
-      price: editingProduct.price,
-      quantityInStock: editingProduct.quantityInStock,
-      discount: editingProduct.discount,
-      category: editingProduct.category._id,
-    };
+    // Fix: Properly extract category ID
+    const categoryId =
+      typeof editingProduct.category === 'string'
+        ? editingProduct.category
+        : editingProduct.category?._id;
 
-    if (!productData.category) {
+    if (!categoryId) {
       toast({
         title: 'Validation Error',
         description: 'Please select a category for the product.',
@@ -270,6 +263,15 @@ export default function VendorProducts() {
       });
       return;
     }
+
+    const productData: Partial<CreateProductRequest> = {
+      name: editingProduct.name,
+      description: editingProduct.description,
+      price: editingProduct.price,
+      quantityInStock: editingProduct.quantityInStock,
+      discount: editingProduct.discount,
+      category: categoryId,
+    };
 
     const filesToUpload = selectedImages.map((img) => img.file);
 
@@ -316,7 +318,7 @@ export default function VendorProducts() {
           toast({
             title: 'Product deleted',
             description:
-              response?.message || `${productToDelete.name} has been deleted.`,
+              response.message || `${productToDelete.name} has been deleted.`,
             status: 'success',
             duration: 3000,
             isClosable: true,
@@ -501,12 +503,15 @@ export default function VendorProducts() {
                           value={
                             typeof editingProduct.category === 'string'
                               ? editingProduct.category
-                              : editingProduct.category._id || ''
+                              : editingProduct.category?._id || ''
                           }
                           onChange={(e) => {
+                            const selectedCategory = categories.find(
+                              (cat) => cat._id === e.target.value
+                            );
                             setEditingProduct({
                               ...editingProduct,
-                              category: e.target.value,
+                              category: selectedCategory || e.target.value,
                             });
                           }}
                         >

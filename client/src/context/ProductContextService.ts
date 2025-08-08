@@ -114,11 +114,10 @@ const updateProduct = async (
 
 const deleteProduct = async (
   id: string
-): Promise<{ success: boolean; message: string }> => {
-  return await apiClient.authenticatedApiRequest<{
-    success: boolean;
-    message: string;
-  }>(`/products/${id}`, { method: 'DELETE' });
+): Promise<ApiResponse<{ message: string }>> => {
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<{ message: string }>
+  >(`/products/${id}`, { method: 'DELETE' });
 };
 
 // React Query Hooks
@@ -311,31 +310,26 @@ export const useDeleteProduct = () => {
   return useMutation({
     mutationFn: deleteProduct,
     onMutate: async (deletedId) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({
         queryKey: productKeys.item(deletedId),
       });
 
-      // Snapshot the previous value for rollback
       const previousProduct = queryClient.getQueryData<Product>(
         productKeys.item(deletedId)
       );
 
-      // Optimistically remove from cache
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
 
       return { previousProduct };
     },
-    onSuccess: (_response, deletedId) => {
-      // Ensure product is removed from cache
+    onSuccess: (response, deletedId) => {
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
-
-      // Invalidate list queries to refresh them
       queryClient.invalidateQueries({ queryKey: productKeys.items() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+      queryClient.invalidateQueries({
+        queryKey: productKeys.vendorProducts(),
+      });
     },
     onError: (error, deletedId, context) => {
-      // Rollback - restore the product if deletion failed
       if (context?.previousProduct) {
         queryClient.setQueryData(
           productKeys.item(deletedId),

@@ -16,6 +16,7 @@ import type {
   AccountStatusResponse,
   VendorPaginateResponse,
   VendorDocumentType,
+  VerificationStatus,
 } from '../type/vendor';
 import type { ApiResponse, VendorApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
@@ -52,9 +53,7 @@ async function getVendorProfileStatus(): Promise<
 > {
   return await apiClient.authenticatedApiRequest<
     VendorApiResponse<VendorProfile | null>
-  >('/vendors/profile-status', {
-    method: 'GET',
-  });
+  >('/vendors/profile-status');
 }
 
 async function createNewVendorProfile(
@@ -100,7 +99,7 @@ async function updateVendorProfile(
   return await apiClient.authenticatedApiRequest<
     VendorApiResponse<VendorProfile>
   >('/vendors/profile', {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -138,13 +137,13 @@ async function updateSettings<T extends SettingsResponse>(
       `/vendors/settings/${settingType}`,
       data,
       files,
-      { method: 'PUT' }
+      { method: 'PATCH' }
     );
   } else {
     return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
       `/vendors/settings/${settingType}`,
       {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(data),
       }
     );
@@ -158,7 +157,7 @@ async function AccountDeactivateByVendor(
   return await apiClient.authenticatedApiRequest<
     ApiResponse<AccountStatusResponse>
   >('/vendors/toggle-status', {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -170,8 +169,7 @@ async function AccountStatusToggleByAdmin(
   return await apiClient.authenticatedApiRequest<
     ApiResponse<AccountStatusResponse>
   >(`/vendors/toggle-status/${id}`, {
-    // Fixed missing slash
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
@@ -206,14 +204,23 @@ async function getVendorsForAdmin(
 async function updateVerificationStatus(
   id: string,
   data: VerificationStatusUpdate
-): Promise<ApiResponse<Vendor>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<Vendor>>(
-    `/vendors/admin/verify/${id}`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    }
-  );
+): Promise<
+  ApiResponse<{
+    veficationStatus: VerificationStatus;
+    verifiedAt?: Date;
+    verifiedBy?: string;
+  }>
+> {
+  return await apiClient.authenticatedApiRequest<
+    ApiResponse<{
+      veficationStatus: VerificationStatus;
+      verifiedAt?: Date;
+      verifiedBy?: string;
+    }>
+  >(`/vendors/admin/verify/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 async function getVendorProfileCompletion(): Promise<

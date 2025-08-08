@@ -92,7 +92,6 @@ export interface NotificationSettings {
   marketingEmails?: boolean;
 }
 
-// ===== STORE CONFIGURATION =====
 export interface GeneralSettings {
   storeName?: string;
   storeSlug?: string;
@@ -286,7 +285,7 @@ export interface VendorProfileUpdate {
 
 export interface VerificationStatusUpdate {
   status: VerificationStatus;
-  notes?: string;
+  comment?: string;
 }
 
 export interface DocumentUpload {
