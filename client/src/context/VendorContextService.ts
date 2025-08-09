@@ -6,11 +6,10 @@ import type {
   AdminVendorStats,
   VendorFilters,
   VerificationStatusUpdate,
-  AccountStatusToggle,
   SettingsUpdate,
   SettingsResponse,
   VendorProfile,
-  AllVendorsResponse,
+  TopRatedVendorsResponse,
   singleVendor,
   SettingType,
   AccountStatusResponse,
@@ -43,32 +42,25 @@ export const vendorKeys = {
 
 // Profile Management
 async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorProfile>>(
-    '/vendors/profile'
-  );
+  return await apiClient.authenticatedApiRequest('/vendors/profile');
 }
 
 async function getVendorProfileStatus(): Promise<
   VendorApiResponse<VendorProfile | null>
 > {
-  return await apiClient.authenticatedApiRequest<
-    VendorApiResponse<VendorProfile | null>
-  >('/vendors/profile-status');
+  return await apiClient.authenticatedApiRequest('/vendors/profile-status');
 }
 
 async function createNewVendorProfile(
   data: Partial<Omit<Vendor, '_id'>>
 ): Promise<VendorApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<
-    VendorApiResponse<VendorProfile>
-  >('/vendors/onboarding', {
+  return await apiClient.authenticatedApiRequest('/vendors/onboarding', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
 // Document Management
-
 async function uploadDocuments(
   type: VendorDocumentType,
   files: File[]
@@ -107,18 +99,14 @@ async function updateVendorProfile(
 // Public Vendor Routes
 async function getAllVendors(
   filters: VendorFilters = {}
-): Promise<ApiResponse<AllVendorsResponse>> {
+): Promise<ApiResponse<VendorPaginateResponse>> {
   const queryString = buildQueryString(filters);
   const endpoint = queryString ? `/vendors?${queryString}` : '/vendors';
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<AllVendorsResponse>
-  >(endpoint);
+  return await apiClient.authenticatedApiRequest(endpoint);
 }
 
 async function getVendorById(id: string): Promise<ApiResponse<singleVendor>> {
-  return await apiClient.publicApiRequest<ApiResponse<singleVendor>>(
-    `/vendors/${id}`
-  );
+  return await apiClient.publicApiRequest(`/vendors/${id}`);
 }
 
 async function updateSettings<T extends SettingsResponse>(
@@ -133,14 +121,14 @@ async function updateSettings<T extends SettingsResponse>(
     );
 
   if (hasFiles) {
-    return await apiClient.authenticatedFormDataRequest<ApiResponse<T>>(
+    return await apiClient.authenticatedFormDataRequest(
       `/vendors/settings/${settingType}`,
       data,
       files,
       { method: 'PATCH' }
     );
   } else {
-    return await apiClient.authenticatedApiRequest<ApiResponse<T>>(
+    return await apiClient.authenticatedApiRequest(
       `/vendors/settings/${settingType}`,
       {
         method: 'PATCH',
@@ -151,40 +139,35 @@ async function updateSettings<T extends SettingsResponse>(
 }
 
 // Account Status - Fixed URL bug
-async function AccountDeactivateByVendor(
-  data: AccountStatusToggle
-): Promise<ApiResponse<AccountStatusResponse>> {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<AccountStatusResponse>
-  >('/vendors/toggle-status', {
+async function accountDeactivateByVendor(data: {
+  reason?: string;
+}): Promise<ApiResponse<AccountStatusResponse>> {
+  return await apiClient.authenticatedApiRequest('/vendors/toggle-status', {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
 }
 
-async function AccountStatusToggleByAdmin(
+async function toggleVendorAccountStatusByAdmin(
   id: string,
-  data: AccountStatusToggle
+  data: { reason?: string }
 ): Promise<ApiResponse<AccountStatusResponse>> {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<AccountStatusResponse>
-  >(`/vendors/toggle-status/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  return await apiClient.authenticatedApiRequest(
+    `/vendors/toggle-status/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }
+  );
 }
 
 // Statistics
 async function getVendorStats(): Promise<ApiResponse<VendorStats>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<VendorStats>>(
-    '/vendors/stats/vendor'
-  );
+  return await apiClient.authenticatedApiRequest('/vendors/stats/vendor');
 }
 
 async function getAdminStats(): Promise<ApiResponse<AdminVendorStats>> {
-  return await apiClient.authenticatedApiRequest<ApiResponse<AdminVendorStats>>(
-    '/vendors/stats/admin'
-  );
+  return await apiClient.authenticatedApiRequest('/vendors/stats/admin');
 }
 
 // Admin Routes
@@ -196,9 +179,7 @@ async function getVendorsForAdmin(
     ? `/vendors/admin/list?${queryString}`
     : '/vendors/admin/list';
 
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<VendorPaginateResponse>
-  >(endpoint);
+  return await apiClient.authenticatedApiRequest(endpoint);
 }
 
 async function updateVerificationStatus(
@@ -211,30 +192,23 @@ async function updateVerificationStatus(
     verifiedBy?: string;
   }>
 > {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<{
-      veficationStatus: VerificationStatus;
-      verifiedAt?: Date;
-      verifiedBy?: string;
-    }>
-  >(`/vendors/admin/verify/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  return await apiClient.authenticatedApiRequest(
+    `/vendors/admin/verify/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }
+  );
 }
 
 async function getVendorProfileCompletion(): Promise<
   ApiResponse<{ profileCompletion: number; isComplete: boolean }>
 > {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<{ profileCompletion: number; isComplete: boolean }>
-  >('/vendors/profile/completion');
+  return await apiClient.authenticatedApiRequest('/vendors/profile/completion');
 }
 
-async function getTopVendors(): Promise<ApiResponse<AllVendorsResponse>> {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<AllVendorsResponse>
-  >('/vendors/top');
+async function getTopVendors(): Promise<ApiResponse<TopRatedVendorsResponse>> {
+  return await apiClient.authenticatedApiRequest('/vendors/top-rated');
 }
 
 // ===== HOOKS =====
@@ -394,9 +368,9 @@ export const useUpdateSettings = <
 // Account Status Hooks
 export const useToggleAccountStatus = () => {
   const queryClient = useQueryClient();
-
+  // This mutation is for the vendor to deactivate their account
   return useMutation({
-    mutationFn: (data: AccountStatusToggle) => AccountDeactivateByVendor(data),
+    mutationFn: (data: { reason?: string }) => accountDeactivateByVendor(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.profile });
       queryClient.invalidateQueries({ queryKey: vendorKeys.all });
@@ -408,8 +382,8 @@ export const useToggleAccountStatusByAdmin = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: AccountStatusToggle }) =>
-      AccountStatusToggleByAdmin(id, data),
+    mutationFn: ({ id, data }: { id: string; data: { reason?: string } }) =>
+      toggleVendorAccountStatusByAdmin(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vendorKeys.admin });
       queryClient.invalidateQueries({ queryKey: vendorKeys.all });
@@ -474,7 +448,7 @@ export const useCurrentVendor = () => {
   return data;
 };
 
-export const useIsVendorVerified = () => {
+export const useIsVendorApproved = () => {
   const vendor = useCurrentVendor();
-  return vendor?.verificationStatus === 'verified';
+  return vendor?.verificationStatus === 'approved';
 };

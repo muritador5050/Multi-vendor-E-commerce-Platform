@@ -11,7 +11,11 @@ const {
 } = require('../utils/FileUploads');
 
 router.get('/', authenticate, asyncHandler(VendorController.getAllVendors));
-router.get('/top', authenticate, asyncHandler(VendorController.getTopVendors));
+router.get(
+  '/top-rated',
+  authenticate,
+  asyncHandler(VendorController.getTopVendors)
+);
 
 router.get(
   '/profile/completion',

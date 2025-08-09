@@ -1,7 +1,103 @@
 import { useTopVendors } from '@/context/VendorContextService';
-import { Badge, Box, Flex, Text, Center, Icon } from '@chakra-ui/react';
+import { Badge, Box, Flex, Text, Center, Icon, HStack } from '@chakra-ui/react';
 import { getStatusColor } from '../Utils/Utils';
-import { FiUsers } from 'react-icons/fi';
+import { FiUsers, FiStar } from 'react-icons/fi';
+
+// Types
+interface StarRatingProps {
+  rating: number;
+  maxStars?: number;
+  size?:
+    | 'xs'
+    | 'sm'
+    | 'md'
+    | 'lg'
+    | { base: 'xs' | 'sm' | 'md' | 'lg'; md: 'xs' | 'sm' | 'md' | 'lg' };
+}
+
+// Star Rating Component
+const StarRating: React.FC<StarRatingProps> = ({
+  rating,
+  maxStars = 5,
+  size = 'sm',
+}) => {
+  const stars = [];
+  const fullStars: number = Math.floor(rating);
+  const hasHalfStar: boolean = rating % 1 !== 0;
+
+  // Size mapping for icons
+  const iconSize: Record<'xs' | 'sm' | 'md' | 'lg', number> = {
+    xs: 3,
+    sm: 4,
+    md: 5,
+    lg: 6,
+  };
+
+  // Handle responsive size prop
+  const getIconSize = (): number => {
+    if (typeof size === 'object') {
+      return iconSize[size.base];
+    }
+    return iconSize[size];
+  };
+
+  for (let i = 1; i <= maxStars; i++) {
+    if (i <= fullStars) {
+      // Full star
+      stars.push(
+        <Icon
+          key={i}
+          as={FiStar}
+          boxSize={getIconSize()}
+          color='yellow.400'
+          fill='yellow.400'
+        />
+      );
+    } else if (i === fullStars + 1 && hasHalfStar) {
+      stars.push(
+        <Box key={i} position='relative'>
+          <Icon as={FiStar} boxSize={getIconSize()} color='gray.300' />
+          <Icon
+            as={FiStar}
+            boxSize={getIconSize()}
+            color='yellow.400'
+            fill='yellow.400'
+            position='absolute'
+            top='0'
+            left='0'
+            clipPath='polygon(0 0, 50% 0, 50% 100%, 0 100%)'
+          />
+        </Box>
+      );
+    } else {
+      stars.push(
+        <Icon key={i} as={FiStar} boxSize={getIconSize()} color='gray.300' />
+      );
+    }
+  }
+
+  return (
+    <HStack spacing={1} align='center'>
+      {stars}
+      <Text
+        fontSize={
+          typeof size === 'object'
+            ? size.base === 'xs'
+              ? 'xs'
+              : 'sm'
+            : size === 'xs'
+            ? 'xs'
+            : 'sm'
+        }
+        color='gray.600'
+        ml={1}
+        fontWeight='medium'
+      >
+        ({rating.toFixed(1)})
+      </Text>
+    </HStack>
+  );
+};
 
 export default function TopVendorsStats() {
   const { data: topVendors } = useTopVendors();
@@ -54,16 +150,15 @@ export default function TopVendorsStats() {
                   <Text
                     fontWeight='semibold'
                     fontSize={{ base: 'sm', md: 'md' }}
+                    mb={1}
+                    color={'red.500'}
                   >
-                    {vendor?.user.name || 'Vendor Name'}
+                    {vendor.generalSettings?.storeName || 'Vendor Name'}
                   </Text>
-                  <Text
-                    fontSize={{ base: 'xs', md: 'sm' }}
-                    color={'gray.600'}
-                    fontWeight='medium'
-                  >
-                    {vendor.rating}
-                  </Text>
+                  <StarRating
+                    rating={vendor.rating || 0}
+                    size={{ base: 'xs', md: 'sm' }}
+                  />
                 </Box>
                 <Badge
                   px={3}
@@ -73,7 +168,7 @@ export default function TopVendorsStats() {
                   colorScheme={getStatusColor(vendor.businessName)}
                   flexShrink={0}
                 >
-                  {vendor.businessName}
+                  {vendor.businessName || 'Unknown Business'}
                 </Badge>
               </Flex>
             </Box>

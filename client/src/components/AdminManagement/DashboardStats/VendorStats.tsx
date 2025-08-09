@@ -13,7 +13,7 @@ export default function VendorStats() {
   //Memo
   const stat = useMemo(() => {
     const activeVendors = data?.vendors?.filter(
-      (v) => v.verificationStatus == 'verified'
+      (v) => v.verificationStatus == 'approved'
     ).length;
 
     const vendorsTrend = calculateTrend(activeVendors!);

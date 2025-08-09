@@ -19,7 +19,7 @@ export type PaymentTerms = 'net15' | 'net30' | 'net45' | 'net60' | 'immediate';
 
 export type VerificationStatus =
   | 'pending'
-  | 'verified'
+  | 'approved'
   | 'rejected'
   | 'suspended';
 
@@ -223,7 +223,7 @@ export interface VendorPaginateResponse {
   pagination: Pagination;
 }
 
-export interface AllVendorsResponse {
+export interface TopRatedVendorsResponse {
   vendors: Vendor[];
   total: number;
 }
@@ -244,13 +244,6 @@ export interface AdminVendorStats {
   rejectedVendors: number;
   suspendedVendors: number;
   totalRevenue: number;
-  recentRegistrations: Array<{
-    _id: string;
-    businessName: string;
-    generalSettings?: Pick<GeneralSettings, 'storeName'>;
-    user: Pick<User, 'name' | 'email'>;
-    createdAt: Date;
-  }>;
 }
 
 // ===== FILTER AND REQUEST INTERFACES =====

@@ -31,12 +31,11 @@ import {
   FormLabel,
   Image,
   Textarea,
+  useToast,
 } from '@chakra-ui/react';
 import {
   Plus,
   Eye,
-  Edit,
-  Trash2,
   Star,
   Phone,
   Mail,
@@ -47,8 +46,10 @@ import {
   Clock,
   XCircle,
   AlertCircle,
+  Mars,
 } from 'lucide-react';
 import {
+  useToggleAccountStatusByAdmin,
   useUpdateVerificationStatus,
   useVendorsForAdmin,
 } from '@/context/VendorContextService';
@@ -56,7 +57,7 @@ import type { BusinessType, VerificationStatus } from '@/type/vendor';
 
 const getStatusColor = (status: VerificationStatus) => {
   switch (status) {
-    case 'verified':
+    case 'approved':
       return 'green';
     case 'pending':
       return 'yellow';
@@ -71,7 +72,7 @@ const getStatusColor = (status: VerificationStatus) => {
 
 const getStatusIcon = (status: VerificationStatus) => {
   switch (status) {
-    case 'verified':
+    case 'approved':
       return <CheckCircle size={14} />;
     case 'pending':
       return <Clock size={14} />;
@@ -120,12 +121,25 @@ const VendorsTable = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const { isOpen, onClose, onOpen } = useDisclosure();
-
+  const toast = useToast();
   // State to manage selected vendor ID and status
   const [selectedVendorId, setSelectedVendorId] = React.useState('');
   const [selectStatus, setSelectStatus] =
     React.useState<VerificationStatus>('pending');
   const [comment, setComment] = React.useState('');
+  const [processingVendorId, setProcessingVendorId] = React.useState<
+    string | null
+  >(null);
+
+  const { mutateAsync: accountStatus } = useToggleAccountStatusByAdmin();
+
+  // Fetch vendors data from context
+  const { data: vendorData } = useVendorsForAdmin();
+  const vendors = vendorData?.vendors || [];
+
+  const selectedVendor = vendors.find(
+    (vendor) => vendor._id === selectedVendorId
+  );
 
   // Function to handle status update
   const {
@@ -143,20 +157,72 @@ const VendorsTable = () => {
           comment,
         },
       });
-
+      toast({
+        title: 'Vendor status updated successfully',
+        status: 'success',
+        duration: 3000,
+        position: 'top-right',
+        description: `Vendor status has been updated to ${selectStatus}.`,
+        isClosable: true,
+      });
+      setComment('');
+      setSelectStatus('pending');
+      setSelectedVendorId('');
       onClose();
     } catch (error) {
       console.error('Failed to update vendor status:', error);
+      toast({
+        title: 'Failed to update vendor status',
+        status: 'error',
+        position: 'top-right',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
-  // Fetch vendors data from context
-  const { data: vendorData } = useVendorsForAdmin();
-  const vendors = vendorData?.vendors || [];
-
-  const selectedVendor = vendors.find(
-    (vendor) => vendor._id === selectedVendorId
-  );
+  //Account activation logic
+  const handleAccountActivation = async (vendorId: string) => {
+    if (!vendorId) return;
+    setProcessingVendorId(vendorId);
+    try {
+      await accountStatus({
+        id: vendorId,
+        data: {
+          reason: 'Suspiciuos Actions',
+        },
+      });
+      toast({
+        title: 'Vendor account activated successfully',
+        status: 'success',
+        duration: 3000,
+        position: 'top-right',
+        description: `Vendor account has been ${
+          vendors.find((v) => v._id === vendorId)?.deactivatedAt
+            ? 'activated'
+            : 'deactivated'
+        }.`,
+        isClosable: true,
+      });
+      setComment('');
+      setSelectStatus('pending');
+      setSelectedVendorId('');
+      onClose();
+    } catch (error) {
+      console.error('Failed to activate vendor account:', error);
+      toast({
+        title: 'Failed to activate vendor account',
+        status: 'error',
+        position: 'top-right',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setProcessingVendorId(null);
+    }
+  };
 
   return (
     <Box>
@@ -358,23 +424,22 @@ const VendorsTable = () => {
                           }}
                         />
                       </Tooltip>
-                      <Tooltip label='Edit Vendor'>
-                        <IconButton
-                          aria-label='Edit vendor'
-                          icon={<Edit size={16} />}
-                          variant='ghost'
-                          size='sm'
-                        />
-                      </Tooltip>
-                      <Tooltip label='Delete Vendor'>
-                        <IconButton
-                          aria-label='Delete vendor'
-                          icon={<Trash2 size={16} />}
-                          variant='ghost'
-                          size='sm'
-                          colorScheme='red'
-                        />
-                      </Tooltip>
+
+                      <Button
+                        colorScheme='blue'
+                        variant='outline'
+                        size='sm'
+                        leftIcon={<Mars size={16} />}
+                        isLoading={processingVendorId === vendor._id}
+                        isDisabled={
+                          processingVendorId !== null &&
+                          processingVendorId !== vendor._id
+                        }
+                        onClick={() => handleAccountActivation(vendor._id)}
+                      >
+                        {' '}
+                        {vendor.deactivatedAt ? 'Activate' : 'Deactivate'}{' '}
+                      </Button>
                     </HStack>
                   </Td>
                 </Tr>
@@ -410,6 +475,13 @@ const VendorsTable = () => {
               </Text>
             </Tag>
 
+            <VStack>
+              {selectedVendor?.verificationDocuments.length === 0 && (
+                <Text fontSize='sm' my={6} color='gray.500'>
+                  No verification documents uploaded
+                </Text>
+              )}
+            </VStack>
             <Box>
               {selectedVendor && (
                 <VStack align='start' spacing={4} mt={4}>

@@ -327,7 +327,7 @@ class VendorController {
       }
 
       const topVendors = await Vendor.aggregate([
-        { $match: { verificationStatus: 'verified' } },
+        { $match: { verificationStatus: 'approved' } },
         {
           $addFields: {
             topScore: {
@@ -351,6 +351,7 @@ class VendorController {
         },
         {
           $project: {
+            businessName: 1,
             generalSettings: 1,
             rating: 1,
             reviewCount: 1,
@@ -780,35 +781,33 @@ class VendorController {
           totalVendors,
           verifiedVendors,
           pendingVendors,
+          suspendedVendors,
           rejectedVendors,
           revenueAggregate,
-          recentRegistrations,
         ] = await Promise.all([
           Vendor.countDocuments(),
-          Vendor.countDocuments({ verificationStatus: 'verified' }),
+          Vendor.countDocuments({ verificationStatus: 'approved' }),
           Vendor.countDocuments({ verificationStatus: 'pending' }),
+          Vendor.countDocuments({ verificationStatus: 'suspended' }),
           Vendor.countDocuments({ verificationStatus: 'rejected' }),
           Vendor.aggregate([
             { $group: { _id: null, totalRevenue: { $sum: '$totalRevenue' } } },
           ]),
-          Vendor.find()
-            .populate('user', 'name email')
-            .sort({ createdAt: -1 })
-            .limit(5),
         ]);
 
         return res.json({
+          message: 'Vendor statistics retrieved successfully',
           success: true,
           data: {
             totalVendors,
             verifiedVendors,
             pendingVendors,
+            suspendedVendors,
             rejectedVendors,
             totalRevenue:
               revenueAggregate.length > 0
                 ? revenueAggregate[0].totalRevenue
                 : 0,
-            recentRegistrations,
           },
         });
       }
