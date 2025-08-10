@@ -4,7 +4,6 @@ const router = express.Router();
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate } = require('../middlewares/authMiddleware');
 
-// Apply authentication to all wishlist routes
 router.use(authenticate);
 
 /**
@@ -200,7 +199,10 @@ router.route('/count').get(asyncHandler(WishlistController.getWishlistCount));
  */
 router
   .route('/:productId')
-  .delete(asyncHandler(WishlistController.removeFromWishlist))
+  .delete(asyncHandler(WishlistController.removeFromWishlist));
+
+router
+  .route('/check/:productId')
   .get(asyncHandler(WishlistController.checkWishlistStatus));
 
 module.exports = router;

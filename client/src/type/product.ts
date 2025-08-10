@@ -50,8 +50,16 @@ export interface CreateProductRequest {
   vendor?: string;
 }
 
-export interface UpdateProductRequest extends Partial<CreateProductRequest> {
-  _id: string;
+export interface UpdateProductRequest {
+  name?: string;
+  description?: string;
+  price?: number;
+  discount?: number;
+  quantityInStock?: number;
+  images?: string[];
+  category?: string;
+  attributes?: Record<string, string>;
+  isActive?: boolean;
 }
 
 export interface ProductFormData {

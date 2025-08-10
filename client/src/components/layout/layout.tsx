@@ -69,7 +69,16 @@ function Layout() {
           )}
         </Flex>
       </Stack>
-      <Outlet />
+      <Box as='main' minH='calc(80vh - 200px)'>
+        <Flex direction='column'>
+          <Outlet />
+        </Flex>
+      </Box>
+      <Box as='footer' bg='gray.800' color='white' p={4} textAlign='center'>
+        <Text fontSize='sm'>
+          © {new Date().getFullYear()} Your Company Name. All rights reserved.
+        </Text>
+      </Box>
       <Footer />
     </Box>
   );

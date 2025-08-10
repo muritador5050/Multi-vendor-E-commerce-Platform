@@ -289,10 +289,6 @@ export interface DocumentUpload {
   }>;
 }
 
-export interface AccountStatusToggle {
-  reason?: string;
-}
-
 export interface AccountStatusResponse {
   deactivated: boolean;
   deactivatedAt?: Date;

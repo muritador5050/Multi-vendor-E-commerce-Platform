@@ -32,6 +32,14 @@ import {
   Image,
   Textarea,
   useToast,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverArrow,
+  PopoverCloseButton,
+  Input,
+  Stack,
 } from '@chakra-ui/react';
 import {
   Plus,
@@ -122,17 +130,22 @@ const VendorsTable = () => {
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const { isOpen, onClose, onOpen } = useDisclosure();
   const toast = useToast();
+
   // State to manage selected vendor ID and status
+  const [statusFilter, setStatusFilter] = React.useState('');
+  const [typeFilter, setTypeFilter] = React.useState('');
   const [selectedVendorId, setSelectedVendorId] = React.useState('');
   const [selectStatus, setSelectStatus] =
     React.useState<VerificationStatus>('pending');
   const [comment, setComment] = React.useState('');
+  const [reason, setReason] = React.useState('');
   const [processingVendorId, setProcessingVendorId] = React.useState<
     string | null
   >(null);
-
+  const popoverRefs = React.useRef<{ [key: string]: { onClose: () => void } }>(
+    {}
+  );
   const { mutateAsync: accountStatus } = useToggleAccountStatusByAdmin();
-
   // Fetch vendors data from context
   const { data: vendorData } = useVendorsForAdmin();
   const vendors = vendorData?.vendors || [];
@@ -146,6 +159,13 @@ const VendorsTable = () => {
     mutateAsync: updateVerificationStatus,
     isPending: updateStatusPending,
   } = useUpdateVerificationStatus();
+
+  const filteredVendors = vendors.filter((vendor) => {
+    const matchesStatus =
+      !statusFilter || vendor.verificationStatus === statusFilter;
+    const matchesType = !typeFilter || vendor.businessType === typeFilter;
+    return matchesStatus && matchesType;
+  });
 
   const handleStatusUpdate = async () => {
     if (!selectedVendorId) return;
@@ -190,7 +210,7 @@ const VendorsTable = () => {
       await accountStatus({
         id: vendorId,
         data: {
-          reason: 'Suspiciuos Actions',
+          reason,
         },
       });
       toast({
@@ -205,10 +225,10 @@ const VendorsTable = () => {
         }.`,
         isClosable: true,
       });
-      setComment('');
-      setSelectStatus('pending');
-      setSelectedVendorId('');
-      onClose();
+      setReason('');
+      if (popoverRefs.current[vendorId]) {
+        popoverRefs.current[vendorId].onClose();
+      }
     } catch (error) {
       console.error('Failed to activate vendor account:', error);
       toast({
@@ -232,21 +252,30 @@ const VendorsTable = () => {
           Vendors Management
         </Text>
         <Flex gap={4}>
-          <Select placeholder='All Status' w='150px' variant='outline'>
+          <Select
+            placeholder='All Status'
+            w='150px'
+            variant='outline'
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
             <option value='approved'>Approved</option>
             <option value='pending'>Pending</option>
             <option value='rejected'>Rejected</option>
             <option value='suspended'>Suspended</option>
           </Select>
-          <Select placeholder='All Types' w='150px' variant='outline'>
+          <Select
+            placeholder='All Types'
+            w='150px'
+            variant='outline'
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+          >
             <option value='company'>Company</option>
             <option value='individual'>Individual</option>
             <option value='partnership'>Partnership</option>
             <option value='corporation'>Corporation</option>
           </Select>
-          <Button colorScheme='blue' leftIcon={<Plus size={16} />}>
-            Add Vendor
-          </Button>
         </Flex>
       </Flex>
 
@@ -272,7 +301,39 @@ const VendorsTable = () => {
               </Tr>
             </Thead>
             <Tbody>
-              {vendors.map((vendor) => (
+              {filteredVendors.length === 0 && (
+                <Tr>
+                  <Td colSpan={8} textAlign='center' py={8}>
+                    <VStack spacing={3}>
+                      <Text
+                        fontSize='lg'
+                        fontWeight='semibold'
+                        color='gray.500'
+                      >
+                        No vendors found
+                      </Text>
+                      <Text fontSize='sm' color='gray.400'>
+                        {statusFilter || typeFilter
+                          ? 'Try adjusting your filters to see more results'
+                          : 'No vendors available at the moment'}
+                      </Text>
+                      {(statusFilter || typeFilter) && (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          onClick={() => {
+                            setStatusFilter('');
+                            setTypeFilter('');
+                          }}
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
+                    </VStack>
+                  </Td>
+                </Tr>
+              )}
+              {filteredVendors.map((vendor) => (
                 <Tr key={vendor._id} _hover={{ bg: 'gray.50' }}>
                   {/* Business Info */}
                   <Td>
@@ -425,21 +486,67 @@ const VendorsTable = () => {
                         />
                       </Tooltip>
 
-                      <Button
-                        colorScheme='blue'
-                        variant='outline'
-                        size='sm'
-                        leftIcon={<Mars size={16} />}
-                        isLoading={processingVendorId === vendor._id}
-                        isDisabled={
-                          processingVendorId !== null &&
-                          processingVendorId !== vendor._id
-                        }
-                        onClick={() => handleAccountActivation(vendor._id)}
-                      >
-                        {' '}
-                        {vendor.deactivatedAt ? 'Activate' : 'Deactivate'}{' '}
-                      </Button>
+                      <Popover>
+                        {({ onClose }) => {
+                          // Store the onClose function for this vendor
+                          popoverRefs.current[vendor._id] = { onClose };
+
+                          return (
+                            <>
+                              <PopoverTrigger>
+                                <Button
+                                  colorScheme='blue'
+                                  variant='outline'
+                                  size='sm'
+                                  leftIcon={<Plus size={16} />}
+                                >
+                                  {vendor.deactivatedAt
+                                    ? 'Activate'
+                                    : 'Deactivate'}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent>
+                                <PopoverHeader>
+                                  <Text fontWeight='bold'>
+                                    {vendor.deactivatedAt
+                                      ? 'Activate'
+                                      : 'Deactivate'}{' '}
+                                    Reason
+                                  </Text>
+                                </PopoverHeader>
+                                <PopoverArrow />
+                                <PopoverCloseButton />
+                                <Stack spacing={3} p={4}>
+                                  <Input
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                  />
+                                  <Button
+                                    colorScheme='blue'
+                                    variant='outline'
+                                    size='sm'
+                                    leftIcon={<Mars size={16} />}
+                                    isLoading={
+                                      processingVendorId === vendor._id
+                                    }
+                                    isDisabled={
+                                      processingVendorId !== null &&
+                                      processingVendorId !== vendor._id
+                                    }
+                                    onClick={() =>
+                                      handleAccountActivation(vendor._id)
+                                    }
+                                  >
+                                    {vendor.deactivatedAt
+                                      ? 'Activate'
+                                      : 'Deactivate'}
+                                  </Button>
+                                </Stack>
+                              </PopoverContent>
+                            </>
+                          );
+                        }}
+                      </Popover>
                     </HStack>
                   </Td>
                 </Tr>
@@ -468,7 +575,7 @@ const VendorsTable = () => {
               <Text
                 ml={1}
                 fontWeight='bold'
-                fontSize='lg'
+                fontSize='xs'
                 textTransform='capitalize'
               >
                 {selectedVendor && selectedVendor.verificationStatus}

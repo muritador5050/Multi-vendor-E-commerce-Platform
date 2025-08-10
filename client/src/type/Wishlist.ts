@@ -4,9 +4,7 @@ export interface WishlistItem {
   _id: string;
   user: string;
   product: Product;
-  addedAt: string;
-  createdAt: string;
-  updatedAt: string;
+  addedAt: Date;
 }
 
 export interface WishlistResponse {
@@ -24,5 +22,5 @@ export interface WishlistResponse {
 export interface WishlistParams {
   page?: number;
   limit?: number;
-  sort?: 'addedAt' | 'createdAt' | 'updatedAt';
+  sort?: 'addedAt' | 'product.name';
 }

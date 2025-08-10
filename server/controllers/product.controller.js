@@ -11,6 +11,15 @@ class ProductsController {
         (file) => `${BACKEND_URL}/uploads/products/${file.filename}`
       ) || [];
 
+    if (body.attributes && typeof body.attributes === 'string') {
+      try {
+        body.attributes = JSON.parse(body.attributes);
+      } catch (error) {
+        console.error('Failed to parse attributes:', error);
+        body.attributes = {};
+      }
+    }
+
     const productData = {
       ...body,
       images,

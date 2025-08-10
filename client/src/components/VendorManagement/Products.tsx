@@ -1,11 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
 import {
-  useDeleteProduct,
-  useOwnVendorProducts,
-  useToggleProductStatus,
-  useUpdateProduct,
-} from '@/context/ProductContextService';
-import {
   Box,
   Text,
   Badge,
@@ -50,8 +44,7 @@ import {
 } from '@chakra-ui/react';
 import { Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useCategories } from '@/context/CategoryContextService';
-import type { CreateProductRequest, Product } from '@/type/product';
+import type { Product, UpdateProductRequest } from '@/type/product';
 import { ImageGallery, type ImageFile } from './Utils/ImageGallery';
 import {
   formatDate,
@@ -61,6 +54,13 @@ import {
   renderRating,
 } from './Utils/UtilityFunc';
 import { ProductRow } from './Utils/ProductRows';
+import {
+  useDeleteProduct,
+  useOwnVendorProducts,
+  useToggleProductStatus,
+  useUpdateProduct,
+} from '@/context/ProductContextService';
+import { useCategories } from '@/context/CategoryContextService';
 
 // Detail item component for cleaner view mode
 const DetailItem = ({
@@ -78,13 +78,21 @@ const DetailItem = ({
 
 export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedImages, setSelectedImages] = useState<ImageFile[]>([]);
-  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [drawerState, setDrawerState] = useState<{
+    product: Product | null;
+    isEditing: boolean;
+    editData: Product | null;
+    selectedImages: ImageFile[];
+    imagesToDelete: string[];
+  }>({
+    product: null,
+    isEditing: false,
+    editData: null,
+    selectedImages: [],
+    imagesToDelete: [],
+  });
 
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -123,11 +131,20 @@ export default function VendorProducts() {
     limit: 10,
   };
 
+  // Helper function to update drawer state
+  const updateDrawerState = useCallback(
+    (updates: Partial<typeof drawerState>) => {
+      setDrawerState((prev) => ({ ...prev, ...updates }));
+    },
+    []
+  );
+
   // Image handling
   const handleImageSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
 
+      const newImages: ImageFile[] = [];
       files.forEach((file) => {
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
@@ -137,7 +154,12 @@ export default function VendorProducts() {
               preview: reader.result as string,
               id: `new-${Date.now()}-${Math.random()}`,
             };
-            setSelectedImages((prev) => [...prev, newImage]);
+            newImages.push(newImage);
+
+            // Update state with new image
+            updateDrawerState({
+              selectedImages: [...drawerState.selectedImages, newImage],
+            });
           };
           reader.readAsDataURL(file);
         }
@@ -148,51 +170,68 @@ export default function VendorProducts() {
         fileInputRef.current.value = '';
       }
     },
-    []
+    [drawerState.selectedImages, updateDrawerState]
   );
 
   const handleRemoveImage = useCallback(
     (imageId: string, isExisting = false) => {
       if (isExisting) {
-        setImagesToDelete((prev) => [...prev, imageId]);
-        if (editingProduct) {
-          setEditingProduct({
-            ...editingProduct,
-            images: editingProduct.images.filter((img) => img !== imageId),
-          });
-        }
+        updateDrawerState({
+          imagesToDelete: [...drawerState.imagesToDelete, imageId],
+          editData: drawerState.editData
+            ? {
+                ...drawerState.editData,
+                images: drawerState.editData.images.filter(
+                  (img) => img !== imageId
+                ),
+              }
+            : null,
+        });
       } else {
-        const imageToRemove = selectedImages.find((img) => img.id === imageId);
+        const imageToRemove = drawerState.selectedImages.find(
+          (img) => img.id === imageId
+        );
         if (imageToRemove) {
           URL.revokeObjectURL(imageToRemove.preview);
         }
-        setSelectedImages((prev) => prev.filter((img) => img.id !== imageId));
+        updateDrawerState({
+          selectedImages: drawerState.selectedImages.filter(
+            (img) => img.id !== imageId
+          ),
+        });
       }
     },
-    [editingProduct, selectedImages]
+    [drawerState, updateDrawerState]
   );
 
   // Product actions
   const handleView = useCallback(
     (product: Product) => {
-      setSelectedProduct(product);
-      setIsEditMode(false);
+      setDrawerState({
+        product,
+        isEditing: false,
+        editData: null,
+        selectedImages: [],
+        imagesToDelete: [],
+      });
       onDrawerOpen();
     },
     [onDrawerOpen]
   );
 
-  const handleEdit = useCallback(
-    (product: Product) => {
-      setSelectedProduct(product as Product);
-      setEditingProduct({ ...product });
-      setSelectedImages([]);
-      setImagesToDelete([]);
-      setIsEditMode(true);
-      onDrawerOpen();
-    },
-    [onDrawerOpen]
-  );
+  // const handleEdit = useCallback(
+  //   (product: Product) => {
+  //     setDrawerState({
+  //       product,
+  //       isEditing: true,
+  //       editData: { ...product },
+  //       selectedImages: [],
+  //       imagesToDelete: [],
+  //     });
+  //     onDrawerOpen();
+  //   },
+  //   [onDrawerOpen]
+  // );
 
   const handleDelete = useCallback(
     (product: Product) => {
@@ -204,15 +243,21 @@ export default function VendorProducts() {
 
   const handleDrawerClose = useCallback(() => {
     onDrawerClose();
-    setSelectedProduct(null);
-    setEditingProduct(null);
-    setIsEditMode(false);
 
     // Clean up image previews
-    selectedImages.forEach((img) => URL.revokeObjectURL(img.preview));
-    setSelectedImages([]);
-    setImagesToDelete([]);
-  }, [onDrawerClose, selectedImages]);
+    drawerState.selectedImages.forEach((img) =>
+      URL.revokeObjectURL(img.preview)
+    );
+
+    // Reset drawer state
+    setDrawerState({
+      product: null,
+      isEditing: false,
+      editData: null,
+      selectedImages: [],
+      imagesToDelete: [],
+    });
+  }, [onDrawerClose, drawerState.selectedImages]);
 
   const handleToggleStatus = useCallback(
     (productId: string) => {
@@ -244,72 +289,170 @@ export default function VendorProducts() {
     [toggleMutation, toast, vendorProducts?.products]
   );
 
-  const handleSaveEdit = useCallback(() => {
-    if (!editingProduct) return;
+  const handleSwitchToEdit = useCallback(() => {
+    if (drawerState.product) {
+      updateDrawerState({
+        isEditing: true,
+        editData: { ...drawerState.product },
+        selectedImages: [],
+        imagesToDelete: [],
+      });
+    }
+  }, [drawerState.product, updateDrawerState]);
 
-    // Fix: Properly extract category ID
+  // Update edit data
+  const handleUpdateEditData = useCallback(
+    (updates: Partial<Product>) => {
+      if (drawerState.editData) {
+        updateDrawerState({
+          editData: { ...drawerState.editData, ...updates },
+        });
+      }
+    },
+    [drawerState.editData, updateDrawerState]
+  );
+
+  // const handleSaveEdit = useCallback(() => {
+  //   if (!drawerState.editData) return;
+  //   const categoryId =
+  //     typeof drawerState.editData.category === 'string'
+  //       ? drawerState.editData.category
+  //       : drawerState.editData.category?._id;
+
+  //   if (!categoryId) {
+  //     toast({
+  //       title: 'Validation Error',
+  //       description: 'Please select a category for the product.',
+  //       status: 'error',
+  //       position: 'top-right',
+  //       duration: 3000,
+  //       isClosable: true,
+  //     });
+  //     return;
+  //   }
+
+  //   const productData: UpdateProductRequest = {
+  //     name: drawerState.editData.name,
+  //     description: drawerState.editData.description,
+  //     price: drawerState.editData.price,
+  //     quantityInStock: drawerState.editData.quantityInStock,
+  //     discount: drawerState.editData.discount,
+  //     category: categoryId,
+  //   };
+
+  //   const filesToUpload = drawerState.selectedImages.map((img) => img.file);
+
+  //   updateMutation.mutate(
+  //     {
+  //       id: drawerState.editData._id,
+  //       product: productData,
+  //       files: filesToUpload.length > 0 ? filesToUpload : undefined,
+  //     },
+  //     {
+  //       onSuccess: () => {
+  //         toast({
+  //           title: 'Product updated',
+  //           description: `${drawerState.editData?.name} has been updated successfully.`,
+  //           status: 'success',
+  //           position: 'top-right',
+  //           duration: 3000,
+  //           isClosable: true,
+  //         });
+  //         handleDrawerClose();
+  //       },
+  //       onError: (error) => {
+  //         toast({
+  //           title: 'Update failed',
+  //           description: error?.message || 'Failed to update product.',
+  //           status: 'error',
+  //           position: 'top-right',
+  //           duration: 3000,
+  //           isClosable: true,
+  //         });
+  //       },
+  //     }
+  //   );
+  // }, [
+  //   drawerState.editData,
+  //   drawerState.selectedImages,
+  //   updateMutation,
+  //   toast,
+  //   handleDrawerClose,
+  // ]);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!drawerState.editData) return;
+
     const categoryId =
-      typeof editingProduct.category === 'string'
-        ? editingProduct.category
-        : editingProduct.category?._id;
+      typeof drawerState.editData.category === 'string'
+        ? drawerState.editData.category
+        : drawerState.editData.category?._id;
 
     if (!categoryId) {
       toast({
         title: 'Validation Error',
         description: 'Please select a category for the product.',
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
       return;
     }
 
-    const productData: Partial<CreateProductRequest> = {
-      name: editingProduct.name,
-      description: editingProduct.description,
-      price: editingProduct.price,
-      quantityInStock: editingProduct.quantityInStock,
-      discount: editingProduct.discount,
+    const productData: UpdateProductRequest = {
+      name: drawerState.editData.name,
+      description: drawerState.editData.description,
+      price: drawerState.editData.price,
+      quantityInStock: drawerState.editData.quantityInStock,
+      discount: drawerState.editData.discount,
       category: categoryId,
     };
 
-    const filesToUpload = selectedImages.map((img) => img.file);
+    const filesToUpload = drawerState.selectedImages.map((img) => img.file);
 
     updateMutation.mutate(
       {
-        id: editingProduct._id,
+        id: drawerState.editData._id,
         product: productData,
         files: filesToUpload.length > 0 ? filesToUpload : undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          setDrawerState((prev) => ({
+            ...prev,
+            product: response.data ?? null,
+            editData: response.data ?? null,
+            isEditing: false,
+            selectedImages: [],
+            imagesToDelete: [],
+          }));
+
           toast({
             title: 'Product updated',
-            description: `${editingProduct.name} has been updated successfully.`,
+            description: `${drawerState.editData?.name} has been updated successfully.`,
             status: 'success',
+            position: 'top-right',
             duration: 3000,
             isClosable: true,
           });
-          handleDrawerClose();
+
+          // Don't close drawer immediately - let user see the updated data
+          // handleDrawerClose();
         },
         onError: (error) => {
           toast({
             title: 'Update failed',
             description: error?.message || 'Failed to update product.',
             status: 'error',
+            position: 'top-right',
             duration: 3000,
             isClosable: true,
           });
         },
       }
     );
-  }, [
-    editingProduct,
-    selectedImages,
-    updateMutation,
-    toast,
-    handleDrawerClose,
-  ]);
+  }, [drawerState.editData, drawerState.selectedImages, updateMutation, toast]);
 
   const handleConfirmDelete = useCallback(() => {
     if (productToDelete) {
@@ -365,6 +508,11 @@ export default function VendorProducts() {
     );
   }
 
+  // Get the current product to display (either original or edit data)
+  const currentProduct = drawerState.isEditing
+    ? drawerState.editData
+    : drawerState.product;
+
   return (
     <Box>
       <Flex
@@ -387,7 +535,6 @@ export default function VendorProducts() {
           Add Product
         </Button>
       </Flex>
-
       <TableContainer>
         <Table variant='simple' bg='white' borderRadius='lg' overflow='hidden'>
           <Thead bg='gray.50'>
@@ -431,7 +578,7 @@ export default function VendorProducts() {
       </TableContainer>
 
       {/* Drawer for viewing/editing product */}
-      {selectedProduct && (
+      {currentProduct && (
         <Drawer
           isOpen={isDrawerOpen}
           placement='right'
@@ -442,16 +589,16 @@ export default function VendorProducts() {
           <DrawerContent>
             <DrawerCloseButton />
             <DrawerHeader>
-              {isEditMode ? 'Edit Product' : 'Product Details'}
+              {drawerState.isEditing ? 'Edit Product' : 'Product Details'}
             </DrawerHeader>
             <DrawerBody>
               <VStack spacing={4} align='stretch'>
-                {isEditMode && editingProduct ? (
+                {drawerState.isEditing ? (
                   // Edit Form
                   <>
                     <ImageGallery
-                      existingImages={editingProduct.images || []}
-                      newImages={selectedImages}
+                      existingImages={currentProduct.images || []}
+                      newImages={drawerState.selectedImages}
                       onRemoveExisting={(imageUrl) =>
                         handleRemoveImage(imageUrl, true)
                       }
@@ -473,12 +620,9 @@ export default function VendorProducts() {
                     <FormControl>
                       <FormLabel>Product Name</FormLabel>
                       <Input
-                        value={editingProduct.name}
+                        value={currentProduct.name}
                         onChange={(e) =>
-                          setEditingProduct({
-                            ...editingProduct,
-                            name: e.target.value,
-                          })
+                          handleUpdateEditData({ name: e.target.value })
                         }
                       />
                     </FormControl>
@@ -486,12 +630,9 @@ export default function VendorProducts() {
                     <FormControl>
                       <FormLabel>Description</FormLabel>
                       <Textarea
-                        value={editingProduct.description}
+                        value={currentProduct.description}
                         onChange={(e) =>
-                          setEditingProduct({
-                            ...editingProduct,
-                            description: e.target.value,
-                          })
+                          handleUpdateEditData({ description: e.target.value })
                         }
                       />
                     </FormControl>
@@ -501,18 +642,19 @@ export default function VendorProducts() {
                       {categories ? (
                         <Select
                           value={
-                            typeof editingProduct.category === 'string'
-                              ? editingProduct.category
-                              : editingProduct.category?._id || ''
+                            typeof currentProduct.category === 'string'
+                              ? currentProduct.category
+                              : currentProduct.category?._id || ''
                           }
                           onChange={(e) => {
                             const selectedCategory = categories.find(
                               (cat) => cat._id === e.target.value
                             );
-                            setEditingProduct({
-                              ...editingProduct,
-                              category: selectedCategory || e.target.value,
-                            });
+                            if (selectedCategory) {
+                              handleUpdateEditData({
+                                category: selectedCategory,
+                              });
+                            }
                           }}
                         >
                           <option value=''>Select a category</option>
@@ -531,10 +673,9 @@ export default function VendorProducts() {
                       <FormControl>
                         <FormLabel>Price</FormLabel>
                         <NumberInput
-                          value={editingProduct.price}
+                          value={currentProduct.price}
                           onChange={(valueString) =>
-                            setEditingProduct({
-                              ...editingProduct,
+                            handleUpdateEditData({
                               price: parseFloat(valueString) || 0,
                             })
                           }
@@ -546,10 +687,9 @@ export default function VendorProducts() {
                       <FormControl>
                         <FormLabel>Stock</FormLabel>
                         <NumberInput
-                          value={editingProduct.quantityInStock}
+                          value={currentProduct.quantityInStock}
                           onChange={(valueString) =>
-                            setEditingProduct({
-                              ...editingProduct,
+                            handleUpdateEditData({
                               quantityInStock: parseInt(valueString) || 0,
                             })
                           }
@@ -563,10 +703,9 @@ export default function VendorProducts() {
                       <FormControl>
                         <FormLabel>Discount (%)</FormLabel>
                         <NumberInput
-                          value={editingProduct.discount || 0}
+                          value={currentProduct.discount || 0}
                           onChange={(valueString) =>
-                            setEditingProduct({
-                              ...editingProduct,
+                            handleUpdateEditData({
                               discount: parseInt(valueString) || 0,
                             })
                           }
@@ -580,10 +719,9 @@ export default function VendorProducts() {
                       <FormControl display='flex' alignItems='center'>
                         <FormLabel mb='0'>Active Status</FormLabel>
                         <Switch
-                          isChecked={editingProduct.isActive}
+                          isChecked={currentProduct.isActive}
                           onChange={(e) =>
-                            setEditingProduct({
-                              ...editingProduct,
+                            handleUpdateEditData({
                               isActive: e.target.checked,
                             })
                           }
@@ -595,7 +733,7 @@ export default function VendorProducts() {
                   // View Mode
                   <>
                     <ImageGallery
-                      existingImages={selectedProduct.images || []}
+                      existingImages={currentProduct.images || []}
                       newImages={[]}
                       onRemoveExisting={() => {}}
                       onRemoveNew={() => {}}
@@ -603,82 +741,81 @@ export default function VendorProducts() {
                       isEditing={false}
                     />
 
-                    <Heading size='md'>{selectedProduct.name}</Heading>
-                    <Text color='gray.400'>{selectedProduct.description}</Text>
+                    <Heading size='md'>{currentProduct.name}</Heading>
+                    <Text color='gray.400'>{currentProduct.description}</Text>
                     <Divider />
 
                     <DetailItem label='Category'>
                       <Badge colorScheme='blue'>
-                        {typeof selectedProduct.category === 'string'
-                          ? selectedProduct.category
-                          : selectedProduct.category?.name || 'No Category'}
+                        {typeof currentProduct.category === 'string'
+                          ? currentProduct.category
+                          : currentProduct.category?.name || 'No Category'}
                       </Badge>
                     </DetailItem>
 
                     <DetailItem label='Price'>
-                      <Text>{formatPrice(selectedProduct.price || 0)}</Text>
+                      <Text>{formatPrice(currentProduct.price || 0)}</Text>
                     </DetailItem>
 
                     <DetailItem label='Stock'>
                       <Badge
                         colorScheme={
-                          getStockStatus(selectedProduct.quantityInStock || 0)
+                          getStockStatus(currentProduct.quantityInStock || 0)
                             .color
                         }
                       >
-                        {selectedProduct.quantityInStock || 0}
+                        {currentProduct.quantityInStock || 0}
                       </Badge>
                     </DetailItem>
 
                     <DetailItem label='Status'>
                       <Badge
                         colorScheme={getStatusColor(
-                          selectedProduct.isActive || false
+                          currentProduct.isActive || false
                         )}
                       >
-                        {selectedProduct.isActive ? 'Active' : 'Inactive'}
+                        {currentProduct.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </DetailItem>
 
                     <DetailItem label='Rating'>
                       <Box>
-                        {renderRating(selectedProduct.averageRating || 0)}
+                        {renderRating(currentProduct.averageRating || 0)}
                       </Box>
                     </DetailItem>
 
                     <DetailItem label='Total Reviews'>
-                      <Text>{selectedProduct.totalReviews || 0}</Text>
+                      <Text>{currentProduct.totalReviews || 0}</Text>
                     </DetailItem>
 
                     <DetailItem label='Vendor'>
                       <VStack spacing={0} align='end'>
                         <Text fontSize='sm'>
-                          {selectedProduct.vendor?.name || 'Unknown'}
+                          {currentProduct.vendor?.name || 'Unknown'}
                         </Text>
                         <Text fontSize='xs' color='gray.400'>
-                          {selectedProduct.vendor?.email || 'No Email'}
+                          {currentProduct.vendor?.email || 'No Email'}
                         </Text>
                       </VStack>
                     </DetailItem>
 
-                    {selectedProduct.discount &&
-                      selectedProduct.discount > 0 && (
-                        <DetailItem label='Discount'>
-                          <Badge colorScheme='red'>
-                            {selectedProduct.discount}%
-                          </Badge>
-                        </DetailItem>
-                      )}
+                    {currentProduct.discount && currentProduct.discount > 0 && (
+                      <DetailItem label='Discount'>
+                        <Badge colorScheme='red'>
+                          {currentProduct.discount}%
+                        </Badge>
+                      </DetailItem>
+                    )}
 
                     <DetailItem label='Created'>
                       <Text fontSize='sm'>
-                        {formatDate(selectedProduct.createdAt || '')}
+                        {formatDate(currentProduct.createdAt || '')}
                       </Text>
                     </DetailItem>
 
                     <DetailItem label='Updated'>
                       <Text fontSize='sm'>
-                        {formatDate(selectedProduct.updatedAt || '')}
+                        {formatDate(currentProduct.updatedAt || '')}
                       </Text>
                     </DetailItem>
                   </>
@@ -687,9 +824,9 @@ export default function VendorProducts() {
             </DrawerBody>
             <DrawerFooter>
               <Button variant='outline' mr={3} onClick={handleDrawerClose}>
-                {isEditMode ? 'Cancel' : 'Close'}
+                {drawerState.isEditing ? 'Cancel' : 'Close'}
               </Button>
-              {isEditMode ? (
+              {drawerState.isEditing ? (
                 <Button
                   colorScheme='blue'
                   onClick={handleSaveEdit}
@@ -699,14 +836,7 @@ export default function VendorProducts() {
                   Save Changes
                 </Button>
               ) : (
-                <Button
-                  colorScheme='blue'
-                  onClick={() => {
-                    if (selectedProduct) {
-                      handleEdit(selectedProduct);
-                    }
-                  }}
-                >
+                <Button colorScheme='blue' onClick={handleSwitchToEdit}>
                   Edit Product
                 </Button>
               )}

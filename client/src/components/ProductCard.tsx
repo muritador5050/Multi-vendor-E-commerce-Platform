@@ -9,12 +9,16 @@ import {
   CardFooter,
   ButtonGroup,
   useToast,
-  Flex,
 } from '@chakra-ui/react';
 import { Heart, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAddToCart, useIsInCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
+import {
+  useAddToWishlist,
+  useWishlistStatus,
+  useRemoveFromWishlist,
+} from '@/context/WishlistContextService';
 
 interface ProductCardProps {
   product: Product;
@@ -30,28 +34,93 @@ export default function ProductCard({
 
   const addToCartMutation = useAddToCart();
   const isInCart = useIsInCart(product._id);
+  const addToWishlist = useAddToWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
+
+  const {
+    data: wishlistStatusResponse,
+    isLoading: isWishlistLoading,
+    error: wishlistError,
+  } = useWishlistStatus(product._id);
+
+  const isInWishlist = wishlistStatusResponse?.data || false;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      addToCartMutation.mutate({
+      await addToCartMutation.mutateAsync({
         productId: product._id,
         quantity: 1,
       });
       toast({
-        title: 'Product Added',
-        description: 'Product added to cart!',
+        title: 'Success!',
+        description: 'Product added to cart successfully!',
         status: 'success',
-        duration: 2000,
+        duration: 3000,
         position: 'top-right',
+        isClosable: true,
       });
-    } catch {
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
       toast({
-        title: 'Failed operation',
-        description: 'Failed to add product to cart',
+        title: 'Error',
+        description: 'Failed to add product to cart. Please try again.',
         status: 'error',
-        duration: 2000,
+        duration: 4000,
         position: 'top-right',
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (wishlistError) {
+      toast({
+        title: 'Error',
+        description: 'Unable to determine wishlist status. Please try again.',
+        status: 'error',
+        duration: 3000,
+        position: 'top-right',
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      if (isInWishlist) {
+        await removeFromWishlist.mutateAsync(product._id);
+        toast({
+          title: 'Removed!',
+          description: 'Product removed from wishlist successfully!',
+          status: 'success',
+          duration: 3000,
+          position: 'top-right',
+          isClosable: true,
+        });
+      } else {
+        await addToWishlist.mutateAsync(product._id);
+        toast({
+          title: 'Added!',
+          description: 'Product added to wishlist successfully!',
+          status: 'success',
+          duration: 3000,
+          position: 'top-right',
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to ${
+          isInWishlist ? 'remove from' : 'add to'
+        } wishlist. Please try again.`,
+        status: 'error',
+        duration: 4000,
+        position: 'top-right',
+        isClosable: true,
       });
     }
   };
@@ -72,6 +141,22 @@ export default function ProductCard({
   const discountedPrice = discount
     ? product.price - (product.price * discount) / 100
     : product.price;
+
+  // Fixed: Proper image fallback logic
+  const getProductImage = () => {
+    if (
+      !product.images ||
+      !Array.isArray(product.images) ||
+      product.images.length === 0
+    ) {
+      return '/placeholder-image.jpg'; // Fallback to a placeholder image
+    }
+    return product.images[0];
+  };
+
+  // Loading state for wishlist operations
+  const isWishlistPending =
+    addToWishlist.isPending || removeFromWishlist.isPending;
 
   return (
     <Card
@@ -94,16 +179,13 @@ export default function ProductCard({
       <CardBody onClick={handleNavigateToProduct}>
         <Box position='relative'>
           <Image
-            src={
-              product.images && product.images.length > 0
-                ? product.images[0]
-                : product.images[1]
-            }
-            alt={product.name}
+            src={getProductImage()}
+            alt={product.name || 'Product image'}
             borderRadius='lg'
             objectFit='cover'
             width='100%'
             height='250px'
+            fallbackSrc='/placeholder-image.jpg' // Chakra UI fallback
           />
           <Button
             onClick={handleQuickView}
@@ -167,17 +249,30 @@ export default function ProductCard({
         >
           <Button
             onClick={handleAddToCart}
-            isDisabled={addToCartMutation.isPending}
+            isLoading={addToCartMutation.isPending}
+            loadingText='Adding...'
             variant='solid'
             colorScheme='blue'
+            rightIcon={isInCart ? <Check size={16} /> : undefined}
           >
-            <Flex as='span' align='center' gap={4} fontSize='sm'>
-              {addToCartMutation.isPending ? 'Adding...' : 'Add to Cart'}{' '}
-              {isInCart && <Check />}
-            </Flex>
+            {isInCart ? 'Added to Cart' : 'Add to Cart'}
           </Button>
-          <Button variant='ghost' colorScheme='blue' leftIcon={<Heart />}>
-            Wishlist
+          <Button
+            variant='ghost'
+            colorScheme={isInWishlist ? 'red' : 'blue'}
+            leftIcon={
+              isInWishlist ? (
+                <Heart size={16} fill='red' color='red' />
+              ) : (
+                <Heart size={16} />
+              )
+            }
+            onClick={handleWishlistToggle}
+            isLoading={isWishlistPending || isWishlistLoading}
+            loadingText={isInWishlist ? 'Removing...' : 'Adding...'}
+            isDisabled={isWishlistLoading || !!wishlistError}
+          >
+            {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
           </Button>
         </ButtonGroup>
       </CardFooter>

@@ -4,6 +4,7 @@ import type {
   Product,
   ProductPaginatedResponse,
   ProductQueryParams,
+  UpdateProductRequest,
 } from '@/type/product';
 import { apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
@@ -12,14 +13,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const productKeys = {
   all: ['product'] as const,
-  items: (params?: ProductQueryParams) => ['product', 'items', params] as const,
-  item: (id: string) => ['product', 'item', id] as const,
-  category: (slug: string, params?: ProductQueryParams) =>
-    ['product', 'category', slug, params] as const,
-  vendor: (id: string, params?: ProductQueryParams) =>
-    ['product', 'vendor', id, params] as const,
-  vendorProducts: (params?: ProductQueryParams) =>
-    ['product', 'vendor-products', params] as const,
+  lists: (params?: ProductQueryParams) =>
+    [...productKeys.all, 'lists', { params }] as const,
+  item: (id: string) => [productKeys.all, 'item', id] as const,
 };
 
 // API Functions
@@ -99,10 +95,10 @@ const toggleProductStatus = async (
 
 const updateProduct = async (
   id: string,
-  product: Partial<CreateProductRequest>,
+  product: UpdateProductRequest,
   files?: File[]
 ): Promise<ApiResponse<Product>> => {
-  return await apiClient.authenticatedFormDataRequest<ApiResponse<Product>>(
+  return await apiClient.authenticatedFormDataRequest(
     `/products/${id}`,
     product,
     files ? { productImage: files } : undefined,
@@ -123,10 +119,10 @@ const deleteProduct = async (
 // React Query Hooks
 export const useProducts = (params: ProductQueryParams = {}) => {
   return useQuery({
-    queryKey: productKeys.items(params),
+    queryKey: productKeys.lists(params),
     queryFn: () => getAllProducts(params),
     select: (data) => data.data,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     retry: (failureCount, error) => {
       if (
         error instanceof ApiError &&
@@ -145,7 +141,7 @@ export const useProductById = (id: string) => {
     queryKey: productKeys.item(id),
     queryFn: () => fetchProductById(id),
     select: (data) => data.data,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     enabled: !!id,
   });
 };
@@ -155,10 +151,10 @@ export const useProductsByCategory = (
   params: Omit<ProductQueryParams, 'category'> = {}
 ) => {
   return useQuery({
-    queryKey: productKeys.category(categorySlug, params),
+    queryKey: productKeys.lists({ ...params, category: categorySlug }),
     queryFn: () => fetchProductsByCategory(categorySlug, params),
     select: (data) => data.data,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     enabled: !!categorySlug,
   });
 };
@@ -168,10 +164,10 @@ export const useVendorProductsForAdmin = (
   params: Omit<ProductQueryParams, 'vendor'> = {}
 ) => {
   return useQuery({
-    queryKey: productKeys.vendor(vendorId, params),
+    queryKey: productKeys.lists({ ...params, vendor: vendorId }),
     queryFn: () => getVendorProductsForAdmin(vendorId, params),
     select: (data) => data.data,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     enabled: !!vendorId,
   });
 };
@@ -180,10 +176,10 @@ export const useOwnVendorProducts = (
   params: Omit<ProductQueryParams, 'vendor'> = {}
 ) => {
   return useQuery({
-    queryKey: productKeys.vendorProducts(params),
+    queryKey: productKeys.lists(params),
     queryFn: () => getOwnVendorProducts(params),
     select: (data) => data.data,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
   });
 };
 
@@ -198,7 +194,9 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({
+        queryKey: productKeys.lists(),
+      });
     },
   });
 };
@@ -209,17 +207,14 @@ export const useToggleProductStatus = () => {
   return useMutation({
     mutationFn: toggleProductStatus,
     onMutate: async (productId) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({
         queryKey: productKeys.item(productId),
       });
 
-      // Snapshot the previous value
       const previousProduct = queryClient.getQueryData<Product>(
         productKeys.item(productId)
       );
 
-      // Optimistically update the cache
       if (previousProduct) {
         queryClient.setQueryData<Product>(productKeys.item(productId), {
           ...previousProduct,
@@ -227,11 +222,9 @@ export const useToggleProductStatus = () => {
         });
       }
 
-      // Return context for rollback
       return { previousProduct };
     },
     onSuccess: (response, productId) => {
-      // Update with the actual server response
       queryClient.setQueryData<Product>(
         productKeys.item(productId),
         (oldData) => {
@@ -243,12 +236,10 @@ export const useToggleProductStatus = () => {
         }
       );
 
-      // Invalidate list queries to refresh them
-      queryClient.invalidateQueries({ queryKey: productKeys.items() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
+      // Invalidate all list queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
     },
     onError: (_error, productId, context) => {
-      // Rollback on error
       if (context?.previousProduct) {
         queryClient.setQueryData(
           productKeys.item(productId),
@@ -261,6 +252,7 @@ export const useToggleProductStatus = () => {
 
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({
       id,
@@ -268,38 +260,91 @@ export const useUpdateProduct = () => {
       files,
     }: {
       id: string;
-      product: Partial<CreateProductRequest>;
+      product: UpdateProductRequest;
       files?: File[];
     }) => updateProduct(id, product, files),
+
     onMutate: async ({ id, product }) => {
+      // Cancel all related queries
       await queryClient.cancelQueries({ queryKey: productKeys.item(id) });
+      await queryClient.cancelQueries({ queryKey: productKeys.all });
 
       const previousProduct = queryClient.getQueryData(productKeys.item(id));
 
-      // Optimistically update the cache
-      if (previousProduct) {
-        queryClient.setQueryData(productKeys.item(id), {
-          ...previousProduct,
-          ...product,
+      // Optimistically update the individual product
+      queryClient.setQueryData(productKeys.item(id), (old: Product) => ({
+        ...old,
+        ...product,
+      }));
+
+      // ENHANCED: Optimistically update all product lists
+      const queries = queryClient.getQueryCache().findAll({
+        queryKey: ['product', 'lists'],
+        exact: false,
+      });
+
+      const previousListData = queries.map((query) => ({
+        queryKey: query.queryKey,
+        data: query.state.data,
+      }));
+
+      queries.forEach((query) => {
+        queryClient.setQueryData(query.queryKey, (old: any) => {
+          if (!old?.products) return old;
+
+          return {
+            ...old,
+            products: old.products.map((p: Product) =>
+              p._id === id ? { ...p, ...product } : p
+            ),
+          };
         });
+      });
+
+      return { previousProduct, previousListData };
+    },
+
+    onSuccess: (response, { id }) => {
+      // Update the individual product cache with server response
+      queryClient.setQueryData(productKeys.item(id), response.data);
+
+      // Update all product lists with the server response
+      const queries = queryClient.getQueryCache().findAll({
+        queryKey: ['product', 'lists'],
+        exact: false,
+      });
+
+      queries.forEach((query) => {
+        queryClient.setQueryData(query.queryKey, (old: any) => {
+          if (!old?.products) return old;
+
+          return {
+            ...old,
+            products: old.products.map((p: Product) =>
+              p._id === id ? response.data : p
+            ),
+          };
+        });
+      });
+
+      // Still invalidate to ensure fresh data on next refetch
+      queryClient.invalidateQueries({
+        queryKey: productKeys.all,
+        exact: false,
+      });
+    },
+
+    onError: (error, { id }, context) => {
+      // Restore individual product
+      if (context?.previousProduct) {
+        queryClient.setQueryData(productKeys.item(id), context.previousProduct);
       }
 
-      return { previousProduct };
-    },
-    onSuccess: (response, variables) => {
-      queryClient.setQueryData(productKeys.item(variables.id), response.data);
-
-      // Invalidate list queries
-      queryClient.invalidateQueries({ queryKey: productKeys.items() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorProducts() });
-    },
-    onError: (_error, variables, context) => {
-      // Rollback on error
-      if (context?.previousProduct) {
-        queryClient.setQueryData(
-          productKeys.item(variables.id),
-          context.previousProduct
-        );
+      // Restore all list data
+      if (context?.previousListData) {
+        context.previousListData.forEach(({ queryKey, data }) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
     },
   });
@@ -324,10 +369,8 @@ export const useDeleteProduct = () => {
     },
     onSuccess: (response, deletedId) => {
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
-      queryClient.invalidateQueries({ queryKey: productKeys.items() });
-      queryClient.invalidateQueries({
-        queryKey: productKeys.vendorProducts(),
-      });
+      // Invalidate all list queries
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
     },
     onError: (error, deletedId, context) => {
       if (context?.previousProduct) {
@@ -340,5 +383,3 @@ export const useDeleteProduct = () => {
     },
   });
 };
-
-export type { ProductQueryParams, ProductPaginatedResponse };

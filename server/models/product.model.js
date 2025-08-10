@@ -98,8 +98,8 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     attributes: {
-      type: Map,
-      of: String,
+      type: mongoose.Schema.Types.Mixed, 
+      default: {},
     },
     averageRating: {
       type: Number,

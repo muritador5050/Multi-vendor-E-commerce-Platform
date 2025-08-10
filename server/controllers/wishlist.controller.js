@@ -6,9 +6,17 @@ class WishlistController {
     const { productId } = req.body;
     const userId = req.user.id;
 
+    // Validate input
+    if (!productId) {
+      const error = new Error('Product ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
     const wishlistItem = await Wishlist.addProductToWishlist(userId, productId);
 
     res.status(201).json({
+      success: true,
       message: 'Product added to wishlist successfully',
       data: wishlistItem,
     });
@@ -25,6 +33,8 @@ class WishlistController {
     );
 
     res.status(200).json({
+      success: true,
+      message: 'Wishlist retrieved successfully',
       data: result.items,
       pagination: result.pagination,
     });
@@ -35,9 +45,17 @@ class WishlistController {
     const { productId } = req.params;
     const userId = req.user.id;
 
+    // Validate input
+    if (!productId) {
+      const error = new Error('Product ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
     await Wishlist.removeProductFromWishlist(userId, productId);
 
     res.status(200).json({
+      success: true,
       message: 'Product removed from wishlist successfully',
     });
   }
@@ -47,7 +65,11 @@ class WishlistController {
     const userId = req.user.id;
     const count = await Wishlist.getUserWishlistCount(userId);
 
-    res.status(200).json({ count });
+    res.status(200).json({
+      success: true,
+      message: 'Wishlist count retrieved successfully',
+      data: count,
+    });
   }
 
   // Check if a product is in user's wishlist
@@ -55,12 +77,23 @@ class WishlistController {
     const { productId } = req.params;
     const userId = req.user.id;
 
+    // Validate input
+    if (!productId) {
+      const error = new Error('Product ID is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
     const isInWishlist = await Wishlist.checkProductInWishlist(
       userId,
       productId
     );
 
-    res.status(200).json({ isInWishlist });
+    res.status(200).json({
+      success: true,
+      message: 'Wishlist status checked successfully',
+      data: isInWishlist,
+    });
   }
 }
 
