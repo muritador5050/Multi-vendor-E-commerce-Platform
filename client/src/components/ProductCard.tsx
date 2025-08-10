@@ -142,14 +142,13 @@ export default function ProductCard({
     ? product.price - (product.price * discount) / 100
     : product.price;
 
-  // Fixed: Proper image fallback logic
   const getProductImage = () => {
     if (
       !product.images ||
       !Array.isArray(product.images) ||
       product.images.length === 0
     ) {
-      return '/placeholder-image.jpg'; // Fallback to a placeholder image
+      return '/placeholder-image.jpg';
     }
     return product.images[0];
   };
@@ -185,7 +184,7 @@ export default function ProductCard({
             objectFit='cover'
             width='100%'
             height='250px'
-            fallbackSrc='/placeholder-image.jpg' // Chakra UI fallback
+            fallbackSrc='/placeholder-image.jpg'
           />
           <Button
             onClick={handleQuickView}
