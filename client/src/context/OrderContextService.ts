@@ -12,25 +12,33 @@ import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
+export const orderKeys = {
+  all: ['orders'] as const,
+  lists: () => [...orderKeys.all, 'list'] as const,
+  list: (params: OrderParams) => [...orderKeys.lists(), params] as const,
+  details: (id: string) => [...orderKeys.all, 'details', id] as const,
+  stats: () => [...orderKeys.all, 'stats'] as const,
+  dailySales: () => [...orderKeys.all, 'daily-sales'] as const,
+  productSales: () => [...orderKeys.all, 'product-sales'] as const,
+  vendorSales: () => [...orderKeys.all, 'vendor-sales'] as const,
+};
+
 const getOrders = async (
   params: OrderParams = {}
 ): Promise<ApiResponse<OrdersResponse>> => {
   const queryString = buildQueryString(params);
   const endpoint = queryString ? `/orders?${queryString}` : '/orders';
-  const response = await apiClient.authenticatedApiRequest<
-    ApiResponse<OrdersResponse>
-  >(endpoint);
-  return response;
+  return await apiClient.authenticatedApiRequest(endpoint);
 };
 
 const getOrderById = async (id: string): Promise<ApiResponse<Order>> => {
-  return apiClient.authenticatedApiRequest<ApiResponse<Order>>(`/orders/${id}`);
+  return await apiClient.authenticatedApiRequest(`/orders/${id}`);
 };
 
 const createOrder = async (
   orderData: Omit<Order, '_id'>
 ): Promise<ApiResponse<Order>> => {
-  return apiClient.authenticatedApiRequest<ApiResponse<Order>>('/orders', {
+  return await apiClient.authenticatedApiRequest('/orders', {
     method: 'POST',
     body: JSON.stringify(orderData),
   });
@@ -42,32 +50,27 @@ const updateOrderStatus = async (
     Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
   >
 ): Promise<ApiResponse<Order>> => {
-  return apiClient.authenticatedApiRequest<ApiResponse<Order>>(
-    `/orders/${id}/status`,
-    {
-      method: 'PUT',
-      body: JSON.stringify(statusData),
-    }
-  );
+  return await apiClient.authenticatedApiRequest(`/orders/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify(statusData),
+  });
 };
 
 const deleteOrder = async (id: string): Promise<ApiResponse<void>> => {
-  return apiClient.authenticatedApiRequest<ApiResponse<void>>(`/orders/${id}`, {
+  return await apiClient.authenticatedApiRequest(`/orders/${id}`, {
     method: 'DELETE',
   });
 };
 
 // Get order statistics
 const getOrderStats = async (): Promise<ApiResponse<OrderStatsResponse>> => {
-  return apiClient.authenticatedApiRequest<ApiResponse<OrderStatsResponse>>(
-    '/orders/stats'
-  );
+  return await apiClient.authenticatedApiRequest('/orders/stats');
 };
 
 const getDailySalesReport = async (): Promise<
   ApiResponse<DailySalesReport[]>
 > => {
-  return apiClient.authenticatedApiRequest<ApiResponse<DailySalesReport[]>>(
+  return await apiClient.authenticatedApiRequest(
     '/orders/analytics/sales-by-date'
   );
 };
@@ -75,7 +78,7 @@ const getDailySalesReport = async (): Promise<
 const getSalesByProduct = async (): Promise<
   ApiResponse<ProductSalesReport[]>
 > => {
-  return apiClient.authenticatedApiRequest<ApiResponse<ProductSalesReport[]>>(
+  return await apiClient.authenticatedApiRequest(
     '/orders/analytics/sales-by-product'
   );
 };
@@ -83,21 +86,9 @@ const getSalesByProduct = async (): Promise<
 const getVendorSalesAnalytics = async (): Promise<
   ApiResponse<VendorSalesAnalytics>
 > => {
-  return apiClient.authenticatedApiRequest<ApiResponse<VendorSalesAnalytics>>(
+  return await apiClient.authenticatedApiRequest(
     '/orders/analytics/vendor-sales-report'
   );
-};
-
-// Query keys (unchanged)
-export const orderKeys = {
-  all: ['orders'] as const,
-  lists: () => [...orderKeys.all, 'list'] as const,
-  list: (params: OrderParams) => [...orderKeys.lists(), params] as const,
-  details: (id: string) => [...orderKeys.all, 'details', id] as const,
-  stats: () => [...orderKeys.all, 'stats'] as const,
-  dailySales: () => [...orderKeys.all, 'daily-sales'] as const,
-  productSales: () => [...orderKeys.all, 'product-sales'] as const,
-  vendorSales: () => [...orderKeys.all, 'vendor-sales'] as const,
 };
 
 export const useOrders = (params: OrderParams = {}) => {

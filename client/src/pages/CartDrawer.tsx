@@ -12,19 +12,18 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import {
-  useCart,
-  useRemoveFromCart,
-  useUpdateQuantity,
-  useClearCart,
-} from '@/context/CartContextService';
-import { AddIcon, DeleteIcon, MinusIcon, StarIcon } from '@chakra-ui/icons';
+import { useCart, useUpdateQuantity } from '@/context/CartContextService';
+import { AddIcon, MinusIcon, StarIcon } from '@chakra-ui/icons';
+import { useNavigate } from 'react-router-dom';
 
-export default function CartComponent() {
+interface CartDrawerProp {
+  onClose: () => void;
+}
+
+export default function CartDrawer({ onClose }: CartDrawerProp) {
+  const navigate = useNavigate();
   const { data: cart, isLoading, isError } = useCart();
   const updateQuantity = useUpdateQuantity();
-  const removeItem = useRemoveFromCart();
-  const clearCartMutation = useClearCart();
 
   if (isLoading) {
     return (
@@ -50,7 +49,12 @@ export default function CartComponent() {
           <Text fontWeight='bold' fontSize='xl'>
             Your cart is empty
           </Text>
-          <Button bg='black' color='white' _hover={{ bg: 'black' }}>
+          <Button
+            bg='black'
+            color='white'
+            _hover={{ bg: 'black' }}
+            onClick={() => navigate('/shop')}
+          >
             Back To Shop
           </Button>
         </Stack>
@@ -104,15 +108,6 @@ export default function CartComponent() {
                           })}
                       </HStack>
                     </VStack>
-
-                    <IconButton
-                      aria-label='delete item'
-                      colorScheme='red'
-                      icon={<DeleteIcon />}
-                      size='xs'
-                      alignSelf='flex-start'
-                      onClick={() => removeItem.mutate(item.product._id)}
-                    />
                   </Flex>
                   <Divider />
                   <Flex w='100%' align='center' justify='space-between' p={3}>
@@ -159,48 +154,24 @@ export default function CartComponent() {
 
           <Divider />
 
-          <Flex
-            w='100%'
-            bg='white'
-            align='center'
-            justify='space-between'
-            mt={8}
-            p={3}
-          >
-            <Box>
-              <Text fontWeight='light' fontSize='xs'>
+          <Box w='100%' bg='white' mt={8} p={3}>
+            <Flex align='center' justify='space-between'>
+              <Text fontWeight='light' fontSize='md'>
                 Total Items:
-                <Text
-                  as='span'
-                  fontWeight='bold'
-                  fontSize='xs'
-                  color='blue.600'
-                  ml={1}
-                >
-                  {cart?.totalItems}
-                </Text>
               </Text>
-              <Text fontWeight='light' fontSize='xs'>
+              <Text fontWeight='bold' fontSize='xs' color='blue.600' ml={1}>
+                {cart?.totalItems}
+              </Text>
+            </Flex>
+            <Flex align='center' justify='space-between'>
+              <Text fontWeight='light' fontSize='md'>
                 Sub Total:
-                <Text
-                  as='span'
-                  fontWeight='bold'
-                  fontSize='xs'
-                  color='red'
-                  ml={1}
-                >
-                  ${cart?.totalAmount.toFixed(2)}
-                </Text>
               </Text>
-            </Box>
-            <Button
-              colorScheme='red'
-              size='xs'
-              onClick={() => clearCartMutation.mutate()}
-            >
-              Clear Cart
-            </Button>
-          </Flex>
+              <Text fontWeight='bold' fontSize='xs' color='red' ml={1}>
+                ${cart?.totalAmount.toFixed(2)}
+              </Text>
+            </Flex>
+          </Box>
 
           <Divider />
           <Box my={5}>
@@ -209,10 +180,26 @@ export default function CartComponent() {
             </Text>
             <Flex w='100%' bg='white' p={3}>
               <ButtonGroup>
-                <Button variant='outline' fontSize='xs' px='30px'>
+                <Button
+                  variant='outline'
+                  fontSize='xs'
+                  px='30px'
+                  onClick={() => {
+                    setTimeout(() => navigate('/cart'), 100);
+                    onClose();
+                  }}
+                >
                   View Cart
                 </Button>
-                <Button bg='black' color='white' fontSize='xs' px='30px'>
+                <Button
+                  colorScheme='blackAlpha'
+                  fontSize='xs'
+                  px='30px'
+                  onClick={() => {
+                    setTimeout(() => navigate('/checkout'), 100);
+                    onClose();
+                  }}
+                >
                   Checkout
                 </Button>
               </ButtonGroup>

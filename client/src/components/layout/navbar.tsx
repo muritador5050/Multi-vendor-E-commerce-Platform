@@ -29,7 +29,7 @@ import {
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
 import Logo from '../logo/Logo';
-import CartComponent from '@/pages/CartComponent';
+import CartDrawer from '@/pages/CartDrawer';
 import { useCart } from '@/context/CartContextService';
 import { useCategories } from '@/context/CategoryContextService';
 import { useIsAuthenticated } from '@/context/AuthContextService';
@@ -126,9 +126,11 @@ function Navbar() {
           py={{ base: '2', md: '4' }}
           px={{ base: '4', md: '8' }}
         >
+          {/* <Box display={{ base: 'none', md: 'flex' }}> */}
           <Logo />
+          {/* </Box> */}
 
-          <Spacer />
+          <Spacer display={{ base: 'none', md: 'flex' }} />
 
           {/* Desktop Links */}
           <HStack
@@ -144,7 +146,7 @@ function Navbar() {
             <NavLink to='adminDashboard'>Admin Dashboard</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
           </HStack>
-          <Spacer />
+          <Spacer display={{ base: 'none', md: 'flex' }} />
           <HStack ml={4} color='white'>
             {/* Mobile Menu Button */}
             <IconButton
@@ -341,7 +343,7 @@ function Navbar() {
             </Flex>
           </Stack>
           <DrawerBody px={3} overflow='auto'>
-            <CartComponent />
+            <CartDrawer onClose={rightDrawer.onClose} />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

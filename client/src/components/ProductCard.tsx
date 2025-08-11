@@ -268,7 +268,7 @@ export default function ProductCard({
             }
             onClick={handleWishlistToggle}
             isLoading={isWishlistPending || isWishlistLoading}
-            loadingText={isInWishlist ? 'Removing...' : 'Adding...'}
+            loadingText={isInWishlist ? 'Adding...' : 'Removing...'}
             isDisabled={isWishlistLoading || !!wishlistError}
           >
             {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}

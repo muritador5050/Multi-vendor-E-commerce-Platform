@@ -22,6 +22,8 @@ import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 import { EmailVerificationPage } from './components/Auth/EmailVerification';
 import CreateVendorProfile from './components/VendorManagement/CreateVendorProfile';
 import { VendorProfileGuard } from './ProtectedRoute/VendorProfileGuard';
+import CartList from './pages/CartList';
+import CheckoutPage from './pages/Checkout';
 
 //App
 function App() {
@@ -39,6 +41,8 @@ function App() {
             element={<ProductCategoryPage />}
           />
           <Route path='product/:id' element={<ProductDetail />} />
+          <Route path='cart' element={<CartList />} />
+          <Route path='checkout' element={<CheckoutPage />} />
           <Route path='vendor-membership' element={<VendorMembership />} />
           <Route path='/oauth/callback' element={<OAuthCallback />} />
           <Route

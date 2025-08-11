@@ -14,12 +14,17 @@ export interface Address {
 
 export interface Order {
   _id: string;
-  user: User;
-  products: Product[];
-  shippingAddress?: Address;
-  billingAddress?: Address;
-  paymentMethod: PaymentMethod;
+  user: User | string;
+  products: {
+    product: Product | string;
+    quantity: number;
+    price: number;
+  }[];
   totalPrice: number;
+  shippingAddress: Address;
+  paymentMethod: PaymentMethod;
+  billingAddress: Address;
+  useSameAddress: boolean;
   shippingCost?: number;
   estimatedDelivery?: string;
   orderStatus?: string;
@@ -81,7 +86,7 @@ export interface OrderStatsResponse {
 
 // Analytics Types
 export interface DailySalesReport {
-  _id: string; // Date in YYYY-MM-DD format
+  _id: string;
   totalSales: number;
   orders: number;
 }
