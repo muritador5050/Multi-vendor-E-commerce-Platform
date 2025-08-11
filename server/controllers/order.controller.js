@@ -9,6 +9,15 @@ class OrderController {
       item.price = product.price;
     }
 
+    if (req.body.useSameAddress) {
+      req.body.billingAddress = { ...req.body.shippingAddress };
+    } else if (!req.body.billingAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Billing address is required when not using same address',
+      });
+    }
+
     const order = await Order.createNewOrder(req.body);
 
     res.status(201).json({

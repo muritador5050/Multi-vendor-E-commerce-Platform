@@ -65,7 +65,16 @@ wishlistSchema.statics.addProductToWishlist = async function (
 ) {
   await this.validateProduct(productId);
 
-  await this.checkProductInWishlist(userId, productId);
+  const isAlreadyInWishlist = await this.checkProductInWishlist(
+    userId,
+    productId
+  );
+
+  if (isAlreadyInWishlist) {
+    const error = new Error('Product is already in wishlist');
+    error.statusCode = 409;
+    throw error;
+  }
 
   const wishlistItem = new this({
     user: userId,

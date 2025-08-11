@@ -51,6 +51,10 @@ const User = require('./user.model');
  *               type: string
  *             country:
  *               type: string
+ *         useSameAddress:
+ *           type: boolean
+ *           description: Indicates if billing address is same as shipping address
+ *           default: true
  *         paymentMethod:
  *           type: string
  *           description: Payment method used for the order (e.g., Stripe, PayPal, COD)
@@ -117,10 +121,14 @@ const orderSchema = new mongoose.Schema(
       zipCode: String,
       country: String,
     },
+    useSameAddress: {
+      type: Boolean,
+      default: true,
+    },
     paymentMethod: {
       type: String,
       required: true,
-      enum: ['stripe', 'paypal', 'cod', 'bank_transfer'],
+      enum: ['stripe', 'paypal', 'card', 'bank_transfer'],
     },
     paymentStatus: {
       type: String,
@@ -156,11 +164,12 @@ orderSchema.index({ isDeleted: 1 });
 
 // Static Methods
 orderSchema.statics.validateOrderData = function (orderData) {
-  const { user, products, paymentMethod, totalPrice } = orderData;
+  const { user, products, paymentMethod, totalPrice, shippingAddress } =
+    orderData;
 
-  if (!user || !products || !paymentMethod || !totalPrice) {
+  if (!user || !products || !paymentMethod || !totalPrice || !shippingAddress) {
     throw new Error(
-      'Required fields: user, products, paymentMethod, totalPrice'
+      'Required fields: user, products, paymentMethod, totalPrice, shippingAddress'
     );
   }
 
@@ -173,10 +182,19 @@ orderSchema.statics.validateOrderData = function (orderData) {
       throw new Error('Each product must have product ID and quantity');
     }
   }
+
+  // Validate billing address if not using same address
+  if (orderData.useSameAddress === false && !orderData.billingAddress) {
+    throw new Error('Billing address is required when not using same address');
+  }
 };
 
 orderSchema.statics.createNewOrder = async function (orderData) {
   this.validateOrderData(orderData);
+
+  if (orderData.useSameAddress) {
+    orderData.billingAddress = { ...orderData.shippingAddress };
+  }
 
   const calculatedTotal =
     orderData.products.reduce(
@@ -192,7 +210,7 @@ orderSchema.statics.createNewOrder = async function (orderData) {
 
   return await order.populate([
     { path: 'user', select: 'name email' },
-    // { path: 'products.product', select: 'name price' },
+    { path: 'products.product', select: 'name price' },
   ]);
 };
 
@@ -246,6 +264,12 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
 
     if (search.match(/^[0-9a-fA-F]{24}$/)) {
       filter.$or.push({ _id: search });
+    }
+
+    if (search.toLowerCase() === 'true' || search.toLowerCase() === 'false') {
+      filter.$or.push({
+        useSameAddress: search.toLowerCase() === 'true',
+      });
     }
   }
 
@@ -321,6 +345,12 @@ orderSchema.statics.getOrderStatistics = async function () {
         },
         cancelledOrders: {
           $sum: { $cond: [{ $eq: ['$orderStatus', 'cancelled'] }, 1, 0] },
+        },
+        sameAddressOrders: {
+          $sum: { $cond: [{ $eq: ['$useSameAddress', true] }, 1, 0] },
+        },
+        differentAddressOrders: {
+          $sum: { $cond: [{ $eq: ['$useSameAddress', false] }, 1, 0] },
         },
       },
     },
