@@ -41,10 +41,6 @@ const CheckoutPage = () => {
     },
     useSameAddress: true,
     paymentMethod: 'card',
-    paymentStatus: 'pending',
-    orderStatus: 'pending',
-    shippingCost: 0,
-    trackingNumber: '',
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const toast = useToast();
@@ -117,7 +113,7 @@ const CheckoutPage = () => {
       const finalOrderData: Omit<Order, '_id'> = {
         user: currentUser._id,
         products,
-        totalPrice: cartItems?.totalAmount || 0,
+        totalPrice: (cartItems?.totalAmount || 0) + shippingCost,
         shippingAddress: orderData.shippingAddress,
         billingAddress: orderData.useSameAddress
           ? orderData.shippingAddress
@@ -128,23 +124,37 @@ const CheckoutPage = () => {
         orderStatus: 'pending',
         shippingCost: shippingCost,
       };
+
       // Use the mutation to create the order
-      await createOrderMutation.mutateAsync(finalOrderData);
+      const createdOrder = await createOrderMutation.mutateAsync(
+        finalOrderData
+      );
 
       toast({
-        title: 'Order Placed!',
-        description: 'Your order has been successfully placed.',
-        status: 'success',
-        duration: 5000,
+        title: 'Order Created!',
+        description: 'Proceeding to payment...',
+        status: 'info',
+        duration: 3000,
         isClosable: true,
       });
 
-      navigate('/order-confirmation');
+      navigate('/payment', {
+        state: {
+          orderId: createdOrder.data?._id,
+          amount: (cartItems?.totalAmount || 0) + shippingCost,
+          paymentMethod: orderData.paymentMethod,
+          subtotal: cartItems?.totalAmount || 0,
+          shippingCost: shippingCost,
+        },
+      });
     } catch (error) {
       console.log(error);
       toast({
         title: 'Error',
-        description: 'There was an error placing your order. Please try again.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'There was an error creating your order. Please try again.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -311,51 +321,16 @@ const CheckoutPage = () => {
                   paymentMethod: value,
                 }))
               }
-              mb={4}
             >
               <Stack direction='column' spacing={4}>
                 <Radio value='card'>
                   <Box ml={2}>
                     <Text fontWeight='medium'>Credit/Debit Card</Text>
                     <Text fontSize='sm' color='gray.500'>
-                      Pay with Visa, Mastercard, or American Express
+                      Pay with Visa, Mastercard, or American Express via Stripe
                     </Text>
                   </Box>
                 </Radio>
-
-                {orderData.paymentMethod === 'card' && (
-                  <Box pl={6} pt={2}>
-                    <Grid
-                      templateColumns={{ base: '1fr', md: '1fr 1fr' }}
-                      gap={4}
-                      mb={4}
-                    >
-                      <FormControl isRequired>
-                        <FormLabel>Card Number</FormLabel>
-                        <Input placeholder='1234 5678 9012 3456' />
-                      </FormControl>
-                      <FormControl isRequired>
-                        <FormLabel>Name on Card</FormLabel>
-                        <Input placeholder='John Doe' />
-                      </FormControl>
-                    </Grid>
-
-                    <Grid
-                      templateColumns={{ base: '1fr', md: '1fr 1fr 1fr' }}
-                      gap={4}
-                    >
-                      <FormControl isRequired>
-                        <FormLabel>Expiry Date</FormLabel>
-                        <Input placeholder='MM/YY' />
-                      </FormControl>
-                      <FormControl isRequired>
-                        <FormLabel>CVV</FormLabel>
-                        <Input placeholder='123' type='password' />
-                      </FormControl>
-                    </Grid>
-                  </Box>
-                )}
-
                 <Radio value='paypal'>
                   <Box ml={2}>
                     <Text fontWeight='medium'>PayPal</Text>
@@ -364,21 +339,11 @@ const CheckoutPage = () => {
                     </Text>
                   </Box>
                 </Radio>
-
                 <Radio value='stripe'>
                   <Box ml={2}>
                     <Text fontWeight='medium'>Stripe</Text>
                     <Text fontSize='sm' color='gray.500'>
                       Secure credit card payments
-                    </Text>
-                  </Box>
-                </Radio>
-
-                <Radio value='bank_transfer'>
-                  <Box ml={2}>
-                    <Text fontWeight='medium'>Bank Transfer</Text>
-                    <Text fontSize='sm' color='gray.500'>
-                      Direct bank transfer
                     </Text>
                   </Box>
                 </Radio>
@@ -392,9 +357,9 @@ const CheckoutPage = () => {
             size='lg'
             width='full'
             isLoading={isProcessing}
-            loadingText='Processing Order...'
+            loadingText='Creating Order...'
           >
-            Place Order
+            Continue to Payment
           </Button>
         </Box>
 
@@ -427,42 +392,29 @@ const CheckoutPage = () => {
                 <Text>Shipping</Text>
                 <Text>${shippingCost.toFixed(2)}</Text>
               </Flex>
-              <Flex width='full' justify='space-between'>
-                <Text>Tax</Text>
-                {/* <Text>${tax.toFixed(2)}</Text> */}
-              </Flex>
               <Flex
                 width='full'
                 justify='space-between'
                 fontWeight='bold'
+                fontSize='lg'
                 pt={2}
+                borderTopWidth='1px'
               >
                 <Text>Total</Text>
-                <Text>${cartItems?.totalAmount.toFixed(2)}</Text>
+                <Text>
+                  ${((cartItems?.totalAmount || 0) + shippingCost).toFixed(2)}
+                </Text>
               </Flex>
             </VStack>
 
             <Button
               variant='outline'
-              colorScheme='cyan'
+              colorScheme='gray'
               width='full'
               onClick={() => navigate('/cart')}
             >
               Back to Cart
             </Button>
-          </Box>
-
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
-            <Heading as='h3' fontSize='md' mb={4}>
-              Need Help?
-            </Heading>
-            <Text mb={4}>
-              Contact our customer support team at support@example.com or call
-              us at +1 (800) 123-4567.
-            </Text>
-            <Text fontSize='sm' color='gray.500'>
-              All transactions are secure and encrypted.
-            </Text>
           </Box>
         </Box>
       </Grid>
