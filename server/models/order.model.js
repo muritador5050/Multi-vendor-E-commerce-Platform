@@ -86,7 +86,11 @@ const User = require('./user.model');
  */
 const orderSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     products: [
       {
         product: {
@@ -128,7 +132,7 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       required: true,
-      enum: ['stripe', 'paypal', 'card', 'bank_transfer'],
+      enum: ['stripe', 'paystack', 'card', 'bank_transfer'],
     },
     paymentStatus: {
       type: String,
@@ -157,20 +161,16 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-orderSchema.index({ user: 1, orderStatus: 1 });
+orderSchema.index({ userId: 1, orderStatus: 1 });
 orderSchema.index({ trackingNumber: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ isDeleted: 1 });
 
-// Static Methods
 orderSchema.statics.validateOrderData = function (orderData) {
-  const { user, products, paymentMethod, totalPrice, shippingAddress } =
-    orderData;
+  const { products, paymentMethod, shippingAddress } = orderData;
 
-  if (!user || !products || !paymentMethod || !totalPrice || !shippingAddress) {
-    throw new Error(
-      'Required fields: user, products, paymentMethod, totalPrice, shippingAddress'
-    );
+  if (!products || !paymentMethod || !shippingAddress) {
+    throw new Error('Required fields:products, paymentMethod, shippingAddress');
   }
 
   if (!products || products.length === 0) {
@@ -209,8 +209,8 @@ orderSchema.statics.createNewOrder = async function (orderData) {
   });
 
   return await order.populate([
-    { path: 'user', select: 'name email' },
-    { path: 'products.product', select: 'name price' },
+    { path: 'userId', select: 'name email' },
+    { path: 'products.product', select: 'name' },
   ]);
 };
 
@@ -220,7 +220,7 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
     limit = 10,
     orderStatus,
     paymentStatus,
-    user,
+    userId,
     sortBy = 'createdAt',
     sortOrder = 'desc',
     startDate,
@@ -232,7 +232,7 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
 
   if (orderStatus) filter.orderStatus = orderStatus;
   if (paymentStatus) filter.paymentStatus = paymentStatus;
-  if (user) filter.user = user;
+  if (userId) filter.userId = userId;
 
   if (startDate || endDate) {
     filter.createdAt = {};
@@ -308,7 +308,7 @@ orderSchema.statics.findByIdWithAuth = async function (
     _id: orderId,
     isDeleted: false,
   })
-    .populate('user', 'name email')
+    .populate('userId', 'name email')
     .populate('products.product', 'name price description');
 
   if (!order) {
@@ -492,7 +492,7 @@ orderSchema.methods.updateStatus = async function (updateData) {
   if (deliveredAt) this.deliveredAt = deliveredAt;
 
   await this.save({ validateBeforeSave: true });
-  await this.populate('user', 'name email');
+  await this.populate('userId', 'name email');
 
   return this;
 };
@@ -503,7 +503,7 @@ orderSchema.methods.softDelete = async function () {
 };
 
 orderSchema.methods.canBeViewedBy = function (userId, userRole) {
-  return userRole === 'admin' || this.user._id.toString() === userId;
+  return userRole === 'admin' || this.userId._id.toString() === userId;
 };
 
 module.exports = mongoose.model('Order', orderSchema);

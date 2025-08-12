@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
 const axios = require('axios');
+const Order = require('./order.model');
 
 /**
  * @openapi
@@ -28,12 +29,16 @@ const axios = require('axios');
  */
 const paymentSchema = new mongoose.Schema(
   {
-    order: {
+    orderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Order',
       required: true,
     },
-    paymentProvider: { type: String, required: true },
+    paymentProvider: {
+      type: String,
+      enum: ['stripe', 'paystack', 'card', 'bank_transfer'],
+      required: true,
+    },
     paymentId: { type: String, required: true, unique: true, index: true },
     amount: { type: Number, required: true, min: 0 },
     currency: { type: String, default: 'USD' },
@@ -45,7 +50,7 @@ const paymentSchema = new mongoose.Schema(
     paidAt: Date,
     failureReason: String,
     transactionDetails: String,
-    user: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
@@ -56,37 +61,40 @@ const paymentSchema = new mongoose.Schema(
 // Static Methods
 paymentSchema.statics.validatePaymentData = function (
   paymentProvider,
-  order,
+  orderId,
   amount
 ) {
-  if (!paymentProvider || !order || !amount) {
+  if (!paymentProvider || !orderId || !amount) {
     throw new Error(
       'Missing required fields: order, paymentProvider, and amount are required'
     );
   }
 
-  if (!['stripe', 'paystack'].includes(paymentProvider)) {
+  if (
+    !['stripe', 'paystack', 'card', 'bank_transfer'].includes(paymentProvider)
+  ) {
     throw new Error('Unsupported payment provider. Use "stripe" or "paystack"');
   }
 };
 
 paymentSchema.statics.checkExistingPayment = async function (orderId) {
   const existingPayment = await this.findOne({
-    order: orderId,
+    orderId,
     status: { $in: ['completed', 'pending'] },
   });
 
   if (existingPayment) {
-    throw new Error('Payment already exists for this order');
+    throw new Error(
+      `There is already a ${existingPayment.status} payment for this order`
+    );
   }
 };
 
 paymentSchema.statics.createStripePayment = async function (
+  orderId,
   amount,
-  currency,
-  orderId
+  currency
 ) {
-  const Order = require('./order.model');
   const idempotencyKey = crypto.randomUUID();
 
   const order = await Order.findById(orderId);
@@ -94,12 +102,14 @@ paymentSchema.statics.createStripePayment = async function (
     throw new Error('Order not found');
   }
 
+  const processedCurrency = (currency || 'usd').toLowerCase();
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [
       {
         price_data: {
-          currency: currency.toLowerCase(),
+          currency: processedCurrency,
           product_data: { name: 'Order Payment' },
           unit_amount: Math.round(amount * 100),
         },
@@ -121,8 +131,7 @@ paymentSchema.statics.createStripePayment = async function (
   };
 };
 
-paymentSchema.statics.createPaystackPayment = async function (amount, orderId) {
-  const Order = require('./order.model');
+paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
   const idempotencyKey = crypto.randomUUID();
 
   if (!process.env.PAYSTACK_SECRET_KEY) {
@@ -182,25 +191,43 @@ paymentSchema.statics.createPaystackPayment = async function (amount, orderId) {
   };
 };
 
-paymentSchema.statics.createProviderPayment = async function (
-  provider,
-  amount,
-  currency,
-  orderId
-) {
-  if (provider === 'stripe') {
-    return await this.createStripePayment(amount, currency, orderId);
-  }
+paymentSchema.statics.createProviderPayment = async function (orderId) {
+  const order = await Order.findById(orderId).select(
+    'paymentMethod totalPrice'
+  );
+  if (!order) throw new Error('Order not found');
 
-  if (provider === 'paystack') {
-    return await this.createPaystackPayment(amount, orderId);
-  }
+  const { paymentMethod, totalPrice } = order;
+  if (totalPrice <= 0) throw new Error('Order total must be positive');
 
+  if (paymentMethod === 'stripe') {
+    const { paymentId, checkoutUrl } = await this.createStripePayment(
+      orderId,
+      totalPrice
+    );
+    return {
+      paymentProvider: 'stripe',
+      paymentId,
+      amount: totalPrice,
+      checkoutUrl,
+    };
+  }
+  if (paymentMethod === 'paystack') {
+    const { paymentId, checkoutUrl } = await this.createPaystackPayment(
+      orderId,
+      totalPrice
+    );
+    return {
+      paymentProvider: 'paystack',
+      paymentId,
+      amount: totalPrice,
+      checkoutUrl,
+    };
+  }
   throw new Error('Unsupported payment provider');
 };
 
 paymentSchema.statics.handleStripeWebhook = async function (req) {
-  const Order = require('./order.model');
   const sig = req.headers['stripe-signature'];
   const event = stripe.webhooks.constructEvent(
     req.body,
@@ -223,7 +250,7 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
           paidAt: new Date(),
           transactionDetails: JSON.stringify(session),
         }),
-        Order.findByIdAndUpdate(payment.order, {
+        Order.findByIdAndUpdate(payment.orderId, {
           paymentStatus: 'completed',
           orderStatus: 'processing',
         }),
@@ -248,7 +275,6 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
 };
 
 paymentSchema.statics.handlePaystackWebhook = async function (req) {
-  const Order = require('./order.model');
   const hash = crypto
     .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
     .update(JSON.stringify(req.body))
@@ -273,7 +299,7 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
           paidAt: new Date(),
           transactionDetails: JSON.stringify(data),
         }),
-        Order.findByIdAndUpdate(payment.order, {
+        Order.findByIdAndUpdate(payment.orderId, {
           paymentStatus: 'completed',
           orderStatus: 'processing',
         }),
@@ -290,6 +316,22 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
   }
 };
 
+paymentSchema.statics.findByAnyId = async function (identifier) {
+  let payment;
+
+  if (mongoose.Types.ObjectId.isValid(identifier)) {
+    payment = await this.findById(identifier).populate('orderId');
+  }
+
+  if (!payment) {
+    payment = await this.findOne({
+      $or: [{ paymentId: identifier }],
+    }).populate('orderId');
+  }
+
+  return payment;
+};
+
 paymentSchema.statics.getFilteredPayments = async function (
   filters,
   pagination
@@ -299,7 +341,7 @@ paymentSchema.statics.getFilteredPayments = async function (
 
   const filter = {};
   if (status) filter.status = status;
-  if (orderId) filter.order = orderId;
+  if (orderId) filter.orderId = orderId;
   if (paidAt) filter.paidAt = paidAt;
   if (paymentProvider) filter.paymentProvider = paymentProvider;
 
@@ -307,7 +349,7 @@ paymentSchema.statics.getFilteredPayments = async function (
 
   const [payments, totalPayments] = await Promise.all([
     this.find(filter)
-      .populate('order')
+      .populate('orderId')
       .skip(skip)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit)),
@@ -328,10 +370,10 @@ paymentSchema.statics.getFilteredPayments = async function (
 };
 
 paymentSchema.statics.getUserPayments = async function (userId) {
-  return await this.find({ user: userId })
+  return await this.find({ userId })
     .populate([
-      { path: 'order', select: 'orderNumber totalAmount' },
-      { path: 'user', select: 'name email' },
+      { path: 'orderId', select: 'orderNumber totalAmount' },
+      { path: 'userId', select: 'name email' },
     ])
     .sort({ createdAt: -1 })
     .lean();
@@ -503,7 +545,7 @@ paymentSchema.statics.getPaymentAnalytics = async function (
 
     // Recent transactions
     this.find(matchStage)
-      .populate('order', 'orderNumber')
+      .populate('orderId', 'orderNumber')
       .sort({ createdAt: -1 })
       .limit(5)
       .select('amount status paymentMethod createdAt order transactionId')
@@ -563,7 +605,7 @@ paymentSchema.methods.updatePaymentStatus = async function (status, paidAt) {
   return await Payment.findByIdAndUpdate(this._id, updateData, {
     new: true,
     runValidators: true,
-  }).populate('order');
+  }).populate('orderId');
 };
 
 module.exports = mongoose.model('Payment', paymentSchema);

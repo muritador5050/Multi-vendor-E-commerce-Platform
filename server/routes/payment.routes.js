@@ -164,7 +164,7 @@ router.get(
  *       '403':
  *         description: Forbidden, user does not have permission to update payment status
  */
-router.put(
+router.patch(
   '/:id/status',
   authenticate,
   checkRole('admin', 'edit'),

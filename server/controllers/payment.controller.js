@@ -1,141 +1,224 @@
 const Payment = require('../models/payment.model');
-const { resSuccessObject } = require('../utils/responseObject');
 
 // Payment controller
 class PaymentController {
   static async createPayment(req, res) {
-    const { order, paymentProvider, amount, currency } = req.body;
+    try {
+      const { orderId } = req.body;
+      if (!orderId) throw new Error('orderId is required');
+      await Payment.checkExistingPayment(orderId);
 
-    // Validate payment data
-    Payment.validatePaymentData(paymentProvider, order, amount);
+      const { paymentProvider, paymentId, amount, currency, checkoutUrl } =
+        await Payment.createProviderPayment(orderId);
 
-    // Check for existing payment
-    await Payment.checkExistingPayment(order);
+      const payment = await Payment.create({
+        orderId,
+        paymentProvider,
+        paymentId,
+        amount,
+        currency: paymentProvider === 'paystack' ? 'NGN' : currency,
+        status: 'pending',
+        userId: req.user.id,
+      });
 
-    // Create payment with provider
-    const paymentData = await Payment.createProviderPayment(
-      paymentProvider,
-      amount,
-      currency,
-      order
-    );
-
-    // Save payment to database
-    const payment = await Payment.create({
-      order,
-      paymentProvider,
-      paymentId: paymentData.paymentId,
-      amount,
-      currency: paymentProvider === 'paystack' ? 'NGN' : currency,
-      status: 'pending',
-    });
-
-    return res.json({
-      results: payment,
-      checkoutUrl: paymentData.checkoutUrl,
-    });
+      res.status(201).json({
+        success: true,
+        message: 'Payment created successfully',
+        data: { payment, checkoutUrl },
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
   }
 
   // Process webhooks
   static async processWebhooks(req, res) {
-    const { provider } = req.params;
+    try {
+      const { provider } = req.params;
 
-    if (provider === 'stripe') {
-      await Payment.handleStripeWebhook(req);
-    } else if (provider === 'paystack') {
-      await Payment.handlePaystackWebhook(req);
-    } else {
-      return res.status(400).json({ message: 'Unknown payment provider' });
+      if (provider === 'stripe') {
+        await Payment.handleStripeWebhook(req);
+      } else if (provider === 'paystack') {
+        await Payment.handlePaystackWebhook(req);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Unknown payment provider',
+        });
+      }
+
+      return res.status(200).json({
+        data: {
+          success: true,
+          message: 'Webhook processed successfully',
+        },
+      });
+    } catch (error) {
+      console.error('Error processing webhook:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error processing webhook',
+        error: error.message,
+      });
     }
-
-    return res.status(200).json({ message: 'Webhook processed successfully' });
   }
 
   // Get all payments
   static async getAllPayments(req, res) {
-    const { status, orderId, paidAt, paymentProvider, page, limit } = req.query;
+    try {
+      const { status, order, paidAt, paymentProvider, page, limit } = req.query;
 
-    const filters = { status, orderId, paidAt, paymentProvider };
-    const pagination = { page, limit };
+      const filters = { status, order, paidAt, paymentProvider };
+      const pagination = { page, limit };
 
-    const result = await Payment.getFilteredPayments(filters, pagination);
+      const result = await Payment.getFilteredPayments(filters, pagination);
 
-    return res.json({
-      success: true,
-      message: 'Payments retrieved successfully',
-      data: {
-        payments: result.payments,
-        pagination: result.pagination,
-      },
-    });
+      return res.json({
+        data: {
+          payments: result.payments,
+          pagination: result.pagination,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error retrieving payments',
+        error: error.message,
+      });
+    }
   }
 
   // Get payment by ID
   static async getPaymentById(req, res) {
-    const payment = await Payment.findById(req.params.id).populate('order');
+    try {
+      const { id } = req.params;
 
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      const payment = await Payment.findByAnyId(id);
+
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Payment not found',
+          searchedId: id,
+        });
+      }
+
+      return res.json({
+        data: {
+          results: payment,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching payment:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error retrieving payment',
+        error: error.message,
+      });
     }
-
-    return res.json(resSuccessObject({ results: payment }));
   }
 
   // Get user's own payments
   static async getUserPayments(req, res) {
-    const userId = req.user.id;
-    const payments = await Payment.getUserPayments(userId);
+    try {
+      const userId = req.user.id;
+      const payments = await Payment.getUserPayments(userId);
 
-    return res.json(
-      resSuccessObject({
-        message: 'User payments retrieved successfully',
-        results: payments,
-      })
-    );
+      return res.json({
+        data: {
+          results: payments,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching user payments:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error retrieving user payments',
+        error: error.message,
+      });
+    }
   }
 
   // Update payment status
   static async updatePaymentStatus(req, res) {
-    const { status, paidAt } = req.body;
+    try {
+      const { status, paidAt } = req.body;
 
-    const payment = await Payment.findById(req.params.id);
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      const payment = await Payment.findById(req.params.id);
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Payment not found',
+        });
+      }
+
+      const updatedPayment = await payment.updatePaymentStatus(status, paidAt);
+
+      return res.json({
+        data: {
+          results: updatedPayment,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating payment status',
+        error: error.message,
+      });
     }
-
-    const updatedPayment = await payment.updatePaymentStatus(status, paidAt);
-
-    return res.json(resSuccessObject({ results: updatedPayment }));
   }
 
   // Delete or Cancel payment
   static async deletePayment(req, res) {
-    const payment = await Payment.findByIdAndDelete(req.params.id);
+    try {
+      const payment = await Payment.findByIdAndDelete(req.params.id);
 
-    if (!payment) {
-      return res.status(404).json({ message: 'Payment not found' });
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: 'Payment not found',
+        });
+      }
+
+      return res.json({
+        data: {
+          success: true,
+          message: 'Payment deleted successfully',
+        },
+      });
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error deleting payment',
+        error: error.message,
+      });
     }
-
-    return res.json(
-      resSuccessObject({
-        message: 'Payment deleted successfully',
-      })
-    );
   }
 
   // Get user's payment analytics and statistics
   static async getPaymentAnalytics(req, res) {
-    const userId = req.user.id;
-    const { period } = req.query;
+    try {
+      const userId = req.user.id;
+      const { period } = req.query;
 
-    const analytics = await Payment.getPaymentAnalytics(userId, period);
+      const analytics = await Payment.getPaymentAnalytics(userId, period);
 
-    return res.json(
-      resSuccessObject({
-        message: 'User payment analytics retrieved successfully',
-        results: analytics,
-      })
-    );
+      return res.json({
+        data: {
+          results: analytics,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching payment analytics:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error retrieving payment analytics',
+        error: error.message,
+      });
+    }
   }
 }
 
