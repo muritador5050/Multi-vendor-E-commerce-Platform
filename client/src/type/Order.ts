@@ -1,39 +1,69 @@
-import type { User } from './auth';
-import type { Product } from './product';
-
 type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-type PaymentMethod = 'card' | 'paypal' | 'stripe' | 'bank_transfer' | string;
+type PaymentMethod = 'card' | 'paystack' | 'stripe' | 'bank_transfer';
 
 export interface Address {
-  street?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
+export interface CreateOrderProduct {
+  product: string;
+  quantity: number;
+}
+
+export interface CreateOrderRequest {
+  products: CreateOrderProduct[];
+  shippingAddress: Address;
+  useSameAddress: boolean;
+  paymentMethod: string;
+  shippingCost?: number;
+  billingAddress?: Address;
+}
+
+export interface OrderProduct {
+  product: {
+    _id: string;
+    name: string;
+    images: string[];
+  };
+  quantity: number;
+  price: number;
+  _id: string;
 }
 
 export interface Order {
   _id: string;
-  user: User | string;
-  products: {
-    product: Product | string;
-    quantity: number;
-    price: number;
-  }[];
-  totalPrice: number;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  products: OrderProduct[];
   shippingAddress: Address;
-  paymentMethod: PaymentMethod;
   billingAddress: Address;
   useSameAddress: boolean;
-  shippingCost?: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  orderStatus:
+    | 'pending'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled'
+    | 'returned';
+  totalPrice: number;
+  shippingCost: number;
+  trackingNumber: string;
   estimatedDelivery?: string;
-  orderStatus?: string;
-  paymentStatus?: PaymentStatus;
-  trackingNumber?: string;
   deliveredAt?: string;
-  createdAt?: Date | string;
-  updatedAt?: Date | string;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
+
 export interface OrderPagination {
   currentPage: number;
   totalPages: number;

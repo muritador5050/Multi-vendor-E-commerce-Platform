@@ -1,3 +1,4 @@
+import { useOrderById } from '@/context/OrderContextService';
 import {
   Box,
   Button,
@@ -9,7 +10,6 @@ import {
   FormControl,
   FormLabel,
   Badge,
-  Progress,
   Alert,
   AlertIcon,
   AlertDescription,
@@ -23,109 +23,130 @@ import {
   StepTitle,
   Stepper,
   useSteps,
+  Spinner,
+  Center,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const ORDER_STATUSES = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  SHIPPED: 'shipped',
+  DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+  RETURNED: 'returned',
+} as const;
+
+// Type for order status
+type OrderStatus = (typeof ORDER_STATUSES)[keyof typeof ORDER_STATUSES];
+
+const steps = [
+  {
+    title: 'Order Pending',
+    description: 'Your order has been placed and is awaiting confirmation',
+  },
+  {
+    title: 'Processing',
+    description: 'We are preparing your items for shipment',
+  },
+  { title: 'Shipped', description: 'Your order is on its way to you' },
+  {
+    title: 'Delivered',
+    description: 'Package has been delivered successfully',
+  },
+];
+
+const getActiveStep = (status: string) => {
+  switch (status?.toLowerCase() as OrderStatus) {
+    case ORDER_STATUSES.PENDING:
+      return 0;
+    case ORDER_STATUSES.PROCESSING:
+      return 1;
+    case ORDER_STATUSES.SHIPPED:
+      return 2;
+    case ORDER_STATUSES.DELIVERED:
+      return 3;
+    case ORDER_STATUSES.CANCELLED:
+    case ORDER_STATUSES.RETURNED:
+      return -1;
+    default:
+      return 0;
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status?.toLowerCase() as OrderStatus) {
+    case ORDER_STATUSES.DELIVERED:
+      return 'green';
+    case ORDER_STATUSES.SHIPPED:
+      return 'blue';
+    case ORDER_STATUSES.PROCESSING:
+      return 'yellow';
+    case ORDER_STATUSES.PENDING:
+      return 'purple';
+    case ORDER_STATUSES.CANCELLED:
+      return 'red';
+    case ORDER_STATUSES.RETURNED:
+      return 'orange';
+    default:
+      return 'gray';
+  }
+};
+
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState('');
-  const [orderData, setOrderData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [searchTriggered, setSearchTriggered] = useState(false);
   const navigate = useNavigate();
 
-  // Mock order tracking steps
-  const steps = [
-    { title: 'Order Placed', description: 'Your order has been confirmed' },
-    { title: 'Processing', description: 'We are preparing your items' },
-    { title: 'Shipped', description: 'Your order is on its way' },
-    { title: 'Out for Delivery', description: 'Package is out for delivery' },
-    { title: 'Delivered', description: 'Package has been delivered' },
-  ];
-
-  const getActiveStep = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-      case 'confirmed':
-        return 1;
-      case 'processing':
-        return 2;
-      case 'shipped':
-        return 3;
-      case 'out_for_delivery':
-        return 4;
-      case 'delivered':
-        return 5;
-      default:
-        return 1;
-    }
-  };
+  // Fetch order data - only when we have an orderId and search was triggered
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useOrderById(searchTriggered ? orderId : '');
 
   const { activeStep } = useSteps({
-    index: orderData ? getActiveStep(orderData.orderStatus) - 1 : 0,
+    index: order ? Math.max(0, getActiveStep(order.orderStatus)) : 0,
     count: steps.length,
   });
 
   const handleTrackOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      if (!orderId.trim()) {
-        throw new Error('Please enter an order ID');
-      }
-
-      // Mock order data - in real app, this would come from your API
-      const mockOrderData = {
-        _id: orderId,
-        orderStatus: 'shipped',
-        paymentStatus: 'paid',
-        totalPrice: 89.97,
-        shippingCost: 9.99,
-        trackingNumber:
-          'TRK' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-        estimatedDelivery: new Date(
-          Date.now() + 2 * 24 * 60 * 60 * 1000
-        ).toDateString(),
-        shippingAddress: {
-          street: '123 Main St',
-          city: 'New York',
-          state: 'NY',
-          zipCode: '10001',
-          country: 'United States',
-        },
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        products: [
-          { product: { name: 'Sample Product' }, quantity: 2, price: 39.99 },
-        ],
-      };
-
-      setOrderData(mockOrderData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Order not found');
-    } finally {
-      setIsLoading(false);
+    if (!orderId.trim()) {
+      return; // Let the required validation handle this
     }
+
+    setSearchTriggered(true);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'delivered':
-        return 'green';
-      case 'shipped':
-      case 'out_for_delivery':
-        return 'blue';
-      case 'processing':
-        return 'yellow';
-      case 'confirmed':
-        return 'purple';
-      default:
-        return 'gray';
-    }
+  const handleTrackAnotherOrder = () => {
+    setOrderId('');
+    setSearchTriggered(false);
+  };
+
+  // Special component for cancelled/returned orders
+  const CancelledOrderStatus = ({ status }: { status: string }) => {
+    const isReturned = status?.toLowerCase() === ORDER_STATUSES.RETURNED;
+
+    return (
+      <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
+        <Alert status={isReturned ? 'warning' : 'error'} mb={4}>
+          <AlertIcon />
+          <Box>
+            <Text fontWeight='bold'>
+              Order {isReturned ? 'Returned' : 'Cancelled'}
+            </Text>
+            <Text fontSize='sm'>
+              {isReturned
+                ? 'This order has been returned. Please contact support for refund details.'
+                : 'This order has been cancelled. If you have any questions, please contact support.'}
+            </Text>
+          </Box>
+        </Alert>
+      </Box>
+    );
   };
 
   const formatDate = (date: string) => {
@@ -138,18 +159,35 @@ const OrderTrackingPage = () => {
     });
   };
 
+  // Show loading state when searching
+  if (isLoading && searchTriggered) {
+    return (
+      <Box maxW='4xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
+        <Heading as='h1' fontSize='3xl' mb={8} textAlign='center'>
+          Track Your Order
+        </Heading>
+        <Center>
+          <VStack spacing={4}>
+            <Spinner size='xl' color='blue.500' />
+            <Text>Loading order information...</Text>
+          </VStack>
+        </Center>
+      </Box>
+    );
+  }
+
   return (
     <Box maxW='4xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
       <Heading as='h1' fontSize='3xl' mb={8} textAlign='center'>
         Track Your Order
       </Heading>
 
-      {/* Order ID Input */}
-      {!orderData && (
+      {/* Order ID Input - show when no order is found or not searched yet */}
+      {(!order || error) && (
         <Box maxW='md' mx='auto' mb={8}>
           <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
             <form onSubmit={handleTrackOrder}>
-              <FormControl mb={4}>
+              <FormControl mb={4} isRequired>
                 <FormLabel>Order ID</FormLabel>
                 <Input
                   value={orderId}
@@ -158,10 +196,13 @@ const OrderTrackingPage = () => {
                 />
               </FormControl>
 
-              {error && (
+              {error && searchTriggered && (
                 <Alert status='error' mb={4}>
                   <AlertIcon />
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {error?.message ||
+                      'Order not found. Please check your order ID and try again.'}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -184,110 +225,168 @@ const OrderTrackingPage = () => {
       )}
 
       {/* Order Tracking Results */}
-      {orderData && (
+      {order && !error && (
         <VStack spacing={8} align='stretch'>
           {/* Order Header */}
           <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
             <Flex justify='space-between' align='center' mb={4}>
               <Box>
                 <Heading as='h2' fontSize='xl'>
-                  Order #{orderData._id}
+                  Order #{order._id}
                 </Heading>
                 <Text color='gray.600' fontSize='sm'>
-                  Placed on {formatDate(orderData.createdAt)}
+                  Placed on {formatDate(order.createdAt)}
                 </Text>
               </Box>
               <Badge
-                colorScheme={getStatusColor(orderData.orderStatus)}
+                colorScheme={getStatusColor(order.orderStatus)}
                 fontSize='md'
                 px={3}
                 py={1}
               >
-                {orderData.orderStatus?.replace('_', ' ').toUpperCase()}
+                {order.orderStatus?.replace('_', ' ').toUpperCase()}
               </Badge>
             </Flex>
 
-            {orderData.trackingNumber && (
+            {order.trackingNumber && (
               <Box>
                 <Text fontSize='sm' color='gray.600'>
                   Tracking Number:
                 </Text>
-                <Text fontWeight='bold'>{orderData.trackingNumber}</Text>
+                <Text fontWeight='bold'>{order.trackingNumber}</Text>
               </Box>
             )}
           </Box>
 
-          {/* Progress Stepper */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
-            <Heading as='h3' fontSize='lg' mb={6}>
-              Order Progress
-            </Heading>
+          {/* Progress Stepper - only show for active orders */}
+          {getActiveStep(order.orderStatus) >= 0 ? (
+            <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
+              <Heading as='h3' fontSize='lg' mb={6}>
+                Order Progress
+              </Heading>
 
-            <Stepper
-              index={activeStep}
-              orientation='vertical'
-              height='400px'
-              gap='0'
-            >
-              {steps.map((step, index) => (
-                <Step key={index}>
-                  <StepIndicator>
-                    <StepStatus
-                      complete={<StepIcon />}
-                      incomplete={<StepNumber />}
-                      active={<StepNumber />}
-                    />
-                  </StepIndicator>
+              <Stepper
+                index={activeStep}
+                orientation='vertical'
+                height='400px'
+                gap='0'
+              >
+                {steps.map((step, index) => (
+                  <Step key={index}>
+                    <StepIndicator>
+                      <StepStatus
+                        complete={<StepIcon />}
+                        incomplete={<StepNumber />}
+                        active={<StepNumber />}
+                      />
+                    </StepIndicator>
 
-                  <Box flexShrink='0'>
-                    <StepTitle>{step.title}</StepTitle>
-                    <StepDescription>{step.description}</StepDescription>
+                    <Box flexShrink='0'>
+                      <StepTitle>{step.title}</StepTitle>
+                      <StepDescription>{step.description}</StepDescription>
+                    </Box>
+
+                    <StepSeparator />
+                  </Step>
+                ))}
+              </Stepper>
+            </Box>
+          ) : (
+            <CancelledOrderStatus status={order.orderStatus} />
+          )}
+
+          {/* Order Items */}
+          {order.items && order.items.length > 0 && (
+            <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
+              <Heading as='h3' fontSize='lg' mb={4}>
+                Order Items
+              </Heading>
+              <VStack spacing={3} align='stretch'>
+                {order.items.map((item: any, index: number) => (
+                  <Flex
+                    key={index}
+                    justify='space-between'
+                    align='center'
+                    p={3}
+                    bg='gray.50'
+                    borderRadius='md'
+                  >
+                    <Box>
+                      <Text fontWeight='medium'>{item.name || item.title}</Text>
+                      <Text fontSize='sm' color='gray.600'>
+                        Quantity: {item.quantity}
+                      </Text>
+                    </Box>
+                    <Text fontWeight='bold'>
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </Text>
+                  </Flex>
+                ))}
+
+                {order.totalAmount && (
+                  <Flex
+                    justify='space-between'
+                    align='center'
+                    pt={3}
+                    borderTop='1px'
+                    borderColor='gray.200'
+                  >
+                    <Text fontWeight='bold' fontSize='lg'>
+                      Total:
+                    </Text>
+                    <Text fontWeight='bold' fontSize='lg'>
+                      ${order.totalAmount.toFixed(2)}
+                    </Text>
+                  </Flex>
+                )}
+              </VStack>
+            </Box>
+          )}
+
+          {/* Delivery Info - only show for non-cancelled orders */}
+          {getActiveStep(order.orderStatus) >= 0 && order.shippingAddress && (
+            <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
+              <Heading as='h3' fontSize='lg' mb={4}>
+                Delivery Information
+              </Heading>
+
+              <VStack align='stretch' spacing={3}>
+                {order.estimatedDelivery && (
+                  <Box>
+                    <Text fontSize='sm' color='gray.600'>
+                      Estimated Delivery:
+                    </Text>
+                    <Text fontWeight='medium'>{order.estimatedDelivery}</Text>
                   </Box>
+                )}
 
-                  <StepSeparator />
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
-          {/* Delivery Info */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
-            <Heading as='h3' fontSize='lg' mb={4}>
-              Delivery Information
-            </Heading>
-
-            <VStack align='stretch' spacing={3}>
-              <Box>
-                <Text fontSize='sm' color='gray.600'>
-                  Estimated Delivery:
-                </Text>
-                <Text fontWeight='medium'>{orderData.estimatedDelivery}</Text>
-              </Box>
-
-              <Box>
-                <Text fontSize='sm' color='gray.600'>
-                  Shipping Address:
-                </Text>
-                <Text>{orderData.shippingAddress.street}</Text>
-                <Text>
-                  {orderData.shippingAddress.city},{' '}
-                  {orderData.shippingAddress.state}{' '}
-                  {orderData.shippingAddress.zipCode}
-                </Text>
-                <Text>{orderData.shippingAddress.country}</Text>
-              </Box>
-            </VStack>
-          </Box>
+                <Box>
+                  <Text fontSize='sm' color='gray.600'>
+                    Shipping Address:
+                  </Text>
+                  <Text>{order.shippingAddress.street}</Text>
+                  <Text>
+                    {order.shippingAddress.city}, {order.shippingAddress.state}{' '}
+                    {order.shippingAddress.zipCode}
+                  </Text>
+                  <Text>{order.shippingAddress.country}</Text>
+                </Box>
+              </VStack>
+            </Box>
+          )}
 
           {/* Actions */}
-          <Flex gap={4} justify='center'>
-            <Button variant='outline' onClick={() => setOrderData(null)}>
+          <Flex gap={4} justify='center' flexWrap='wrap'>
+            <Button variant='outline' onClick={handleTrackAnotherOrder}>
               Track Another Order
             </Button>
-            <Button colorScheme='blue' onClick={() => navigate('/orders')}>
+            <Button
+              colorScheme='blue'
+              onClick={() => navigate('/orders-history')}
+            >
               View All Orders
             </Button>
-            <Button variant='outline' onClick={() => navigate('/')}>
+            <Button variant='outline' onClick={() => navigate('/shop')}>
               Continue Shopping
             </Button>
           </Flex>

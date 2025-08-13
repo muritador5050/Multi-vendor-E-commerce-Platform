@@ -26,11 +26,18 @@ const PaymentPage = () => {
   const createPaymentMutation = useCreatePayment();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [orderData, setOrderData] = useState<any>(null);
+
+  // Get order data from location state
+  const orderData = location.state as {
+    orderId: string;
+    amount: number;
+    paymentMethod: string;
+    subtotal: number;
+    shippingCost: number;
+  } | null;
 
   useEffect(() => {
-    const state = location.state;
-    if (!state?.orderId) {
+    if (!orderData?.orderId) {
       toast({
         title: 'Error',
         description: 'No order data found. Please start from checkout.',
@@ -41,68 +48,29 @@ const PaymentPage = () => {
       navigate('/checkout');
       return;
     }
-    setOrderData(state);
-  }, [location.state, navigate, toast]);
+  }, [orderData, navigate, toast]);
 
   const handlePayment = async () => {
+    if (!orderData?.orderId) return;
     setIsProcessing(true);
-
     try {
-      // Validate order data
-      if (!orderData?.orderId) {
-        throw new Error('Order ID is missing');
-      }
-
-      if (!orderData?.amount || orderData.amount <= 0) {
-        throw new Error('Invalid payment amount');
-      }
-
-      const { orderId, amount, paymentMethod } = orderData;
-
-      // Map payment method to provider
-      const getPaymentProvider = (method: string) => {
-        switch (method) {
-          case 'card':
-          case 'stripe':
-            return 'stripe';
-          case 'paypal':
-            return 'paystack'; // or keep as paypal if you have paypal integration
-          default:
-            return 'stripe';
-        }
-      };
-
-      const paymentProvider = getPaymentProvider(paymentMethod);
-
-      // Create payment with your backend
-      const paymentData = {
-        order: orderId,
-        paymentProvider,
-        amount: amount,
-        currency: paymentProvider === 'stripe' ? 'USD' : 'NGN',
-      };
-
-      console.log('Creating payment with data:', paymentData);
-
-      const paymentResult = await createPaymentMutation.mutateAsync(
-        paymentData
-      );
-
-      console.log('Payment result:', paymentResult);
+      const paymentResult = await createPaymentMutation.mutateAsync({
+        orderId: orderData.orderId,
+      });
 
       // Check for checkout URL
-      if (!paymentResult?.data?.checkoutUrl && !paymentResult?.checkoutUrl) {
+      if (!paymentResult.data?.checkoutUrl) {
         throw new Error('Payment provider did not return a checkout URL');
       }
 
-      const checkoutUrl =
-        paymentResult?.data?.checkoutUrl || paymentResult?.checkoutUrl;
+      const checkoutUrl = paymentResult.data.checkoutUrl;
 
       toast({
         title: 'Redirecting to payment...',
         description: 'You will be redirected to complete your payment.',
         status: 'info',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
 
@@ -124,6 +92,7 @@ const PaymentPage = () => {
         description: errorMessage,
         status: 'error',
         duration: 5000,
+        position: 'top-right',
         isClosable: true,
       });
     } finally {
@@ -148,8 +117,8 @@ const PaymentPage = () => {
         return 'Credit/Debit Card via Stripe';
       case 'stripe':
         return 'Stripe';
-      case 'paypal':
-        return 'PayPal';
+      case 'paystack':
+        return 'Paystack';
       default:
         return method.charAt(0).toUpperCase() + method.slice(1);
     }

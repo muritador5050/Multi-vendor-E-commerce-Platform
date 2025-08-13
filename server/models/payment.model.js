@@ -138,7 +138,7 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
     throw new Error('PAYSTACK_SECRET_KEY is not configured');
   }
 
-  const order = await Order.findById(orderId);
+  const order = await Order.findById(orderId).populate('userId', 'name email');
   if (!order) {
     throw new Error('Order not found');
   }
@@ -148,15 +148,24 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
     throw new Error('Amount too small for Paystack (minimum 0.01 NGN)');
   }
 
-  const customerEmail =
-    order.customerEmail || order.user?.email || 'customer@example.com';
+  const customerEmail = order.user?.email || 'customer@example.com';
 
   const paymentData = {
+    email: customerEmail,
     amount: amountInKobo,
     currency: 'NGN',
-    email: customerEmail,
     reference: `order_${orderId}_${Date.now()}`,
     callback_url: `${process.env.FRONTEND_URL}/payment-success`,
+    channels: [
+      'card',
+      'bank',
+      'apple_pay',
+      'ussd',
+      'qr',
+      'mobile_money',
+      'bank_transfer',
+      'eft',
+    ],
     metadata: {
       orderId: orderId.toString(),
       idempotencyKey,
@@ -227,8 +236,14 @@ paymentSchema.statics.createProviderPayment = async function (orderId) {
   throw new Error('Unsupported payment provider');
 };
 
+// Updated webhook handlers in payment.model.js
 paymentSchema.statics.handleStripeWebhook = async function (req) {
   const sig = req.headers['stripe-signature'];
+
+  if (!sig) {
+    throw new Error('Missing stripe-signature header');
+  }
+
   const event = stripe.webhooks.constructEvent(
     req.body,
     sig,
@@ -242,35 +257,57 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
     throw new Error('Payment not found for session ID: ' + session.id);
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed':
-      await Promise.all([
-        this.findByIdAndUpdate(payment._id, {
-          status: 'completed',
-          paidAt: new Date(),
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const updateResults = await Promise.allSettled([
+          this.findByIdAndUpdate(payment._id, {
+            status: 'completed',
+            paidAt: new Date(),
+            transactionDetails: JSON.stringify(session),
+          }),
+          Order.findByIdAndUpdate(payment.orderId, {
+            paymentStatus: 'completed',
+            orderStatus: 'processing',
+          }),
+        ]);
+
+        // Check if any updates failed
+        updateResults.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const target = index === 0 ? 'Payment' : 'Order';
+          } else {
+            const target = index === 0 ? 'Payment' : 'Order';
+          }
+        });
+
+        // Verify the payment was actually updated
+        const updatedPayment = await this.findById(payment._id);
+
+        break;
+
+      case 'checkout.session.expired':
+        await this.findByIdAndUpdate(payment._id, {
+          status: 'failed',
+          failureReason: 'Session expired',
           transactionDetails: JSON.stringify(session),
-        }),
-        Order.findByIdAndUpdate(payment.orderId, {
-          paymentStatus: 'completed',
-          orderStatus: 'processing',
-        }),
-      ]);
-      break;
+        });
 
-    case 'checkout.session.expired':
-      await this.findByIdAndUpdate(payment._id, {
-        status: 'failed',
-        failureReason: 'Session expired',
-        transactionDetails: JSON.stringify(session),
-      });
-      break;
+        break;
 
-    case 'charge.dispute.created':
-      await this.findByIdAndUpdate(payment._id, {
-        status: 'disputed',
-        transactionDetails: JSON.stringify(session),
-      });
-      break;
+      case 'charge.dispute.created':
+        await this.findByIdAndUpdate(payment._id, {
+          status: 'disputed',
+          transactionDetails: JSON.stringify(session),
+        });
+
+        break;
+
+      default:
+        console.log('Unhandled event type:', event.type);
+    }
+  } catch (dbError) {
+    throw new Error(`Failed to update payment status: ${dbError.message}`);
   }
 };
 
@@ -285,34 +322,61 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
   }
 
   const { event, data } = req.body;
+
   const payment = await this.findOne({ paymentId: data.reference });
 
   if (!payment) {
     throw new Error('Payment not found for reference: ' + data.reference);
   }
 
-  switch (event) {
-    case 'charge.success':
-      await Promise.all([
-        this.findByIdAndUpdate(payment._id, {
-          status: 'completed',
-          paidAt: new Date(),
-          transactionDetails: JSON.stringify(data),
-        }),
-        Order.findByIdAndUpdate(payment.orderId, {
-          paymentStatus: 'completed',
-          orderStatus: 'processing',
-        }),
-      ]);
-      break;
+  try {
+    switch (event) {
+      case 'charge.success':
+        console.log('Processing successful Paystack payment for:', payment._id);
 
-    case 'charge.failed':
-      await this.findByIdAndUpdate(payment._id, {
-        status: 'failed',
-        failureReason: data.gateway_response,
-        transactionDetails: JSON.stringify(data),
-      });
-      break;
+        const updateResults = await Promise.allSettled([
+          this.findByIdAndUpdate(payment._id, {
+            status: 'completed',
+            paidAt: new Date(),
+            transactionDetails: JSON.stringify(data),
+          }),
+          Order.findByIdAndUpdate(payment.orderId, {
+            paymentStatus: 'completed',
+            orderStatus: 'processing',
+          }),
+        ]);
+
+        // Check if any updates failed
+        updateResults.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const target = index === 0 ? 'Payment' : 'Order';
+            console.error(`${target} update failed:`, result.reason);
+          } else {
+            const target = index === 0 ? 'Payment' : 'Order';
+            console.log(`${target} updated successfully`);
+          }
+        });
+
+        // Verify the payment was actually updated
+        const updatedPayment = await this.findById(payment._id);
+
+        break;
+
+      case 'charge.failed':
+        await this.findByIdAndUpdate(payment._id, {
+          status: 'failed',
+          failureReason: data.gateway_response || 'Payment failed',
+          transactionDetails: JSON.stringify(data),
+        });
+
+        break;
+
+      default:
+        console.log('Unhandled Paystack event type:', event);
+    }
+  } catch (dbError) {
+    console.error('Database update error:', dbError);
+    throw new Error(`Failed to update payment status: ${dbError.message}`);
   }
 };
 

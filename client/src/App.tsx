@@ -24,6 +24,12 @@ import CreateVendorProfile from './components/VendorManagement/CreateVendorProfi
 import { VendorProfileGuard } from './ProtectedRoute/VendorProfileGuard';
 import CartList from './pages/CartList';
 import CheckoutPage from './pages/Checkout';
+import PaymentPage from './pages/PaymentPage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import OrderTrackingPage from './pages/OrderTrackingPage';
+import OrderHistoryPage from './pages/OrderHistoryPage';
+import PaymentSuccessPage from './pages/PaymentSucessPage';
+import PaymentFailedPage from './pages/PaymentFailedPage';
 
 //App
 function App() {
@@ -43,8 +49,17 @@ function App() {
           <Route path='product/:id' element={<ProductDetail />} />
           <Route path='cart' element={<CartList />} />
           <Route path='checkout' element={<CheckoutPage />} />
+          <Route path='payment' element={<PaymentPage />} />
+          <Route path='payment-success' element={<PaymentSuccessPage />} />
+          <Route path='payment-cancel' element={<PaymentFailedPage />} />
+          <Route
+            path='order-confirmation'
+            element={<OrderConfirmationPage />}
+          />
+          <Route path='track-order' element={<OrderTrackingPage />} />
+          <Route path='orders-history' element={<OrderHistoryPage />} />
           <Route path='vendor-membership' element={<VendorMembership />} />
-          <Route path='/oauth/callback' element={<OAuthCallback />} />
+          <Route path='oauth/callback' element={<OAuthCallback />} />
           <Route
             path='adminDashboard/*'
             element={
@@ -53,7 +68,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route path='/vendors/onboarding' element={<CreateVendorProfile />} />
           <Route
             path='store-manager/*'

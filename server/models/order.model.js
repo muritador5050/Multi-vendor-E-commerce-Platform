@@ -258,7 +258,7 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
 
     if (matchingUsers.length > 0) {
       filter.$or.push({
-        user: { $in: matchingUsers.map((u) => u._id) },
+        userId: { $in: matchingUsers.map((u) => u._id) },
       });
     }
 
@@ -278,8 +278,8 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
 
   const [orders, total] = await Promise.all([
     this.find(filter)
-      .populate('user', 'name email')
-      .populate('products.product', 'name quantity price')
+      .populate('userId', 'name email')
+      .populate('products.product', 'name images')
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
@@ -309,7 +309,7 @@ orderSchema.statics.findByIdWithAuth = async function (
     isDeleted: false,
   })
     .populate('userId', 'name email')
-    .populate('products.product', 'name price description');
+    .populate('products.product', 'name images price description');
 
   if (!order) {
     throw new Error('Order with this ID not found');

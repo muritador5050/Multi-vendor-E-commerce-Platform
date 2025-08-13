@@ -16,112 +16,24 @@ import {
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/context/AuthContextService';
+import { useOrders } from '@/context/OrderContextService';
 
 const OrderHistoryPage = () => {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const currentUser = useCurrentUser();
+  const { data: orders, isLoading, error: ordersError } = useOrders();
 
+  const userOrders = orders?.orders.filter(
+    (order) => order.userId._id === currentUser?._id
+  );
+
+  // Handle orders API error
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        if (!currentUser) {
-          setError('Please log in to view your orders');
-          return;
-        }
-
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Mock order data - in real app, this would come from your API
-        const mockOrders = [
-          {
-            _id: '67890abcdef12345',
-            orderStatus: 'delivered',
-            paymentStatus: 'paid',
-            totalPrice: 89.97,
-            createdAt: new Date(
-              Date.now() - 7 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            products: [
-              {
-                product: {
-                  name: 'Wireless Headphones',
-                  image: '/api/placeholder/80/80',
-                },
-                quantity: 1,
-                price: 79.99,
-              },
-              {
-                product: {
-                  name: 'Phone Case',
-                  image: '/api/placeholder/80/80',
-                },
-                quantity: 1,
-                price: 19.99,
-              },
-            ],
-          },
-          {
-            _id: '12345abcdef67890',
-            orderStatus: 'shipped',
-            paymentStatus: 'paid',
-            totalPrice: 159.98,
-            createdAt: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            products: [
-              {
-                product: {
-                  name: 'Smart Watch',
-                  image: '/api/placeholder/80/80',
-                },
-                quantity: 1,
-                price: 149.99,
-              },
-              {
-                product: {
-                  name: 'Watch Band',
-                  image: '/api/placeholder/80/80',
-                },
-                quantity: 1,
-                price: 19.99,
-              },
-            ],
-          },
-          {
-            _id: 'abcdef1234567890',
-            orderStatus: 'processing',
-            paymentStatus: 'paid',
-            totalPrice: 49.99,
-            createdAt: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            products: [
-              {
-                product: {
-                  name: 'Bluetooth Speaker',
-                  image: '/api/placeholder/80/80',
-                },
-                quantity: 1,
-                price: 39.99,
-              },
-            ],
-          },
-        ];
-
-        setOrders(mockOrders);
-      } catch (err) {
-        setError('Failed to load orders. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [currentUser]);
+    if (ordersError) {
+      setError('Failed to load orders. Please try again.');
+    }
+  }, [ordersError]);
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -170,9 +82,11 @@ const OrderHistoryPage = () => {
           <AlertIcon />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-        <Button mt={4} onClick={() => navigate('/login')}>
-          Go to Login
-        </Button>
+        {!currentUser && (
+          <Button mt={4} onClick={() => navigate('/my-account')}>
+            Go to Login
+          </Button>
+        )}
       </Box>
     );
   }
@@ -188,7 +102,7 @@ const OrderHistoryPage = () => {
         </Button>
       </Flex>
 
-      {orders.length === 0 ? (
+      {!userOrders || userOrders.length === 0 ? (
         <Box textAlign='center' py={20}>
           <Text fontSize='xl' color='gray.600' mb={4}>
             No orders found
@@ -202,7 +116,7 @@ const OrderHistoryPage = () => {
         </Box>
       ) : (
         <VStack spacing={6} align='stretch'>
-          {orders.map((order) => (
+          {userOrders.map((order) => (
             <Box
               key={order._id}
               bg='white'
@@ -237,36 +151,57 @@ const OrderHistoryPage = () => {
                 </VStack>
               </Flex>
 
-              {/* Products */}
+              {/* Products - Fixed the nested mapping issue */}
               <Grid
                 templateColumns={{ base: '1fr', md: '1fr auto' }}
                 gap={6}
                 mb={4}
               >
                 <VStack spacing={3} align='stretch'>
-                  {order.products.map((item: any, index: number) => (
+                  {order.products.map((item, index) => (
                     <Flex key={index} align='center' gap={4}>
                       <Image
-                        src={item.product.image}
-                        alt={item.product.name}
+                        src={item.product.images[0]}
+                        alt={item.product.name || 'Product'}
                         boxSize='60px'
                         objectFit='cover'
                         borderRadius='md'
                         bg='gray.100'
                       />
                       <Box flex='1'>
-                        <Text fontWeight='medium'>{item.product.name}</Text>
+                        <Text fontWeight='medium'>
+                          {item.product?.name || 'Unknown Product'}
+                        </Text>
                         <Text fontSize='sm' color='gray.600'>
-                          Quantity: {item.quantity} × ${item.price.toFixed(2)}
+                          Quantity: {item.quantity} × $
+                          {item.price?.toFixed(2) || '0.00'}
                         </Text>
                       </Box>
                       <Text fontWeight='bold'>
-                        ${(item.quantity * item.price).toFixed(2)}
+                        ${((item.quantity || 0) * (item.price || 0)).toFixed(2)}
                       </Text>
                     </Flex>
                   ))}
                 </VStack>
               </Grid>
+
+              {/* Order Summary */}
+              <Box mb={4} p={4} bg='gray.50' borderRadius='md'>
+                <Grid templateColumns='1fr 1fr' gap={2} fontSize='sm'>
+                  <Text>Subtotal:</Text>
+                  <Text textAlign='right'>
+                    ${(order.totalPrice - order.shippingCost).toFixed(2)}
+                  </Text>
+                  <Text>Shipping:</Text>
+                  <Text textAlign='right'>
+                    ${order.shippingCost.toFixed(2)}
+                  </Text>
+                  <Text fontWeight='bold'>Total:</Text>
+                  <Text fontWeight='bold' textAlign='right'>
+                    ${order.totalPrice.toFixed(2)}
+                  </Text>
+                </Grid>
+              </Box>
 
               {/* Order Actions */}
               <Flex
@@ -295,7 +230,8 @@ const OrderHistoryPage = () => {
                     colorScheme='blue'
                     size='sm'
                     onClick={() => {
-                      /* Handle reorder */
+                      /* Handle reorder logic */
+                      console.log('Reordering:', order._id);
                     }}
                   >
                     Reorder

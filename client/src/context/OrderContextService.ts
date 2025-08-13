@@ -7,6 +7,7 @@ import type {
   ProductSalesReport,
   VendorSalesAnalytics,
   OrdersResponse,
+  CreateOrderRequest,
 } from '@/type/Order';
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
@@ -23,6 +24,7 @@ export const orderKeys = {
   vendorSales: () => [...orderKeys.all, 'vendor-sales'] as const,
 };
 
+// API Functions
 const getOrders = async (
   params: OrderParams = {}
 ): Promise<ApiResponse<OrdersResponse>> => {
@@ -36,7 +38,7 @@ const getOrderById = async (id: string): Promise<ApiResponse<Order>> => {
 };
 
 const createOrder = async (
-  orderData: Omit<Order, '_id'>
+  orderData: CreateOrderRequest
 ): Promise<ApiResponse<Order>> => {
   return await apiClient.authenticatedApiRequest('/orders', {
     method: 'POST',
@@ -62,7 +64,6 @@ const deleteOrder = async (id: string): Promise<ApiResponse<void>> => {
   });
 };
 
-// Get order statistics
 const getOrderStats = async (): Promise<ApiResponse<OrderStatsResponse>> => {
   return await apiClient.authenticatedApiRequest('/orders/stats');
 };
@@ -91,12 +92,14 @@ const getVendorSalesAnalytics = async (): Promise<
   );
 };
 
+// Query Hooks with Data Selection
 export const useOrders = (params: OrderParams = {}) => {
   return useQuery({
     queryKey: orderKeys.list(params),
     queryFn: () => getOrders(params),
-    placeholderData: (prev) => prev,
+    select: (data: ApiResponse<OrdersResponse>) => data.data,
     staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -104,7 +107,9 @@ export const useOrderById = (id: string) => {
   return useQuery({
     queryKey: orderKeys.details(id),
     queryFn: () => getOrderById(id),
+    select: (data: ApiResponse<Order>) => data.data,
     enabled: !!id,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -112,37 +117,92 @@ export const useOrderStats = () => {
   return useQuery({
     queryKey: orderKeys.stats(),
     queryFn: getOrderStats,
-    staleTime: 30 * 1000, // Add stale time for consistency
+    select: (data: ApiResponse<OrderStatsResponse>) => data.data,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
+export const useDailySalesReport = () => {
+  return useQuery({
+    queryKey: orderKeys.dailySales(),
+    queryFn: getDailySalesReport,
+    select: (data: ApiResponse<DailySalesReport[]>) => data.data,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useProductSalesReport = () => {
+  return useQuery({
+    queryKey: orderKeys.productSales(),
+    queryFn: getSalesByProduct,
+    select: (data: ApiResponse<ProductSalesReport[]>) => data.data,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useVendorSalesAnalytics = () => {
+  return useQuery({
+    queryKey: orderKeys.vendorSales(),
+    queryFn: getVendorSalesAnalytics,
+    select: (data: ApiResponse<VendorSalesAnalytics>) => data.data,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+// Mutation Hooks
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createOrder,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidate and refetch related queries
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
+
+      // Optionally set the new order data directly
+      if (data.data) {
+        queryClient.setQueryData(orderKeys.details(data.data._id), data.data);
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to create order:', error);
     },
   });
 };
 
-export const useUpdateOrderStatus = (id: string) => {
+export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (
+    mutationFn: ({
+      id,
+      statusData,
+    }: {
+      id: string;
       statusData: Partial<
         Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
-      >
-    ) => updateOrderStatus(id, statusData),
-    onSuccess: () => {
+      >;
+    }) => updateOrderStatus(id, statusData),
+    onSuccess: (data, variables) => {
+      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: orderKeys.details(id),
+        queryKey: orderKeys.details(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
+
+      // Update the specific order cache if data is available
+      if (data.data) {
+        queryClient.setQueryData(orderKeys.details(variables.id), data.data);
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to update order status:', error);
     },
   });
 };
@@ -152,33 +212,16 @@ export const useDeleteOrder = () => {
 
   return useMutation({
     mutationFn: deleteOrder,
-    onSuccess: () => {
+    onSuccess: (data, orderId) => {
+      // Invalidate list and stats queries
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
+
+      // Remove the specific order from cache
+      queryClient.removeQueries({ queryKey: orderKeys.details(orderId) });
     },
-  });
-};
-
-export const useDailySalesReport = () => {
-  return useQuery({
-    queryKey: orderKeys.dailySales(),
-    queryFn: getDailySalesReport,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
-export const useProductSalesReport = () => {
-  return useQuery({
-    queryKey: orderKeys.productSales(),
-    queryFn: getSalesByProduct,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
-export const useVendorSalesAnalytics = () => {
-  return useQuery({
-    queryKey: orderKeys.vendorSales(),
-    queryFn: getVendorSalesAnalytics,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error) => {
+      console.error('Failed to delete order:', error);
+    },
   });
 };

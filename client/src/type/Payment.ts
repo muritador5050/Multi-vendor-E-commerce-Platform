@@ -1,16 +1,40 @@
+import type { Order } from './Order';
+
+type PaymentProvider = 'stripe' | 'paystack' | 'card' | 'bank_transfer';
+type PaymentStatus =
+  | 'pending'
+  | 'completed'
+  | 'failed'
+  | 'refunded'
+  | 'disputed';
+
 export interface Payment {
   _id: string;
-  order: string;
-  paymentProvider: 'stripe' | 'paystack';
+  orderId: string;
+  paymentProvider: PaymentProvider;
   paymentId: string;
   amount: number;
   currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'disputed';
+  status: PaymentStatus;
   paidAt?: Date;
   failureReason?: string;
+  userId: string;
   transactionDetails?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface SinglePaymentResponse {
+  _id: string;
+  orderId: Order;
+  paymentProvider: string;
+  paymentId: string;
+  amount: number;
+  currency: string;
+  status: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PaginatedPayments {
@@ -23,20 +47,24 @@ export interface PaginatedPayments {
   };
 }
 
-export interface CreatePaymentData {
-  order: string;
-  paymentProvider: 'stripe' | 'paystack';
-  amount: number;
-  currency?: string;
-}
-
 export interface CreatePaymentResponse {
-  results: Payment;
+  payment: {
+    _id: string;
+    orderId: string;
+    paymentProvider: PaymentProvider;
+    paymentId: string;
+    amount: number;
+    currency: string;
+    status: PaymentStatus;
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
   checkoutUrl: string;
 }
 
 export interface UpdatePaymentStatusData {
-  status: 'pending' | 'completed' | 'failed' | 'refunded' | 'disputed';
+  status: PaymentStatus;
   paidAt?: string;
 }
 
@@ -44,7 +72,7 @@ export interface PaymentFilters {
   status?: string;
   orderId?: string;
   paidAt?: string;
-  paymentProvider?: string;
+  paymentProvider?: PaymentStatus;
   page?: number;
   limit?: number;
 }

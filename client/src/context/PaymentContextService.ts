@@ -1,12 +1,12 @@
 // Export all hooks and utilities
 import type { ApiResponse } from '@/type/ApiResponse';
 import type {
-  CreatePaymentData,
   CreatePaymentResponse,
   PaginatedPayments,
   Payment,
   PaymentAnalytics,
   PaymentFilters,
+  SinglePaymentResponse,
   UpdatePaymentStatusData,
 } from '@/type/Payment';
 import { apiClient } from '@/utils/Api';
@@ -26,8 +26,6 @@ export const paymentKeys = {
     [...paymentKeys.all, 'analytics', period] as const,
 };
 
-// Hooks
-
 // Create Payment
 export const useCreatePayment = () => {
   const queryClient = useQueryClient();
@@ -35,14 +33,12 @@ export const useCreatePayment = () => {
   return useMutation<
     ApiResponse<CreatePaymentResponse>,
     Error,
-    CreatePaymentData
+    { orderId: string }
   >({
-    mutationFn: async (data) => {
-      return apiClient.authenticatedApiRequest<
-        ApiResponse<CreatePaymentResponse>
-      >('/payments', {
+    mutationFn: async ({ orderId }) => {
+      return apiClient.authenticatedApiRequest('/payments', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({ orderId }),
       });
     },
     onSuccess: () => {
@@ -67,12 +63,10 @@ export const useGetAllPayments = (filters: PaymentFilters = {}) => {
 
 // Get Payment by ID
 export const useGetPaymentById = (id: string) => {
-  return useQuery<ApiResponse<Payment>, Error>({
+  return useQuery<ApiResponse<SinglePaymentResponse>, Error>({
     queryKey: paymentKeys.detail(id),
     queryFn: async () =>
-      await apiClient.authenticatedApiRequest<ApiResponse<Payment>>(
-        `/payments/${id}`
-      ),
+      await apiClient.authenticatedApiRequest(`/payments/${id}`),
     enabled: !!id,
   });
 };

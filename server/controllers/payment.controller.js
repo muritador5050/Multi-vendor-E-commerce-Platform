@@ -31,35 +31,22 @@ class PaymentController {
     }
   }
 
-  // Process webhooks
   static async processWebhooks(req, res) {
     try {
-      const { provider } = req.params;
+      const { paymentProvider } = req.params;
 
-      if (provider === 'stripe') {
+      if (paymentProvider === 'stripe') {
         await Payment.handleStripeWebhook(req);
-      } else if (provider === 'paystack') {
+      } else if (paymentProvider === 'paystack') {
         await Payment.handlePaystackWebhook(req);
       } else {
-        return res.status(400).json({
-          success: false,
-          message: 'Unknown payment provider',
-        });
+        console.log('Unsupported payment provider:', paymentProvider);
+        return res.status(400).json({ error: 'Unsupported payment provider' });
       }
 
-      return res.status(200).json({
-        data: {
-          success: true,
-          message: 'Webhook processed successfully',
-        },
-      });
+      res.status(200).json({ received: true });
     } catch (error) {
-      console.error('Error processing webhook:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Error processing webhook',
-        error: error.message,
-      });
+      res.status(400).json({ error: error.message });
     }
   }
 
@@ -105,9 +92,9 @@ class PaymentController {
       }
 
       return res.json({
-        data: {
-          results: payment,
-        },
+        success: true,
+        message: 'Payment retrieved',
+        data: payment,
       });
     } catch (error) {
       console.error('Error fetching payment:', error);

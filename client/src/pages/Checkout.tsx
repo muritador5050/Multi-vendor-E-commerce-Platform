@@ -99,9 +99,8 @@ const CheckoutPage = () => {
         throw new Error('User not authenticated');
       }
 
-      // Prepare products array according to schema
       const products = cartItems?.items.map((item) => ({
-        product: item.product._id, // Send just the product ID
+        product: item.product._id,
         quantity: item.quantity,
         price: item.product.price,
       }));
@@ -125,7 +124,6 @@ const CheckoutPage = () => {
         shippingCost: shippingCost,
       };
 
-      // Use the mutation to create the order
       const createdOrder = await createOrderMutation.mutateAsync(
         finalOrderData
       );
@@ -331,11 +329,11 @@ const CheckoutPage = () => {
                     </Text>
                   </Box>
                 </Radio>
-                <Radio value='paypal'>
+                <Radio value='paystack'>
                   <Box ml={2}>
-                    <Text fontWeight='medium'>PayPal</Text>
+                    <Text fontWeight='medium'>Paystack</Text>
                     <Text fontSize='sm' color='gray.500'>
-                      Pay with your PayPal account
+                      Pay with your Paystack account
                     </Text>
                   </Box>
                 </Radio>

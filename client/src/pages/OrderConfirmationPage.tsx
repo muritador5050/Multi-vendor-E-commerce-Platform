@@ -25,7 +25,7 @@ const OrderConfirmationPage = () => {
   useEffect(() => {
     const state = location.state;
     if (!state?.order) {
-      navigate('/');
+      navigate('/shop');
       return;
     }
     setOrderData(state.order);
@@ -127,7 +127,7 @@ const OrderConfirmationPage = () => {
               Order Items
             </Heading>
             <VStack spacing={4} align='stretch'>
-              {orderData.products?.map((item: any, index: number) => (
+              {orderData.products?.map((item, index) => (
                 <Box key={index} p={4} bg='gray.50' borderRadius='md'>
                   <Flex justify='space-between' align='center'>
                     <Box>
