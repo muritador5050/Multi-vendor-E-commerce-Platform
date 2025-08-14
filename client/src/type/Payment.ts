@@ -18,7 +18,11 @@ export interface Payment {
   status: PaymentStatus;
   paidAt?: Date;
   failureReason?: string;
-  userId: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   transactionDetails?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -47,7 +51,7 @@ export interface PaginatedPayments {
   };
 }
 
-export interface CreatePaymentResponse {
+export interface CreatedPaymentResponse {
   payment: {
     _id: string;
     orderId: string;

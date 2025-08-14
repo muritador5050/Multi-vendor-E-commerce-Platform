@@ -25,7 +25,6 @@ import { VendorProfileGuard } from './ProtectedRoute/VendorProfileGuard';
 import CartList from './pages/CartList';
 import CheckoutPage from './pages/Checkout';
 import PaymentPage from './pages/PaymentPage';
-import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import PaymentSuccessPage from './pages/PaymentSucessPage';
@@ -52,10 +51,6 @@ function App() {
           <Route path='payment' element={<PaymentPage />} />
           <Route path='payment-success' element={<PaymentSuccessPage />} />
           <Route path='payment-cancel' element={<PaymentFailedPage />} />
-          <Route
-            path='order-confirmation'
-            element={<OrderConfirmationPage />}
-          />
           <Route path='track-order' element={<OrderTrackingPage />} />
           <Route path='orders-history' element={<OrderHistoryPage />} />
           <Route path='vendor-membership' element={<VendorMembership />} />

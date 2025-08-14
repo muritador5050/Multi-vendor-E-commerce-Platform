@@ -9,6 +9,9 @@ import { SettingsContent } from './SettingManagement/SettingsContent';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { CustomersContents } from './CustomersManagement/CustomersContents';
+import BlogsContent from './Blogs/BlogsContent';
+import PaymentsContent from './Payments/PaymentsContent';
+import ReviewsContent from './Reviews/ReviewsContent';
 
 const AdminDashboardLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -31,6 +34,12 @@ const AdminDashboardLayout = () => {
         return <CustomersContents />;
       case 'settings':
         return <SettingsContent />;
+      case 'blogs':
+        return <BlogsContent />;
+      case 'payments':
+        return <PaymentsContent />;
+      case 'reviews':
+        return <ReviewsContent />;
       default:
         return 'No Data yet!';
     }

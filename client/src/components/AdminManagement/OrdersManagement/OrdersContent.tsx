@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Box,
   Flex,
@@ -42,29 +43,30 @@ import {
   Divider,
   InputGroup,
   InputLeftElement,
+  Stack,
+  UnorderedList,
+  ListItem,
 } from '@chakra-ui/react';
 import {
-  Filter,
   Download,
   MoreVertical,
   Eye,
   Edit,
   Truck,
   Ban,
-  MessageSquare,
   CreditCard,
   Search,
   Plus,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
-import { formatDate, getStatusColor } from '../Utils/Utils';
+import { formatDate } from '../Utils/Utils';
 import { useOrders } from '@/context/OrderContextService';
 import type { Order } from '@/type/Order';
 
 export const OrdersContent = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const { data: ordersData } = useOrders();
-  const orders = ordersData?.data?.orders || [];
+  const orders = ordersData?.orders || [];
   const toast = useToast();
 
   // Modal states
@@ -93,26 +95,25 @@ export const OrdersContent = () => {
     onOpen: onCancelOpen,
     onClose: onCancelClose,
   } = useDisclosure();
-  const {
-    isOpen: isMessageOpen,
-    onOpen: onMessageOpen,
-    onClose: onMessageClose,
-  } = useDisclosure();
 
   const [selectedOrder, setSelectedOrder] = useState<Order>();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [editForm, setEditForm] = useState({});
+  const [editForm, setEditForm] = useState({
+    status: '',
+    paymentStatus: '',
+    notes: '',
+  });
   const [trackingInfo, setTrackingInfo] = useState('');
-  const [refundAmount, setRefundAmount] = useState<number>();
+  const [refundAmount, setRefundAmount] = useState<number>(0);
   const [refundReason, setRefundReason] = useState('');
-  const [message, setMessage] = useState('');
   const cancelRef = useRef(null);
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      order.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === 'all' || order.orderStatus === statusFilter;
     return matchesSearch && matchesStatus;
@@ -128,8 +129,7 @@ export const OrdersContent = () => {
     setEditForm({
       status: order.orderStatus,
       paymentStatus: order.paymentStatus,
-      shippingAddress: order.shippingAddress || '',
-      notes: order.shippingCost || '',
+      notes: order?.notes || '',
     });
     onEditOpen();
   };
@@ -151,57 +151,82 @@ export const OrdersContent = () => {
     onCancelOpen();
   };
 
-  const handleSendMessage = (order: Order) => {
-    setSelectedOrder(order);
-    onMessageOpen();
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'yellow';
+      case 'processing':
+        return 'blue';
+      case 'shipped':
+        return 'teal';
+      case 'delivered':
+        return 'green';
+      case 'cancelled':
+        return 'red';
+      case 'refunded':
+        return 'purple';
+      default:
+        return 'gray';
+    }
   };
 
-  const executeAction = (action: () => void, successMessage: string) => {
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: 'Success',
-        description: successMessage,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    }, 500);
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'green';
+      case 'pending':
+        return 'yellow';
+      case 'failed':
+        return 'red';
+      case 'refunded':
+        return 'purple';
+      default:
+        return 'gray';
+    }
   };
 
   const saveEdit = () => {
-    executeAction('edit', `Order ${selectedOrder._id} updated successfully`);
+    toast({
+      title: 'Order Updated',
+      description: `Order ${selectedOrder?._id} has been updated`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
     onEditClose();
   };
 
   const saveTracking = () => {
-    executeAction(
-      'tracking',
-      `Tracking information updated for order ${selectedOrder._id}`
-    );
+    toast({
+      title: 'Tracking Updated',
+      description: `Tracking info updated for order ${selectedOrder?._id}`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
     onTrackingClose();
   };
 
   const processRefund = () => {
-    executeAction(
-      'refund',
-      `Refund of $${refundAmount} processed for order ${selectedOrder._id}`
-    );
+    toast({
+      title: 'Refund Processed',
+      description: `Refund of $${refundAmount} processed for order ${selectedOrder?._id}`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
     onRefundClose();
   };
 
   const confirmCancel = () => {
-    executeAction('cancel', `Order ${selectedOrder._id} has been cancelled`);
+    toast({
+      title: 'Order Cancelled',
+      description: `Order ${selectedOrder?._id} has been cancelled`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
     onCancelClose();
-  };
-
-  const sendMessage = () => {
-    executeAction(
-      'message',
-      `Message sent to customer for order ${selectedOrder._id}`
-    );
-    setMessage('');
-    onMessageClose();
   };
 
   const exportOrders = () => {
@@ -221,18 +246,15 @@ export const OrdersContent = () => {
           Orders Management
         </Text>
         <Flex gap={4}>
-          <Button variant='outline' size='sm' leftIcon={<Filter size={16} />}>
-            Filter
-          </Button>
           <Button
-            colorScheme='green'
+            colorScheme='blue'
             size='sm'
             leftIcon={<Download size={16} />}
             onClick={exportOrders}
           >
             Export
           </Button>
-          <Button colorScheme='blue' size='sm' leftIcon={<Plus size={16} />}>
+          <Button colorScheme='green' size='sm' leftIcon={<Plus size={16} />}>
             Create Order
           </Button>
         </Flex>
@@ -243,11 +265,11 @@ export const OrdersContent = () => {
         <HStack spacing={4}>
           <Box flex={1}>
             <InputGroup>
-              <InputLeftElement>
+              <InputLeftElement pointerEvents='none'>
                 <Search size={16} />
               </InputLeftElement>
               <Input
-                placeholder='Search by Order ID or Customer Name...'
+                placeholder='Search by Order ID, Customer or Tracking...'
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -276,10 +298,10 @@ export const OrdersContent = () => {
               <Tr>
                 <Th>Order ID</Th>
                 <Th>Customer</Th>
-                {/* <Th>Items</Th> */}
                 <Th>Amount</Th>
                 <Th>Status</Th>
                 <Th>Payment</Th>
+                <Th>Tracking</Th>
                 <Th>Date</Th>
                 <Th>Actions</Th>
               </Tr>
@@ -287,27 +309,35 @@ export const OrdersContent = () => {
             <Tbody>
               {filteredOrders.map((order) => (
                 <Tr key={order._id}>
-                  <Td>{order._id}</Td>
-                  <Td>{order.user?.name || 'N/A'}</Td>
-                  {/* <Td>{order..length || 0} items</Td> */}
-                  <Td>${order.totalPrice}</Td>
+                  <Td>{order._id.substring(0, 8)}...</Td>
+                  <Td>{order.userId?.name || 'N/A'}</Td>
+                  <Td>${order.totalPrice.toFixed(2)}</Td>
                   <Td>
                     <Badge
-                      // {getStatusColor(order?.orderStatus)}
+                      colorScheme={getStatusColor(order.orderStatus)}
                       variant='subtle'
                     >
-                      {order.orderStatus || 'Unknown'}
+                      {order.orderStatus}
                     </Badge>
                   </Td>
                   <Td>
                     <Badge
-                      colorScheme={
-                        order.paymentStatus === 'paid' ? 'green' : 'orange'
-                      }
+                      colorScheme={getPaymentStatusColor(order.paymentStatus)}
                       variant='subtle'
                     >
-                      {order.paymentStatus || 'N/A'}
+                      {order.paymentStatus}
                     </Badge>
+                  </Td>
+                  <Td>
+                    {order.trackingNumber ? (
+                      <Badge colorScheme='blue' variant='subtle'>
+                        {order.trackingNumber}
+                      </Badge>
+                    ) : (
+                      <Text fontSize='sm' color='gray.500'>
+                        Not shipped
+                      </Text>
+                    )}
                   </Td>
                   <Td>{formatDate(order.createdAt)}</Td>
                   <Td>
@@ -331,32 +361,35 @@ export const OrdersContent = () => {
                         >
                           Edit Order
                         </MenuItem>
-                        <MenuItem
-                          icon={<Truck size={16} />}
-                          onClick={() => handleUpdateTracking(order)}
-                        >
-                          Update Tracking
-                        </MenuItem>
-                        <MenuItem
-                          icon={<MessageSquare size={16} />}
-                          onClick={() => handleSendMessage(order)}
-                        >
-                          Message Customer
-                        </MenuItem>
-                        <Divider />
-                        <MenuItem
-                          icon={<CreditCard size={16} />}
-                          onClick={() => handleRefund(order)}
-                        >
-                          Process Refund
-                        </MenuItem>
-                        <MenuItem
-                          icon={<Ban size={16} />}
-                          onClick={() => handleCancelOrder(order)}
-                          color='red.500'
-                        >
-                          Cancel Order
-                        </MenuItem>
+                        {order.orderStatus !== 'cancelled' && (
+                          <>
+                            <MenuItem
+                              icon={<Truck size={16} />}
+                              onClick={() => handleUpdateTracking(order)}
+                              isDisabled={order.orderStatus === 'returned'}
+                            >
+                              Update Tracking
+                            </MenuItem>
+                            <Divider />
+                            {order.paymentStatus === 'paid' && (
+                              <MenuItem
+                                icon={<CreditCard size={16} />}
+                                onClick={() => handleRefund(order)}
+                              >
+                                Process Refund
+                              </MenuItem>
+                            )}
+                            {order.orderStatus !== 'returned' && (
+                              <MenuItem
+                                icon={<Ban size={16} />}
+                                onClick={() => handleCancelOrder(order)}
+                                color='red.500'
+                              >
+                                Cancel Order
+                              </MenuItem>
+                            )}
+                          </>
+                        )}
                       </MenuList>
                     </Menu>
                   </Td>
@@ -375,27 +408,105 @@ export const OrdersContent = () => {
           <ModalCloseButton />
           <ModalBody>
             {selectedOrder && (
-              <VStack align='stretch' spacing={4}>
+              <Stack spacing={6}>
                 <Box>
-                  <Text fontWeight='bold'>Customer Information</Text>
-                  <Text>Name: {selectedOrder.user?.name}</Text>
-                  <Text>Email: {selectedOrder.user?.email}</Text>
+                  <Text fontSize='lg' fontWeight='bold' mb={2}>
+                    Customer Information
+                  </Text>
+                  <Text>
+                    <strong>Name:</strong> {selectedOrder.userId?.name || 'N/A'}
+                  </Text>
+                  <Text>
+                    <strong>Email:</strong>{' '}
+                    {selectedOrder.userId?.email || 'N/A'}
+                  </Text>
+                  {selectedOrder.shippingAddress && (
+                    <UnorderedList>
+                      <Text mt={2}>
+                        <strong>Shipping Address:</strong>{' '}
+                      </Text>
+                      <ListItem>
+                        {selectedOrder.shippingAddress.street}
+                      </ListItem>
+                      <ListItem>{selectedOrder.shippingAddress.city}</ListItem>
+                      <ListItem>{selectedOrder.shippingAddress.state}</ListItem>
+                      <ListItem>
+                        {selectedOrder.shippingAddress.country}
+                      </ListItem>
+                      <ListItem>
+                        {selectedOrder.shippingAddress.zipCode}
+                      </ListItem>
+                    </UnorderedList>
+                  )}
                 </Box>
+
                 <Box>
-                  <Text fontWeight='bold'>Order Summary</Text>
-                  <Text>Total: ${selectedOrder.totalPrice}</Text>
-                  <Text>Status: {selectedOrder.orderStatus}</Text>
-                  <Text>Payment: {selectedOrder.paymentStatus}</Text>
-                </Box>
-                <Box>
-                  <Text fontWeight='bold'>Items</Text>
-                  {selectedOrder.items?.map((item, index) => (
-                    <Text key={index}>
-                      • {item.name} x {item.quantity}
+                  <Text fontSize='lg' fontWeight='bold' mb={2}>
+                    Order Summary
+                  </Text>
+                  <Flex justify='space-between'>
+                    <Text>
+                      <strong>Status:</strong>{' '}
+                      <Badge
+                        colorScheme={getStatusColor(selectedOrder.orderStatus)}
+                        ml={1}
+                      >
+                        {selectedOrder.orderStatus}
+                      </Badge>
                     </Text>
+                    <Text>
+                      <strong>Payment:</strong>{' '}
+                      <Badge
+                        colorScheme={getPaymentStatusColor(
+                          selectedOrder.paymentStatus
+                        )}
+                        ml={1}
+                      >
+                        {selectedOrder.paymentStatus}
+                      </Badge>
+                    </Text>
+                  </Flex>
+                  <Text mt={2}>
+                    <strong>Total:</strong> $
+                    {selectedOrder.totalPrice.toFixed(2)}
+                  </Text>
+                  {selectedOrder.trackingNumber && (
+                    <Text mt={2}>
+                      <strong>Tracking:</strong> {selectedOrder.trackingNumber}
+                    </Text>
+                  )}
+                </Box>
+
+                <Box>
+                  <Text fontSize='lg' fontWeight='bold' mb={2}>
+                    Order Items
+                  </Text>
+                  {selectedOrder.products?.map((item, index) => (
+                    <Flex
+                      key={index}
+                      justify='space-between'
+                      py={2}
+                      borderBottom='1px solid'
+                      borderColor='gray.100'
+                    >
+                      <Text>
+                        {item.product?.name || 'Unknown Product'} ×{' '}
+                        {item.quantity}
+                      </Text>
+                      <Text>${(item.price * item.quantity).toFixed(2)}</Text>
+                    </Flex>
                   ))}
                 </Box>
-              </VStack>
+
+                {selectedOrder?.notes && (
+                  <Box>
+                    <Text fontSize='lg' fontWeight='bold' mb={2}>
+                      Order Notes
+                    </Text>
+                    <Text>{selectedOrder?.notes}</Text>
+                  </Box>
+                )}
+              </Stack>
             )}
           </ModalBody>
           <ModalFooter>
@@ -448,7 +559,7 @@ export const OrdersContent = () => {
                   onChange={(e) =>
                     setEditForm({ ...editForm, notes: e.target.value })
                   }
-                  placeholder='Add notes about this order...'
+                  placeholder='Add order notes...'
                 />
               </FormControl>
             </VStack>
@@ -504,7 +615,7 @@ export const OrdersContent = () => {
                 <Input
                   type='number'
                   value={refundAmount}
-                  onChange={(e) => setRefundAmount(e.target.value)}
+                  onChange={(e) => setRefundAmount(Number(e.target.value))}
                   placeholder='Enter refund amount...'
                 />
               </FormControl>
@@ -555,34 +666,6 @@ export const OrdersContent = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-
-      {/* Send Message Modal */}
-      <Modal isOpen={isMessageOpen} onClose={onMessageClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Send Message - {selectedOrder?._id}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <FormControl>
-              <FormLabel>Message to Customer</FormLabel>
-              <Textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder='Type your message to the customer...'
-                rows={4}
-              />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant='ghost' mr={3} onClick={onMessageClose}>
-              Cancel
-            </Button>
-            <Button colorScheme='blue' onClick={sendMessage}>
-              Send Message
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 };

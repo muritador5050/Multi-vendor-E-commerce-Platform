@@ -5,11 +5,31 @@ const PaymentController = require('../controllers/payment.controller');
 const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
 
-router.post(
-  '/webhooks/:paymentProvider',
-  express.raw({ type: 'application/json' }),
-  PaymentController.processWebhooks
-);
+router.post('/webhooks/stripe', PaymentController.processWebhooks);
+router.post('/webhooks/paystack', PaymentController.processWebhooks);
+
+// Test endpoints for debugging webhooks
+router.get('/webhooks/test/stripe', (req, res) => {
+  console.log('🧪 Stripe test endpoint hit');
+  res.json({
+    success: true,
+    message: 'Stripe webhook endpoint is reachable',
+    provider: 'stripe',
+    timestamp: new Date().toISOString(),
+    url: req.originalUrl,
+  });
+});
+
+router.get('/webhooks/test/paystack', (req, res) => {
+  console.log('🧪 Paystack test endpoint hit');
+  res.json({
+    success: true,
+    message: 'Paystack webhook endpoint is reachable',
+    provider: 'paystack',
+    timestamp: new Date().toISOString(),
+    url: req.originalUrl,
+  });
+});
 
 router.post('/', authenticate, asyncHandler(PaymentController.createPayment));
 
@@ -36,6 +56,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
+  checkRole('admin', 'read'),
   asyncHandler(PaymentController.getPaymentById)
 );
 

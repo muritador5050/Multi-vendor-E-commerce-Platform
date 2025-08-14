@@ -148,7 +148,7 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
     throw new Error('Amount too small for Paystack (minimum 0.01 NGN)');
   }
 
-  const customerEmail = order.user?.email || 'customer@example.com';
+  const customerEmail = order.userId?.email || 'customer@example.com';
 
   const paymentData = {
     email: customerEmail,
@@ -260,29 +260,15 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
   try {
     switch (event.type) {
       case 'checkout.session.completed':
-        const updateResults = await Promise.allSettled([
-          this.findByIdAndUpdate(payment._id, {
-            status: 'completed',
-            paidAt: new Date(),
-            transactionDetails: JSON.stringify(session),
-          }),
-          Order.findByIdAndUpdate(payment.orderId, {
-            paymentStatus: 'completed',
-            orderStatus: 'processing',
-          }),
-        ]);
-
-        // Check if any updates failed
-        updateResults.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            const target = index === 0 ? 'Payment' : 'Order';
-          } else {
-            const target = index === 0 ? 'Payment' : 'Order';
-          }
+        await this.findByIdAndUpdate(payment._id, {
+          status: 'completed',
+          paidAt: new Date(),
+          transactionDetails: JSON.stringify(session),
         });
 
-        // Verify the payment was actually updated
-        const updatedPayment = await this.findById(payment._id);
+        await Order.findByIdAndUpdate(payment.orderId, {
+          orderStatus: 'processing',
+        });
 
         break;
 
@@ -332,33 +318,15 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
   try {
     switch (event) {
       case 'charge.success':
-        console.log('Processing successful Paystack payment for:', payment._id);
-
-        const updateResults = await Promise.allSettled([
-          this.findByIdAndUpdate(payment._id, {
-            status: 'completed',
-            paidAt: new Date(),
-            transactionDetails: JSON.stringify(data),
-          }),
-          Order.findByIdAndUpdate(payment.orderId, {
-            paymentStatus: 'completed',
-            orderStatus: 'processing',
-          }),
-        ]);
-
-        // Check if any updates failed
-        updateResults.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            const target = index === 0 ? 'Payment' : 'Order';
-            console.error(`${target} update failed:`, result.reason);
-          } else {
-            const target = index === 0 ? 'Payment' : 'Order';
-            console.log(`${target} updated successfully`);
-          }
+        await this.findByIdAndUpdate(payment._id, {
+          status: 'completed',
+          paidAt: new Date(),
+          transactionDetails: JSON.stringify(data),
         });
 
-        // Verify the payment was actually updated
-        const updatedPayment = await this.findById(payment._id);
+        await Order.findByIdAndUpdate(payment.orderId, {
+          orderStatus: 'processing',
+        });
 
         break;
 
@@ -414,6 +382,7 @@ paymentSchema.statics.getFilteredPayments = async function (
   const [payments, totalPayments] = await Promise.all([
     this.find(filter)
       .populate('orderId')
+      .populate('userId', 'name email')
       .skip(skip)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit)),
@@ -486,7 +455,7 @@ paymentSchema.statics.getPaymentAnalytics = async function (
   }
 
   const matchStage = {
-    user: new mongoose.Types.ObjectId(userId),
+    userId: new mongoose.Types.ObjectId(userId),
     createdAt: { $gte: startDate },
   };
 
@@ -497,7 +466,6 @@ paymentSchema.statics.getPaymentAnalytics = async function (
     paymentMethodBreakdown,
     recentTransactions,
   ] = await Promise.all([
-    // Overall statistics
     this.aggregate([
       { $match: matchStage },
       {
@@ -521,7 +489,6 @@ paymentSchema.statics.getPaymentAnalytics = async function (
       },
     ]),
 
-    // Payment status breakdown
     this.aggregate([
       { $match: matchStage },
       {
@@ -534,7 +501,6 @@ paymentSchema.statics.getPaymentAnalytics = async function (
       { $sort: { count: -1 } },
     ]),
 
-    // Monthly payment trends
     this.aggregate([
       { $match: matchStage },
       {
@@ -581,12 +547,11 @@ paymentSchema.statics.getPaymentAnalytics = async function (
       },
     ]),
 
-    // Payment method breakdown
     this.aggregate([
       { $match: matchStage },
       {
         $group: {
-          _id: '$paymentMethod',
+          _id: '$paymentProvider',
           count: { $sum: 1 },
           totalAmount: { $sum: '$amount' },
           avgAmount: { $avg: '$amount' },
@@ -596,27 +561,22 @@ paymentSchema.statics.getPaymentAnalytics = async function (
       {
         $project: {
           _id: 0,
-          paymentMethod: '$_id',
+          paymentProvider: '$_id',
           count: 1,
           totalAmount: 1,
           avgAmount: { $round: ['$avgAmount', 2] },
-          percentage: {
-            $multiply: [{ $divide: ['$count', { $sum: '$count' }] }, 100],
-          },
         },
       },
     ]),
 
-    // Recent transactions
     this.find(matchStage)
       .populate('orderId', 'orderNumber')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('amount status paymentMethod createdAt order transactionId')
+      .select('amount status paymentProvider createdAt orderId paymentId')
       .lean(),
   ]);
 
-  // Process overall stats
   const stats = overallStats[0] || {
     totalAmount: 0,
     totalTransactions: 0,
@@ -628,7 +588,6 @@ paymentSchema.statics.getPaymentAnalytics = async function (
     pendingPayments: 0,
   };
 
-  // Calculate success rate
   const successRate =
     stats.totalTransactions > 0
       ? ((stats.successfulPayments / stats.totalTransactions) * 100).toFixed(2)
@@ -673,3 +632,112 @@ paymentSchema.methods.updatePaymentStatus = async function (status, paidAt) {
 };
 
 module.exports = mongoose.model('Payment', paymentSchema);
+
+paymentSchema.statics.handlePaystackWebhook = async function (req) {
+  const hash = crypto
+    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+    .update(JSON.stringify(req.body))
+    .digest('hex');
+
+  if (hash !== req.headers['x-paystack-signature']) {
+    throw new Error('Invalid webhook signature');
+  }
+
+  const { event, data } = req.body;
+
+  const payment = await this.findOne({ paymentId: data.reference });
+
+  if (!payment) {
+    throw new Error('Payment not found for reference: ' + data.reference);
+  }
+
+  // Use a transaction to ensure consistency
+  const session_db = await mongoose.startSession();
+
+  try {
+    await session_db.withTransaction(async () => {
+      switch (event) {
+        case 'charge.success':
+          console.log(
+            'Processing successful Paystack payment for:',
+            payment._id
+          );
+
+          // Update only the payment - order status is derived
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: 'completed',
+              paidAt: new Date(),
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
+
+          // Update order status to 'paid' when payment is completed
+          await Order.findByIdAndUpdate(
+            payment.orderId,
+            {
+              orderStatus: 'paid', // Changed from 'processing'
+            },
+            { session: session_db }
+          );
+
+          console.log(`Payment ${payment._id} completed successfully`);
+          break;
+
+        case 'charge.failed':
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: 'failed',
+              failureReason: data.gateway_response || 'Payment failed',
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
+
+          console.log(`Payment ${payment._id} failed`);
+          break;
+
+        default:
+          console.log('Unhandled Paystack event type:', event);
+      }
+    });
+  } catch (dbError) {
+    console.error('Database update error:', dbError);
+    throw new Error(`Failed to update payment status: ${dbError.message}`);
+  } finally {
+    await session_db.endSession();
+  }
+};
+
+// Helper method to sync order status based on payment status
+paymentSchema.statics.syncOrderStatus = async function (paymentId) {
+  const payment = await this.findById(paymentId);
+  if (!payment) return;
+
+  const Order = mongoose.model('Order');
+
+  let newOrderStatus;
+  switch (payment.status) {
+    case 'completed':
+      newOrderStatus = 'paid';
+      break;
+    case 'failed':
+      // Keep current status or set to cancelled if it was pending payment
+      const order = await Order.findById(payment.orderId);
+      newOrderStatus =
+        order.orderStatus === 'pending' ? 'cancelled' : order.orderStatus;
+      break;
+    case 'refunded':
+      newOrderStatus = 'cancelled'; // or 'refunded' if you add this status
+      break;
+    default:
+      return; // Don't change order status for pending/disputed
+  }
+
+  await Order.findByIdAndUpdate(payment.orderId, {
+    orderStatus: newOrderStatus,
+  });
+};

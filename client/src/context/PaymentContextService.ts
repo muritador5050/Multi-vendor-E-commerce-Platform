@@ -1,7 +1,7 @@
 // Export all hooks and utilities
 import type { ApiResponse } from '@/type/ApiResponse';
 import type {
-  CreatePaymentResponse,
+  CreatedPaymentResponse,
   PaginatedPayments,
   Payment,
   PaymentAnalytics,
@@ -31,7 +31,7 @@ export const useCreatePayment = () => {
   const queryClient = useQueryClient();
 
   return useMutation<
-    ApiResponse<CreatePaymentResponse>,
+    ApiResponse<CreatedPaymentResponse>,
     Error,
     { orderId: string }
   >({
@@ -54,10 +54,7 @@ export const useGetAllPayments = (filters: PaymentFilters = {}) => {
 
   return useQuery<ApiResponse<PaginatedPayments>, Error>({
     queryKey: paymentKeys.list(filters),
-    queryFn: async () =>
-      await apiClient.authenticatedApiRequest<ApiResponse<PaginatedPayments>>(
-        endpoint
-      ),
+    queryFn: async () => await apiClient.authenticatedApiRequest(endpoint),
   });
 };
 

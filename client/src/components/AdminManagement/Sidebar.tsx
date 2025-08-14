@@ -1,12 +1,15 @@
 import { Box, Flex } from '@chakra-ui/react';
 import {
   Home,
-  Users,
   ShoppingCart,
   Package,
   BarChart3,
   Settings,
   User,
+  Banknote,
+  Rss,
+  ScanEye,
+  BriefcaseBusiness,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,11 +26,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'vendors', label: 'Vendors', icon: Users },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'blogs', label: 'Blogs', icon: Rss },
     { id: 'customers', label: 'Customers', icon: User },
+    { id: 'payments', label: 'Payments', icon: Banknote },
+    { id: 'reviews', label: 'Reviews', icon: ScanEye },
+    { id: 'products', label: 'Products', icon: Package },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'vendors', label: 'Vendors', icon: BriefcaseBusiness },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 

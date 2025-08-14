@@ -58,10 +58,6 @@ const User = require('./user.model');
  *         paymentMethod:
  *           type: string
  *           description: Payment method used for the order (e.g., Stripe, PayPal, COD)
- *         paymentStatus:
- *           type: string
- *           enum: [pending, completed, failed, refunded]
- *           default: pending
  *         orderStatus:
  *           type: string
  *           enum: [pending, processing, shipped, delivered, cancelled, returned]
@@ -134,11 +130,6 @@ const orderSchema = new mongoose.Schema(
       required: true,
       enum: ['stripe', 'paystack', 'card', 'bank_transfer'],
     },
-    paymentStatus: {
-      type: String,
-      enum: ['pending', 'completed', 'failed', 'refunded'],
-      default: 'pending',
-    },
     orderStatus: {
       type: String,
       enum: [
@@ -183,7 +174,6 @@ orderSchema.statics.validateOrderData = function (orderData) {
     }
   }
 
-  // Validate billing address if not using same address
   if (orderData.useSameAddress === false && !orderData.billingAddress) {
     throw new Error('Billing address is required when not using same address');
   }
@@ -231,7 +221,6 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
   const filter = { isDeleted: false };
 
   if (orderStatus) filter.orderStatus = orderStatus;
-  if (paymentStatus) filter.paymentStatus = paymentStatus;
   if (userId) filter.userId = userId;
 
   if (startDate || endDate) {
@@ -276,16 +265,84 @@ orderSchema.statics.getFilteredOrders = async function (queryParams) {
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
-  const [orders, total] = await Promise.all([
-    this.find(filter)
-      .populate('userId', 'name email')
-      .populate('products.product', 'name images')
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean(),
-    this.countDocuments(filter),
-  ]);
+  let orders, total;
+
+  if (paymentStatus) {
+    // If paymentStatus filter is needed, use aggregation
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'payments',
+          localField: '_id',
+          foreignField: 'orderId',
+          as: 'payment',
+        },
+      },
+      {
+        $match: {
+          'payment.status': paymentStatus,
+        },
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: parseInt(limit) },
+    ];
+
+    const countPipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'payments',
+          localField: '_id',
+          foreignField: 'orderId',
+          as: 'payment',
+        },
+      },
+      {
+        $match: {
+          'payment.status': paymentStatus,
+        },
+      },
+      { $count: 'total' },
+    ];
+
+    [orders, totalResult] = await Promise.all([
+      this.aggregate([
+        ...pipeline,
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId',
+          },
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'products.product',
+            foreignField: '_id',
+            as: 'productDetails',
+          },
+        },
+      ]),
+      this.aggregate(countPipeline),
+    ]);
+
+    total = totalResult[0]?.total || 0;
+  } else {
+    [orders, total] = await Promise.all([
+      this.find(filter)
+        .populate('userId', 'name email')
+        .populate('products.product', 'name images')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      this.countDocuments(filter),
+    ]);
+  }
 
   return {
     orders,
@@ -315,7 +372,7 @@ orderSchema.statics.findByIdWithAuth = async function (
     throw new Error('Order with this ID not found');
   }
 
-  if (userRole !== 'admin' && order.user._id.toString() !== userId) {
+  if (userRole !== 'admin' && order.userId._id.toString() !== userId) {
     throw new Error('Not authorized to view this order');
   }
 
@@ -380,7 +437,16 @@ orderSchema.statics.getOrderStatistics = async function () {
 
 orderSchema.statics.getDailyReports = async function () {
   return await this.aggregate([
-    { $match: { isDeleted: false, paymentStatus: 'pending' } },
+    { $match: { isDeleted: false } },
+    {
+      $lookup: {
+        from: 'payments',
+        localField: '_id',
+        foreignField: 'orderId',
+        as: 'payment',
+      },
+    },
+    { $match: { 'payment.status': 'completed' } },
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -398,7 +464,16 @@ orderSchema.statics.getProductSalesByVendor = async function (vendorId) {
   }
 
   return await this.aggregate([
-    { $match: { isDeleted: false, paymentStatus: 'pending' } },
+    { $match: { isDeleted: false } },
+    {
+      $lookup: {
+        from: 'payments',
+        localField: '_id',
+        foreignField: 'orderId',
+        as: 'payment',
+      },
+    },
+    { $match: { 'payment.status': 'completed' } },
     { $unwind: '$products' },
     {
       $lookup: {
@@ -441,7 +516,16 @@ orderSchema.statics.getProductSalesByVendor = async function (vendorId) {
 
 orderSchema.statics.getVendorAnalytics = async function (vendorId) {
   const stats = await this.aggregate([
-    { $match: { isDeleted: false, paymentStatus: 'paid' } },
+    { $match: { isDeleted: false } },
+    {
+      $lookup: {
+        from: 'payments',
+        localField: '_id',
+        foreignField: 'orderId',
+        as: 'payment',
+      },
+    },
+    { $match: { 'payment.status': 'completed' } },
     { $unwind: '$products' },
     {
       $lookup: {

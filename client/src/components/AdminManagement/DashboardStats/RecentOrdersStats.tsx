@@ -57,7 +57,7 @@ export default function RecentOrdersStats() {
             contentHeight={{ base: '150px ', md: '150px' }}
           />
         </Center>
-      ) : data?.data?.orders.length === 0 ? (
+      ) : data?.orders.length === 0 ? (
         <Center flexDirection='column' h='150px' color='gray.500'>
           <Icon as={FiPackage} boxSize={8} mb={3} />
           <Text fontSize='md' fontWeight='medium'>
@@ -133,7 +133,7 @@ export default function RecentOrdersStats() {
                 </Tr>
               </Thead>
               <Tbody>
-                {data?.data?.orders?.map((order, idx) => (
+                {data?.orders?.map((order, idx) => (
                   <Tr
                     key={order._id}
                     _hover={{ bg: 'gray.50' }}
@@ -143,9 +143,7 @@ export default function RecentOrdersStats() {
                       py={3}
                       px={4}
                       borderBottom={
-                        idx < (data.data?.orders?.length ?? 0) - 1
-                          ? '1px'
-                          : 'none'
+                        idx < (data.orders?.length ?? 0) - 1 ? '1px' : 'none'
                       }
                       borderColor='gray.200'
                     >
@@ -164,15 +162,13 @@ export default function RecentOrdersStats() {
                       py={3}
                       px={4}
                       borderBottom={
-                        idx < (data.data?.orders?.length ?? 0) - 1
-                          ? '1px'
-                          : 'none'
+                        idx < (data?.orders?.length ?? 0) - 1 ? '1px' : 'none'
                       }
                       borderColor='gray.200'
                     >
                       <Flex align='center'>
                         <Text as='span' fontSize='sm' fontWeight='medium'>
-                          {order.user.name}
+                          {order.userId.name}
                         </Text>
                       </Flex>
                     </Td>
@@ -180,9 +176,7 @@ export default function RecentOrdersStats() {
                       py={3}
                       px={4}
                       borderBottom={
-                        idx < (data.data?.orders?.length ?? 0) - 1
-                          ? '1px'
-                          : 'none'
+                        idx < (data?.orders?.length ?? 0) - 1 ? '1px' : 'none'
                       }
                       borderColor='gray.200'
                       textAlign='right'
@@ -199,9 +193,7 @@ export default function RecentOrdersStats() {
                       py={3}
                       px={4}
                       borderBottom={
-                        idx < (data.data?.orders?.length ?? 0) - 1
-                          ? '1px'
-                          : 'none'
+                        idx < (data?.orders?.length ?? 0) - 1 ? '1px' : 'none'
                       }
                       borderColor='gray.200'
                       textAlign='center'
@@ -229,7 +221,7 @@ export default function RecentOrdersStats() {
       )}
       {/* Mobile Card View */}
       <Box display={{ base: 'block', md: 'none' }}>
-        {data?.data?.orders?.map((order) => (
+        {data?.orders?.map((order) => (
           <Box
             key={order._id}
             p={4}
@@ -270,7 +262,7 @@ export default function RecentOrdersStats() {
                 Customer:
               </Text>{' '}
               <Text as='span' fontWeight='medium'>
-                {order.user.name}
+                {order.userId.name}
               </Text>
             </Text>
             <Text fontSize='sm' fontWeight='semibold' color='green.600'>

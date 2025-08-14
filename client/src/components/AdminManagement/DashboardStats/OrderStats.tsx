@@ -10,7 +10,7 @@ export default function OrderStats() {
   const { data } = useOrders();
 
   // Memoize orders extraction
-  const orders = useMemo(() => data?.data?.orders || [], [data?.data?.orders]);
+  const orders = useMemo(() => data?.orders || [], [data?.orders]);
 
   //Memo for stats calculation
   const stat = useMemo(() => {

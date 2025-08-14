@@ -32,25 +32,108 @@ class PaymentController {
   }
 
   static async processWebhooks(req, res) {
-    try {
-      const { paymentProvider } = req.params;
+    // Extract provider from URL path
+    let paymentProvider = req.params.paymentProvider;
 
-      if (paymentProvider === 'stripe') {
-        await Payment.handleStripeWebhook(req);
-      } else if (paymentProvider === 'paystack') {
-        await Payment.handlePaystackWebhook(req);
-      } else {
-        console.log('Unsupported payment provider:', paymentProvider);
-        return res.status(400).json({ error: 'Unsupported payment provider' });
+    if (!paymentProvider) {
+      const urlPath = req.originalUrl || req.path;
+      if (urlPath.includes('/stripe')) {
+        paymentProvider = 'stripe';
+      } else if (urlPath.includes('/paystack')) {
+        paymentProvider = 'paystack';
+      }
+    }
+
+    // Validate provider
+    if (!paymentProvider) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Payment provider not specified. Use /webhooks/stripe or /webhooks/paystack',
+      });
+    }
+
+    // Check for test mode
+    const isTestMode =
+      req.query.test === 'true' ||
+      req.body?.test === 'payload' ||
+      req.headers['x-test-webhook'] === 'true';
+
+    if (isTestMode) {
+      return res.status(200).json({
+        success: true,
+        message: 'Test webhook received successfully',
+        provider: paymentProvider,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    try {
+      // Process webhook based on provider
+      switch (paymentProvider.toLowerCase()) {
+        case 'stripe':
+          if (!req.headers['stripe-signature']) {
+            return res.status(400).json({
+              success: false,
+              message:
+                'Missing stripe-signature header. For testing, add ?test=true to URL',
+              provider: paymentProvider,
+            });
+          }
+          await Payment.handleStripeWebhook(req);
+          break;
+
+        case 'paystack':
+          if (!req.headers['x-paystack-signature']) {
+            return res.status(400).json({
+              success: false,
+              message:
+                'Missing x-paystack-signature header. For testing, add ?test=true to URL',
+              provider: paymentProvider,
+            });
+          }
+          await Payment.handlePaystackWebhook(req);
+          break;
+
+        default:
+          return res.status(400).json({
+            success: false,
+            message: `Unsupported payment provider: ${paymentProvider}`,
+          });
       }
 
-      res.status(200).json({ received: true });
+      // Success response
+      res.status(200).json({
+        success: true,
+        message: 'Webhook processed successfully',
+        provider: paymentProvider,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      console.error(
+        `Webhook processing error (${paymentProvider}):`,
+        error.message
+      );
+      if (
+        error.message.includes('signature') ||
+        error.message.includes('Invalid webhook')
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Webhook signature verification failed',
+          error: error.message,
+          provider: paymentProvider,
+        });
+      }
+      res.status(200).json({
+        success: false,
+        message: 'Webhook received but processing failed',
+        error: error.message,
+        provider: paymentProvider,
+      });
     }
   }
 
-  // Get all payments
   static async getAllPayments(req, res) {
     try {
       const { status, order, paidAt, paymentProvider, page, limit } = req.query;
@@ -61,6 +144,8 @@ class PaymentController {
       const result = await Payment.getFilteredPayments(filters, pagination);
 
       return res.json({
+        success: true,
+        message: 'Payment retreived successfully',
         data: {
           payments: result.payments,
           pagination: result.pagination,
@@ -143,9 +228,9 @@ class PaymentController {
       const updatedPayment = await payment.updatePaymentStatus(status, paidAt);
 
       return res.json({
-        data: {
-          results: updatedPayment,
-        },
+        success: true,
+        message: 'Payment status updated successfully',
+        data: updatedPayment,
       });
     } catch (error) {
       console.error('Error updating payment status:', error);
