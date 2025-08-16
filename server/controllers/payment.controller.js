@@ -149,6 +149,7 @@ class PaymentController {
     });
   }
 
+  // Fixed controller method
   static async updatePaymentStatus(req, res) {
     const { status, paidAt } = req.body;
 
@@ -161,7 +162,6 @@ class PaymentController {
     }
 
     const updatedPayment = await payment.updatePaymentStatus(status, paidAt);
-    await Payment.syncOrderStatus(updatedPayment._id);
 
     res.json({
       success: true,

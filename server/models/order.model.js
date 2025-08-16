@@ -61,7 +61,7 @@ const EmailService = require('../services/emailService');
  *           description: Payment method used for the order (e.g., Stripe, PayPal, COD)
  *         orderStatus:
  *           type: string
- *           enum: [pending, processing, shipped, delivered, cancelled, returned]
+ *           enum: [pending, paid, processing, shipped, delivered, cancelled, returned, on_hold]
  *           default: pending
  *         totalPrice:
  *           type: number
@@ -135,11 +135,13 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         'pending',
+        'paid',
         'processing',
         'shipped',
         'delivered',
         'cancelled',
         'returned',
+        'on_hold',
       ],
       default: 'pending',
     },
@@ -149,6 +151,14 @@ const orderSchema = new mongoose.Schema(
     estimatedDelivery: Date,
     deliveredAt: Date,
     isDeleted: { type: Boolean, default: false },
+    statusHistory: [
+      {
+        status: String,
+        changedAt: { type: Date, default: Date.now },
+        changedBy: String,
+        reason: String,
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -157,6 +167,19 @@ orderSchema.index({ userId: 1, orderStatus: 1 });
 orderSchema.index({ trackingNumber: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ isDeleted: 1 });
+
+// CORRECTED: Add middleware to track status changes
+orderSchema.pre('save', function (next) {
+  if (this.isModified('orderStatus') && !this.isNew) {
+    this.statusHistory.push({
+      status: this.orderStatus,
+      changedAt: new Date(),
+      changedBy: this._statusChangedBy || 'system',
+      reason: this._statusChangeReason || 'Status updated',
+    });
+  }
+  next();
+});
 
 orderSchema.statics.validateOrderData = function (orderData) {
   const { products, paymentMethod, shippingAddress } = orderData;
@@ -197,6 +220,14 @@ orderSchema.statics.createNewOrder = async function (orderData) {
     ...orderData,
     totalPrice: calculatedTotal,
     shippingCost: orderData.shippingCost || 0,
+    statusHistory: [
+      {
+        status: 'pending',
+        changedAt: new Date(),
+        changedBy: 'system',
+        reason: 'Order created',
+      },
+    ],
   });
 
   return await order.populate([
@@ -392,6 +423,9 @@ orderSchema.statics.getOrderStatistics = async function () {
         pendingOrders: {
           $sum: { $cond: [{ $eq: ['$orderStatus', 'pending'] }, 1, 0] },
         },
+        paidOrders: {
+          $sum: { $cond: [{ $eq: ['$orderStatus', 'paid'] }, 1, 0] },
+        },
         processingOrders: {
           $sum: { $cond: [{ $eq: ['$orderStatus', 'processing'] }, 1, 0] },
         },
@@ -403,6 +437,12 @@ orderSchema.statics.getOrderStatistics = async function () {
         },
         cancelledOrders: {
           $sum: { $cond: [{ $eq: ['$orderStatus', 'cancelled'] }, 1, 0] },
+        },
+        returnedOrders: {
+          $sum: { $cond: [{ $eq: ['$orderStatus', 'returned'] }, 1, 0] },
+        },
+        onHoldOrders: {
+          $sum: { $cond: [{ $eq: ['$orderStatus', 'on_hold'] }, 1, 0] },
         },
         sameAddressOrders: {
           $sum: { $cond: [{ $eq: ['$useSameAddress', true] }, 1, 0] },
@@ -568,21 +608,113 @@ orderSchema.statics.getVendorAnalytics = async function (vendorId) {
   );
 };
 
-// Instance Methods
-orderSchema.methods.updateStatus = async function (updateData) {
+orderSchema.statics.validateStatusTransition = function (
+  currentStatus,
+  newStatus,
+  changedBy = 'admin'
+) {
+  const validTransitions = {
+    pending: ['paid', 'cancelled'],
+    paid: ['processing', 'cancelled', 'on_hold'],
+    processing: ['shipped', 'cancelled', 'on_hold'],
+    shipped: ['delivered', 'returned', 'on_hold'],
+    delivered: ['returned'],
+    cancelled: [],
+    returned: [],
+    on_hold: ['paid', 'processing', 'shipped', 'cancelled'],
+  };
+
+  if (!validTransitions[currentStatus]) {
+    throw new Error(`Invalid current status: ${currentStatus}`);
+  }
+
+  if (!validTransitions[currentStatus].includes(newStatus)) {
+    // Allow admin to override some restrictions
+    if (changedBy === 'admin') {
+      const adminOverrides = ['cancelled', 'on_hold'];
+      if (!adminOverrides.includes(newStatus)) {
+        throw new Error(
+          `Invalid status transition from ${currentStatus} to ${newStatus}`
+        );
+      }
+    } else {
+      throw new Error(
+        `Invalid status transition from ${currentStatus} to ${newStatus}`
+      );
+    }
+  }
+};
+
+orderSchema.methods.updateStatus = async function (
+  updateData,
+  changedBy = 'admin',
+  reason = ''
+) {
   const { orderStatus, trackingNumber, deliveredAt } = updateData;
 
-  const previousStatus = this.orderStatus;
+  if (orderStatus) {
+    // Validate status transition
+    this.constructor.validateStatusTransition(
+      this.orderStatus,
+      orderStatus,
+      changedBy
+    );
 
-  if (orderStatus) this.orderStatus = orderStatus;
+    const previousStatus = this.orderStatus;
+    this.orderStatus = orderStatus;
+
+    // Set metadata for middleware
+    this._statusChangedBy = changedBy;
+    this._statusChangeReason =
+      reason || `Status changed from ${previousStatus} to ${orderStatus}`;
+  }
+
   if (trackingNumber) this.trackingNumber = trackingNumber;
   if (deliveredAt) this.deliveredAt = deliveredAt;
 
   await this.save({ validateBeforeSave: true });
-  await this.populate('userId', 'name email');
+  await this.populate([
+    { path: 'userId', select: 'name email' },
+    { path: 'products.product', select: 'name price images' },
+  ]);
 
-  if (orderStatus && orderStatus !== previousStatus) {
+  if (
+    orderStatus &&
+    ['paid', 'processing', 'shipped', 'delivered', 'cancelled'].includes(
+      orderStatus
+    )
+  ) {
     await EmailService.sendOrderStatusUpdateEmail(this);
+  }
+
+  return this;
+};
+
+orderSchema.methods.syncWithPaymentStatus = async function () {
+  const Payment = mongoose.model('Payment');
+  const payment = await Payment.findOne({ orderId: this._id });
+
+  if (!payment) return this;
+
+  const statusMap = {
+    completed: 'paid',
+    failed: 'cancelled',
+    refunded: 'returned',
+    disputed: 'on_hold',
+  };
+
+  const newStatus = statusMap[payment.status];
+  if (newStatus && newStatus !== this.orderStatus) {
+    // Only sync if it's a valid transition
+    try {
+      await this.updateStatus(
+        { orderStatus: newStatus },
+        'system',
+        'Synced with payment status'
+      );
+    } catch (error) {
+      console.log(`Could not sync order ${this._id} status: ${error.message}`);
+    }
   }
 
   return this;
@@ -596,5 +728,25 @@ orderSchema.methods.softDelete = async function () {
 orderSchema.methods.canBeViewedBy = function (userId, userRole) {
   return userRole === 'admin' || this.userId._id.toString() === userId;
 };
+
+orderSchema.methods.getPaymentStatus = async function () {
+  const Payment = mongoose.model('Payment');
+  const payment = await Payment.findOne({ orderId: this._id });
+  return payment ? payment.status : null;
+};
+
+orderSchema.virtual('timeline').get(function () {
+  return this.statusHistory
+    .map((entry) => ({
+      status: entry.status,
+      timestamp: entry.changedAt,
+      actor: entry.changedBy,
+      description: entry.reason,
+    }))
+    .sort((a, b) => a.timestamp - b.timestamp);
+});
+
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Order', orderSchema);

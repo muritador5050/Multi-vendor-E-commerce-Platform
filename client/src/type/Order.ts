@@ -1,4 +1,4 @@
-type PaymentMethod = 'card' | 'paystack' | 'stripe' | 'bank_transfer';
+type PaymentMethod = 'stripe' | 'paystack' | 'card' | 'bank_transfer';
 
 export interface Address {
   street: string;
@@ -11,26 +11,17 @@ export interface Address {
 export interface CreateOrderProduct {
   product: string;
   quantity: number;
+  price: number;
 }
 
 export interface CreateOrderRequest {
   products: CreateOrderProduct[];
   shippingAddress: Address;
-  useSameAddress: boolean;
-  paymentMethod: string;
-  shippingCost?: number;
   billingAddress?: Address;
-}
-
-export interface OrderProduct {
-  product: {
-    _id: string;
-    name: string;
-    images: string[];
-  };
-  quantity: number;
-  price: number;
-  _id: string;
+  useSameAddress: boolean;
+  paymentMethod: PaymentMethod;
+  totalPrice: number;
+  shippingCost?: number;
 }
 
 export interface Order {
@@ -40,7 +31,7 @@ export interface Order {
     name: string;
     email: string;
   };
-  products: OrderProduct[];
+  products: CreateOrderProduct[];
   shippingAddress: Address;
   billingAddress: Address;
   useSameAddress: boolean;

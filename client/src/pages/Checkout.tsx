@@ -1,7 +1,7 @@
 import { useCurrentUser } from '@/context/AuthContextService';
 import { useCart } from '@/context/CartContextService';
 import { useCreateOrder } from '@/context/OrderContextService';
-import type { Order } from '@/type/Order';
+import type { CreateOrderRequest, Order } from '@/type/Order';
 import {
   Box,
   Button,
@@ -109,8 +109,7 @@ const CheckoutPage = () => {
         throw new Error('No products in cart');
       }
 
-      const finalOrderData: Omit<Order, '_id'> = {
-        user: currentUser._id,
+      const finalOrderData: CreateOrderRequest = {
         products,
         totalPrice: (cartItems?.totalAmount || 0) + shippingCost,
         shippingAddress: orderData.shippingAddress,
@@ -118,9 +117,7 @@ const CheckoutPage = () => {
           ? orderData.shippingAddress
           : orderData.billingAddress,
         useSameAddress: orderData.useSameAddress,
-        paymentMethod: orderData.paymentMethod,
-        paymentStatus: 'pending',
-        orderStatus: 'pending',
+        paymentMethod: orderData.paymentMethod as Order['paymentMethod'],
         shippingCost: shippingCost,
       };
 

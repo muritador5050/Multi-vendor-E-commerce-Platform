@@ -368,7 +368,7 @@ router.get(
  *       '500':
  *         description: Internal server error
  */
-router.put(
+router.patch(
   '/:id/status',
   authenticate,
   checkRole('admin', 'edit'),

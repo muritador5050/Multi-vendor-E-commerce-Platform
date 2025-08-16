@@ -18,12 +18,14 @@ import {
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiLock, FiShield } from 'react-icons/fi';
+import { useCart } from '@/context/CartContextService';
 
 const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
   const createPaymentMutation = useCreatePayment();
+  const { data: cartItems } = useCart();
 
   const [isProcessing, setIsProcessing] = useState(false);
 

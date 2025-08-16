@@ -3,6 +3,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
 const axios = require('axios');
 const Order = require('./order.model');
+const Cart = require('./cart.model');
 const EmailService = require('../services/emailService');
 
 /**
@@ -257,46 +258,93 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
     throw new Error('Payment not found for session ID: ' + session.id);
   }
 
+  // Use database session for consistency
+  const dbSession = await mongoose.startSession();
+
   try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        await this.findByIdAndUpdate(payment._id, {
-          status: 'completed',
-          paidAt: new Date(),
-          transactionDetails: JSON.stringify(session),
-        });
+    await dbSession.withTransaction(async () => {
+      let newPaymentStatus, newOrderStatus;
 
-        const updatedOrder = await Order.findByIdAndUpdate(
-          payment.orderId,
-          { orderStatus: 'processing' },
-          { new: true }
-        ).populate('userId', 'name email');
+      switch (event.type) {
+        case 'checkout.session.completed':
+          newPaymentStatus = 'completed';
+          newOrderStatus = 'paid';
 
-        await EmailService.sendOrderStatusUpdateEmail(updatedOrder);
-        break;
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              paidAt: new Date(),
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
 
-      case 'checkout.session.expired':
-        await this.findByIdAndUpdate(payment._id, {
-          status: 'failed',
-          failureReason: 'Session expired',
-          transactionDetails: JSON.stringify(session),
-        });
+          const updatedOrder = await Order.findByIdAndUpdate(
+            payment.orderId,
+            { orderStatus: newOrderStatus },
+            { new: true, session: dbSession }
+          )
+            .populate('userId', 'name email')
+            .populate({
+              path: 'products.product',
+              select: 'name price images',
+            });
 
-        break;
+          await Cart.findOneAndUpdate(
+            { user: updatedOrder.userId },
+            { $set: { items: [] } },
+            { session: dbSession }
+          );
 
-      case 'charge.dispute.created':
-        await this.findByIdAndUpdate(payment._id, {
-          status: 'disputed',
-          transactionDetails: JSON.stringify(session),
-        });
+          await EmailService.sendOrderStatusUpdateEmail(updatedOrder);
+          break;
 
-        break;
+        case 'checkout.session.expired':
+          newPaymentStatus = 'failed';
 
-      default:
-        console.log('Unhandled event type:', event.type);
-    }
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              failureReason: 'Session expired',
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
+
+          // CORRECTED: Sync order status
+          await this.syncOrderStatus(payment._id, dbSession);
+          break;
+
+        case 'charge.dispute.created':
+          newPaymentStatus = 'disputed';
+
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
+
+          // CORRECTED: Handle disputed payments
+          await Order.findByIdAndUpdate(
+            payment.orderId,
+            { orderStatus: 'on_hold' },
+            { session: dbSession }
+          );
+          break;
+
+        default:
+          console.log('Unhandled Stripe event type:', event.type);
+      }
+    });
   } catch (dbError) {
     throw new Error(`Failed to update payment status: ${dbError.message}`);
+  } finally {
+    await dbSession.endSession();
   }
 };
 
@@ -318,7 +366,6 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
     throw new Error('Payment not found for reference: ' + data.reference);
   }
 
-  // Use a transaction to ensure consistency
   const session_db = await mongoose.startSession();
 
   try {
@@ -330,7 +377,6 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
             payment._id
           );
 
-          // Update only the payment - order status is derived
           await this.findByIdAndUpdate(
             payment._id,
             {
@@ -341,16 +387,24 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
             { session: session_db }
           );
 
-          // Update order status to 'paid' when payment is completed
-          await Order.findByIdAndUpdate(
+          const updatedOrder = await Order.findByIdAndUpdate(
             payment.orderId,
-            {
-              orderStatus: 'paid', // Changed from 'processing'
-            },
-            { session: session_db }
+            { orderStatus: 'paid' },
+            { new: true, session: session_db }
+          )
+            .populate('userId', 'name email')
+            .populate({
+              path: 'products.product',
+              select: 'name price images',
+            });
+
+          await Cart.findOneAndUpdate(
+            { user: updatedOrder.userId },
+            { $set: { items: [] } },
+            { session: dbSession }
           );
 
-          console.log(`Payment ${payment._id} completed successfully`);
+          await EmailService.sendOrderStatusUpdateEmail(updatedOrder);
           break;
 
         case 'charge.failed':
@@ -364,6 +418,8 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
             { session: session_db }
           );
 
+          // CORRECTED: Sync order status
+          await this.syncOrderStatus(payment._id, session_db);
           console.log(`Payment ${payment._id} failed`);
           break;
 
@@ -377,36 +433,6 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
   } finally {
     await session_db.endSession();
   }
-};
-
-// Helper method to sync order status based on payment status
-paymentSchema.statics.syncOrderStatus = async function (paymentId) {
-  const payment = await this.findById(paymentId);
-  if (!payment) return;
-
-  const Order = mongoose.model('Order');
-
-  let newOrderStatus;
-  switch (payment.status) {
-    case 'completed':
-      newOrderStatus = 'paid';
-      break;
-    case 'failed':
-      // Keep current status or set to cancelled if it was pending payment
-      const order = await Order.findById(payment.orderId);
-      newOrderStatus =
-        order.orderStatus === 'pending' ? 'cancelled' : order.orderStatus;
-      break;
-    case 'refunded':
-      newOrderStatus = 'cancelled'; // or 'refunded' if you add this status
-      break;
-    default:
-      return; // Don't change order status for pending/disputed
-  }
-
-  await Order.findByIdAndUpdate(payment.orderId, {
-    orderStatus: newOrderStatus,
-  });
 };
 
 paymentSchema.statics.findByAnyId = async function (identifier) {
@@ -685,20 +711,94 @@ paymentSchema.methods.updatePaymentStatus = async function (status, paidAt) {
   const updateData = { status };
   if (paidAt) updateData.paidAt = paidAt;
 
-  const updatedPayment = await Payment.findByIdAndUpdate(this._id, updateData, {
-    new: true,
-    runValidators: true,
-  }).populate('orderId');
+  const session = await mongoose.startSession();
 
-  if (status === 'completed') {
-    const order = await Order.findById(updatedPayment.orderId).populate(
-      'userId',
-      'name email'
-    );
-    await EmailService.sendOrderStatusUpdateEmail(order);
+  try {
+    await session.withTransaction(async () => {
+      const updatedPayment = await Payment.findByIdAndUpdate(
+        this._id,
+        updateData,
+        { new: true, runValidators: true, session }
+      ).populate('orderId');
+
+      await Payment.syncOrderStatus(this._id, session);
+
+      if (status === 'completed') {
+        const order = await Order.findById(updatedPayment.orderId)
+          .populate('userId', 'name email')
+          .populate({
+            path: 'products.product',
+            select: 'name price images',
+          })
+          .session(session);
+
+        await EmailService.sendOrderStatusUpdateEmail(order);
+      }
+
+      return updatedPayment;
+    });
+  } finally {
+    await session.endSession();
+  }
+};
+
+paymentSchema.statics.syncOrderStatus = async function (
+  paymentId,
+  session = null
+) {
+  const payment = await this.findById(paymentId);
+  if (!payment) return;
+
+  const order = await Order.findById(payment.orderId);
+  if (!order) return;
+
+  let newOrderStatus;
+
+  switch (payment.status) {
+    case 'completed':
+      if (order.orderStatus === 'pending') {
+        newOrderStatus = 'paid';
+      }
+      break;
+
+    case 'failed':
+      if (['pending', 'awaiting_payment'].includes(order.orderStatus)) {
+        newOrderStatus = 'cancelled';
+      }
+      break;
+
+    case 'refunded':
+      if (['delivered', 'shipped'].includes(order.orderStatus)) {
+        newOrderStatus = 'returned';
+      } else {
+        newOrderStatus = 'cancelled';
+      }
+      break;
+
+    case 'disputed':
+      if (!['cancelled', 'returned', 'delivered'].includes(order.orderStatus)) {
+        newOrderStatus = 'on_hold';
+      }
+      break;
+
+    default:
+      return;
   }
 
-  return updatedPayment;
+  if (newOrderStatus && newOrderStatus !== order.orderStatus) {
+    const updateOptions = { new: true };
+    if (session) updateOptions.session = session;
+
+    await Order.findByIdAndUpdate(
+      payment.orderId,
+      { orderStatus: newOrderStatus },
+      updateOptions
+    );
+
+    console.log(
+      `Order ${payment.orderId} status synced: ${order.orderStatus} → ${newOrderStatus}`
+    );
+  }
 };
 
 module.exports = mongoose.model('Payment', paymentSchema);

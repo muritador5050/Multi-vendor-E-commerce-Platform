@@ -720,25 +720,42 @@ class EmailService {
 
   async sendOrderStatusUpdateEmail(orderData) {
     const {
-      user,
+      userId,
       _id: orderId,
       orderStatus,
       trackingNumber,
       estimatedDelivery,
       deliveredAt,
-      products = [],
+      products = [], // This defaults to empty array but the issue is deeper
       totalPrice,
     } = orderData;
 
-    // Format dates
-    const formattedOrderDate = new Date(orderData.createdAt).toLocaleDateString(
-      'en-US',
-      {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }
-    );
+    // Add validation to ensure we have the required data
+    if (!orderData || !userId || !orderId) {
+      console.error('Missing required order data:', {
+        orderData,
+        userId,
+        orderId,
+      });
+      throw new Error('Missing required order data');
+    }
+
+    // Ensure products is an array, even if it comes as undefined/null
+    const safeProducts = Array.isArray(products) ? products : [];
+
+    // If products is empty, we should log this for debugging
+    if (safeProducts.length === 0) {
+      console.warn(`Order ${orderId} has no products array or empty products`);
+    }
+
+    // Format dates with error handling
+    const formattedOrderDate = orderData.createdAt
+      ? new Date(orderData.createdAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : 'N/A';
 
     const formattedEstDelivery = estimatedDelivery
       ? new Date(estimatedDelivery).toLocaleDateString('en-US', {
@@ -796,18 +813,27 @@ class EmailService {
       default:
         statusTitle = 'Your Order Status Has Been Updated';
         statusMessage = `Your order status is now: ${orderStatus}`;
+        nextSteps = ['Contact our support team if you have any questions'];
     }
 
     const trackOrderUrl = `${process.env.FRONTEND_URL}/track-order/${orderId}`;
     const contactUrl = `${process.env.FRONTEND_URL}/contact`;
     const shopUrl = process.env.FRONTEND_URL;
 
+    // Safely handle user data
+    const userName = userId?.name || 'Customer';
+    const userEmail = userId?.email;
+
+    if (!userEmail) {
+      console.error('No email found for user:', userId);
+      throw new Error('User email is required to send notification');
+    }
+
     const html = `
     <!DOCTYPE html>
     <html>
     <head>
       <style>
-        /* Your existing email styles */
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { 
@@ -826,7 +852,8 @@ class EmailService {
           color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; 
         }
         .order-items { margin: 20px 0; }
-        .order-item { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .order-item { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .no-products { color: #666; font-style: italic; }
       </style>
     </head>
     <body>
@@ -851,8 +878,8 @@ class EmailService {
             }
           </div>
           
-          <h2>Hello ${user.name},</h2>
-          <p>${statusMessage}</p>
+          <h2>Hello ${userName},</h2>
+          <p >${statusMessage}</p>
           
           ${
             showTracking && trackingNumber
@@ -864,21 +891,27 @@ class EmailService {
           
           <div class="order-items">
             <h3>Your Order:</h3>
-            ${products
-              .map(
-                (product) => `
-              <div class="order-item">
-                <span>${product.product?.name || 'Product'} × ${
-                  product.quantity
-                }</span>
-                <span>$${(product.price * product.quantity).toFixed(2)}</span>
-              </div>
-            `
-              )
-              .join('')}
-            <div class="order-item" style="font-weight: bold; border-top: 1px solid #ddd; padding-top: 10px;">
+            ${
+              safeProducts.length > 0
+                ? safeProducts
+                    .map(
+                      (product) => `
+                <div class="order-item">
+                  <span>${
+                    product.product?.name || product.name || 'Product'
+                  } × ${product.quantity || 1}</span>
+                  <span>$${(
+                    (product.price || 0) * (product.quantity || 1)
+                  ).toFixed(2)}</span>
+                </div>
+              `
+                    )
+                    .join('')
+                : '<div class="no-products">No product details available</div>'
+            }
+            <div class="order-item" style="font-weight: bold; border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px;">
               <span>Total</span>
-              <span>$${totalPrice.toFixed(2)}</span>
+              <span>$${(totalPrice || 0).toFixed(2)}</span>
             </div>
           </div>
           
@@ -893,9 +926,15 @@ class EmailService {
                 ? `<a href="${trackOrderUrl}" class="button">Track Your Order</a>`
                 : ''
             }
-            <a href="${contactUrl}" class="button" style="background-color: #2196F3;">Contact Support</a>
-            <a href="${shopUrl}" class="button" style="background-color: #9C27B0;">Continue Shopping</a>
+            <a href="${contactUrl}" class="button" style="background-color: #2196F3; margin-left: 10px;">Contact Support</a>
+            <a href="${shopUrl}" class="button" style="background-color: #9C27B0; margin-left: 10px;">Continue Shopping</a>
           </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
+          <p>&copy; ${new Date().getFullYear()} ${
+      process.env.APP_NAME || 'Our Store'
+    }. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -905,7 +944,7 @@ class EmailService {
     const text = `
     ${statusTitle}
     
-    Hello ${user.name},
+    Hello ${userName},
     
     ${statusMessage}
     
@@ -916,16 +955,22 @@ class EmailService {
     ${trackingNumber ? `- Tracking #: ${trackingNumber}\n` : ''}
     
     Order Items:
-    ${products
-      .map(
-        (product) =>
-          `- ${product.product?.name || 'Product'} × ${product.quantity}: $${(
-            product.price * product.quantity
-          ).toFixed(2)}`
-      )
-      .join('\n')}
+    ${
+      safeProducts.length > 0
+        ? safeProducts
+            .map(
+              (product) =>
+                `- ${product.product?.name || product.name || 'Product'} × ${
+                  product.quantity || 1
+                }: $${((product.price || 0) * (product.quantity || 1)).toFixed(
+                  2
+                )}`
+            )
+            .join('\n')
+        : '- No product details available'
+    }
     
-    Total: $${totalPrice.toFixed(2)}
+    Total: $${(totalPrice || 0).toFixed(2)}
     
     Next Steps:
     ${nextSteps.map((step) => `- ${step}`).join('\n')}
@@ -933,12 +978,18 @@ class EmailService {
     ${process.env.APP_NAME || 'Our Store'}
   `;
 
-    await this.sendEmail({
-      to: user.email,
-      subject: `${statusTitle} - Order #${orderId}`,
-      html,
-      text,
-    });
+    try {
+      await this.sendEmail({
+        to: userEmail,
+        subject: `${statusTitle} - Order #${orderId}`,
+        html,
+        text,
+      });
+    } catch (emailError) {
+      throw new Error(
+        `Failed to send order status email: ${emailError.message}`
+      );
+    }
   }
 }
 
