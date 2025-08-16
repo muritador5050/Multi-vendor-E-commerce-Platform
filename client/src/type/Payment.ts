@@ -68,8 +68,8 @@ export interface CreatedPaymentResponse {
 }
 
 export interface UpdatePaymentStatusData {
-  status: PaymentStatus;
-  paidAt?: string;
+  status: string;
+  paidAt?: Date;
 }
 
 export interface PaymentFilters {

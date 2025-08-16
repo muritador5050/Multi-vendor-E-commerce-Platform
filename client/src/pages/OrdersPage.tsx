@@ -18,7 +18,38 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/context/AuthContextService';
 import { useOrders } from '@/context/OrderContextService';
 
-const OrderHistoryPage = () => {
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'yellow';
+    case 'paid':
+      return 'green';
+    case 'processing':
+      return 'blue';
+    case 'shipped':
+      return 'teal';
+    case 'delivered':
+      return 'green';
+    case 'cancelled':
+      return 'red';
+    case 'returned':
+      return 'purple';
+    case 'on_hold':
+      return 'orange';
+    default:
+      return 'gray';
+  }
+};
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const OrdersPage = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const currentUser = useCurrentUser();
@@ -34,31 +65,6 @@ const OrderHistoryPage = () => {
       setError('Failed to load orders. Please try again.');
     }
   }, [ordersError]);
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'delivered':
-        return 'green';
-      case 'shipped':
-        return 'blue';
-      case 'processing':
-        return 'yellow';
-      case 'confirmed':
-        return 'purple';
-      case 'cancelled':
-        return 'red';
-      default:
-        return 'gray';
-    }
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
 
   if (isLoading) {
     return (
@@ -97,10 +103,21 @@ const OrderHistoryPage = () => {
         <Heading as='h1' fontSize='3xl'>
           Order History
         </Heading>
-        <Button colorScheme='blue' onClick={() => navigate('/')}>
+        <Button colorScheme='blue' onClick={() => navigate('/shop')}>
           Continue Shopping
         </Button>
       </Flex>
+
+      <Alert status='info' mb={6}>
+        <AlertIcon />
+        <Box>
+          <Text fontWeight='bold'>💡 Quick Tip</Text>
+          <Text fontSize='sm'>
+            To track any order, simply copy the Order ID and click the "Track
+            Order" button for real-time updates.
+          </Text>
+        </Box>
+      </Alert>
 
       {!userOrders || userOrders.length === 0 ? (
         <Box textAlign='center' py={20}>
@@ -110,7 +127,7 @@ const OrderHistoryPage = () => {
           <Text color='gray.500' mb={6}>
             You haven't placed any orders yet.
           </Text>
-          <Button colorScheme='blue' onClick={() => navigate('/')}>
+          <Button colorScheme='blue' onClick={() => navigate('/shop')}>
             Start Shopping
           </Button>
         </Box>
@@ -214,14 +231,14 @@ const OrderHistoryPage = () => {
                 <Button
                   variant='outline'
                   size='sm'
-                  onClick={() => navigate(`/track-order?id=${order._id}`)}
+                  onClick={() => navigate(`/orders/${order._id}/tracking`)}
                 >
                   Track Order
                 </Button>
                 <Button
                   variant='outline'
                   size='sm'
-                  onClick={() => navigate(`/order-details/${order._id}`)}
+                  onClick={() => navigate(`/orders/${order._id}/details`)}
                 >
                   View Details
                 </Button>
@@ -260,4 +277,4 @@ const OrderHistoryPage = () => {
   );
 };
 
-export default OrderHistoryPage;
+export default OrdersPage;

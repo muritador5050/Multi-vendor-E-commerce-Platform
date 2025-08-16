@@ -48,12 +48,10 @@ const createOrder = async (
 
 const updateOrderStatus = async (
   id: string,
-  statusData: Partial<
-    Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
-  >
+  statusData: Partial<Pick<Order, 'orderStatus' | 'trackingNumber'>>
 ): Promise<ApiResponse<Order>> => {
   return await apiClient.authenticatedApiRequest(`/orders/${id}/status`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(statusData),
   });
 };
@@ -153,7 +151,6 @@ export const useVendorSalesAnalytics = () => {
   });
 };
 
-// Mutation Hooks
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
@@ -164,7 +161,6 @@ export const useCreateOrder = () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: orderKeys.stats() });
 
-      // Optionally set the new order data directly
       if (data.data) {
         queryClient.setQueryData(orderKeys.details(data.data._id), data.data);
       }
@@ -184,9 +180,7 @@ export const useUpdateOrderStatus = () => {
       statusData,
     }: {
       id: string;
-      statusData: Partial<
-        Pick<Order, 'orderStatus' | 'paymentStatus' | 'deliveredAt'>
-      >;
+      statusData: Partial<Pick<Order, 'orderStatus' | 'trackingNumber'>>;
     }) => updateOrderStatus(id, statusData),
     onSuccess: (data, variables) => {
       // Invalidate related queries
@@ -212,7 +206,7 @@ export const useDeleteOrder = () => {
 
   return useMutation({
     mutationFn: deleteOrder,
-    onSuccess: (data, orderId) => {
+    onSuccess: (_data, orderId) => {
       // Invalidate list and stats queries
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
       queryClient.invalidateQueries({ queryKey: orderKeys.stats() });

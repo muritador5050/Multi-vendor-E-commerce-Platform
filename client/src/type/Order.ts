@@ -1,4 +1,3 @@
-type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 type PaymentMethod = 'card' | 'paystack' | 'stripe' | 'bank_transfer';
 
 export interface Address {
@@ -46,14 +45,21 @@ export interface Order {
   billingAddress: Address;
   useSameAddress: boolean;
   paymentMethod: PaymentMethod;
-  paymentStatus: PaymentStatus;
+  statusHistory: Array<{
+    status: string;
+    changedAt: Date;
+    changedBy: string;
+    reason: string;
+  }>;
   orderStatus:
     | 'pending'
+    | 'paid'
     | 'processing'
     | 'shipped'
     | 'delivered'
     | 'cancelled'
-    | 'returned';
+    | 'returned'
+    | 'on_hold';
   totalPrice: number;
   shippingCost: number;
   trackingNumber: string;

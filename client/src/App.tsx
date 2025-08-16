@@ -26,9 +26,10 @@ import CartList from './pages/CartList';
 import CheckoutPage from './pages/Checkout';
 import PaymentPage from './pages/PaymentPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
-import OrderHistoryPage from './pages/OrderHistoryPage';
 import PaymentSuccessPage from './pages/PaymentSucessPage';
 import PaymentFailedPage from './pages/PaymentFailedPage';
+import OrderDetailsPage from './pages/OrderDetailsPage';
+import OrdersPage from './pages/OrdersPage';
 
 //App
 function App() {
@@ -51,8 +52,15 @@ function App() {
           <Route path='payment' element={<PaymentPage />} />
           <Route path='payment-success' element={<PaymentSuccessPage />} />
           <Route path='payment-cancel' element={<PaymentFailedPage />} />
-          <Route path='track-order' element={<OrderTrackingPage />} />
-          <Route path='orders-history' element={<OrderHistoryPage />} />
+          <Route
+            path='/orders/:orderId/tracking'
+            element={<OrderTrackingPage />}
+          />
+          <Route path='orders' element={<OrdersPage />} />
+          <Route
+            path='/orders/:orderId/details'
+            element={<OrderDetailsPage />}
+          />
           <Route path='vendor-membership' element={<VendorMembership />} />
           <Route path='oauth/callback' element={<OAuthCallback />} />
           <Route

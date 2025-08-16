@@ -92,7 +92,7 @@ export const useUpdatePaymentStatus = () => {
       return apiClient.authenticatedApiRequest<ApiResponse<Payment>>(
         `/payments/${id}/status`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           body: JSON.stringify(data),
         }
       );
@@ -111,12 +111,9 @@ export const useDeletePayment = () => {
 
   return useMutation<ApiResponse<void>, Error, string>({
     mutationFn: async (id) => {
-      return apiClient.authenticatedApiRequest<ApiResponse<void>>(
-        `/payments/${id}`,
-        {
-          method: 'DELETE',
-        }
-      );
+      return apiClient.authenticatedApiRequest(`/payments/${id}`, {
+        method: 'DELETE',
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.all });

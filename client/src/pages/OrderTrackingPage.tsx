@@ -1,4 +1,5 @@
 import { useOrderById } from '@/context/OrderContextService';
+import { ArrowBackIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
@@ -22,11 +23,10 @@ import {
   StepStatus,
   StepTitle,
   Stepper,
-  useSteps,
   Spinner,
   Center,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ORDER_STATUSES = {
@@ -37,9 +37,6 @@ const ORDER_STATUSES = {
   CANCELLED: 'cancelled',
   RETURNED: 'returned',
 } as const;
-
-// Type for order status
-type OrderStatus = (typeof ORDER_STATUSES)[keyof typeof ORDER_STATUSES];
 
 const steps = [
   {
@@ -58,7 +55,8 @@ const steps = [
 ];
 
 const getActiveStep = (status: string) => {
-  switch (status?.toLowerCase() as OrderStatus) {
+  const normalizedStatus = status?.toLowerCase().trim();
+  switch (normalizedStatus) {
     case ORDER_STATUSES.PENDING:
       return 0;
     case ORDER_STATUSES.PROCESSING:
@@ -76,7 +74,8 @@ const getActiveStep = (status: string) => {
 };
 
 const getStatusColor = (status: string) => {
-  switch (status?.toLowerCase() as OrderStatus) {
+  const normalizedStatus = status?.toLowerCase().trim();
+  switch (normalizedStatus) {
     case ORDER_STATUSES.DELIVERED:
       return 'green';
     case ORDER_STATUSES.SHIPPED:
@@ -94,28 +93,41 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const OrderTrackingPage = () => {
   const [orderId, setOrderId] = useState('');
   const [searchTriggered, setSearchTriggered] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch order data - only when we have an orderId and search was triggered
   const {
     data: order,
     isLoading,
     error,
   } = useOrderById(searchTriggered ? orderId : '');
 
-  const { activeStep } = useSteps({
-    index: order ? Math.max(0, getActiveStep(order.orderStatus)) : 0,
-    count: steps.length,
-  });
+  const activeStepIndex = order ? getActiveStep(order.orderStatus) : 0;
+
+  useEffect(() => {
+    if (order) {
+      console.log('Order Status:', order.orderStatus);
+      console.log('Mapped Step:', getActiveStep(order.orderStatus));
+    }
+  }, [order]);
 
   const handleTrackOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!orderId.trim()) {
-      return; // Let the required validation handle this
+      return;
     }
 
     setSearchTriggered(true);
@@ -126,7 +138,6 @@ const OrderTrackingPage = () => {
     setSearchTriggered(false);
   };
 
-  // Special component for cancelled/returned orders
   const CancelledOrderStatus = ({ status }: { status: string }) => {
     const isReturned = status?.toLowerCase() === ORDER_STATUSES.RETURNED;
 
@@ -149,17 +160,6 @@ const OrderTrackingPage = () => {
     );
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  // Show loading state when searching
   if (isLoading && searchTriggered) {
     return (
       <Box maxW='4xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
@@ -178,11 +178,20 @@ const OrderTrackingPage = () => {
 
   return (
     <Box maxW='4xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
-      <Heading as='h1' fontSize='3xl' mb={8} textAlign='center'>
-        Track Your Order
-      </Heading>
+      <Flex justify='space-between' align='center' mb={8}>
+        <Button
+          variant='ghost'
+          leftIcon={<ArrowBackIcon />}
+          onClick={() => navigate(-1)}
+        >
+          Back
+        </Button>
+        <Heading as='h1' fontSize='3xl' textAlign='center' flex='1'>
+          Track Your Order
+        </Heading>
+        <Box width='80px' />
+      </Flex>
 
-      {/* Order ID Input - show when no order is found or not searched yet */}
       {(!order || error) && (
         <Box maxW='md' mx='auto' mb={8}>
           <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
@@ -224,10 +233,8 @@ const OrderTrackingPage = () => {
         </Box>
       )}
 
-      {/* Order Tracking Results */}
       {order && !error && (
         <VStack spacing={8} align='stretch'>
-          {/* Order Header */}
           <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
             <Flex justify='space-between' align='center' mb={4}>
               <Box>
@@ -258,93 +265,88 @@ const OrderTrackingPage = () => {
             )}
           </Box>
 
-          {/* Progress Stepper - only show for active orders */}
-          {getActiveStep(order.orderStatus) >= 0 ? (
+          {activeStepIndex >= 0 ? (
             <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
               <Heading as='h3' fontSize='lg' mb={6}>
                 Order Progress
               </Heading>
 
               <Stepper
-                index={activeStep}
+                index={activeStepIndex}
                 orientation='vertical'
                 height='400px'
                 gap='0'
               >
-                {steps.map((step, index) => (
-                  <Step key={index}>
-                    <StepIndicator>
-                      <StepStatus
-                        complete={<StepIcon />}
-                        incomplete={<StepNumber />}
-                        active={<StepNumber />}
-                      />
-                    </StepIndicator>
+                {steps.map((step, index) => {
+                  const isActive = index === activeStepIndex;
+                  const isComplete = index < activeStepIndex;
 
-                    <Box flexShrink='0'>
-                      <StepTitle>{step.title}</StepTitle>
-                      <StepDescription>{step.description}</StepDescription>
-                    </Box>
+                  return (
+                    <Step key={index}>
+                      <StepIndicator>
+                        <StepStatus
+                          complete={<StepIcon />}
+                          incomplete={<StepNumber />}
+                          active={<StepNumber />}
+                        />
+                      </StepIndicator>
 
-                    <StepSeparator />
-                  </Step>
-                ))}
+                      <Box flexShrink='0'>
+                        <StepTitle
+                          fontSize={isActive ? 'lg' : 'md'}
+                          fontWeight={isActive ? 'bold' : 'normal'}
+                          color={
+                            isActive
+                              ? 'blue.600'
+                              : isComplete
+                              ? 'gray.600'
+                              : 'gray.700'
+                          }
+                        >
+                          {step.title}
+                          {isActive && (
+                            <Badge ml={2} colorScheme='blue' variant='subtle'>
+                              Current
+                            </Badge>
+                          )}
+                        </StepTitle>
+                        <StepDescription
+                          fontSize={isActive ? 'md' : 'sm'}
+                          color={
+                            isActive
+                              ? 'blue.500'
+                              : isComplete
+                              ? 'gray.500'
+                              : 'gray.600'
+                          }
+                        >
+                          {step.description}
+                          {isActive && (
+                            <Box
+                              as='span'
+                              display='block'
+                              mt={1}
+                              fontSize='sm'
+                              color='blue.400'
+                              fontStyle='italic'
+                            >
+                              We're working on this right now!
+                            </Box>
+                          )}
+                        </StepDescription>
+                      </Box>
+
+                      <StepSeparator />
+                    </Step>
+                  );
+                })}
               </Stepper>
             </Box>
           ) : (
             <CancelledOrderStatus status={order.orderStatus} />
           )}
 
-          {/* Order Items */}
-          {order.items && order.items.length > 0 && (
-            <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
-              <Heading as='h3' fontSize='lg' mb={4}>
-                Order Items
-              </Heading>
-              <VStack spacing={3} align='stretch'>
-                {order.items.map((item: any, index: number) => (
-                  <Flex
-                    key={index}
-                    justify='space-between'
-                    align='center'
-                    p={3}
-                    bg='gray.50'
-                    borderRadius='md'
-                  >
-                    <Box>
-                      <Text fontWeight='medium'>{item.name || item.title}</Text>
-                      <Text fontSize='sm' color='gray.600'>
-                        Quantity: {item.quantity}
-                      </Text>
-                    </Box>
-                    <Text fontWeight='bold'>
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </Text>
-                  </Flex>
-                ))}
-
-                {order.totalAmount && (
-                  <Flex
-                    justify='space-between'
-                    align='center'
-                    pt={3}
-                    borderTop='1px'
-                    borderColor='gray.200'
-                  >
-                    <Text fontWeight='bold' fontSize='lg'>
-                      Total:
-                    </Text>
-                    <Text fontWeight='bold' fontSize='lg'>
-                      ${order.totalAmount.toFixed(2)}
-                    </Text>
-                  </Flex>
-                )}
-              </VStack>
-            </Box>
-          )}
-
-          {/* Delivery Info - only show for non-cancelled orders */}
-          {getActiveStep(order.orderStatus) >= 0 && order.shippingAddress && (
+          {activeStepIndex >= 0 && order.shippingAddress && (
             <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
               <Heading as='h3' fontSize='lg' mb={4}>
                 Delivery Information
@@ -375,15 +377,11 @@ const OrderTrackingPage = () => {
             </Box>
           )}
 
-          {/* Actions */}
           <Flex gap={4} justify='center' flexWrap='wrap'>
             <Button variant='outline' onClick={handleTrackAnotherOrder}>
               Track Another Order
             </Button>
-            <Button
-              colorScheme='blue'
-              onClick={() => navigate('/orders-history')}
-            >
+            <Button colorScheme='blue' onClick={() => navigate('/orders')}>
               View All Orders
             </Button>
             <Button variant='outline' onClick={() => navigate('/shop')}>
@@ -393,7 +391,6 @@ const OrderTrackingPage = () => {
         </VStack>
       )}
 
-      {/* Help Section */}
       <Box mt={12}>
         <Alert status='info'>
           <AlertIcon />
