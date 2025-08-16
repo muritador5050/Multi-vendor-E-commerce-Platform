@@ -3,6 +3,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const crypto = require('crypto');
 const axios = require('axios');
 const Order = require('./order.model');
+const EmailService = require('../services/emailService');
 
 /**
  * @openapi
@@ -236,7 +237,6 @@ paymentSchema.statics.createProviderPayment = async function (orderId) {
   throw new Error('Unsupported payment provider');
 };
 
-// Updated webhook handlers in payment.model.js
 paymentSchema.statics.handleStripeWebhook = async function (req) {
   const sig = req.headers['stripe-signature'];
 
@@ -266,10 +266,13 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
           transactionDetails: JSON.stringify(session),
         });
 
-        await Order.findByIdAndUpdate(payment.orderId, {
-          orderStatus: 'processing',
-        });
+        const updatedOrder = await Order.findByIdAndUpdate(
+          payment.orderId,
+          { orderStatus: 'processing' },
+          { new: true }
+        ).populate('userId', 'name email');
 
+        await EmailService.sendOrderStatusUpdateEmail(updatedOrder);
         break;
 
       case 'checkout.session.expired':
@@ -315,37 +318,95 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
     throw new Error('Payment not found for reference: ' + data.reference);
   }
 
+  // Use a transaction to ensure consistency
+  const session_db = await mongoose.startSession();
+
   try {
-    switch (event) {
-      case 'charge.success':
-        await this.findByIdAndUpdate(payment._id, {
-          status: 'completed',
-          paidAt: new Date(),
-          transactionDetails: JSON.stringify(data),
-        });
+    await session_db.withTransaction(async () => {
+      switch (event) {
+        case 'charge.success':
+          console.log(
+            'Processing successful Paystack payment for:',
+            payment._id
+          );
 
-        await Order.findByIdAndUpdate(payment.orderId, {
-          orderStatus: 'processing',
-        });
+          // Update only the payment - order status is derived
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: 'completed',
+              paidAt: new Date(),
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
 
-        break;
+          // Update order status to 'paid' when payment is completed
+          await Order.findByIdAndUpdate(
+            payment.orderId,
+            {
+              orderStatus: 'paid', // Changed from 'processing'
+            },
+            { session: session_db }
+          );
 
-      case 'charge.failed':
-        await this.findByIdAndUpdate(payment._id, {
-          status: 'failed',
-          failureReason: data.gateway_response || 'Payment failed',
-          transactionDetails: JSON.stringify(data),
-        });
+          console.log(`Payment ${payment._id} completed successfully`);
+          break;
 
-        break;
+        case 'charge.failed':
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: 'failed',
+              failureReason: data.gateway_response || 'Payment failed',
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
 
-      default:
-        console.log('Unhandled Paystack event type:', event);
-    }
+          console.log(`Payment ${payment._id} failed`);
+          break;
+
+        default:
+          console.log('Unhandled Paystack event type:', event);
+      }
+    });
   } catch (dbError) {
     console.error('Database update error:', dbError);
     throw new Error(`Failed to update payment status: ${dbError.message}`);
+  } finally {
+    await session_db.endSession();
   }
+};
+
+// Helper method to sync order status based on payment status
+paymentSchema.statics.syncOrderStatus = async function (paymentId) {
+  const payment = await this.findById(paymentId);
+  if (!payment) return;
+
+  const Order = mongoose.model('Order');
+
+  let newOrderStatus;
+  switch (payment.status) {
+    case 'completed':
+      newOrderStatus = 'paid';
+      break;
+    case 'failed':
+      // Keep current status or set to cancelled if it was pending payment
+      const order = await Order.findById(payment.orderId);
+      newOrderStatus =
+        order.orderStatus === 'pending' ? 'cancelled' : order.orderStatus;
+      break;
+    case 'refunded':
+      newOrderStatus = 'cancelled'; // or 'refunded' if you add this status
+      break;
+    default:
+      return; // Don't change order status for pending/disputed
+  }
+
+  await Order.findByIdAndUpdate(payment.orderId, {
+    orderStatus: newOrderStatus,
+  });
 };
 
 paymentSchema.statics.findByAnyId = async function (identifier) {
@@ -617,7 +678,6 @@ paymentSchema.statics.getPaymentAnalytics = async function (
   };
 };
 
-// Instance Methods
 paymentSchema.methods.updatePaymentStatus = async function (status, paidAt) {
   const Payment = this.constructor;
   Payment.validateStatusUpdate(status);
@@ -625,119 +685,20 @@ paymentSchema.methods.updatePaymentStatus = async function (status, paidAt) {
   const updateData = { status };
   if (paidAt) updateData.paidAt = paidAt;
 
-  return await Payment.findByIdAndUpdate(this._id, updateData, {
+  const updatedPayment = await Payment.findByIdAndUpdate(this._id, updateData, {
     new: true,
     runValidators: true,
   }).populate('orderId');
+
+  if (status === 'completed') {
+    const order = await Order.findById(updatedPayment.orderId).populate(
+      'userId',
+      'name email'
+    );
+    await EmailService.sendOrderStatusUpdateEmail(order);
+  }
+
+  return updatedPayment;
 };
 
 module.exports = mongoose.model('Payment', paymentSchema);
-
-paymentSchema.statics.handlePaystackWebhook = async function (req) {
-  const hash = crypto
-    .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-    .update(JSON.stringify(req.body))
-    .digest('hex');
-
-  if (hash !== req.headers['x-paystack-signature']) {
-    throw new Error('Invalid webhook signature');
-  }
-
-  const { event, data } = req.body;
-
-  const payment = await this.findOne({ paymentId: data.reference });
-
-  if (!payment) {
-    throw new Error('Payment not found for reference: ' + data.reference);
-  }
-
-  // Use a transaction to ensure consistency
-  const session_db = await mongoose.startSession();
-
-  try {
-    await session_db.withTransaction(async () => {
-      switch (event) {
-        case 'charge.success':
-          console.log(
-            'Processing successful Paystack payment for:',
-            payment._id
-          );
-
-          // Update only the payment - order status is derived
-          await this.findByIdAndUpdate(
-            payment._id,
-            {
-              status: 'completed',
-              paidAt: new Date(),
-              transactionDetails: JSON.stringify(data),
-            },
-            { session: session_db }
-          );
-
-          // Update order status to 'paid' when payment is completed
-          await Order.findByIdAndUpdate(
-            payment.orderId,
-            {
-              orderStatus: 'paid', // Changed from 'processing'
-            },
-            { session: session_db }
-          );
-
-          console.log(`Payment ${payment._id} completed successfully`);
-          break;
-
-        case 'charge.failed':
-          await this.findByIdAndUpdate(
-            payment._id,
-            {
-              status: 'failed',
-              failureReason: data.gateway_response || 'Payment failed',
-              transactionDetails: JSON.stringify(data),
-            },
-            { session: session_db }
-          );
-
-          console.log(`Payment ${payment._id} failed`);
-          break;
-
-        default:
-          console.log('Unhandled Paystack event type:', event);
-      }
-    });
-  } catch (dbError) {
-    console.error('Database update error:', dbError);
-    throw new Error(`Failed to update payment status: ${dbError.message}`);
-  } finally {
-    await session_db.endSession();
-  }
-};
-
-// Helper method to sync order status based on payment status
-paymentSchema.statics.syncOrderStatus = async function (paymentId) {
-  const payment = await this.findById(paymentId);
-  if (!payment) return;
-
-  const Order = mongoose.model('Order');
-
-  let newOrderStatus;
-  switch (payment.status) {
-    case 'completed':
-      newOrderStatus = 'paid';
-      break;
-    case 'failed':
-      // Keep current status or set to cancelled if it was pending payment
-      const order = await Order.findById(payment.orderId);
-      newOrderStatus =
-        order.orderStatus === 'pending' ? 'cancelled' : order.orderStatus;
-      break;
-    case 'refunded':
-      newOrderStatus = 'cancelled'; // or 'refunded' if you add this status
-      break;
-    default:
-      return; // Don't change order status for pending/disputed
-  }
-
-  await Order.findByIdAndUpdate(payment.orderId, {
-    orderStatus: newOrderStatus,
-  });
-};

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('./user.model');
+const EmailService = require('../services/emailService');
 
 /**
  * @openapi
@@ -571,12 +572,18 @@ orderSchema.statics.getVendorAnalytics = async function (vendorId) {
 orderSchema.methods.updateStatus = async function (updateData) {
   const { orderStatus, trackingNumber, deliveredAt } = updateData;
 
+  const previousStatus = this.orderStatus;
+
   if (orderStatus) this.orderStatus = orderStatus;
   if (trackingNumber) this.trackingNumber = trackingNumber;
   if (deliveredAt) this.deliveredAt = deliveredAt;
 
   await this.save({ validateBeforeSave: true });
   await this.populate('userId', 'name email');
+
+  if (orderStatus && orderStatus !== previousStatus) {
+    await EmailService.sendOrderStatusUpdateEmail(this);
+  }
 
   return this;
 };
