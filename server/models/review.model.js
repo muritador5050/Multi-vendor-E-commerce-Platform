@@ -11,14 +11,12 @@ const Product = require('./product.model');
  *         _id:
  *           type: string
  *           description: Review ID
- *         user:
- *           type: string
- *           format: uuid
- *           description: User ID who wrote the review
- *         product:
- *           type: string
- *           format: uuid
- *           description: Product ID being reviewed
+ *         userId:
+ *           type: object
+ *           description: User who wrote the review
+ *         productId:
+ *           type: object
+ *           description: Product being reviewed
  *         rating:
  *           type: integer
  *           minimum: 1
@@ -44,20 +42,20 @@ const Product = require('./product.model');
  *           format: date-time
  *           description: Review last update timestamp
  *       required:
- *         - user
- *         - product
+ *         - userId
+ *         - productId
  *         - rating
  */
 
 const reviewSchema = new mongoose.Schema(
   {
-    user: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
       index: true,
     },
-    product: {
+    productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
       required: true,
@@ -77,7 +75,7 @@ const reviewSchema = new mongoose.Schema(
     },
     isApproved: {
       type: Boolean,
-      default: false,
+      default: true,
       index: true,
     },
     isDeleted: {
@@ -88,7 +86,6 @@ const reviewSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    // Add toJSON transform to clean up the output
     toJSON: {
       transform: function (doc, ret) {
         delete ret.__v;
@@ -99,20 +96,17 @@ const reviewSchema = new mongoose.Schema(
 );
 
 reviewSchema.index(
-  { product: 1, user: 1 },
+  { productId: 1, userId: 1 },
   {
     unique: true,
     partialFilterExpression: { isDeleted: false },
   }
 );
 
-// Index for efficient querying of approved, non-deleted reviews
-reviewSchema.index({ product: 1, isApproved: 1, isDeleted: 1 });
+reviewSchema.index({ productId: 1, isApproved: 1, isDeleted: 1 });
 
-// Index for user's reviews
-reviewSchema.index({ user: 1, isDeleted: 1 });
+reviewSchema.index({ userId: 1, isDeleted: 1 });
 
-// Pre-save middleware to ensure rating is an integer
 reviewSchema.pre('save', function (next) {
   if (this.rating !== undefined) {
     this.rating = Math.round(this.rating);
@@ -120,21 +114,19 @@ reviewSchema.pre('save', function (next) {
   next();
 });
 
-// STATIC METHODS
-
 // Validate review creation data
 reviewSchema.statics.validateReviewData = function (data) {
-  const { product, rating } = data;
+  const { productId, rating } = data;
 
-  if (!product || !rating) {
-    throw new Error('Required fields: product, rating');
+  if (!productId || !rating) {
+    throw new Error('Required fields: productId, rating');
   }
 
   if (rating < 1 || rating > 5) {
     throw new Error('Rating must be between 1 and 5');
   }
 
-  if (!mongoose.Types.ObjectId.isValid(product)) {
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
     throw new Error('Invalid product ID format');
   }
 };
@@ -162,39 +154,39 @@ reviewSchema.statics.createOrUpdateReview = async function (
   rating,
   comment
 ) {
-  this.validateReviewData({ product: productId, rating });
+  this.validateReviewData({ productId, rating });
   await this.verifyProductExists(productId);
 
   const existingReview = await this.findOne({
-    product: productId,
-    user: userId,
+    productId,
+    userId,
     isDeleted: false,
   });
 
   if (existingReview) {
     existingReview.rating = rating;
     existingReview.comment = comment || '';
-    existingReview.isApproved = false; // re-approval needed
+
     await existingReview.save();
 
     await existingReview.populate([
-      { path: 'user', select: 'name email' },
-      { path: 'product', select: 'name price' },
+      { path: 'userId', select: 'name email avatar' },
+      { path: 'productId', select: 'name price images' },
     ]);
 
     return { review: existingReview, isUpdate: true };
   }
 
   const review = await this.create({
-    user: userId,
-    product: productId,
+    userId,
+    productId,
     rating,
     comment: comment || '',
   });
 
   await review.populate([
-    { path: 'user', select: 'name email' },
-    { path: 'product', select: 'name price' },
+    { path: 'userId', select: 'name email avatar' },
+    { path: 'productId', select: 'name price images' },
   ]);
 
   return { review, isUpdate: false };
@@ -205,8 +197,8 @@ reviewSchema.statics.getReviewsWithPagination = async function (queryParams) {
   const {
     page = 1,
     limit = 10,
-    product,
-    user,
+    productId,
+    userId,
     isApproved,
     isDeleted = false,
     minRating,
@@ -223,14 +215,14 @@ reviewSchema.statics.getReviewsWithPagination = async function (queryParams) {
   const filter = { isDeleted: isDeleted === 'true' };
 
   // Validate ObjectId fields
-  if (product) {
-    this.validateObjectId(product, 'product ID');
-    filter.product = product;
+  if (productId) {
+    this.validateObjectId(productId, 'product ID');
+    filter.productId = productId;
   }
 
-  if (user) {
-    this.validateObjectId(user, 'user ID');
-    filter.user = user;
+  if (userId) {
+    this.validateObjectId(userId, 'user ID');
+    filter.userId = userId; // Fixed: was filter.user
   }
 
   if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
@@ -263,8 +255,8 @@ reviewSchema.statics.getReviewsWithPagination = async function (queryParams) {
   const [reviews, total] = await Promise.all([
     this.find(filter)
       .populate([
-        { path: 'user', select: 'name email avatar' },
-        { path: 'product', select: 'name price images' },
+        { path: 'userId', select: 'name email avatar' },
+        { path: 'productId', select: 'name price images' },
       ])
       .sort(sort)
       .skip(skip)
@@ -292,8 +284,8 @@ reviewSchema.statics.findReviewById = async function (reviewId) {
     _id: reviewId,
     isDeleted: false,
   }).populate([
-    { path: 'user', select: 'name email avatar' },
-    { path: 'product', select: 'name price images' },
+    { path: 'userId', select: 'name email avatar' },
+    { path: 'productId', select: 'name price images' },
   ]);
 
   if (!review) {
@@ -310,14 +302,14 @@ reviewSchema.statics.getAverageRating = async function (productId) {
   const stats = await this.aggregate([
     {
       $match: {
-        product: new mongoose.Types.ObjectId(productId),
+        productId: new mongoose.Types.ObjectId(productId),
         isDeleted: false,
         isApproved: true,
       },
     },
     {
       $group: {
-        _id: '$product',
+        _id: '$productId',
         avgRating: { $avg: '$rating' },
         totalReviews: { $sum: 1 },
       },
@@ -386,9 +378,6 @@ reviewSchema.statics.getStats = async function () {
   );
 };
 
-// INSTANCE METHODS
-
-// Toggle approval status
 reviewSchema.methods.toggleApproval = async function () {
   this.isApproved = !this.isApproved;
   return await this.save();
@@ -402,14 +391,13 @@ reviewSchema.methods.softDelete = async function () {
 
 // Check if user can delete this review
 reviewSchema.methods.canBeDeletedBy = function (userId, isAdmin = false) {
-  return this.user.toString() === userId || isAdmin;
+  return this.userId.toString() === userId || isAdmin;
 };
 
 // Update review content
 reviewSchema.methods.updateContent = async function (rating, comment) {
   this.rating = rating;
   this.comment = comment || '';
-  this.isApproved = false; // re-approval needed
   return await this.save();
 };
 

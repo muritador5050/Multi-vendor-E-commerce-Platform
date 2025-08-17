@@ -274,7 +274,7 @@ router.delete(
  *       '500':
  *         description: Internal server error
  */
-router.put(
+router.patch(
   '/:id/approve',
   authenticate,
   checkRole('admin', 'edit'),

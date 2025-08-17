@@ -79,7 +79,7 @@ router.delete('/clear', asyncHandler(CartController.clearCart));
  *       '200':
  *         description: The updated cart item details
  */
-router.put('/items/:id', asyncHandler(CartController.updateProductQuantity));
+router.patch('/items/:id', asyncHandler(CartController.updateProductQuantity));
 
 /**
  * @openapi

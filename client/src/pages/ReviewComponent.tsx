@@ -56,7 +56,7 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
     error: reviewsError,
     refetch: refetchReviews,
   } = useApprovedReviews({
-    product: productId,
+    productId,
     page: currentPage,
     limit: 5,
     sortBy,

@@ -168,7 +168,6 @@ orderSchema.index({ trackingNumber: 1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ isDeleted: 1 });
 
-// CORRECTED: Add middleware to track status changes
 orderSchema.pre('save', function (next) {
   if (this.isModified('orderStatus') && !this.isNew) {
     this.statusHistory.push({

@@ -21,7 +21,7 @@ const login = joi
   .required();
 
 const reviewInput = joi.object({
-  product: joi.string().required(),
+  productId: joi.string().required(),
   rating: joi.number().min(1).max(5).required(),
   comment: joi.string().optional(),
 });
