@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   Thead,
@@ -15,12 +15,14 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  useDisclosure,
   Flex,
   Input,
   Select,
   HStack,
   useToast,
+  Spinner,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import {
   ChevronDown,
@@ -33,131 +35,184 @@ import {
   Eye,
   RefreshCw,
 } from 'lucide-react';
+import {
+  useReviews,
+  useDeleteReview,
+  useToggleReviewApproval,
+} from '@/context/ReviewContextService';
+import type { ReviewParams, Review } from '@/type/Review';
 
-const ReviewsContent = () => {
-  const [reviews, setReviews] = useState([
-    // Sample data - in a real app this would come from an API
-    {
-      _id: '1',
-      user: { _id: 'u1', name: 'John Doe' },
-      product: { _id: 'p1', name: 'Premium Headphones' },
-      rating: 5,
-      comment: 'Excellent sound quality and very comfortable!',
-      isApproved: true,
-      isDeleted: false,
-      createdAt: '2023-05-15T10:30:00Z',
-    },
-    {
-      _id: '2',
-      user: { _id: 'u2', name: 'Jane Smith' },
-      product: { _id: 'p2', name: 'Wireless Earbuds' },
-      rating: 3,
-      comment: 'Good but battery life could be better',
-      isApproved: false,
-      isDeleted: false,
-      createdAt: '2023-06-20T14:45:00Z',
-    },
-    // More sample reviews...
-  ]);
-
-  const [sortConfig, setSortConfig] = useState({
-    key: 'createdAt',
-    direction: 'desc',
+const ReviewsContent: React.FC = () => {
+  const [params, setParams] = useState<ReviewParams>({
+    page: 1,
+    limit: 10,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Filter params based on status filter
+  const getFilteredParams = (): ReviewParams => {
+    const filteredParams: ReviewParams = { ...params };
+
+    if (statusFilter === 'approved') {
+      filteredParams.isApproved = true;
+      filteredParams.isDeleted = false;
+    } else if (statusFilter === 'pending') {
+      filteredParams.isApproved = false;
+      filteredParams.isDeleted = false;
+    } else if (statusFilter === 'deleted') {
+      filteredParams.isDeleted = true;
+    }
+
+    return filteredParams;
+  };
+
+  // Get the current filtered parameters
+  const currentParams = getFilteredParams();
+
+  // API hooks - pass the filtered parameters
+  const {
+    data: reviewsResponse,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useReviews(currentParams);
+
+  const deleteReviewMutation = useDeleteReview();
+  const toggleApprovalMutation = useToggleReviewApproval();
+
   const toast = useToast();
 
-  // Sort reviews
-  const sortedReviews = [...reviews].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
+  // Update params when filters change
+  useEffect(() => {
+    setParams((prev) => ({
+      ...prev,
+      page: 1,
+      ...(statusFilter === 'approved' && {
+        isApproved: true,
+        isDeleted: false,
+      }),
+      ...(statusFilter === 'pending' && {
+        isApproved: false,
+        isDeleted: false,
+      }),
+      ...(statusFilter === 'deleted' && { isDeleted: true }),
+      ...(statusFilter === 'all' && {
+        isApproved: undefined,
+        isDeleted: undefined,
+      }),
+    }));
+  }, [statusFilter]);
+
+  const filteredReviews: Review[] =
+    reviewsResponse?.data?.reviews?.filter((review) => {
+      const matchesSearch =
+        review.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        review.productId?.name
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        review.comment?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesSearch;
+    }) || [];
+
+  const requestSort = (key: ReviewParams['sortBy']) => {
+    // Only allow sorting by fields that the backend supports
+    const allowedSortFields: ReviewParams['sortBy'][] = [
+      'createdAt',
+      'updatedAt',
+      'rating',
+    ];
+
+    if (!allowedSortFields.includes(key)) {
+      return; // Don't sort if the field isn't supported
     }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
 
-  // Filter reviews
-  const filteredReviews = sortedReviews.filter((review) => {
-    const matchesSearch =
-      review.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.comment.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'approved' && review.isApproved) ||
-      (statusFilter === 'pending' && !review.isApproved && !review.isDeleted) ||
-      (statusFilter === 'deleted' && review.isDeleted);
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (params.sortBy === key && params.sortOrder === 'asc') {
       direction = 'desc';
     }
-    setSortConfig({ key, direction });
+    setParams((prev) => ({
+      ...prev,
+      sortBy: key,
+      sortOrder: direction,
+      page: 1,
+    }));
   };
 
-  const handleApprove = (id) => {
-    setReviews(
-      reviews.map((review) =>
-        review._id === id ? { ...review, isApproved: true } : review
-      )
-    );
-    toast({
-      title: 'Review approved',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleApprove = async (id: string) => {
+    try {
+      await toggleApprovalMutation.mutateAsync(id);
+      toast({
+        title: 'Review approval toggled',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      toast({
+        title: 'Failed to toggle approval',
+        description: (err as Error)?.message || 'An error occurred',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
-  const handleReject = (id) => {
-    setReviews(
-      reviews.map((review) =>
-        review._id === id ? { ...review, isApproved: false } : review
-      )
-    );
-    toast({
-      title: 'Review rejected',
-      status: 'warning',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteReviewMutation.mutateAsync(id);
+      toast({
+        title: 'Review deleted',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      toast({
+        title: 'Failed to delete review',
+        description: (err as Error)?.message || 'An error occurred',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
-  const handleDelete = (id) => {
-    setReviews(
-      reviews.map((review) =>
-        review._id === id ? { ...review, isDeleted: true } : review
-      )
-    );
-    toast({
-      title: 'Review deleted',
-      status: 'error',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handlePageChange = (newPage: number) => {
+    setParams((prev) => ({ ...prev, page: newPage }));
   };
 
-  const handleRestore = (id) => {
-    setReviews(
-      reviews.map((review) =>
-        review._id === id ? { ...review, isDeleted: false } : review
-      )
-    );
-    toast({
-      title: 'Review restored',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleRefresh = () => {
+    refetch();
   };
+
+  if (isLoading) {
+    return (
+      <Box p={6} bg='white' borderRadius='lg' boxShadow='sm'>
+        <Flex justify='center' align='center' minH='400px'>
+          <Spinner size='xl' />
+        </Flex>
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box p={6} bg='white' borderRadius='lg' boxShadow='sm'>
+        <Alert status='error'>
+          <AlertIcon />
+          Failed to load reviews: {(error as Error)?.message || 'Unknown error'}
+        </Alert>
+      </Box>
+    );
+  }
+
+  const pagination = reviewsResponse?.data?.pagination;
 
   return (
     <Box p={6} bg='white' borderRadius='lg' boxShadow='sm'>
@@ -166,7 +221,12 @@ const ReviewsContent = () => {
           Reviews Management
         </Text>
         <HStack spacing={4}>
-          <Button leftIcon={<RefreshCw size={18} />} variant='outline'>
+          <Button
+            leftIcon={<RefreshCw size={18} />}
+            variant='outline'
+            onClick={handleRefresh}
+            isLoading={isLoading}
+          >
             Refresh
           </Button>
         </HStack>
@@ -206,33 +266,17 @@ const ReviewsContent = () => {
         <Table variant='striped' colorScheme='gray'>
           <Thead>
             <Tr>
-              <Th onClick={() => requestSort('user.name')} cursor='pointer'>
-                <Flex align='center'>
-                  User
-                  {sortConfig.key === 'user.name' &&
-                    (sortConfig.direction === 'asc' ? (
-                      <ChevronUp size={16} />
-                    ) : (
-                      <ChevronDown size={16} />
-                    ))}
-                </Flex>
+              <Th>
+                <Text>User</Text>
               </Th>
-              <Th onClick={() => requestSort('product.name')} cursor='pointer'>
-                <Flex align='center'>
-                  Product
-                  {sortConfig.key === 'product.name' &&
-                    (sortConfig.direction === 'asc' ? (
-                      <ChevronUp size={16} />
-                    ) : (
-                      <ChevronDown size={16} />
-                    ))}
-                </Flex>
+              <Th>
+                <Text>Product</Text>
               </Th>
               <Th onClick={() => requestSort('rating')} cursor='pointer'>
                 <Flex align='center'>
                   Rating
-                  {sortConfig.key === 'rating' &&
-                    (sortConfig.direction === 'asc' ? (
+                  {params.sortBy === 'rating' &&
+                    (params.sortOrder === 'asc' ? (
                       <ChevronUp size={16} />
                     ) : (
                       <ChevronDown size={16} />
@@ -243,8 +287,8 @@ const ReviewsContent = () => {
               <Th onClick={() => requestSort('createdAt')} cursor='pointer'>
                 <Flex align='center'>
                   Date
-                  {sortConfig.key === 'createdAt' &&
-                    (sortConfig.direction === 'asc' ? (
+                  {params.sortBy === 'createdAt' &&
+                    (params.sortOrder === 'asc' ? (
                       <ChevronUp size={16} />
                     ) : (
                       <ChevronDown size={16} />
@@ -258,8 +302,8 @@ const ReviewsContent = () => {
           <Tbody>
             {filteredReviews.map((review) => (
               <Tr key={review._id}>
-                <Td>{review.user.name}</Td>
-                <Td>{review.product.name}</Td>
+                <Td>{review.userId?.name || 'N/A'}</Td>
+                <Td>{review.productId?.name || 'N/A'}</Td>
                 <Td>
                   <Badge
                     colorScheme='yellow'
@@ -272,7 +316,7 @@ const ReviewsContent = () => {
                   </Badge>
                 </Td>
                 <Td maxW='300px' isTruncated title={review.comment}>
-                  {review.comment}
+                  {review.comment || 'No comment'}
                 </Td>
                 <Td>{new Date(review.createdAt).toLocaleDateString()}</Td>
                 <Td>
@@ -294,35 +338,28 @@ const ReviewsContent = () => {
                     />
                     <MenuList>
                       <MenuItem icon={<Eye size={16} />}>View Details</MenuItem>
-                      {!review.isApproved && !review.isDeleted && (
+                      {!review.isDeleted && (
                         <MenuItem
-                          icon={<Check size={16} />}
+                          icon={
+                            review.isApproved ? (
+                              <X size={16} />
+                            ) : (
+                              <Check size={16} />
+                            )
+                          }
                           onClick={() => handleApprove(review._id)}
+                          isDisabled={toggleApprovalMutation.isPending}
                         >
-                          Approve
+                          {review.isApproved ? 'Unapprove' : 'Approve'}
                         </MenuItem>
                       )}
-                      {!review.isApproved && !review.isDeleted && (
-                        <MenuItem
-                          icon={<X size={16} />}
-                          onClick={() => handleReject(review._id)}
-                        >
-                          Reject
-                        </MenuItem>
-                      )}
-                      {!review.isDeleted ? (
+                      {!review.isDeleted && (
                         <MenuItem
                           icon={<Trash2 size={16} />}
                           onClick={() => handleDelete(review._id)}
+                          isDisabled={deleteReviewMutation.isPending}
                         >
                           Delete
-                        </MenuItem>
-                      ) : (
-                        <MenuItem
-                          icon={<RefreshCw size={16} />}
-                          onClick={() => handleRestore(review._id)}
-                        >
-                          Restore
                         </MenuItem>
                       )}
                     </MenuList>
@@ -334,13 +371,39 @@ const ReviewsContent = () => {
         </Table>
       </Box>
 
-      {filteredReviews.length === 0 && (
+      {filteredReviews.length === 0 && !isLoading && (
         <Box textAlign='center' py={10}>
           <Text color='gray.500'>No reviews found matching your criteria</Text>
         </Box>
       )}
 
-      {/* Pagination would go here */}
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <Flex justify='space-between' align='center' mt={6}>
+          <Text fontSize='sm' color='gray.600'>
+            Page {pagination.currentPage} of {pagination.totalPages} (
+            {pagination.totalReviews} total reviews)
+          </Text>
+          <HStack spacing={2}>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              isDisabled={!pagination.hasPrevPage}
+            >
+              Previous
+            </Button>
+            <Button
+              size='sm'
+              variant='outline'
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              isDisabled={!pagination.hasNextPage}
+            >
+              Next
+            </Button>
+          </HStack>
+        </Flex>
+      )}
     </Box>
   );
 };

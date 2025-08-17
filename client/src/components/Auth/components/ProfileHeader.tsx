@@ -13,11 +13,13 @@ import {
   Button,
   Progress,
   Icon,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import { Edit3, LogOut, CheckCircle, XCircle } from 'lucide-react';
 import { type User } from '@/type/auth';
 import { getRoleBadgeColor } from '@/components/AdminManagement/Utils/Utils';
 import { useLogout } from '@/context/AuthContextService';
+import { useNavigate } from 'react-router-dom';
 
 interface ProfileHeaderProps {
   currentUser: User;
@@ -30,7 +32,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const cardBg = 'gray.500';
   const borderColor = 'teal.500';
-
+  const navigate = useNavigate();
   const logout = useLogout();
 
   return (
@@ -95,13 +97,19 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             </VStack>
           </HStack>
           <VStack spacing={2}>
-            <Button
-              colorScheme='blue'
-              leftIcon={<Edit3 size={18} />}
-              onClick={onEditClick}
-            >
-              Edit Profile
-            </Button>
+            <ButtonGroup spacing={4}>
+              <Button
+                colorScheme='blue'
+                leftIcon={<Edit3 size={18} />}
+                onClick={onEditClick}
+              >
+                Edit Profile
+              </Button>
+
+              <Button colorScheme='blue' onClick={() => navigate('/orders')}>
+                My Orders
+              </Button>
+            </ButtonGroup>
             <Button
               colorScheme='red'
               variant='ghost'

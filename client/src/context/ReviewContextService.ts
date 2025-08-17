@@ -11,52 +11,44 @@ import { buildQueryString } from '@/utils/QueryString';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
 
+// API Functions
 const getReviews = async (
   params: ReviewParams = {}
 ): Promise<ApiResponse<ReviewsResponse>> => {
   const queryString = buildQueryString(params);
   const endpoint = queryString ? `/reviews?${queryString}` : '/reviews';
-  return apiClient.publicApiRequest<ApiResponse<ReviewsResponse>>(endpoint);
+  return apiClient.publicApiRequest(endpoint);
 };
 
-// Get single review by ID - Fixed missing slash
 const getReviewById = async (id: string): Promise<ApiResponse<Review>> => {
-  return apiClient.publicApiRequest<ApiResponse<Review>>(`/reviews/${id}`);
+  return apiClient.publicApiRequest(`/reviews/${id}`);
 };
 
-// Create a new review
 const createReview = async (
   data: CreateReviewData
 ): Promise<ApiResponse<Review>> => {
-  return apiClient.authenticatedApiRequest<ApiResponse<Review>>('/reviews', {
+  return apiClient.authenticatedApiRequest('/reviews', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 };
 
-// Delete review - Fixed missing slash
 const deleteReview = async (id: string): Promise<ApiResponse<void>> => {
   return apiClient.authenticatedApiRequest<ApiResponse<void>>(
     `/reviews/${id}`,
-    {
-      method: 'DELETE',
-    }
+    { method: 'DELETE' }
   );
 };
 
-// Toggle review approval (admin only) - Fixed missing slash
 const toggleReviewApproval = async (
   id: string
 ): Promise<ApiResponse<Review>> => {
   return apiClient.authenticatedApiRequest<ApiResponse<Review>>(
     `/reviews/${id}/approve`,
-    {
-      method: 'PUT',
-    }
+    { method: 'PATCH' }
   );
 };
 
-// Get average rating for a product - Fixed API call method
 const getAverageRating = async (
   productId: string
 ): Promise<ApiResponse<AverageRatingResponse>> => {
@@ -65,7 +57,6 @@ const getAverageRating = async (
   );
 };
 
-// Get review statistics (admin only)
 const getReviewStats = async (): Promise<ApiResponse<ReviewStats>> => {
   return apiClient.authenticatedApiRequest<ApiResponse<ReviewStats>>(
     '/reviews/stats'
@@ -84,7 +75,7 @@ export const reviewQueryKeys = {
     [...reviewQueryKeys.all, 'averageRating', productId] as const,
 };
 
-// React Query Hooks
+// Core Hooks
 export const useReviews = (params: ReviewParams = {}) => {
   return useQuery({
     queryKey: reviewQueryKeys.list(params),
@@ -126,18 +117,23 @@ export const useCreateReview = () => {
   return useMutation({
     mutationFn: createReview,
     onSuccess: (data) => {
-      // Invalidate and refetch reviews
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.lists() });
 
-      // Invalidate average rating for the product - Fixed property access
-      if (data.data?.product?._id) {
+      const productId =
+        typeof data.data?.productId === 'string'
+          ? data.data.productId
+          : data.data?.productId?._id;
+
+      if (productId) {
         queryClient.invalidateQueries({
-          queryKey: reviewQueryKeys.averageRating(data.data.product._id),
+          queryKey: reviewQueryKeys.averageRating(productId),
         });
       }
 
-      // Invalidate stats
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.stats() });
+    },
+    onError: (error) => {
+      console.error('Create review error:', error);
     },
   });
 };
@@ -148,13 +144,8 @@ export const useDeleteReview = () => {
   return useMutation({
     mutationFn: deleteReview,
     onSuccess: (_, reviewId) => {
-      // Remove the review from cache
       queryClient.removeQueries({ queryKey: reviewQueryKeys.detail(reviewId) });
-
-      // Invalidate reviews list
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.lists() });
-
-      // Invalidate stats
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.stats() });
     },
   });
@@ -166,58 +157,21 @@ export const useToggleReviewApproval = () => {
   return useMutation({
     mutationFn: toggleReviewApproval,
     onSuccess: (data, reviewId) => {
-      // Update the specific review in cache - Fixed type assertion
       queryClient.setQueryData(
         reviewQueryKeys.detail(reviewId),
         (old: ApiResponse<Review> | undefined) => {
           if (!old || !data.data) return old;
-          return {
-            ...old,
-            data: data.data,
-          };
+          return { ...old, data: data.data };
         }
       );
 
-      // Invalidate reviews list to update approval status
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.lists() });
-
-      // Invalidate stats
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.stats() });
     },
   });
 };
 
-// Custom hook for product reviews
-export const useProductReviews = (
-  productId: string,
-  params: Omit<ReviewParams, 'product'> = {}
-) => {
-  return useReviews({ ...params, product: productId });
-};
-
-// Custom hook for user reviews
-export const useUserReviews = (
-  userId: string,
-  params: Omit<ReviewParams, 'user'> = {}
-) => {
-  return useReviews({ ...params, user: userId });
-};
-
-// Custom hook for approved reviews only
-export const useApprovedReviews = (
-  params: Omit<ReviewParams, 'isApproved'> = {}
-) => {
-  return useReviews({ ...params, isApproved: true });
-};
-
-// Custom hook for pending reviews (admin)
-export const usePendingReviews = (
-  params: Omit<ReviewParams, 'isApproved'> = {}
-) => {
-  return useReviews({ ...params, isApproved: false });
-};
-
-// Utility hook for optimistic updates
+// Optimistic Update Utility
 export const useOptimisticReviewUpdate = () => {
   const queryClient = useQueryClient();
 
@@ -229,13 +183,28 @@ export const useOptimisticReviewUpdate = () => {
       reviewQueryKeys.detail(reviewId),
       (old: ApiResponse<Review> | undefined) => {
         if (!old?.data) return old;
-        return {
-          ...old,
-          data: { ...old.data, ...updates },
-        };
+        return { ...old, data: { ...old.data, ...updates } };
       }
     );
   };
 
   return { updateReviewOptimistically };
 };
+
+export const useProductReviews = (
+  productId: string,
+  params: Omit<ReviewParams, 'productId'> = {}
+) => useReviews({ ...params, productId });
+
+export const useUserReviews = (
+  userId: string,
+  params: Omit<ReviewParams, 'userId'> = {}
+) => useReviews({ ...params, userId });
+
+export const useApprovedReviews = (
+  params: Omit<ReviewParams, 'isApproved'> = {}
+) => useReviews({ ...params, isApproved: true });
+
+export const usePendingReviews = (
+  params: Omit<ReviewParams, 'isApproved'> = {}
+) => useReviews({ ...params, isApproved: false });

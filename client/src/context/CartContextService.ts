@@ -5,6 +5,12 @@ import type { CartData } from '@/type/Cart';
 import { apiClient } from '@/utils/Api';
 import type { ApiResponse } from '@/type/ApiResponse';
 
+// Query keys for cart operations
+const cartKeys = {
+  all: ['cart'] as const,
+  items: () => [...cartKeys.all, 'items'] as const,
+};
+
 const fetchCart = async (): Promise<CartData> => {
   const response = await apiClient.authenticatedApiRequest<
     ApiResponse<CartData>
@@ -62,7 +68,7 @@ const updateItemQuantity = async ({
   const response = await apiClient.authenticatedApiRequest<
     ApiResponse<CartData>
   >(`/carts/items/${productId}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify({ quantity }),
   });
 
@@ -103,12 +109,6 @@ const clearCartItems = async (): Promise<void> => {
   }
 };
 
-// Query keys for cart operations
-const cartKeys = {
-  all: ['cart'] as const,
-  items: () => [...cartKeys.all, 'items'] as const,
-};
-
 export function useCart() {
   const { isAuthenticated } = useIsAuthenticated();
   return useQuery({
@@ -142,6 +142,7 @@ export function useAddToCart() {
           };
         } else {
           updatedCart.items.push({
+            _id: productId,
             product: { _id: productId } as Product,
             quantity,
           });

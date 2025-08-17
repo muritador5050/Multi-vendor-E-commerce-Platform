@@ -1,11 +1,18 @@
-import type { User } from './auth';
-import type { Product } from './product';
-
 export interface Review {
   _id: string;
-  user: User;
-  product: Product;
-  comment: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+    avatar: string;
+  };
+  productId: {
+    _id: string;
+    name: string;
+    price: number;
+    images: string[];
+  };
+  comment?: string;
   rating: number;
   isApproved: boolean;
   isDeleted: boolean;
@@ -27,8 +34,8 @@ export interface ReviewsResponse {
 export interface ReviewParams {
   page?: number;
   limit?: number;
-  product?: string;
-  user?: string;
+  productId?: string;
+  userId?: string;
   isApproved?: boolean;
   isDeleted?: boolean;
   minRating?: number;
@@ -38,7 +45,7 @@ export interface ReviewParams {
 }
 
 export interface CreateReviewData {
-  product: string;
+  productId: string;
   rating: number;
   comment?: string;
 }
