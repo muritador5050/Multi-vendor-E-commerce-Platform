@@ -33,8 +33,10 @@ import {
   useAverageRating,
   useCreateReview,
   useApprovedReviews,
+  useUserReviews,
 } from '@/context/ReviewContextService';
 import type { Review } from '@/type/Review';
+import { useCurrentUser } from '@/context/AuthContextService';
 
 export const ReviewComponent: React.FC<{ productId: string }> = ({
   productId,
@@ -44,10 +46,15 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const createReviewMutation = useCreateReview();
   const toast = useToast();
+
+  // Get current user
+  const currentUser = useCurrentUser();
+  const userId = currentUser?._id;
 
   // Fetch approved reviews for the product
   const {
@@ -66,6 +73,41 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
   // Fetch average rating
   const { data: avgRatingData, isLoading: avgRatingLoading } =
     useAverageRating(productId);
+
+  const {
+    data: userReviewData,
+    isLoading: userReviewLoading,
+    refetch: refetchUserReview,
+  } = useUserReviews(userId || '', {
+    productId,
+  });
+
+  const userExistingReview = userReviewData?.data?.reviews?.find(
+    (review: Review) => review.productId._id === productId
+  );
+
+  const handleOpenModal = () => {
+    if (userExistingReview) {
+      // Editing existing review
+      setIsEditing(true);
+      setRating(userExistingReview.rating);
+      setComment(userExistingReview.comment || '');
+    } else {
+      // Creating new review
+      setIsEditing(false);
+      setRating(5);
+      setComment('');
+    }
+    onOpen();
+  };
+
+  // Handle closing modal and reset form
+  const handleCloseModal = () => {
+    onClose();
+    setIsEditing(false);
+    setRating(5);
+    setComment('');
+  };
 
   // Rating Stars Component
   const RatingStars: React.FC<{
@@ -96,18 +138,36 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
 
   // Review Card Component
   const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
+    const isCurrentUserReview = userId && review.userId._id === userId;
+
     return (
       <Box
         p={5}
         border='1px'
-        borderColor='gray.200'
+        borderColor={isCurrentUserReview ? 'teal.200' : 'gray.200'}
         borderRadius='lg'
         mb={4}
-        bg='white'
+        bg={isCurrentUserReview ? 'teal.50' : 'white'}
         shadow='sm'
         _hover={{ shadow: 'md' }}
         transition='all 0.2s'
+        position='relative'
       >
+        {/* Current user badge */}
+        {isCurrentUserReview && (
+          <Badge
+            position='absolute'
+            top={2}
+            right={2}
+            colorScheme='teal'
+            variant='solid'
+            size='sm'
+            borderRadius='full'
+          >
+            Your Review
+          </Badge>
+        )}
+
         {/* Header with User Info and Rating */}
         <HStack mb={4} justify='space-between' align='start'>
           <HStack spacing={3}>
@@ -119,6 +179,11 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
             <VStack align='start' spacing={1}>
               <Text fontWeight='bold' fontSize='md' color='gray.800'>
                 {review.userId.name}
+                {isCurrentUserReview && (
+                  <Text as='span' fontSize='sm' color='teal.600' ml={1}>
+                    (You)
+                  </Text>
+                )}
               </Text>
               <Text fontSize='sm' color='gray.500'>
                 {new Date(review.createdAt).toLocaleDateString('en-US', {
@@ -154,7 +219,7 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
             <Divider mb={3} />
             <Box
               p={4}
-              bg='gray.50'
+              bg={isCurrentUserReview ? 'white' : 'gray.50'}
               borderRadius='md'
               border='1px'
               borderColor='gray.100'
@@ -177,6 +242,20 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
             </Text>
           </Box>
         )}
+
+        {/* Edit button for current user's review */}
+        {isCurrentUserReview && (
+          <Box mt={4} pt={3} borderTop='1px' borderColor='gray.200'>
+            <Button
+              size='sm'
+              colorScheme='teal'
+              variant='outline'
+              onClick={handleOpenModal}
+            >
+              Edit Your Review
+            </Button>
+          </Box>
+        )}
       </Box>
     );
   };
@@ -191,21 +270,24 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
       });
 
       toast({
-        title: 'Review Submitted',
-        description: 'Your review has been submitted for approval.',
+        title: isEditing ? 'Review Updated' : 'Review Submitted',
+        description: isEditing
+          ? 'Your review has been updated successfully.'
+          : 'Your review has been submitted for approval.',
         status: 'success',
         duration: 3000,
         position: 'top',
       });
 
       refetchReviews();
-      onClose();
-      setRating(5);
-      setComment('');
+      refetchUserReview();
+      handleCloseModal();
     } catch {
       toast({
         title: 'Error',
-        description: 'Failed to submit review. Please try again.',
+        description: `Failed to ${
+          isEditing ? 'update' : 'submit'
+        } review. Please try again.`,
         status: 'error',
         duration: 3000,
         position: 'top',
@@ -223,7 +305,11 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
     setCurrentPage(1);
   };
 
-  if (reviewsLoading || avgRatingLoading) {
+  // Don't show loading for user review if user is not logged in
+  const shouldShowLoading =
+    reviewsLoading || avgRatingLoading || (userId && userReviewLoading);
+
+  if (shouldShowLoading) {
     return (
       <Center py={10}>
         <Spinner size='lg' color='teal.500' />
@@ -247,6 +333,24 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
     totalReviews: 0,
   };
 
+  // Determine button text and behavior
+  const getReviewButtonProps = () => {
+    if (userExistingReview) {
+      return {
+        text: 'Edit Your Review',
+        colorScheme: 'teal',
+        variant: 'outline' as const,
+      };
+    }
+    return {
+      text: 'Write a Review',
+      colorScheme: 'teal',
+      variant: 'solid' as const,
+    };
+  };
+
+  const buttonProps = getReviewButtonProps();
+
   return (
     <Box>
       {/* Rating Summary */}
@@ -262,9 +366,22 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
               </Text>
             </HStack>
           </VStack>
-          <Button colorScheme='teal' onClick={onOpen}>
-            Write a Review
-          </Button>
+          {userId && (
+            <VStack spacing={2} align='end'>
+              <Button
+                colorScheme={buttonProps.colorScheme}
+                variant={buttonProps.variant}
+                onClick={handleOpenModal}
+              >
+                {buttonProps.text}
+              </Button>
+              {userExistingReview && (
+                <Text fontSize='xs' color='gray.500'>
+                  You reviewed this product
+                </Text>
+              )}
+            </VStack>
+          )}
         </HStack>
       </Box>
 
@@ -305,9 +422,11 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
           <Text color='gray.500' mb={4}>
             No reviews yet. Be the first to review this product!
           </Text>
-          <Button colorScheme='teal' onClick={onOpen}>
-            Write the First Review
-          </Button>
+          {userId && (
+            <Button colorScheme='teal' onClick={handleOpenModal}>
+              Write the First Review
+            </Button>
+          )}
         </Box>
       ) : (
         <>
@@ -342,14 +461,26 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
         </>
       )}
 
-      {/* Write Review Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size='md'>
+      {/* Write/Edit Review Modal */}
+      <Modal isOpen={isOpen} onClose={handleCloseModal} size='md'>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Write a Review</ModalHeader>
+          <ModalHeader>
+            {isEditing ? 'Edit Your Review' : 'Write a Review'}
+          </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
+              {isEditing && (
+                <Alert status='info' borderRadius='md'>
+                  <AlertIcon />
+                  <Text fontSize='sm'>
+                    You're editing your existing review. Changes will update
+                    your current review.
+                  </Text>
+                </Alert>
+              )}
+
               <FormControl>
                 <FormLabel>Rating</FormLabel>
                 <Select
@@ -381,16 +512,16 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
           </ModalBody>
 
           <ModalFooter>
-            <Button variant='ghost' mr={3} onClick={onClose}>
+            <Button variant='ghost' mr={3} onClick={handleCloseModal}>
               Cancel
             </Button>
             <Button
               colorScheme='teal'
               onClick={handleSubmit}
               isLoading={createReviewMutation.isPending}
-              loadingText='Submitting...'
+              loadingText={isEditing ? 'Updating...' : 'Submitting...'}
             >
-              Submit Review
+              {isEditing ? 'Update Review' : 'Submit Review'}
             </Button>
           </ModalFooter>
         </ModalContent>
