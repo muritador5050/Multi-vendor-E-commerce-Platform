@@ -1,123 +1,140 @@
 const Blog = require('../models/blog.model');
 const path = require('path');
-const {
-  blogImageUpload,
-  handleUploadError,
-  uploadResponse,
-  deleteFile,
-} = require('../utils/FileUploads');
+const fs = require('fs');
+const { BACKEND_URL } = require('../configs/index');
 
 class BlogController {
-  static async createBlog(req, res) {
-    const blog = await Blog.createBlog(req.body);
+  static async createBlog(req, res, next) {
+    try {
+      if (!req.file) {
+        const error = new Error('Blog image is required');
+        error.statusCode = 400;
+        throw error;
+      }
 
-    res.status(201).json({
-      message: 'Blog created successfully',
-      data: blog,
-    });
-  }
+      const blogData = {
+        ...req.body,
+        image: `${BACKEND_URL}/uploads/blogs/${req.file.filename}`,
+      };
 
-  static async getBlogs(req, res) {
-    const result = await Blog.getBlogs(req.query);
+      const blog = await Blog.createBlog(blogData);
 
-    res.status(200).json({
-      data: result.blogs,
-      pagination: result.pagination,
-    });
-  }
-
-  static async getBlogBySlug(req, res) {
-    const blog = await Blog.findBySlugAndIncrementViews(req.params.slug);
-
-    res.status(200).json({ data: blog });
-  }
-
-  static async deleteBlog(req, res) {
-    const deletedBlog = await Blog.deleteBySlug(req.params.slug);
-
-    res.status(200).json({
-      message: 'Blog deleted successfully',
-      data: deletedBlog,
-    });
-  }
-
-  static async updateBlog(req, res) {
-    const updatedBlog = await Blog.updateBySlug(req.params.slug, req.body);
-
-    res.status(200).json({
-      message: 'Blog updated successfully',
-      data: updatedBlog,
-    });
-  }
-
-  static async getBlogsByAuthor(req, res) {
-    const result = await Blog.getBlogsByAuthor(req.params.author, req.query);
-
-    res.status(200).json({
-      data: result.blogs,
-      pagination: result.pagination,
-    });
-  }
-
-  static async togglePublish(req, res) {
-    const blog = await Blog.findBySlugForToggle(req.params.slug);
-    const updatedBlog = await blog.togglePublished();
-
-    res.status(200).json({
-      message: `Blog ${
-        updatedBlog.published ? 'published' : 'unpublished'
-      } successfully`,
-      data: updatedBlog,
-    });
-  }
-
-  // Upload blog image
-  static async uploadBlogImage(req, res) {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded',
-      });
-    }
-
-    const imagePath = `uploads/blogs/${req.file.filename}`;
-
-    return res.status(200).json({
-      success: true,
-      message: 'Blog image uploaded successfully',
-      data: {
-        filename: req.file.filename,
-        path: imagePath,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-      },
-    });
-  }
-
-  // Delete blog image
-  static async deleteBlogImage(req, res) {
-    const { filename } = req.body;
-
-    if (!filename) {
-      return res.status(400).json({
-        success: false,
-        message: 'Filename is required',
-      });
-    }
-
-    const filePath = path.join(__dirname, '..', 'uploads/blogs', filename);
-    const result = await deleteFile(filePath);
-
-    if (result.success) {
-      return res.status(200).json({
+      res.status(201).json({
         success: true,
-        message: 'Blog image deleted successfully',
+        message: 'Blog created successfully',
+        data: blog,
       });
-    } else {
-      return res.status(404).json({
-        success: false,
-        message: result.message,
+    } catch (error) {
+      if (req.file) {
+        fs.unlink(req.file.path, (err) => {
+          if (err) console.error('Error deleting uploaded file:', err);
+        });
+      }
+      next(error);
+    }
+  }
+
+  static async getBlogs(req, res, next) {
+    try {
+      const result = await Blog.getBlogs(req.query);
+      res.status(200).json({
+        success: true,
+        message: 'Blogs retrieved successfully',
+        data: result,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getBlogById(req, res, next) {
+    try {
+      const blog = await Blog.findByIdAndIncrementViews(req.params.id);
+      res.status(200).json({
+        success: true,
+        message: 'Blog retrieved successfully',
+        data: blog,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateBlog(req, res, next) {
+    try {
+      const updateData = { ...req.body };
+
+      if (req.file) {
+        updateData.image = `${BACKEND_URL}/uploads/blogs/${req.file.filename}`;
+
+        // Delete old image
+        const oldBlog = await Blog.findById(req.params.id);
+        if (oldBlog?.image) {
+          const oldImagePath = oldBlog.image.replace(BACKEND_URL, '');
+          fs.unlink(path.join(__dirname, '../', oldImagePath), () => {});
+        }
+      }
+
+      const updatedBlog = await Blog.updateById(req.params.id, updateData);
+      res.status(200).json({
+        success: true,
+        message: 'Blog updated successfully',
+        data: updatedBlog,
+      });
+    } catch (error) {
+      if (req.file) {
+        fs.unlink(req.file.path, () => {});
+      }
+      next(error);
+    }
+  }
+
+  static async deleteBlog(req, res, next) {
+    try {
+      const blog = await Blog.findById(req.params.id);
+      if (!blog) {
+        const error = new Error('Blog not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Delete associated image file
+      if (blog.image) {
+        const imagePath = blog.image.replace(BACKEND_URL, '');
+        fs.unlink(path.join(__dirname, '../', imagePath), (err) => {
+          if (err) console.error('Error deleting blog image:', err);
+        });
+      }
+
+      await Blog.deleteById(req.params.id);
+      res.status(200).json({
+        success: true,
+        message: 'Blog deleted successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async togglePublish(req, res, next) {
+    try {
+      const blog = await Blog.findById(req.params.id);
+      if (!blog) {
+        const error = new Error('Blog not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      const updatedBlog = await blog.togglePublished();
+      res.status(200).json({
+        success: true,
+        message: `Blog ${
+          updatedBlog.published ? 'published' : 'unpublished'
+        } successfully`,
+        data: updatedBlog,
+      });
+    } catch (error) {
+      next(error);
     }
   }
 }

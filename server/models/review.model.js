@@ -106,8 +106,6 @@ reviewSchema.index(
 reviewSchema.index({ productId: 1, isApproved: 1, isDeleted: 1 });
 reviewSchema.index({ userId: 1, isDeleted: 1 });
 
-// ============ MIDDLEWARE FOR AUTO-UPDATING PRODUCT RATINGS ============
-
 // Function to update product rating statistics
 async function updateProductRatingStats(productId) {
   try {

@@ -1,6 +1,4 @@
 const Product = require('../models/product.model');
-const path = require('path');
-const fs = require('fs');
 const { BACKEND_URL } = require('../configs/index');
 
 class ProductsController {

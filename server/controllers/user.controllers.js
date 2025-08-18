@@ -635,11 +635,9 @@ class UserController {
       );
     }
 
-    const avatarPath = `uploads/avatars/${req.file.filename}`;
-    const fullAvatarUrl =
-      `${BACKEND_URL}/${avatarPath}` ||
-      `${req.protocol}://${req.get('host')}${avatarPath}`;
-    user.avatar = fullAvatarUrl;
+    const avatarPath = `${BACKEND_URL}/uploads/avatars/${req.file.filename}`;
+
+    user.avatar = avatarPath;
     await user.save();
 
     return res.status(200).json({
@@ -650,7 +648,7 @@ class UserController {
         path: avatarPath,
         size: req.file.size,
         mimetype: req.file.mimetype,
-        avatar: fullAvatarUrl,
+        // avatar: fullAvatarUrl,
       },
     });
   }

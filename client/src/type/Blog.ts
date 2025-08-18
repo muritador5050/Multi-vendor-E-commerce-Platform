@@ -10,7 +10,6 @@ export interface Blog {
   views: number;
   createdAt: string;
   updatedAt: string;
-  relatedProducts?: any[];
 }
 
 export interface BlogsResponse {

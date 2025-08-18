@@ -192,7 +192,6 @@ const deleteFile = (filePath) => {
   });
 };
 
-// Upload response helper
 const uploadResponse = (res, file, uploadType) => {
   if (!file) {
     return res.status(400).json({
@@ -213,7 +212,6 @@ const uploadResponse = (res, file, uploadType) => {
   });
 };
 
-// Error handler for uploads
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
