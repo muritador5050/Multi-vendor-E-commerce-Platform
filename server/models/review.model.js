@@ -104,8 +104,73 @@ reviewSchema.index(
 );
 
 reviewSchema.index({ productId: 1, isApproved: 1, isDeleted: 1 });
-
 reviewSchema.index({ userId: 1, isDeleted: 1 });
+
+// ============ MIDDLEWARE FOR AUTO-UPDATING PRODUCT RATINGS ============
+
+// Function to update product rating statistics
+async function updateProductRatingStats(productId) {
+  try {
+    const stats = await mongoose.model('Review').aggregate([
+      {
+        $match: {
+          productId: new mongoose.Types.ObjectId(productId),
+          isDeleted: false,
+          isApproved: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$productId',
+          avgRating: { $avg: '$rating' },
+          totalReviews: { $sum: 1 },
+        },
+      },
+      {
+        $addFields: {
+          avgRating: { $round: ['$avgRating', 2] },
+        },
+      },
+    ]);
+
+    const { avgRating = 0, totalReviews = 0 } = stats[0] || {};
+
+    await Product.findByIdAndUpdate(
+      productId,
+      {
+        averageRating: avgRating,
+        totalReviews: totalReviews,
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.error('Error updating product rating stats:', error);
+  }
+}
+
+reviewSchema.post('save', async function (doc) {
+  if (doc.productId) {
+    await updateProductRatingStats(doc.productId);
+  }
+});
+
+reviewSchema.post('remove', async function (doc) {
+  if (doc.productId) {
+    await updateProductRatingStats(doc.productId);
+  }
+});
+
+reviewSchema.post('findOneAndUpdate', async function (doc) {
+  if (doc && doc.productId) {
+    await updateProductRatingStats(doc.productId);
+  }
+});
+
+reviewSchema.post('findOneAndDelete', async function (doc) {
+  if (doc && doc.productId) {
+    await updateProductRatingStats(doc.productId);
+  }
+});
 
 reviewSchema.pre('save', function (next) {
   if (this.rating !== undefined) {
@@ -113,6 +178,8 @@ reviewSchema.pre('save', function (next) {
   }
   next();
 });
+
+// ============ STATIC METHODS ============
 
 // Validate review creation data
 reviewSchema.statics.validateReviewData = function (data) {
@@ -147,7 +214,6 @@ reviewSchema.statics.verifyProductExists = async function (productId) {
   return productExist;
 };
 
-// Create or update review
 reviewSchema.statics.createOrUpdateReview = async function (
   userId,
   productId,
@@ -222,7 +288,7 @@ reviewSchema.statics.getReviewsWithPagination = async function (queryParams) {
 
   if (userId) {
     this.validateObjectId(userId, 'user ID');
-    filter.userId = userId; // Fixed: was filter.user
+    filter.userId = userId;
   }
 
   if (isApproved !== undefined) filter.isApproved = isApproved === 'true';
@@ -276,7 +342,6 @@ reviewSchema.statics.getReviewsWithPagination = async function (queryParams) {
   };
 };
 
-// Find review by ID with population
 reviewSchema.statics.findReviewById = async function (reviewId) {
   this.validateObjectId(reviewId, 'review ID');
 
@@ -295,7 +360,6 @@ reviewSchema.statics.findReviewById = async function (reviewId) {
   return review;
 };
 
-// Get average rating for a product
 reviewSchema.statics.getAverageRating = async function (productId) {
   this.validateObjectId(productId, 'product ID');
 
@@ -322,6 +386,17 @@ reviewSchema.statics.getAverageRating = async function (productId) {
   ]);
 
   return stats[0] || { avgRating: 0, totalReviews: 0 };
+};
+
+// Manually recalculate and update all product ratings (utility function)
+reviewSchema.statics.recalculateAllProductRatings = async function () {
+  const products = await Product.find({ isDeleted: false }, '_id');
+
+  for (const product of products) {
+    await updateProductRatingStats(product._id);
+  }
+
+  return { message: `Updated ratings for ${products.length} products` };
 };
 
 // Get review statistics
@@ -378,15 +453,20 @@ reviewSchema.statics.getStats = async function () {
   );
 };
 
+// ============ INSTANCE METHODS ============
+
+// Toggle approval status (now updates product stats)
 reviewSchema.methods.toggleApproval = async function () {
   this.isApproved = !this.isApproved;
-  return await this.save();
+  const result = await this.save();
+  return result;
 };
 
-// Soft delete review
+// Soft delete review (now updates product stats)
 reviewSchema.methods.softDelete = async function () {
   this.isDeleted = true;
-  return await this.save();
+  const result = await this.save();
+  return result;
 };
 
 // Check if user can delete this review
@@ -394,11 +474,12 @@ reviewSchema.methods.canBeDeletedBy = function (userId, isAdmin = false) {
   return this.userId.toString() === userId || isAdmin;
 };
 
-// Update review content
+// Update review content (now updates product stats)
 reviewSchema.methods.updateContent = async function (rating, comment) {
   this.rating = rating;
   this.comment = comment || '';
-  return await this.save();
+  const result = await this.save();
+  return result;
 };
 
 module.exports = mongoose.model('Review', reviewSchema);
