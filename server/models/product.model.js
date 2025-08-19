@@ -98,7 +98,7 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     attributes: {
-      type: mongoose.Schema.Types.Mixed, 
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
     averageRating: {
@@ -154,7 +154,7 @@ productSchema.pre('save', async function (next) {
     while (
       await this.constructor.findOne({
         slug: uniqueSlug,
-        _id: { $ne: this._id }, // Exclude current document for updates
+        _id: { $ne: this._id },
       })
     ) {
       uniqueSlug = `${baseSlug}-${counter}`;

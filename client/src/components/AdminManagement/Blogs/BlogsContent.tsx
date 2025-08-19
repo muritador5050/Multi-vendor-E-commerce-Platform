@@ -23,142 +23,146 @@ import {
   Image,
   Tag,
   TagLabel,
+  useDisclosure,
 } from '@chakra-ui/react';
 import {
   ChevronDown,
   ChevronUp,
-  Filter,
   Search,
   MoreVertical,
   Check,
   X,
   Trash2,
-  Eye,
   Pencil,
   RefreshCw,
   Plus,
   Calendar,
-  User,
   Eye as EyeIcon,
 } from 'lucide-react';
 
-const BlogsContent = () => {
-  const [blogs, setBlogs] = useState([
-    // Sample data - in a real app this would come from an API
-    {
-      _id: '1',
-      title: 'The Future of Wireless Audio',
-      slug: 'future-wireless-audio',
-      excerpt: 'Exploring the latest trends in wireless audio technology',
-      image: 'https://example.com/audio-tech.jpg',
-      author: 'Alex Johnson',
-      tags: ['audio', 'technology', 'wireless'],
-      published: true,
-      publishedAt: '2023-06-10T09:15:00Z',
-      views: 1245,
-      createdAt: '2023-06-05T14:30:00Z',
-    },
-    {
-      _id: '2',
-      title: 'Sustainable Materials in Product Design',
-      slug: 'sustainable-materials-design',
-      excerpt: 'How eco-friendly materials are changing product design',
-      image: 'https://example.com/eco-design.jpg',
-      author: 'Maria Garcia',
-      tags: ['design', 'sustainability', 'materials'],
-      published: false,
-      publishedAt: null,
-      views: 0,
-      createdAt: '2023-07-18T11:20:00Z',
-    },
-    // More sample blogs...
-  ]);
+import BlogFormModal from './BlogFormModal';
+import type { Blog, BlogFilters } from '@/type/Blog';
+import {
+  useBlogs,
+  useDeleteBlog,
+  useTogglePublish,
+} from '@/context/BlogContextService';
+import BlogDrawer from './BlogDrawer';
 
+const BlogsContent = () => {
+  const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isDrawerOpen,
+    onOpen: onDrawerOpen,
+    onClose: onDrawerClose,
+  } = useDisclosure();
+
+  const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // State for filters and sorting
+  const [filters, setFilters] = useState<BlogFilters>({
+    page: 1,
+    limit: 10,
+    search: '',
+    published: undefined,
+  });
   const [sortConfig, setSortConfig] = useState({
     key: 'createdAt',
     direction: 'desc',
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const toast = useToast();
 
-  // Sort blogs
-  const sortedBlogs = [...blogs].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
-    }
-    if (a[sortConfig.key] > b[sortConfig.key]) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
+  // API hooks
+  const { data: blogsData, isLoading, isError, refetch } = useBlogs(filters);
+  const deleteBlogMutation = useDeleteBlog();
+  const togglePublishMutation = useTogglePublish();
 
-  // Filter blogs
-  const filteredBlogs = sortedBlogs.filter((blog) => {
-    const matchesSearch =
-      blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      blog.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      blog.tags.some((tag) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const blogs = blogsData?.blogs || [];
+  const pagination = blogsData?.pagination;
 
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'published' && blog.published) ||
-      (statusFilter === 'draft' && !blog.published);
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({ ...filters, search: e.target.value, page: 1 });
+  };
 
-    return matchesSearch && matchesStatus;
-  });
+  const handleStatusFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setFilters({
+      ...filters,
+      published: value === 'all' ? undefined : value === 'published',
+      page: 1,
+    });
+  };
 
-  const requestSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+  const requestSort = (key: string) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
     }
     setSortConfig({ key, direction });
   };
 
-  const handlePublish = (id) => {
-    setBlogs(
-      blogs.map((blog) =>
-        blog._id === id
-          ? { ...blog, published: true, publishedAt: new Date().toISOString() }
-          : blog
-      )
-    );
-    toast({
-      title: 'Blog published',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleRefresh = () => {
+    return refetch();
   };
 
-  const handleUnpublish = (id) => {
-    setBlogs(
-      blogs.map((blog) =>
-        blog._id === id
-          ? { ...blog, published: false, publishedAt: null }
-          : blog
-      )
-    );
-    toast({
-      title: 'Blog unpublished',
-      status: 'warning',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handlePublishToggle = async (id: string) => {
+    try {
+      await togglePublishMutation.mutateAsync(id);
+      toast({
+        title: 'Blog status updated',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch {
+      toast({
+        title: 'Failed to update blog status',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
-  const handleDelete = (id) => {
-    setBlogs(blogs.filter((blog) => blog._id !== id));
-    toast({
-      title: 'Blog deleted',
-      status: 'error',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteBlogMutation.mutateAsync(id);
+      toast({
+        title: 'Blog deleted',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch {
+      toast({
+        title: 'Failed to delete blog',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
+
+  const handleEdit = (blog: Blog) => {
+    setSelectedBlog(blog);
+    setIsEditing(true);
+    onOpen();
+  };
+
+  const handleCreate = () => {
+    setSelectedBlog(null);
+    setIsEditing(false);
+    onOpen();
+  };
+
+  const handleView = (blog: Blog) => {
+    setSelectedBlog(blog);
+    onDrawerOpen();
+  };
+
+  if (isLoading) return <Text>Loading blogs...</Text>;
+  if (isError) return <Text>Error loading blogs</Text>;
 
   return (
     <Box p={6} bg='white' borderRadius='lg' boxShadow='sm'>
@@ -167,10 +171,19 @@ const BlogsContent = () => {
           Blog Management
         </Text>
         <HStack spacing={4}>
-          <Button leftIcon={<Plus size={18} />} colorScheme='blue'>
+          <Button
+            leftIcon={<Plus size={18} />}
+            colorScheme='blue'
+            onClick={handleCreate}
+          >
             New Blog
           </Button>
-          <Button leftIcon={<RefreshCw size={18} />} variant='outline'>
+          <Button
+            leftIcon={<RefreshCw size={18} />}
+            variant='outline'
+            onClick={handleRefresh}
+            isLoading={isLoading}
+          >
             Refresh
           </Button>
         </HStack>
@@ -180,8 +193,8 @@ const BlogsContent = () => {
         <Box flex='1' position='relative'>
           <Input
             placeholder='Search blogs...'
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={filters.search || ''}
+            onChange={handleSearch}
             pl={10}
           />
           <Box
@@ -195,8 +208,14 @@ const BlogsContent = () => {
           </Box>
         </Box>
         <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          value={
+            filters.published === undefined
+              ? 'all'
+              : filters.published
+              ? 'published'
+              : 'draft'
+          }
+          onChange={handleStatusFilter}
           width='200px'
         >
           <option value='all'>All Statuses</option>
@@ -261,7 +280,7 @@ const BlogsContent = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {filteredBlogs.map((blog) => (
+            {blogs.map((blog) => (
               <Tr key={blog._id}>
                 <Td>
                   {blog.image ? (
@@ -283,7 +302,7 @@ const BlogsContent = () => {
                 <Td>{blog.author}</Td>
                 <Td>
                   <Flex wrap='wrap' gap={1}>
-                    {blog.tags.slice(0, 3).map((tag) => (
+                    {blog.tags?.slice(0, 3).map((tag) => (
                       <Tag
                         key={tag}
                         size='sm'
@@ -293,14 +312,14 @@ const BlogsContent = () => {
                         <TagLabel>{tag}</TagLabel>
                       </Tag>
                     ))}
-                    {blog.tags.length > 3 && (
+                    {blog.tags?.length > 3 && (
                       <Tag size='sm' variant='subtle' colorScheme='gray'>
                         <TagLabel>+{blog.tags.length - 3}</TagLabel>
                       </Tag>
                     )}
                   </Flex>
                 </Td>
-                <Td>{blog.views.toLocaleString()}</Td>
+                <Td>{blog.views?.toLocaleString()}</Td>
                 <Td>
                   {blog.published ? (
                     new Date(blog.publishedAt).toLocaleDateString()
@@ -322,12 +341,14 @@ const BlogsContent = () => {
                       variant='ghost'
                       size='sm'
                       aria-label='View blog'
+                      onClick={() => handleView(blog)}
                     />
                     <IconButton
                       icon={<Pencil size={18} />}
                       variant='ghost'
                       size='sm'
                       aria-label='Edit blog'
+                      onClick={() => handleEdit(blog)}
                     />
                     <Menu>
                       <MenuButton
@@ -340,14 +361,14 @@ const BlogsContent = () => {
                         {blog.published ? (
                           <MenuItem
                             icon={<X size={16} />}
-                            onClick={() => handleUnpublish(blog._id)}
+                            onClick={() => handlePublishToggle(blog._id)}
                           >
                             Unpublish
                           </MenuItem>
                         ) : (
                           <MenuItem
                             icon={<Check size={16} />}
-                            onClick={() => handlePublish(blog._id)}
+                            onClick={() => handlePublishToggle(blog._id)}
                           >
                             Publish
                           </MenuItem>
@@ -372,13 +393,32 @@ const BlogsContent = () => {
         </Table>
       </Box>
 
-      {filteredBlogs.length === 0 && (
+      {blogs.length === 0 && (
         <Box textAlign='center' py={10}>
           <Text color='gray.500'>No blogs found matching your criteria</Text>
         </Box>
       )}
 
       {/* Pagination would go here */}
+      {pagination && pagination.pages > 1 && (
+        <Flex justify='center' mt={4}>
+          {/* Implement pagination controls */}
+        </Flex>
+      )}
+
+      {/* Blog Form Modal */}
+      <BlogFormModal
+        isOpen={isOpen}
+        onClose={onClose}
+        blog={selectedBlog}
+        isEditing={isEditing}
+      />
+      {/* Blog Drawer */}
+      <BlogDrawer
+        isOpen={isDrawerOpen}
+        onClose={onDrawerClose}
+        blog={selectedBlog}
+      />
     </Box>
   );
 };

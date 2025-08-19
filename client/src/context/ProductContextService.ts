@@ -76,9 +76,7 @@ const createProduct = async (
   products: CreateProductRequest,
   files?: File[]
 ) => {
-  return await apiClient.authenticatedFormDataRequest<
-    ApiResponse<Product | Product[]>
-  >(
+  return await apiClient.authenticatedFormDataRequest(
     '/products',
     products,
     files && files.length > 0 ? { productImage: files } : undefined

@@ -11,7 +11,6 @@ const blogSchema = new mongoose.Schema(
     },
     slug: {
       type: String,
-      required: true,
       unique: true,
       lowercase: true,
       trim: true,
@@ -42,9 +41,6 @@ const blogSchema = new mongoose.Schema(
           return v.length <= 10;
         },
         message: 'Maximum 10 tags allowed',
-      },
-      set: function (tags) {
-        return tags.map((tag) => tag.toLowerCase().trim());
       },
     },
     published: {
@@ -81,17 +77,31 @@ blogSchema.virtual('readingTime').get(function () {
   return Math.ceil(wordCount / wordsPerMinute);
 });
 
-// Pre-save middleware
-blogSchema.pre('save', function (next) {
+// Pre-save middleware for slug generation
+blogSchema.pre('save', async function (next) {
   if (this.published && !this.publishedAt) {
     this.publishedAt = new Date();
   } else if (!this.published) {
     this.publishedAt = null;
   }
 
-  // Generate slug if title is modified
-  if (this.isModified('title')) {
-    this.slug = slugify(this.title, { lower: true, strict: true });
+  if (this.isModified('title') || !this.slug) {
+    const baseSlug = slugify(this.title, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+
+    while (true) {
+      const existingBlog = await this.constructor.findOne({ slug });
+
+      if (!existingBlog || existingBlog._id.equals(this._id)) {
+        break;
+      }
+
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
+    this.slug = slug;
   }
 
   next();

@@ -3,17 +3,20 @@ export interface Blog {
   title: string;
   slug: string;
   content: string;
-  image?: string;
+  image: string;
+  excerpt: string;
+  readingTime: number;
   author: string;
   tags: string[];
   published: boolean;
+  publishedAt: Date;
   views: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface BlogsResponse {
-  data: Blog[];
+  blogs: Blog[];
   pagination: {
     page: number;
     limit: number;
@@ -37,7 +40,6 @@ export interface CreateBlogData {
   image?: string;
   author: string;
   tags?: string[];
-  published?: boolean;
 }
 
 export interface UpdateBlogData {
