@@ -314,7 +314,13 @@ class ApiClient {
 
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          if (typeof value === 'boolean') {
+          if (Array.isArray(value)) {
+            value.forEach((item, index) => {
+              if (item !== undefined && item !== null) {
+                formData.append(`${key}[${index}]`, String(item));
+              }
+            });
+          } else if (typeof value === 'boolean') {
             formData.append(key, value.toString());
           } else if (typeof value === 'number') {
             formData.append(key, value.toString());
