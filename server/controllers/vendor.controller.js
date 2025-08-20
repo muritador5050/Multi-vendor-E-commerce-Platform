@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Vendor = require('../models/vendor.model');
 const User = require('../models/user.model');
+const Order = require('../models/order.model');
 const Product = require('../models/product.model');
 const EmailService = require('../services/emailService');
 const path = require('path');

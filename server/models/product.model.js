@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 const Category = require('./category.model');
-const fs = require('fs');
 
 /**
  * @openapi
@@ -187,23 +186,27 @@ productSchema.pre('save', function (next) {
   next();
 });
 
-// ============ QUERY HELPERS ============
-
-productSchema.query.paginate = function ({ page = 1, limit = 10 }) {
-  const skip = limit * (page - 1);
-  return this.skip(skip).limit(limit);
-};
-
-productSchema.query.active = function () {
-  return this.where({ isDeleted: false, isActive: true });
-};
-
-productSchema.query.byVendor = function (vendorId) {
-  return this.where({ vendor: vendorId });
-};
-
 // ============ STATIC METHODS ============
 
+// Helper method to validate ObjectId
+productSchema.statics.validateObjectId = function (id, fieldName = 'ID') {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error(`Invalid ${fieldName} format`);
+  }
+};
+
+// Helper method to check permissions
+productSchema.statics.checkPermissions = function (
+  product,
+  user,
+  action = 'modify'
+) {
+  if (user.role !== 'admin' && product.vendor.toString() !== user.id) {
+    throw new Error(`You do not have permission to ${action} this product`);
+  }
+};
+
+// Create products (single or multiple)
 productSchema.statics.createProducts = async function (productsData, vendorId) {
   const productsArray = Array.isArray(productsData)
     ? productsData
@@ -230,27 +233,29 @@ productSchema.statics.createProducts = async function (productsData, vendorId) {
   return Array.isArray(productsData) ? populatedProducts : populatedProducts[0];
 };
 
+// Update product by ID
 productSchema.statics.updateById = async function (id, updateData, user) {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error('Invalid product ID format');
-  }
+  this.validateObjectId(id, 'product ID');
 
   const product = await this.findOne({ _id: id, isDeleted: false });
   if (!product) {
     throw new Error('Product not found or deleted');
   }
 
-  // Check permissions
-  if (user.role !== 'admin' && product.vendor.toString() !== user.id) {
-    throw new Error('You do not have permission to update this product');
-  }
+  this.checkPermissions(product, user, 'update');
 
-  // Merge new images with existing ones
+  // Merge new images with existing ones if provided
   if (updateData.images?.length) {
     updateData.images = [...updateData.images, ...(product.images || [])];
   }
 
-  // Update and return populated document
+  if (updateData.attributes) {
+    updateData.attributes = {
+      ...product.attributes,
+      ...updateData.attributes,
+    };
+  }
+
   return this.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
@@ -259,6 +264,15 @@ productSchema.statics.updateById = async function (id, updateData, user) {
       { path: 'vendor', select: 'name email' },
     ],
   });
+};
+
+// Resolve category filter (by ID or slug)
+productSchema.statics.resolveCategoryFilter = async function (category) {
+  const categoryDoc = mongoose.Types.ObjectId.isValid(category)
+    ? await Category.findById(category)
+    : await Category.findOne({ slug: category });
+
+  return categoryDoc?._id;
 };
 
 // Build advanced filter
@@ -314,15 +328,6 @@ productSchema.statics.buildFilter = function (queryParams) {
   };
 };
 
-// Helper to resolve category filter
-productSchema.statics.resolveCategoryFilter = async function (category) {
-  const categoryDoc = mongoose.Types.ObjectId.isValid(category)
-    ? await Category.findById(category)
-    : await Category.findOne({ slug: category });
-
-  return categoryDoc?._id;
-};
-
 // Get paginated products with advanced filtering
 productSchema.statics.getPaginated = async function (
   queryParams = {},
@@ -335,7 +340,6 @@ productSchema.statics.getPaginated = async function (
 
   const { filter, categoryPromise } = this.buildFilter(queryParams);
 
-  // Resolve category filter if needed
   if (categoryPromise) {
     const categoryId = await categoryPromise;
     if (categoryId) {
@@ -372,11 +376,9 @@ productSchema.statics.getPaginated = async function (
   };
 };
 
-// Get single product by ID
+// Find active product by ID
 productSchema.statics.findActiveById = async function (id) {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error('Invalid product ID format');
-  }
+  this.validateObjectId(id, 'product ID');
 
   return this.findOne({ _id: id, isDeleted: false })
     .populate('category', 'name slug image')
@@ -384,53 +386,51 @@ productSchema.statics.findActiveById = async function (id) {
     .lean();
 };
 
-// Soft delete product
-productSchema.statics.softDelete = async function (id, user) {
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new Error('Invalid product ID format');
-  }
+// Find product by ID (for internal operations)
+productSchema.statics.findByIdInternal = async function (id) {
+  this.validateObjectId(id, 'product ID');
 
-  const filter = { _id: id, isDeleted: false };
-  if (user.role !== 'admin') filter.vendor = user.id;
-
-  const product = await this.findOneAndUpdate(
-    filter,
-    { isDeleted: true, isActive: false },
-    { new: true }
-  );
-
+  const product = await this.findOne({ _id: id, isDeleted: false });
   if (!product) {
-    throw new Error(
-      user.role === 'admin'
-        ? 'Product not found or already deleted'
-        : 'Product not found or you do not have permission to delete this product'
-    );
+    throw new Error('Product not found');
   }
 
   return product;
 };
 
-// Get vendor products
-productSchema.statics.getByVendor = function (
-  vendorId,
-  queryParams = {},
-  options = {}
-) {
-  return this.getPaginated({ ...queryParams, vendor: vendorId }, options);
+// Toggle product status
+productSchema.statics.toggleStatus = async function (id, user) {
+  const product = await this.findByIdInternal(id);
+  this.checkPermissions(product, user, 'modify');
+
+  product.isActive = !product.isActive;
+  await product.save();
+
+  return {
+    id: product._id,
+    isActive: product.isActive,
+    name: product.name,
+  };
 };
 
-// Get products by category
-productSchema.statics.getByCategory = function (categoryId, options = {}) {
-  return this.getPaginated({ category: categoryId }, options);
+// Soft delete product
+productSchema.statics.softDelete = async function (id, user) {
+  const product = await this.findByIdInternal(id);
+  this.checkPermissions(product, user, 'delete');
+
+  await this.findByIdAndUpdate(
+    id,
+    { isDeleted: true, isActive: false },
+    { new: true }
+  );
+
+  return {
+    id: product._id,
+    name: product.name,
+  };
 };
 
 // ============ INSTANCE METHODS ============
-
-// Toggle active status
-productSchema.methods.toggleStatus = function () {
-  this.isActive = !this.isActive;
-  return this.save();
-};
 
 // Calculate discounted price
 productSchema.methods.getDiscountedPrice = function () {

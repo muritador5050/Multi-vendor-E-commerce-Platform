@@ -2,27 +2,39 @@ const Product = require('../models/product.model');
 const { BACKEND_URL } = require('../configs/index');
 
 class ProductsController {
-  static async createProduct(req, res) {
-    const { files, body, user } = req;
-    const images =
+  static processImages(files) {
+    return (
       files?.map(
         (file) => `${BACKEND_URL}/uploads/products/${file.filename}`
-      ) || [];
+      ) || []
+    );
+  }
 
-    if (body.attributes && typeof body.attributes === 'string') {
+  // Helper method to parse attributes
+  static parseAttributes(attributes) {
+    if (attributes && typeof attributes === 'string') {
       try {
-        body.attributes = JSON.parse(body.attributes);
+        return JSON.parse(attributes);
       } catch (error) {
         console.error('Failed to parse attributes:', error);
-        body.attributes = {};
+        return {};
       }
     }
+    return attributes || {};
+  }
+
+  static async createProduct(req, res) {
+    const { files, body, user } = req;
+    const images = ProductsController.processImages(files);
 
     const productData = {
       ...body,
       images,
+      attributes: ProductsController.parseAttributes(body.attributes),
     };
+
     const createdProduct = await Product.createProducts(productData, user.id);
+
     return res.status(201).json({
       success: true,
       message: 'Product created successfully',
@@ -32,11 +44,7 @@ class ProductsController {
 
   static async updateProduct(req, res) {
     const { id } = req.params;
-
-    const newImages =
-      req.files?.map(
-        (file) => `${BACKEND_URL}/uploads/products/${file.filename}`
-      ) || [];
+    const newImages = ProductsController.processImages(req.files);
 
     if (newImages.length > 0) {
       req.body.images = newImages;
@@ -52,7 +60,7 @@ class ProductsController {
   }
 
   static async getAllProducts(req, res) {
-    const result = await Product.getPaginated(req.query, req.query);
+    const result = await Product.getPaginated(req.query);
 
     return res.status(200).json({
       success: true,
@@ -63,12 +71,11 @@ class ProductsController {
 
   static async getProductsByCategorySlug(req, res) {
     const { slug } = req.params;
-
-    const result = await Product.getByCategory({ category: slug }, req.query);
+    const result = await Product.getPaginated({ category: slug }, req.query);
 
     return res.status(200).json({
       success: true,
-      message: `Products for category retrieved successfully`,
+      message: 'Products for category retrieved successfully',
       data: result,
     });
   }
@@ -91,54 +98,37 @@ class ProductsController {
   }
 
   static async toggleProductStatus(req, res) {
-    const product = await Product.findById(req.params.id);
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-      });
-    }
-
-    if (
-      req.user.role !== 'admin' &&
-      product.vendor.toString() !== req.user.id
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to modify this product',
-      });
-    }
-
-    const updatedProduct = await product.toggleStatus();
+    const result = await Product.toggleStatus(req.params.id, req.user);
 
     return res.status(200).json({
       success: true,
-      message: `Product ${
-        updatedProduct.isActive ? 'activated' : 'deactivated'
-      }`,
-      data: {
-        id: updatedProduct._id,
-        isActive: updatedProduct.isActive,
-      },
+      message: `Product ${result.isActive ? 'activated' : 'deactivated'}`,
+      data: result,
     });
   }
 
   static async deleteProduct(req, res) {
-    const deletedProduct = await Product.softDelete(req.params.id, req.user);
+    const result = await Product.softDelete(req.params.id, req.user);
 
     return res.status(200).json({
       success: true,
       message: 'Product deleted successfully',
-      data: {
-        id: deletedProduct._id,
-        name: deletedProduct.name,
-      },
+      data: result,
     });
   }
 
   static async getVendorProducts(req, res) {
-    const result = await Product.getByVendor(req.user.id, req.query, req.query);
+    if (req.user.role !== 'vendor') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only vendors can access their products',
+      });
+    }
+
+    const result = await Product.getPaginated(
+      { vendor: req.user.id },
+      req.query
+    );
 
     return res.status(200).json({
       success: true,
