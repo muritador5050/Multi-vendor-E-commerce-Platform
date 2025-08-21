@@ -17,8 +17,8 @@ import { apiBase, apiClient } from '@/utils/Api';
 import { ApiError } from '@/utils/ApiError';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { buildQueryString } from '@/utils/QueryString';
-import React from 'react';
 import { useToast } from '@chakra-ui/react';
+import { getVendorProfileStatus, vendorKeys } from './VendorContextService';
 
 /**
  * Query keys for auth-related queries
@@ -82,7 +82,6 @@ async function login(email: string, password: string, rememberMe: boolean) {
     localStorage.removeItem('accessToken');
     sessionStorage.removeItem('accessToken');
 
-    // Always save the email for convenience (regardless of rememberMe)
     localStorage.setItem('savedEmail', email);
 
     if (rememberMe) {
@@ -218,7 +217,7 @@ async function updateUserProfile(id: string, data: Partial<User>) {
   return apiClient.authenticatedApiRequest<ApiResponse<Partial<User>>>(
     `/auth/users/${id}`,
     {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     }
   );
@@ -277,38 +276,6 @@ async function invalidateUserTokens(id: string, reason?: string) {
 async function getUserStatus(id: string) {
   return apiClient.authenticatedApiRequest<ApiResponse<UserStatus>>(
     `/auth/users/${id}/status`
-  );
-}
-
-/**
- * Set user as online
- */
-function setUserOnline() {
-  return apiClient.authenticatedApiRequest<
-    ApiResponse<{ isOnline: boolean; lastSeen: Date }>
-  >('/auth/online', {
-    method: 'POST',
-  });
-}
-
-/**
- * Set user as offline
- */
-function setUserOffline() {
-  return apiClient.authenticatedApiRequest<
-    ApiResponse<{ isOnline: boolean; lastSeen: Date }>
-  >('/auth/offline', { method: 'POST' });
-}
-
-/**
- * Update user's heartbeat
- */
-function updateHeartbeat() {
-  return apiClient.authenticatedApiRequest<ApiResponse<{ success: boolean }>>(
-    '/auth/heartbeat',
-    {
-      method: 'POST',
-    }
   );
 }
 
@@ -535,10 +502,10 @@ export const useOnlineUsers = () => {
 /**
  * Login mutation
  */
+
 export const useLogin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const setOnline = useSetUserOnline();
 
   return useMutation({
     mutationFn: async ({
@@ -564,16 +531,30 @@ export const useLogin = () => {
       return response.data;
     },
     onSuccess: async (data) => {
-      if (data?.user) {
-        queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+      if (!data?.user) return;
 
-        //Set user online afer successful login
-        try {
-          await setOnline.mutateAsync();
-          apiClient.startHeartBeat();
-        } catch (error) {
-          console.warn('Failed to set user online after login:', error);
-        }
+      // Invalidate all relevant queries
+      await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+      await queryClient.invalidateQueries({
+        queryKey: vendorKeys.profileStatus,
+      });
+
+      if (data.user.role === 'vendor') {
+        // Wait a moment for queries to refetch
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Get fresh status
+        const freshStatus = await queryClient.fetchQuery({
+          queryKey: vendorKeys.profileStatus,
+          queryFn: getVendorProfileStatus,
+        });
+
+        const targetRoute = freshStatus?.data?.hasVendorProfile
+          ? permissionUtils.getDefaultRoute(data.user.role)
+          : '/vendor/onboarding';
+
+        navigate(targetRoute, { replace: true });
+      } else {
         navigate(permissionUtils.getDefaultRoute(data.user.role), {
           replace: true,
         });
@@ -675,20 +656,13 @@ export const useSendVerifyEmailLink = () => {
 /**
  * Logout mutation
  */
+// Fix the logout mutation to ensure proper order
 export const useLogout = (options?: { onSuccess?: () => void }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const setOffline = useSetUserOffline();
 
   return useMutation({
     mutationFn: async () => {
-      try {
-        await setOffline.mutateAsync();
-      } catch (error) {
-        console.warn('Failed to set user offline during logout:', error);
-      }
-      apiClient.stopHeartbeat();
-
       return logout();
     },
     onSuccess: options?.onSuccess,
@@ -872,10 +846,6 @@ export const useDeleteUserAccount = () => {
   });
 };
 
-// =============================================
-// 11. MUTATION HOOKS (User Status Management)
-// =============================================
-
 /**
  * Deactivate user mutation
  */
@@ -967,122 +937,6 @@ export const useInvalidateUserTokens = () => {
   });
 };
 
-/**
- * Set user online mutation
- */
-export const useSetUserOnline = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: setUserOnline,
-    onSuccess: (data) => {
-      // Update profile cache with new online status
-      queryClient.setQueryData(
-        authKeys.profile(),
-        (old: ProfileData | undefined) => {
-          if (old?.user) {
-            return {
-              ...old,
-              data: {
-                ...old.user,
-                user: {
-                  ...old.user,
-                  isOnline: data.data?.isOnline,
-                  lastSeen: data.data?.lastSeen,
-                },
-              },
-            };
-          }
-          return old;
-        }
-      );
-
-      // Invalidate online users list
-      queryClient.invalidateQueries({ queryKey: authKeys.onlineUsers() });
-    },
-    onError: (error) => {
-      console.error('Failed to set user online:', error);
-    },
-  });
-};
-
-/**
- * Set user offline mutation
- */
-export const useSetUserOffline = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: setUserOffline,
-    onSuccess: (data) => {
-      // Update profile cache with new offline status
-      queryClient.setQueryData(
-        authKeys.profile(),
-        (old: ProfileData | undefined) => {
-          if (old?.user) {
-            return {
-              ...old,
-              data: {
-                ...old.user,
-                user: {
-                  ...old.user,
-                  isOnline: data.data?.isOnline,
-                  lastSeen: data.data?.lastSeen,
-                },
-              },
-            };
-          }
-          return old;
-        }
-      );
-
-      // Invalidate online users list
-      queryClient.invalidateQueries({ queryKey: authKeys.onlineUsers() });
-    },
-    onError: (error) => {
-      console.error('Failed to set user offline:', error);
-    },
-  });
-};
-
-/**
- * Heartbeat mutation (for internal use)
- */
-export const useUpdateHeartbeat = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: updateHeartbeat,
-    onSuccess: () => {
-      // Optionally update last seen in profile cache
-      queryClient.setQueryData(
-        authKeys.profile(),
-        (old: ProfileData | undefined) => {
-          if (old?.user) {
-            return {
-              ...old,
-              data: {
-                ...old.user,
-                user: {
-                  ...old.user,
-                  lastSeen: new Date(),
-                  isOnline: true,
-                },
-              },
-            };
-          }
-          return old;
-        }
-      );
-    },
-    retry: 2,
-    // Don't show errors for heartbeat failures
-    onError: () => {
-      // Silent failure for heartbeat
-    },
-  });
-};
-
 // =============================================
 // 13. UTILITY HOOKS
 // =============================================
@@ -1106,10 +960,6 @@ export const useProfileCompletion = () => {
 /**
  * Check if user is authenticated
  */
-// export const useIsAuthenticated = () => {
-//   const { data, isLoading } = useProfile();
-//   return { isAuthenticated: !!data?.user, isLoading };
-// };
 
 export const useIsAuthenticated = () => {
   const { data, isLoading, error, failureCount } = useProfile();
@@ -1160,7 +1010,6 @@ export const useForceLogout = () => {
   const queryClient = useQueryClient();
 
   return (message?: string) => {
-    apiClient.stopHeartbeat();
     clearAuth();
     queryClient.clear();
     const url = message
@@ -1205,78 +1054,68 @@ export const useUserActivityStatus = (userId: string) => {
  */
 export const useUserOnlineStatus = () => {
   const currentUser = useCurrentUser();
-  const setOnline = useSetUserOnline();
-  const setOffline = useSetUserOffline();
-  const updateHeartbeat = useUpdateHeartbeat();
-
-  //Start online session
-  const startOnlineSession = () => {
-    setOnline.mutate();
-    apiClient.startHeartBeat();
-  };
-
-  // End online session
-  const endOnlineSession = () => {
-    setOffline.mutate();
-    apiClient.stopHeartbeat();
-  };
-
-  // Manual heartbeat update
-  const sendHeartbeat = () => {
-    updateHeartbeat.mutate();
-  };
 
   return {
     isOnline: currentUser?.isOnline || false,
     lastSeen: currentUser?.lastSeen,
-    startOnlineSession,
-    endOnlineSession,
-    sendHeartbeat,
-    isSettingOnline: setOnline.isPending,
-    isSettingOffline: setOffline.isPending,
   };
 };
 
-/**
- * Hook for window/tab lifecycle management
- */
-export const useOnlineStatusLifecycle = () => {
-  const { startOnlineSession, endOnlineSession } = useUserOnlineStatus();
+// export const useOnlineStatusLifecycle = () => {
+//   React.useEffect(() => {
+//     if (!isAuthenticated()) return;
 
-  React.useEffect(() => {
-    if (!isAuthenticated()) return;
+//     const setUserStatus = async (isOnline: boolean) => {
+//       const token =
+//         localStorage.getItem('accessToken') ||
+//         sessionStorage.getItem('accessToken');
+//       if (!token) return;
 
-    //Set online when component mount (app starts)
-    startOnlineSession();
+//       try {
+//         const endpoint = isOnline ? '/auth/online' : '/auth/offline';
+//         const apiBaseUrl = apiBase || 'http://localhost:8000/api';
 
-    //Handle page visibility changes
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        endOnlineSession();
-      } else {
-        startOnlineSession();
-      }
-    };
+//         await fetch(`${apiBaseUrl}${endpoint}`, {
+//           method: 'POST',
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             'Content-Type': 'application/json',
+//           },
+//           credentials: 'include',
+//         });
+//       } catch (error) {
+//         console.warn('Failed to update online status:', error);
+//       }
+//     };
 
-    //Handle page unload
-    const handleBeforeUnload = () => {
-      //SendBeacon for reliable offline status
-      try {
-        navigator.sendBeacon(`${apiBase}/auth/offline`, JSON.stringify({}));
-      } catch (error) {
-        console.warn('Failed to send offline beacon:', error);
-      }
-    };
+//     // Set online when component mounts
+//     setUserStatus(true);
 
-    //Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
+//     const handleVisibilityChange = () => {
+//       if (!isAuthenticated()) return;
+//       setUserStatus(!document.hidden);
+//     };
 
-    //Cleanup
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      endOnlineSession();
-    };
-  }, [startOnlineSession, endOnlineSession]);
-};
+//     const handleBeforeUnload = () => {
+//       // Use sendBeacon for more reliable offline status on page unload
+//       const token =
+//         localStorage.getItem('accessToken') ||
+//         sessionStorage.getItem('accessToken');
+//       if (token) {
+//         const apiBaseUrl = apiBase || 'http://localhost:8000/api';
+//         const data = new FormData();
+//         navigator.sendBeacon(`${apiBaseUrl}/auth/offline`, data);
+//       }
+//     };
+
+//     document.addEventListener('visibilitychange', handleVisibilityChange);
+//     window.addEventListener('beforeunload', handleBeforeUnload);
+
+//     return () => {
+//       // Set offline when component unmounts
+//       setUserStatus(false);
+//       document.removeEventListener('visibilitychange', handleVisibilityChange);
+//       window.removeEventListener('beforeunload', handleBeforeUnload);
+//     };
+//   }, []);
+// };

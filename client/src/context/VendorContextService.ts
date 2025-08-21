@@ -17,7 +17,7 @@ import type {
   VendorDocumentType,
   VerificationStatus,
 } from '../type/vendor';
-import type { ApiResponse, VendorApiResponse } from '@/type/ApiResponse';
+import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
 
@@ -25,6 +25,7 @@ import { buildQueryString } from '@/utils/QueryString';
 export const vendorKeys = {
   all: ['vendor'] as const,
   profile: ['vendor', 'profile'] as const,
+  profileStatus: ['vendor', 'profile-status'] as const,
   public: ['vendor', 'public'] as const,
   list: (filters: VendorFilters) => ['vendor', 'list', filters] as const,
   detail: (id: string) => ['vendor', 'detail', id] as const,
@@ -45,15 +46,15 @@ async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
   return await apiClient.authenticatedApiRequest('/vendors/profile');
 }
 
-async function getVendorProfileStatus(): Promise<
-  VendorApiResponse<VendorProfile | null>
+export async function getVendorProfileStatus(): Promise<
+  ApiResponse<{ hasVendorProfile: boolean }>
 > {
   return await apiClient.authenticatedApiRequest('/vendors/profile-status');
 }
 
 async function createNewVendorProfile(
   data: Partial<Omit<Vendor, '_id'>>
-): Promise<VendorApiResponse<VendorProfile>> {
+): Promise<ApiResponse<VendorProfile>> {
   return await apiClient.authenticatedApiRequest('/vendors/onboarding', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -87,10 +88,8 @@ async function deleteDocument(
 
 async function updateVendorProfile(
   data: Partial<Vendor>
-): Promise<VendorApiResponse<VendorProfile>> {
-  return await apiClient.authenticatedApiRequest<
-    VendorApiResponse<VendorProfile>
-  >('/vendors/profile', {
+): Promise<ApiResponse<VendorProfile>> {
+  return await apiClient.authenticatedApiRequest('/vendors/profile', {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
@@ -235,8 +234,10 @@ export const useVendorDocuments = () => {
 
 export const useVendorProfileStatus = () => {
   return useQuery({
-    queryKey: vendorKeys.profile,
+    queryKey: vendorKeys.profileStatus,
     queryFn: getVendorProfileStatus,
+    select: (data) => data.data,
+    enabled: apiClient.isAuthenticated(),
     staleTime: 5 * 60 * 1000,
   });
 };

@@ -15,9 +15,6 @@ class ApiClient {
   private refreshPromise: Promise<string> | null = null;
   private refreshAttempts = 0;
 
-  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
-  private heartbeatFrequency = 3 * 60 * 1000;
-
   /**
    * Fetch with timeout and abort controller
    */
@@ -125,13 +122,13 @@ class ApiClient {
   }
 
   /**
-   * Clear authentication and redirect to login
+   * Clear authentication and redirect to home
    */
   private clearAuthAndRedirect(): void {
     localStorage.removeItem('accessToken');
     this.refreshAttempts = 0;
     if (!window.location.pathname.includes('/my-account')) {
-      window.location.href = '/my-account';
+      window.location.href = '/';
     }
   }
 
@@ -402,7 +399,6 @@ class ApiClient {
    * Utility method to check if user is authenticated
    */
   public isAuthenticated(): boolean {
-    // Check both localStorage and sessionStorage
     const localToken = localStorage.getItem('accessToken');
     const sessionToken = sessionStorage.getItem('accessToken');
 
@@ -416,8 +412,6 @@ class ApiClient {
   public clearAuth(): void {
     localStorage.removeItem('accessToken');
     sessionStorage.removeItem('accessToken');
-    localStorage.removeItem('rememberMe');
-    localStorage.removeItem('savedEmail');
     this.refreshAttempts = 0;
 
     // Dispatch custom event to notify React components
@@ -426,12 +420,6 @@ class ApiClient {
         detail: { reason: 'token_expired' },
       })
     );
-
-    if (!window.location.pathname.includes('/my-account')) {
-      window.location.href =
-        '/my-account?message=' +
-        encodeURIComponent('Your session has expired. Please login again.');
-    }
   }
 
   /**
@@ -439,41 +427,6 @@ class ApiClient {
    */
   public isTokenRefreshing(): boolean {
     return this.isRefreshing;
-  }
-
-  public startHeartBeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-    }
-
-    this.heartbeatInterval = setInterval(async () => {
-      if (this.isRefreshing) {
-        // Skip heartbeat during token refresh
-        return;
-      }
-      try {
-        await this.authenticatedApiRequest('/auth/heartbeat', {
-          method: 'POST',
-        });
-      } catch (error) {
-        console.error('Heartbeat failed:', error);
-        this.handleHeartbeatFailure(error);
-      }
-    }, this.heartbeatFrequency);
-  }
-
-  public stopHeartbeat() {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
-
-  private handleHeartbeatFailure(error: unknown) {
-    if (error instanceof ApiError && error.status === 401) {
-      this.stopHeartbeat();
-      this.clearAuthAndRedirect();
-    }
   }
 }
 

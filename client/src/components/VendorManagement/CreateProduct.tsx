@@ -518,35 +518,36 @@ const CreateProductPage: React.FC = () => {
                     />
                   </HStack>
 
-                  {Object.entries(product.attributes).length > 0 && (
-                    <VStack align='start' spacing={2}>
-                      {Object.entries(product.attributes).map(
-                        ([key, value]) => (
-                          <HStack
-                            key={key}
-                            w='full'
-                            p={2}
-                            bg='gray.50'
-                            borderRadius='md'
-                          >
-                            <Text fontSize='sm' fontWeight='medium'>
-                              {key}:
-                            </Text>
-                            <Text fontSize='sm' flex={1}>
-                              {value}
-                            </Text>
-                            <IconButton
-                              aria-label='Remove attribute'
-                              icon={<CloseIcon />}
-                              size='sm'
-                              variant='ghost'
-                              onClick={() => removeAttribute(index, key)}
-                            />
-                          </HStack>
-                        )
-                      )}
-                    </VStack>
-                  )}
+                  {product.attributes &&
+                    Object.entries(product.attributes).length > 0 && (
+                      <VStack align='start' spacing={2}>
+                        {Object.entries(product.attributes).map(
+                          ([key, value]) => (
+                            <HStack
+                              key={key}
+                              w='full'
+                              p={2}
+                              bg='gray.50'
+                              borderRadius='md'
+                            >
+                              <Text fontSize='sm' fontWeight='medium'>
+                                {key}:
+                              </Text>
+                              <Text fontSize='sm' flex={1}>
+                                {value}
+                              </Text>
+                              <IconButton
+                                aria-label='Remove attribute'
+                                icon={<CloseIcon />}
+                                size='sm'
+                                variant='ghost'
+                                onClick={() => removeAttribute(index, key)}
+                              />
+                            </HStack>
+                          )
+                        )}
+                      </VStack>
+                    )}
                 </Box>
               </VStack>
             </CardBody>

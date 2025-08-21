@@ -28,7 +28,7 @@ function Layout() {
 
   const getCategoryName = () => {
     const segments = pathname.split('/');
-    const name = segments[2] || ''; // 'category/[name]'
+    const name = segments[2] || '';
     return name
       .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -76,7 +76,8 @@ function Layout() {
       </Box>
       <Box as='footer' bg='gray.800' color='white' p={4} textAlign='center'>
         <Text fontSize='sm'>
-          © {new Date().getFullYear()} Your Company Name. All rights reserved.
+          © {new Date().getFullYear()} Multi-vendor Ecommerce platform. All
+          rights reserved.
         </Text>
       </Box>
       <Footer />

@@ -33,7 +33,7 @@ const Footer = () => {
               <Link as={RouterLink} to='/' fontSize='sm'>
                 Home
               </Link>
-              <Link as={RouterLink} to='/products' fontSize='sm'>
+              <Link as={RouterLink} to='/shop' fontSize='sm'>
                 Products
               </Link>
               <Link as={RouterLink} to='/about' fontSize='sm'>

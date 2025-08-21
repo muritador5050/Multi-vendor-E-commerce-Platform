@@ -12,7 +12,7 @@ const rolePermissions: Record<UserRole, Action[]> = {
 };
 
 const defaultRoutes: Record<UserRole, string> = {
-  [USER_ROLES.ADMIN]: '/adminDashboard',
+  [USER_ROLES.ADMIN]: '/admin-dashboard',
   [USER_ROLES.VENDOR]: '/store-manager',
   [USER_ROLES.CUSTOMER]: '/shop',
 };

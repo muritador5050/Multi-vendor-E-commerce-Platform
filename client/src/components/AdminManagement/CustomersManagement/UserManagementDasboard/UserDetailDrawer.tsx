@@ -46,7 +46,6 @@ import {
   useCanManageUser,
   useUpdateProfile,
   useUserById,
-  useUserOnlineStatus,
 } from '@/context/AuthContextService';
 import { LoadingState } from './LoadingState';
 import { useUserActions } from './UserActions';
@@ -81,7 +80,6 @@ export const UserDetailsDrawer = ({
     useCanManageUser(userId);
 
   const { data: user, isLoading, error, refetch } = useUserById(userId);
-  const { isOnline } = useUserOnlineStatus();
   const updateEmailMutation = useUpdateProfile();
   const { handleRoleChange } = useUserActions();
 
@@ -203,7 +201,7 @@ export const UserDetailsDrawer = ({
                       right='1'
                       w='4'
                       h='4'
-                      bg={isOnline ? 'green.400' : 'gray.400'}
+                      bg={user.isOnline ? 'green.400' : 'gray.400'}
                       borderRadius='full'
                       border='2px solid white'
                     />
@@ -435,23 +433,25 @@ export const UserDetailsDrawer = ({
                           <Box
                             w='3'
                             h='3'
-                            bg={isOnline ? 'green.400' : 'gray.400'}
+                            bg={user.isOnline ? 'green.400' : 'gray.400'}
                             borderRadius='full'
-                            animation={isOnline ? 'pulse 2s infinite' : 'none'}
+                            animation={
+                              user.isOnline ? 'pulse 2s infinite' : 'none'
+                            }
                           />
                           <Text fontWeight='600' color='gray.700' fontSize='sm'>
                             Connection Status
                           </Text>
                         </HStack>
                         <Badge
-                          colorScheme={isOnline ? 'green' : 'gray'}
+                          colorScheme={user.isOnline ? 'green' : 'gray'}
                           borderRadius='full'
                           px={3}
                           py={1}
                           fontWeight='600'
                           fontSize='xs'
                         >
-                          {isOnline ? 'Online' : 'Offline'}
+                          {user.isOnline ? 'Online' : 'Offline'}
                         </Badge>
                       </HStack>
                     </Box>

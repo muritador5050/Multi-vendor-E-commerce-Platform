@@ -1,21 +1,22 @@
 export interface Product {
   _id: string;
   name: string;
-  description: string;
   slug: string;
+  description: string;
   price: number;
   discount: number;
   quantityInStock: number;
   images: string[];
   category: { _id: string; name: string; slug?: string; image?: string };
-  attributes: Record<string, string>;
-  averageRating: number;
-  totalReviews: number;
+  attributes?: Record<string, string>;
+  averageRating?: number;
+  totalReviews?: number;
   isActive: boolean;
   isDeleted: boolean;
-  vendor?: { _id: string; name: string; email: string };
+  vendor: { _id: string; name: string; email: string };
   createdAt: string;
   updatedAt: string;
+  _v: number;
 }
 
 export interface ProductDocument {
@@ -70,8 +71,7 @@ export interface ProductFormData {
   quantityInStock: number;
   images: File[];
   category: string;
-  attributes: Record<string, string>;
-  vendorId?: string;
+  attributes?: Record<string, string>;
 }
 
 export interface ProductQueryParams {

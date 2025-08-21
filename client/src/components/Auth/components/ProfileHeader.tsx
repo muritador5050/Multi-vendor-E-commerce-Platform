@@ -7,7 +7,6 @@ import {
   VStack,
   Box,
   Avatar,
-  Heading,
   Text,
   Badge,
   Button,
@@ -20,6 +19,7 @@ import { type User } from '@/type/auth';
 import { getRoleBadgeColor } from '@/components/AdminManagement/Utils/Utils';
 import { useLogout } from '@/context/AuthContextService';
 import { useNavigate } from 'react-router-dom';
+import { UserGreeting } from '../UserGreeting';
 
 interface ProfileHeaderProps {
   currentUser: User;
@@ -50,7 +50,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               />
             </Box>
             <VStack align='start' spacing={1}>
-              <Heading size='lg'>{currentUser.name}</Heading>
+              <UserGreeting />
               <Text color='gray.500'>{currentUser.email}</Text>
               <HStack>
                 <Badge

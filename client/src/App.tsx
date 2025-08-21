@@ -3,7 +3,6 @@ import { Box, Tooltip, IconButton, Stack } from '@chakra-ui/react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
 import ShopPage from './pages/shop';
-import Blog from './pages/blog';
 import ContactUs from './pages/contactUs';
 import StoreManagerDashboard from './pages/storeManager';
 import VendorMembership from './pages/vendorMemberShip';
@@ -21,7 +20,6 @@ import AdminDashboard from './components/AdminManagement/AdminDashboardLayout';
 import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 import { EmailVerificationPage } from './components/Auth/EmailVerification';
 import CreateVendorProfile from './components/VendorManagement/CreateVendorProfile';
-import { VendorProfileGuard } from './ProtectedRoute/VendorProfileGuard';
 import CartList from './pages/CartList';
 import CheckoutPage from './pages/Checkout';
 import PaymentPage from './pages/PaymentPage';
@@ -30,17 +28,19 @@ import PaymentSuccessPage from './pages/PaymentSucessPage';
 import PaymentFailedPage from './pages/PaymentFailedPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 import OrdersPage from './pages/OrdersPage';
+import BlogPage from './pages/BlogPage';
 
 //App
 function App() {
   const { isAuthenticated } = useIsAuthenticated();
   const logout = useLogout();
+
   return (
     <Stack position='relative'>
       <Routes>
         <Route path='/' element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path='blog' element={<Blog />} />
+          <Route path='blog' element={<BlogPage />} />
           <Route path='shop' element={<ShopPage />} />
           <Route
             path='products/category/:slug'
@@ -64,14 +64,14 @@ function App() {
           <Route path='vendor-membership' element={<VendorMembership />} />
           <Route path='oauth/callback' element={<OAuthCallback />} />
           <Route
-            path='adminDashboard/*'
+            path='admin-dashboard/*'
             element={
               <ProtectedRoute allowedRoles={['admin']} showAccessDenied={true}>
                 <AdminDashboard />
               </ProtectedRoute>
             }
           />
-          <Route path='/vendors/onboarding' element={<CreateVendorProfile />} />
+          <Route path='/vendor/onboarding' element={<CreateVendorProfile />} />
           <Route
             path='store-manager/*'
             element={
@@ -79,9 +79,7 @@ function App() {
                 allowedRoles={['vendor', 'admin']}
                 showAccessDenied={true}
               >
-                {/* <VendorProfileGuard> */}
                 <StoreManagerDashboard />
-                {/* </VendorProfileGuard> */}
               </ProtectedRoute>
             }
           />

@@ -1,11 +1,16 @@
 import { useCurrentUser } from '@/context/AuthContextService';
+import { Text } from '@chakra-ui/react';
 
 export function UserGreeting() {
   const user = useCurrentUser();
 
   if (!user) {
-    return <p>Please log in</p>;
+    return <Text>Please log in</Text>;
   }
 
-  return <p>Hello, {user.name}!</p>;
+  return (
+    <Text fontWeight={'bold'} fontStyle={'italic'}>
+      Hello, {user.name}!
+    </Text>
+  );
 }

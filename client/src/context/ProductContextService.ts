@@ -23,53 +23,40 @@ const getAllProducts = async (
   params: ProductQueryParams = {}
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
-  const url = `/products${queryString ? `?${queryString}` : ''}`;
-  return await apiClient.publicApiRequest<
-    ApiResponse<ProductPaginatedResponse>
-  >(url);
+  return await apiClient.publicApiRequest(
+    `/products${queryString ? `?${queryString}` : ''}`
+  );
 };
 
 const fetchProductById = async (id: string): Promise<ApiResponse<Product>> => {
-  return await apiClient.authenticatedApiRequest<ApiResponse<Product>>(
-    `/products/${id}`
-  );
+  return await apiClient.publicApiRequest(`/products/${id}`);
 };
 
 const fetchProductsByCategory = async (
   categorySlug: string,
-  params: Omit<ProductQueryParams, 'categoryId'> = {}
-): Promise<ApiResponse<Product[]>> => {
-  const queryString = buildQueryString(params);
-  const url = `/products/category/${categorySlug}${
-    queryString ? `?${queryString}` : ''
-  }`;
-  return await apiClient.authenticatedApiRequest<ApiResponse<Product[]>>(url);
-};
-
-//Admin function
-const getVendorProductsForAdmin = async (
-  vendorId: string,
-  params: Omit<ProductQueryParams, 'vendor'> = {}
+  params: ProductQueryParams
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
-  const url = `/products/vendor/${vendorId}${
-    queryString ? `?${queryString}` : ''
-  }`;
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<ProductPaginatedResponse>
-  >(url);
+  return await apiClient.publicApiRequest(
+    `/products/category/${categorySlug}${queryString ? `?${queryString}` : ''}`
+  );
+};
+
+const getVendorProductsForAdmin = async (
+  vendorId: string
+): Promise<ApiResponse<ProductPaginatedResponse>> => {
+  return await apiClient.authenticatedApiRequest(
+    `/products/?vendor=${vendorId}`
+  );
 };
 
 const getOwnVendorProducts = async (
   params: Omit<ProductQueryParams, 'vendorId'> = {}
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
-  const url = `/products/vendor/my-products${
-    queryString ? `?${queryString}` : ''
-  }`;
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<ProductPaginatedResponse>
-  >(url);
+  return await apiClient.authenticatedApiRequest(
+    `/products/my-products${queryString ? `?${queryString}` : ''}`
+  );
 };
 
 const createProduct = async (
@@ -79,16 +66,16 @@ const createProduct = async (
   return await apiClient.authenticatedFormDataRequest(
     '/products',
     products,
-    files && files.length > 0 ? { productImage: files } : undefined
+    files?.length ? { productImage: files } : undefined
   );
 };
 
 const toggleProductStatus = async (
   id: string
 ): Promise<ApiResponse<{ id: string; isActive: boolean }>> => {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<{ id: string; isActive: boolean }>
-  >(`/products/${id}/status`, { method: 'PATCH' });
+  return await apiClient.authenticatedApiRequest(`/products/${id}/status`, {
+    method: 'PATCH',
+  });
 };
 
 const updateProduct = async (
@@ -100,18 +87,16 @@ const updateProduct = async (
     `/products/${id}`,
     product,
     files ? { productImage: files } : undefined,
-    {
-      method: 'PATCH',
-    }
+    { method: 'PATCH' }
   );
 };
 
 const deleteProduct = async (
   id: string
 ): Promise<ApiResponse<{ message: string }>> => {
-  return await apiClient.authenticatedApiRequest<
-    ApiResponse<{ message: string }>
-  >(`/products/${id}`, { method: 'DELETE' });
+  return await apiClient.authenticatedApiRequest(`/products/${id}`, {
+    method: 'DELETE',
+  });
 };
 
 // React Query Hooks
@@ -157,13 +142,10 @@ export const useProductsByCategory = (
   });
 };
 
-export const useVendorProductsForAdmin = (
-  vendorId: string,
-  params: Omit<ProductQueryParams, 'vendor'> = {}
-) => {
+export const useVendorProductsForAdmin = (vendorId: string) => {
   return useQuery({
-    queryKey: productKeys.lists({ ...params, vendor: vendorId }),
-    queryFn: () => getVendorProductsForAdmin(vendorId, params),
+    queryKey: productKeys.lists({ vendor: vendorId }),
+    queryFn: () => getVendorProductsForAdmin(vendorId),
     select: (data) => data.data,
     staleTime: 30 * 1000,
     enabled: !!vendorId,
@@ -183,6 +165,7 @@ export const useOwnVendorProducts = (
 
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({
       data,
@@ -192,9 +175,10 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: productKeys.lists(),
-      });
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+    },
+    onError: (error) => {
+      console.error('Create product failed:', error);
     },
   });
 };
@@ -204,28 +188,12 @@ export const useToggleProductStatus = () => {
 
   return useMutation({
     mutationFn: toggleProductStatus,
-    onMutate: async (productId) => {
-      await queryClient.cancelQueries({
-        queryKey: productKeys.item(productId),
-      });
 
-      const previousProduct = queryClient.getQueryData<Product>(
-        productKeys.item(productId)
-      );
-
-      if (previousProduct) {
-        queryClient.setQueryData<Product>(productKeys.item(productId), {
-          ...previousProduct,
-          isActive: !previousProduct.isActive,
-        });
-      }
-
-      return { previousProduct };
-    },
     onSuccess: (response, productId) => {
-      queryClient.setQueryData<Product>(
+      // Update the specific item with server response
+      queryClient.setQueryData(
         productKeys.item(productId),
-        (oldData) => {
+        (oldData: Product) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -234,16 +202,12 @@ export const useToggleProductStatus = () => {
         }
       );
 
-      // Invalidate all list queries
+      // Refresh lists
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
     },
-    onError: (_error, productId, context) => {
-      if (context?.previousProduct) {
-        queryClient.setQueryData(
-          productKeys.item(productId),
-          context.previousProduct
-        );
-      }
+
+    onError: (error) => {
+      console.error('Toggle product status failed:', error);
     },
   });
 };
@@ -262,122 +226,31 @@ export const useUpdateProduct = () => {
       files?: File[];
     }) => updateProduct(id, product, files),
 
-    onMutate: async ({ id, product }) => {
-      // Cancel all related queries
-      await queryClient.cancelQueries({ queryKey: productKeys.item(id) });
-      await queryClient.cancelQueries({ queryKey: productKeys.all });
-
-      const previousProduct = queryClient.getQueryData(productKeys.item(id));
-
-      // Optimistically update the individual product
-      queryClient.setQueryData(productKeys.item(id), (old: Product) => ({
-        ...old,
-        ...product,
-      }));
-
-      // ENHANCED: Optimistically update all product lists
-      const queries = queryClient.getQueryCache().findAll({
-        queryKey: ['product', 'lists'],
-        exact: false,
-      });
-
-      const previousListData = queries.map((query) => ({
-        queryKey: query.queryKey,
-        data: query.state.data,
-      }));
-
-      queries.forEach((query) => {
-        queryClient.setQueryData(query.queryKey, (old: any) => {
-          if (!old?.products) return old;
-
-          return {
-            ...old,
-            products: old.products.map((p: Product) =>
-              p._id === id ? { ...p, ...product } : p
-            ),
-          };
-        });
-      });
-
-      return { previousProduct, previousListData };
-    },
-
     onSuccess: (response, { id }) => {
-      // Update the individual product cache with server response
       queryClient.setQueryData(productKeys.item(id), response.data);
-
-      // Update all product lists with the server response
-      const queries = queryClient.getQueryCache().findAll({
-        queryKey: ['product', 'lists'],
-        exact: false,
-      });
-
-      queries.forEach((query) => {
-        queryClient.setQueryData(query.queryKey, (old: any) => {
-          if (!old?.products) return old;
-
-          return {
-            ...old,
-            products: old.products.map((p: Product) =>
-              p._id === id ? response.data : p
-            ),
-          };
-        });
-      });
-
-      // Still invalidate to ensure fresh data on next refetch
-      queryClient.invalidateQueries({
-        queryKey: productKeys.all,
-        exact: false,
-      });
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
     },
 
-    onError: (error, { id }, context) => {
-      // Restore individual product
-      if (context?.previousProduct) {
-        queryClient.setQueryData(productKeys.item(id), context.previousProduct);
-      }
-
-      // Restore all list data
-      if (context?.previousListData) {
-        context.previousListData.forEach(({ queryKey, data }) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
+    onError: (error) => {
+      console.error('Update product failed:', error);
     },
   });
 };
 
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: deleteProduct,
-    onMutate: async (deletedId) => {
-      await queryClient.cancelQueries({
-        queryKey: productKeys.item(deletedId),
-      });
 
-      const previousProduct = queryClient.getQueryData<Product>(
-        productKeys.item(deletedId)
-      );
-
-      queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
-
-      return { previousProduct };
-    },
     onSuccess: (response, deletedId) => {
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
-      // Invalidate all list queries
+
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
     },
-    onError: (error, deletedId, context) => {
-      if (context?.previousProduct) {
-        queryClient.setQueryData(
-          productKeys.item(deletedId),
-          context.previousProduct
-        );
-      }
-      console.error('Delete product error:', error);
+
+    onError: (error) => {
+      console.error('Delete product failed:', error);
     },
   });
 };

@@ -25,6 +25,7 @@ import {
   Heading,
   Stack,
   Badge,
+  Skeleton,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
@@ -33,6 +34,7 @@ import CartDrawer from '@/pages/CartDrawer';
 import { useCart } from '@/context/CartContextService';
 import { useCategories } from '@/context/CategoryContextService';
 import { useIsAuthenticated } from '@/context/AuthContextService';
+import React, { useState } from 'react';
 
 //NavLink Component
 function NavLink({
@@ -92,9 +94,21 @@ function NavLink({
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
+
+  const [search, setSearch] = useState('');
+
   const { isAuthenticated } = useIsAuthenticated();
   const { data: cart } = useCart();
-  const { data: categories } = useCategories();
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSearch(e.target.value);
+  }
+
   return (
     <>
       <Box bg='brand.300' boxShadow='md'>
@@ -126,10 +140,7 @@ function Navbar() {
           py={{ base: '2', md: '4' }}
           px={{ base: '4', md: '8' }}
         >
-          {/* <Box display={{ base: 'none', md: 'flex' }}> */}
           <Logo />
-          {/* </Box> */}
-
           <Spacer display={{ base: 'none', md: 'flex' }} />
 
           {/* Desktop Links */}
@@ -139,7 +150,7 @@ function Navbar() {
             color='white'
           >
             <NavLink to='/'>Home</NavLink>
-            <NavLink to='blog'>Blogs</NavLink>
+            <NavLink to='blog'>Blog</NavLink>
             <NavLink to='shop'>Shop</NavLink>
             <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
@@ -213,12 +224,14 @@ function Navbar() {
             </Flex>
           </HStack>
         </Flex>
+
         <Flex
           alignItems='center'
           py={{ base: '2', md: '4' }}
           px={{ base: '4', md: '8' }}
           gap={{ base: 'none', md: 7 }}
         >
+          {/* Enhanced Categories Menu with Loading States */}
           <Menu isLazy>
             <MenuButton
               as={Button}
@@ -232,24 +245,39 @@ function Navbar() {
               px={4}
               py={2}
               transition='all 0.2s'
+              isLoading={categoriesLoading}
+              loadingText='Loading...'
             >
               All Categories
             </MenuButton>
             <MenuList>
-              {categories?.map((category, idx) => (
-                <Box key={category._id}>
-                  <MenuItem
-                    as={ReactRouterLink}
-                    to={`/products/category/${category.name
-                      .toLowerCase()
-                      .replace(/ & | /g, '-')}
-                      `}
-                  >
-                    {category.name}
+              {categoriesLoading ? (
+                // Loading skeleton
+                Array.from({ length: 5 }, (_, i) => (
+                  <MenuItem key={i} isDisabled>
+                    <Skeleton height='20px' width='150px' />
                   </MenuItem>
-                  {idx !== categories.length - 1 && <MenuDivider />}
-                </Box>
-              ))}
+                ))
+              ) : categoriesError ? (
+                <MenuItem isDisabled>Failed to load categories</MenuItem>
+              ) : categories && categories.length > 0 ? (
+                categories.map((category, idx) => (
+                  <Box key={category._id}>
+                    <MenuItem
+                      as={ReactRouterLink}
+                      to={`/products/category/${
+                        category.slug ||
+                        category.name.toLowerCase().replace(/\s+/g, '-')
+                      }`}
+                    >
+                      {category.name}
+                    </MenuItem>
+                    {idx !== categories.length - 1 && <MenuDivider />}
+                  </Box>
+                ))
+              ) : (
+                <MenuItem isDisabled>No categories available</MenuItem>
+              )}
             </MenuList>
           </Menu>
 
@@ -262,8 +290,11 @@ function Navbar() {
               h={14}
               placeholder='Search for Products'
               type='search'
+              value={search}
+              onChange={handleSearchChange}
             />
           </InputGroup>
+
           <Button
             h={14}
             display={{ base: 'none', md: 'inline-flex' }}
@@ -292,7 +323,7 @@ function Navbar() {
         </Flex>
       </Box>
 
-      {/* LeftDrawer*/}
+      {/* Enhanced LeftDrawer with Categories */}
       <Drawer
         placement='left'
         onClose={leftDrawer.onClose}
@@ -303,15 +334,39 @@ function Navbar() {
           <DrawerCloseButton />
           <DrawerBody>
             <Flex direction='column' p={4} gap={2}>
+              {/* Main Navigation */}
               <NavLink to='/'>Home</NavLink>
               <NavLink to='blog'>Blog</NavLink>
               <NavLink to='shop'>Shop</NavLink>
               <NavLink to='store-manager'>Store Manager</NavLink>
               <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-
               <NavLink to='adminDashboard'>Admin-Dashboard</NavLink>
               <NavLink to='contact-us'>Contact Us</NavLink>
-              <Button colorScheme='blue' mt={4}>
+
+              {/* Categories Section */}
+              <Box mt={6}>
+                <Text fontWeight='bold' mb={3} fontSize='lg'>
+                  Categories
+                </Text>
+                {categoriesLoading
+                  ? Array.from({ length: 3 }, (_, i) => (
+                      <Skeleton key={i} height='40px' mb={2} />
+                    ))
+                  : categories?.map((category) => (
+                      <NavLink
+                        key={category._id}
+                        to={`/products/category/${
+                          category.slug ||
+                          category.name.toLowerCase().replace(/\s+/g, '-')
+                        }`}
+                      >
+                        {category.name}
+                      </NavLink>
+                    ))}
+              </Box>
+
+              {/* Auth Buttons */}
+              <Button colorScheme='blue' mt={6}>
                 Login
               </Button>
               <Button colorScheme='blue'>Sign Up</Button>
@@ -320,7 +375,7 @@ function Navbar() {
         </DrawerContent>
       </Drawer>
 
-      {/* RightDrawer*/}
+      {/* RightDrawer (Cart) */}
       <Drawer
         placement='right'
         onClose={rightDrawer.onClose}

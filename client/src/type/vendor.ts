@@ -257,6 +257,7 @@ export interface VendorFilters {
 
 export interface VendorProfile extends Vendor {
   profileCompletion: number;
+  hasVendorProfile?: boolean;
 }
 
 export interface VendorProfileUpdate {

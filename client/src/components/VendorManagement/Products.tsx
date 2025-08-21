@@ -41,8 +41,21 @@ import {
   Center,
   Select,
   useDisclosure,
+  IconButton,
+  Tooltip,
+  Stack,
 } from '@chakra-ui/react';
-import { Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Package,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  RefreshCcw,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Product, UpdateProductRequest } from '@/type/product';
 import { ImageGallery, type ImageFile } from './Utils/ImageGallery';
@@ -53,7 +66,6 @@ import {
   getStockStatus,
   renderRating,
 } from './Utils/UtilityFunc';
-import { ProductRow } from './Utils/ProductRows';
 import {
   useDeleteProduct,
   useOwnVendorProducts,
@@ -62,7 +74,16 @@ import {
 } from '@/context/ProductContextService';
 import { useCategories } from '@/context/CategoryContextService';
 
-// Detail item component for cleaner view mode
+// Simplified drawer state
+interface DrawerState {
+  product: Product | null;
+  isEditing: boolean;
+  editData: Product | null;
+  selectedImages: ImageFile[];
+  imagesToDelete: string[];
+}
+
+// Detail item component
 const DetailItem = ({
   label,
   children,
@@ -76,28 +97,164 @@ const DetailItem = ({
   </HStack>
 );
 
+const ProductRow = React.memo(
+  ({
+    product,
+    onView,
+    onEdit,
+    onDelete,
+    onToggleStatus,
+    isToggling,
+  }: {
+    product: Product;
+    onView: (product: Product) => void;
+    onEdit: (product: Product) => void;
+    onDelete: (product: Product) => void;
+    onToggleStatus: (productId: string) => void;
+    isToggling: boolean;
+  }) => (
+    <Tr>
+      <Td>
+        <HStack spacing={3}>
+          <Box
+            w='50px'
+            h='50px'
+            bg='gray.100'
+            borderRadius='md'
+            overflow='hidden'
+            flexShrink={0}
+          >
+            {product.images && product.images[0] ? (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <Center h='100%' color='gray.400'>
+                <Package size={20} />
+              </Center>
+            )}
+          </Box>
+          <Box>
+            <Text fontWeight='medium' noOfLines={1}>
+              {product.name}
+            </Text>
+            <Text fontSize='sm' color='gray.500' noOfLines={1}>
+              {product.description}
+            </Text>
+          </Box>
+        </HStack>
+      </Td>
+      <Td>
+        <Badge colorScheme='blue'>
+          {typeof product.category === 'string'
+            ? product.category
+            : product.category?.name || 'No Category'}
+        </Badge>
+      </Td>
+      <Td>{formatPrice(product.price || 0)}</Td>
+      <Td>
+        <Badge colorScheme={getStockStatus(product.quantityInStock || 0).color}>
+          {product.quantityInStock || 0}
+        </Badge>
+      </Td>
+      <Td>
+        <HStack spacing={2}>
+          <Badge colorScheme={getStatusColor(product.isActive || false)}>
+            {product.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+          <Tooltip
+            label={product.isActive ? 'Deactivate product' : 'Activate product'}
+          >
+            <IconButton
+              size='sm'
+              variant='ghost'
+              colorScheme={product.isActive ? 'red' : 'green'}
+              icon={
+                product.isActive ? (
+                  <XCircle size={16} />
+                ) : (
+                  <CheckCircle size={16} />
+                )
+              }
+              onClick={() => onToggleStatus(product._id)}
+              isLoading={isToggling}
+              aria-label={product.isActive ? 'Deactivate' : 'Activate'}
+            />
+          </Tooltip>
+        </HStack>
+      </Td>
+      <Td>{renderRating(product.averageRating || 0)}</Td>
+      <Td>
+        <VStack spacing={0} align='start'>
+          <Text fontSize='sm'>{product.vendor?.name || 'Unknown'}</Text>
+          <Text fontSize='xs' color='gray.500'>
+            {product.vendor?.email || 'No Email'}
+          </Text>
+        </VStack>
+      </Td>
+      <Td>
+        <HStack spacing={1}>
+          <Tooltip label='View details'>
+            <IconButton
+              size='sm'
+              variant='ghost'
+              colorScheme='blue'
+              icon={<Eye size={16} />}
+              onClick={() => onView(product)}
+              aria-label='View'
+            />
+          </Tooltip>
+          <Tooltip label='Edit product'>
+            <IconButton
+              size='sm'
+              variant='ghost'
+              colorScheme='orange'
+              icon={<Edit size={16} />}
+              onClick={() => onEdit(product)}
+              aria-label='Edit'
+            />
+          </Tooltip>
+          <Tooltip label='Delete product'>
+            <IconButton
+              size='sm'
+              variant='ghost'
+              colorScheme='red'
+              icon={<Trash2 size={16} />}
+              onClick={() => onDelete(product)}
+              aria-label='Delete'
+            />
+          </Tooltip>
+        </HStack>
+      </Td>
+    </Tr>
+  )
+);
+
 export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [drawerState, setDrawerState] = useState<{
-    product: Product | null;
-    isEditing: boolean;
-    editData: Product | null;
-    selectedImages: ImageFile[];
-    imagesToDelete: string[];
-  }>({
+  const [drawerState, setDrawerState] = useState<DrawerState>({
     product: null,
     isEditing: false,
     editData: null,
     selectedImages: [],
     imagesToDelete: [],
   });
-
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
 
-  // API hooks
-  const { data: vendorProducts, isLoading } = useOwnVendorProducts({
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  // API hooks with optimized settings
+  const {
+    data: vendorProducts,
+    isLoading,
+    refetch,
+    isRefetching,
+  } = useOwnVendorProducts({
     page: currentPage,
     limit: 10,
   });
@@ -118,10 +275,6 @@ export default function VendorProducts() {
     onClose: onDeleteClose,
   } = useDisclosure();
 
-  const toast = useToast();
-  const cancelRef = useRef<HTMLButtonElement>(null);
-
-  // Pagination object with default values
   const pagination = vendorProducts?.pagination || {
     total: 0,
     page: 1,
@@ -131,20 +284,15 @@ export default function VendorProducts() {
     limit: 10,
   };
 
-  // Helper function to update drawer state
-  const updateDrawerState = useCallback(
-    (updates: Partial<typeof drawerState>) => {
-      setDrawerState((prev) => ({ ...prev, ...updates }));
-    },
-    []
-  );
+  const updateDrawerState = useCallback((updates: Partial<DrawerState>) => {
+    setDrawerState((prev) => ({ ...prev, ...updates }));
+  }, []);
 
-  // Image handling
+  // Image handlers
   const handleImageSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
 
-      const newImages: ImageFile[] = [];
       files.forEach((file) => {
         if (file.type.startsWith('image/')) {
           const reader = new FileReader();
@@ -154,9 +302,7 @@ export default function VendorProducts() {
               preview: reader.result as string,
               id: `new-${Date.now()}-${Math.random()}`,
             };
-            newImages.push(newImage);
 
-            // Update state with new image
             updateDrawerState({
               selectedImages: [...drawerState.selectedImages, newImage],
             });
@@ -165,10 +311,7 @@ export default function VendorProducts() {
         }
       });
 
-      // Reset input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     },
     [drawerState.selectedImages, updateDrawerState]
   );
@@ -191,9 +334,8 @@ export default function VendorProducts() {
         const imageToRemove = drawerState.selectedImages.find(
           (img) => img.id === imageId
         );
-        if (imageToRemove) {
-          URL.revokeObjectURL(imageToRemove.preview);
-        }
+        if (imageToRemove) URL.revokeObjectURL(imageToRemove.preview);
+
         updateDrawerState({
           selectedImages: drawerState.selectedImages.filter(
             (img) => img.id !== imageId
@@ -219,19 +361,19 @@ export default function VendorProducts() {
     [onDrawerOpen]
   );
 
-  // const handleEdit = useCallback(
-  //   (product: Product) => {
-  //     setDrawerState({
-  //       product,
-  //       isEditing: true,
-  //       editData: { ...product },
-  //       selectedImages: [],
-  //       imagesToDelete: [],
-  //     });
-  //     onDrawerOpen();
-  //   },
-  //   [onDrawerOpen]
-  // );
+  const handleEdit = useCallback(
+    (product: Product) => {
+      setDrawerState({
+        product,
+        isEditing: true,
+        editData: { ...product },
+        selectedImages: [],
+        imagesToDelete: [],
+      });
+      onDrawerOpen();
+    },
+    [onDrawerOpen]
+  );
 
   const handleDelete = useCallback(
     (product: Product) => {
@@ -243,13 +385,9 @@ export default function VendorProducts() {
 
   const handleDrawerClose = useCallback(() => {
     onDrawerClose();
-
-    // Clean up image previews
     drawerState.selectedImages.forEach((img) =>
       URL.revokeObjectURL(img.preview)
     );
-
-    // Reset drawer state
     setDrawerState({
       product: null,
       isEditing: false,
@@ -271,22 +409,24 @@ export default function VendorProducts() {
               product?.isActive ? 'deactivated' : 'activated'
             }.`,
             status: 'success',
-            duration: 3000,
-            isClosable: true,
+            position: 'top-right',
+            duration: 2000,
           });
+
+          refetch();
         },
         onError: () => {
           toast({
             title: 'Error',
             description: 'Failed to update product status.',
             status: 'error',
+            position: 'top-right',
             duration: 3000,
-            isClosable: true,
           });
         },
       });
     },
-    [toggleMutation, toast, vendorProducts?.products]
+    [toggleMutation, toast, vendorProducts?.products, refetch]
   );
 
   const handleSwitchToEdit = useCallback(() => {
@@ -294,13 +434,10 @@ export default function VendorProducts() {
       updateDrawerState({
         isEditing: true,
         editData: { ...drawerState.product },
-        selectedImages: [],
-        imagesToDelete: [],
       });
     }
   }, [drawerState.product, updateDrawerState]);
 
-  // Update edit data
   const handleUpdateEditData = useCallback(
     (updates: Partial<Product>) => {
       if (drawerState.editData) {
@@ -327,7 +464,6 @@ export default function VendorProducts() {
         status: 'error',
         position: 'top-right',
         duration: 3000,
-        isClosable: true,
       });
       return;
     }
@@ -365,12 +501,11 @@ export default function VendorProducts() {
             description: `${drawerState.editData?.name} has been updated successfully.`,
             status: 'success',
             position: 'top-right',
-            duration: 3000,
-            isClosable: true,
+            duration: 2000,
           });
 
-          // Don't close drawer immediately - let user see the updated data
-          // handleDrawerClose();
+          // Force immediate refetch
+          refetch();
         },
         onError: (error) => {
           toast({
@@ -379,12 +514,17 @@ export default function VendorProducts() {
             status: 'error',
             position: 'top-right',
             duration: 3000,
-            isClosable: true,
           });
         },
       }
     );
-  }, [drawerState.editData, drawerState.selectedImages, updateMutation, toast]);
+  }, [
+    drawerState.editData,
+    drawerState.selectedImages,
+    updateMutation,
+    toast,
+    refetch,
+  ]);
 
   const handleConfirmDelete = useCallback(() => {
     if (productToDelete) {
@@ -395,24 +535,26 @@ export default function VendorProducts() {
             description:
               response.message || `${productToDelete.name} has been deleted.`,
             status: 'success',
-            duration: 3000,
-            isClosable: true,
+            position: 'top-right',
+            duration: 2000,
           });
           onDeleteClose();
           setProductToDelete(null);
+          // Force immediate refetch
+          refetch();
         },
         onError: (error) => {
           toast({
             title: 'Delete failed',
             description: error?.message || 'Failed to delete product.',
             status: 'error',
-            duration: 5000,
-            isClosable: true,
+            position: 'top-right',
+            duration: 3000,
           });
         },
       });
     }
-  }, [deleteMutation, toast, onDeleteClose, productToDelete]);
+  }, [deleteMutation, toast, onDeleteClose, productToDelete, refetch]);
 
   // Pagination handlers
   const handlePreviousPage = useCallback(() => {
@@ -440,7 +582,6 @@ export default function VendorProducts() {
     );
   }
 
-  // Get the current product to display (either original or edit data)
   const currentProduct = drawerState.isEditing
     ? drawerState.editData
     : drawerState.product;
@@ -457,16 +598,26 @@ export default function VendorProducts() {
         <Heading size='lg' fontWeight='bold'>
           Products Catalog
         </Heading>
-        <Button
-          leftIcon={<Package size={16} />}
-          colorScheme='blue'
-          size='md'
-          w={{ base: 'full', sm: 'auto' }}
-          onClick={() => navigate('/store-manager/create-product')}
-        >
-          Add Product
-        </Button>
+        <Stack direction={'row'} align='center' spacing={3}>
+          <IconButton
+            aria-label='refresh-product'
+            icon={<RefreshCcw />}
+            onClick={() => refetch()}
+            isLoading={isRefetching}
+          />
+
+          <Button
+            leftIcon={<Package size={16} />}
+            colorScheme='blue'
+            size='md'
+            w={{ base: 'full', sm: 'auto' }}
+            onClick={() => navigate('/store-manager/create-product')}
+          >
+            Add Product
+          </Button>
+        </Stack>
       </Flex>
+
       <TableContainer>
         <Table variant='simple' bg='white' borderRadius='lg' overflow='hidden'>
           <Thead bg='gray.50'>
@@ -496,9 +647,10 @@ export default function VendorProducts() {
                   key={product._id}
                   product={product}
                   onView={handleView}
+                  onEdit={handleEdit}
                   onDelete={handleDelete}
                   onToggleStatus={handleToggleStatus}
-                  isTogglingStatus={
+                  isToggling={
                     toggleMutation.variables === product._id &&
                     toggleMutation.isPending
                   }
@@ -653,9 +805,7 @@ export default function VendorProducts() {
                         <Switch
                           isChecked={currentProduct.isActive}
                           onChange={(e) =>
-                            handleUpdateEditData({
-                              isActive: e.target.checked,
-                            })
+                            handleUpdateEditData({ isActive: e.target.checked })
                           }
                         />
                       </FormControl>

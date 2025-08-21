@@ -1,3 +1,4 @@
+import React from 'react';
 import GalleryFileUpload from '@/utils/GalleryFileUpload';
 import RichTextEditor from '@/utils/RichTextEditor';
 import {
@@ -9,7 +10,6 @@ import {
   Text,
   Box,
 } from '@chakra-ui/react';
-import React from 'react';
 
 const labelStyles = {
   fontFamily: 'mono',
@@ -74,7 +74,7 @@ export default function PersonalProfile() {
       >
         <Text {...labelStyles}>About</Text>
         <Box flex='1' maxW={{ md: '60%' }}>
-          <RichTextEditor />
+          <RichTextEditor value='' onChange={() => {}} />
         </Box>
       </Flex>
     </Stack>

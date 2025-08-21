@@ -60,9 +60,7 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Basic validation
     if (!user.email.trim() || !user.password.trim()) {
-      console.log('Validation failed: Email or password is empty');
       return;
     }
 

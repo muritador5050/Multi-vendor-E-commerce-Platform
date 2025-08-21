@@ -65,11 +65,7 @@ export default function ProductComponentCard({
   return (
     <Box p={4} textAlign='center' cursor='pointer' role='group'>
       <Image
-        src={
-          product.images.length > 0
-            ? product.images[0]
-            : '/placeholder-image.jpg'
-        }
+        src={product.images[0]}
         alt={product.name}
         objectFit='cover'
         borderRadius='md'
