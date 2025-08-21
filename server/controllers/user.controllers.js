@@ -8,7 +8,6 @@ const {
 } = require('../configs/index');
 const passport = require('passport');
 const path = require('path');
-const fs = require('fs');
 const { getFilteredUpdateData } = require('../utils/ValidateFieldPermission');
 const { deleteFile } = require('../utils/FileUploads');
 
@@ -65,11 +64,10 @@ class UserController {
           accessTokenExpiry: '15m',
           refreshTokenExpiry: '7d',
         };
-    user.isOnline = true;
-    user.lastSeen = new Date();
+
     const { accessToken, refreshToken } = user.loginWithTokens(tokenOptions);
     await user.save();
-
+    await user.setOnline();
     const cookieMaxAge = rememberMe
       ? 30 * 24 * 60 * 60 * 1000
       : 7 * 24 * 60 * 60 * 1000;
@@ -187,6 +185,7 @@ class UserController {
 
     const user = await User.findByRefreshToken(token);
     if (user) {
+      await user.setOffline();
       await user.clearRefreshToken();
     }
     res.clearCookie('refreshToken', {
@@ -415,44 +414,6 @@ class UserController {
     });
   }
 
-  // Set user online
-  static async setUserOnline(req, res) {
-    const user = await User.findByIdAndValidate(req.user.id);
-
-    await user.setOnline();
-
-    return res.status(200).json({
-      success: true,
-      message: 'User is online',
-      data: {
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
-      },
-    });
-  }
-
-  // Set user offline
-  static async setUserOffline(req, res) {
-    const user = await User.findByIdAndValidate(req.user.id);
-
-    await user.setOffline();
-
-    return res.status(200).json({
-      success: true,
-      message: 'User is offline',
-      data: {
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
-      },
-    });
-  }
-
-  static async updateUserHeartbeat(req, res) {
-    const user = await User.findByIdAndValidate(req.user.id);
-    await user.setOnline();
-    res.status(200).json({ success: true });
-  }
-
   static async getOnlineUsers(req, res) {
     const minutesAgo = req.query.minutes || 5;
     const timeThreshold = new Date(Date.now() - minutesAgo * 60 * 1000);
@@ -571,12 +532,6 @@ class UserController {
 
     await user.invalidateAllTokens();
 
-    console.log(
-      `Tokens invalidated for user ${id} by ${
-        req.user.id
-      } at ${invalidationTimestamp}${reason ? ` - Reason: ${reason}` : ''}`
-    );
-
     res.json({
       success: true,
       message:
@@ -675,7 +630,7 @@ class UserController {
     await deleteFile(avatarPath);
 
     // Reset to default avatar
-    user.avatar = 'uploads/avatars/default-avatar.png';
+    user.avatar = `${BACKEND_URL}/uploads/avatars/${req.file.filename}`;
     await user.save();
 
     return res.status(200).json({

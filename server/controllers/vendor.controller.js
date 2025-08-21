@@ -28,13 +28,12 @@ class VendorController {
 
         return res.status(201).json({
           success: true,
-          hasVendorProfile: true,
           message: 'Vendor profile created successfully',
           data: {
             ...vendor.toObject(),
             profileCompletion: vendor.calculateProfileCompletion(),
+            hasVendorProfile: true,
           },
-          redirectTo: '/store-manager',
         });
       }
 
@@ -44,13 +43,12 @@ class VendorController {
 
       res.status(200).json({
         success: true,
-        hasVendorProfile: true,
         message: 'Vendor profile updated successfully',
         data: {
           ...vendor.toObject(),
           profileCompletion: vendor.calculateProfileCompletion(),
+          hasVendorProfile: true,
         },
-        redirectTo: '/store-manager',
       });
     } catch (error) {
       res.status(400).json({
@@ -76,13 +74,8 @@ class VendorController {
 
       res.status(200).json({
         success: true,
-        hasVendorProfile,
-        data: vendor
-          ? {
-              ...vendor.toObject(),
-              profileCompletion: vendor.calculateProfileCompletion(),
-            }
-          : null,
+        message: 'Status retrieved',
+        data: { hasVendorProfile },
       });
     } catch (error) {
       res.status(400).json({

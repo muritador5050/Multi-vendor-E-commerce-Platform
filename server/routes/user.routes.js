@@ -7,6 +7,7 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
 const { avatarUpload, handleUploadError } = require('../utils/FileUploads');
+const trackUserActivity = require('../middlewares/activityMiddleware');
 
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
@@ -223,6 +224,8 @@ router.get(
 // AUTHENTICATED ROUTES (Require authentication)
 // ============================================================================
 
+router.use(trackUserActivity);
+
 // Profile routes
 /**
  * @openapi
@@ -251,14 +254,6 @@ router.get(
 router.post(
   '/users/avatar',
   authenticate,
-  // (req, res, next) => {
-  //   avatarUpload.single('avatar')(req, res, (err) => {
-  //     if (err) {
-  //       return handleUploadError(err, req, res, next);
-  //     }
-  //     next();
-  //   });
-  // },
   avatarUpload.single('avatar'),
   asyncHandler(UserController.uploadAvatar),
   handleUploadError
@@ -275,25 +270,6 @@ router.post(
   '/resend-verification',
   authenticate,
   asyncHandler(UserController.resendEmailVerification)
-);
-
-// User online/offline status routes
-router.post(
-  '/heartbeat',
-  authenticate,
-  asyncHandler(UserController.updateUserHeartbeat)
-);
-
-router.post(
-  '/online',
-  authenticate,
-  asyncHandler(UserController.setUserOnline)
-);
-
-router.post(
-  '/offline',
-  authenticate,
-  asyncHandler(UserController.setUserOffline)
 );
 
 // User self-management routes
@@ -390,7 +366,7 @@ router.patch(
 router
   .route('/users/:id')
   .get(authenticate, asyncHandler(UserController.getUserById))
-  .put(authenticate, asyncHandler(UserController.updateUserProfile))
+  .patch(authenticate, asyncHandler(UserController.updateUserProfile))
   .delete(
     authenticate,
     checkRole('admin', 'delete'),

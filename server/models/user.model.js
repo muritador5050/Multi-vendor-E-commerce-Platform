@@ -215,9 +215,6 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ isOnline: 1 });
 userSchema.index({ lastSeen: 1 });
-// ============================================================================
-// STATIC METHODS (Best Practice: Individual assignments)
-// ============================================================================
 
 userSchema.statics.findByEmail = function (email) {
   return this.findOne({ email });
@@ -377,10 +374,6 @@ userSchema.statics.processOAuthCallback = async function (user, frontendUrl) {
     shouldSendWelcome: isNewUser && user.isEmailVerified,
   };
 };
-
-// ============================================================================
-// INSTANCE METHODS (Best Practice: Individual assignments)
-// ============================================================================
 
 // Authentication methods
 userSchema.methods.checkPassword = async function (password) {
