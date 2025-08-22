@@ -108,7 +108,7 @@ const VendorProfile: React.FC = () => {
     twitter: Twitter,
     linkedin: Linkedin,
     youtube: Youtube,
-    tiktok: Youtube, // Using Youtube as fallback for TikTok
+    tiktok: Youtube,
   };
 
   const StatCard: React.FC<StatCardProps> = ({

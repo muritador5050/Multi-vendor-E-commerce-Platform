@@ -38,6 +38,7 @@ import {
   useUploadDocuments,
 } from '@/context/VendorContextService';
 import type { VendorDocumentType, Vendor, BusinessType } from '@/type/vendor';
+import { useNavigate } from 'react-router-dom';
 
 interface DocumentData {
   type: VendorDocumentType;
@@ -310,8 +311,8 @@ const CreateVendorProfile: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+  const navigate = useNavigate();
 
-  // Separate the hooks for different API calls
   const createVendorMutation = useCreateVendorProfile();
   const uploadDocumentsMutation = useUploadDocuments();
 
@@ -334,6 +335,7 @@ const CreateVendorProfile: React.FC = () => {
         description: 'Business name and type are required.',
         status: 'error',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
       return false;
@@ -348,6 +350,7 @@ const CreateVendorProfile: React.FC = () => {
         description: 'At least one document is required.',
         status: 'error',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
       return false;
@@ -418,18 +421,18 @@ const CreateVendorProfile: React.FC = () => {
           title: 'Success!',
           description: 'Vendor profile created successfully.',
           status: 'success',
+          position: 'top-right',
           duration: 5000,
           isClosable: true,
         });
-
-        // Reset form or redirect user
-        console.log('Vendor profile created successfully!');
+        navigate('/store-manager', { replace: true });
       } catch (error) {
         console.error('Error creating vendor profile:', error);
         toast({
           title: 'Error',
           description: 'Failed to create vendor profile. Please try again.',
           status: 'error',
+          position: 'top-right',
           duration: 5000,
           isClosable: true,
         });

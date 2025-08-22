@@ -117,11 +117,11 @@ const getDashboardCards = (stats: DashboardStats): DashboardCard[] => [
 ];
 
 export default function VendorDashboard() {
-  const { data } = useVendorProfile();
+  const { data, isFetching } = useVendorProfile();
   const { data: stats } = useVendorStats();
-  const { data: analyticsSales, isLoading: isAnalyticsLoading } =
+  const { data: analyticsSales, isFetching: isAnalyticsFetching } =
     useVendorSalesAnalytics();
-  const { data: dailySales, isLoading: dailySalesLoading } =
+  const { data: dailySales, isFetching: dailySalesFetching } =
     useDailySalesReport();
   const { data: storeAnalytics } = useProductSalesReport();
 
@@ -131,7 +131,7 @@ export default function VendorDashboard() {
 
   //Store analytics
   const salesData: SalesPoint[] =
-    storeAnalytics?.data?.map((item) => ({
+    storeAnalytics?.map((item) => ({
       productId: item.productId,
       name: item.name,
       totalQuantity: item.totalQuantity,
@@ -140,23 +140,30 @@ export default function VendorDashboard() {
 
   //Daily-sale-report
   const dialySalesData: DailySalesPoint[] =
-    dailySales?.data?.map((item) => ({
+    dailySales?.map((item) => ({
       date: new Date(item._id).toISOString(),
       totalSales: item.totalSales,
     })) || [];
   const lastNDays = generateLastNDays(15);
   const filledData = mergeWithSalesData(lastNDays, dialySalesData);
 
-  if (dailySalesLoading)
+  if (isFetching)
     return (
       <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
-        Loading daily sales...
+        Fetching daily...
       </Center>
     );
-  if (isAnalyticsLoading)
+
+  if (dailySalesFetching)
     return (
       <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
-        Loading analytics sales...
+        Fetching daily sales...
+      </Center>
+    );
+  if (isAnalyticsFetching)
+    return (
+      <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
+        Fetching analytics sales...
       </Center>
     );
 
@@ -316,9 +323,7 @@ export default function VendorDashboard() {
               <Text fontWeight='semibold'>Store Stats</Text>
             </CardHeader>
             <CardBody>
-              {analyticsSales?.data && (
-                <SalesSummaryStats data={analyticsSales.data} />
-              )}
+              {analyticsSales && <SalesSummaryStats data={analyticsSales} />}
             </CardBody>
           </Card>
         </GridItem>

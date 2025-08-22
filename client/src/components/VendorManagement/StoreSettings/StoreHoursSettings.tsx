@@ -244,7 +244,7 @@ export default function StoreHoursSettings({
                             type='time'
                             size='sm'
                             w={{ md: 32 }}
-                            value={breakItem.startTime || ''}
+                            value={breakItem?.startTime || ''}
                             onChange={(e) =>
                               handleBreakChange(
                                 day,
@@ -264,7 +264,7 @@ export default function StoreHoursSettings({
                             type='time'
                             size='sm'
                             w={{ md: 32 }}
-                            value={breakItem.endTime || ''}
+                            value={breakItem?.endTime || ''}
                             onChange={(e) =>
                               handleBreakChange(
                                 day,
@@ -283,7 +283,7 @@ export default function StoreHoursSettings({
                           <Input
                             size='sm'
                             placeholder='Break reason'
-                            value={breakItem.reason || ''}
+                            value={breakItem?.reason || ''}
                             onChange={(e) =>
                               handleBreakChange(
                                 day,

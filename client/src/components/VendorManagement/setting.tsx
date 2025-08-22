@@ -26,12 +26,6 @@ import {
   Users,
   Ambulance,
 } from 'lucide-react';
-import ProfileProgress from '@/components/ui/ProfileProgress';
-import GeneralSetting from '@/components/VendorManagement/StoreSettings/GeneralSetting';
-import StoreLocation from '@/components/VendorManagement/StoreSettings/StoreLocation';
-import PaymentSetting from '@/components/VendorManagement/StoreSettings/PaymentSetting';
-import ShippingSetting from '@/components/VendorManagement/StoreSettings/ShippingSetting';
-import SEOSetting from '@/components/VendorManagement/StoreSettings/SEOSetting';
 
 import {
   useUpdateSettings,
@@ -51,6 +45,12 @@ import type {
   StoreHour,
   StorePolicies,
 } from '@/type/vendor';
+import ProfileProgress from '@/components/ui/ProfileProgress';
+import GeneralSetting from '@/components/VendorManagement/StoreSettings/GeneralSetting';
+import StoreLocation from '@/components/VendorManagement/StoreSettings/StoreLocation';
+import PaymentSetting from '@/components/VendorManagement/StoreSettings/PaymentSetting';
+import ShippingSetting from '@/components/VendorManagement/StoreSettings/ShippingSetting';
+import SEOSetting from '@/components/VendorManagement/StoreSettings/SEOSetting';
 import StorePoliciesSettings from './StoreSettings/StorePoliciesSettings';
 import StoreHoursSettings from './StoreSettings/StoreHoursSettings';
 import SocialProfile from './StoreSettings/SocialProfile';
@@ -92,7 +92,6 @@ const SETTINGS_MAPPING: Record<string, keyof FormData> = {
   shippingRules: 'shippingRules',
   seoSettings: 'seoSettings',
   storeHours: 'storeHours',
-  // notifications: 'notifications',
 };
 
 // Default data structures
@@ -106,7 +105,6 @@ const defaultGeneralSettings: GeneralSettings = {
   storeBanner: '',
 };
 
-// Updated to match schema structure
 const defaultStoreHours: StoreHour[] = [
   { day: 'monday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
   { day: 'tuesday', isOpen: true, openTime: '', closeTime: '', breaks: [] },
@@ -162,12 +160,12 @@ export default function Setting() {
     generalSettings: { ...defaultGeneralSettings },
     storeAddress: { ...defaultAddressData },
     notifications: { ...defaultNotification },
-    bankDetails: data?.bankDetails || {},
-    socialMedia: { ...defaultSocialMediaData },
-    storePolicies: data?.storePolicies || {},
-    shippingRules: data?.shippingRules || {},
+    bankDetails: { ...data?.bankDetails },
+    socialMedia: { ...defaultSocialMediaData, ...data?.socialMedia },
+    storePolicies: { ...data?.storePolicies },
+    shippingRules: { ...data?.shippingRules },
     seoSettings: { ...defaultSeoData },
-    storeHours: data?.storeHours || [...defaultStoreHours],
+    storeHours: [...defaultStoreHours],
   });
 
   useEffect(() => {
@@ -178,14 +176,21 @@ export default function Setting() {
         storeAddress: { ...defaultAddressData, ...data.storeAddress },
         notifications: { ...defaultNotification, ...data.notifications },
         bankDetails: data.bankDetails || {},
-        socialMedia: data.socialMedia || {},
+        socialMedia: { ...defaultSocialMediaData, ...data.socialMedia },
         storePolicies: data.storePolicies || {},
         shippingRules: data.shippingRules || {},
-        seoSettings: data.seoSettings || {},
+        seoSettings: { ...defaultSeoData, ...data.seoSettings },
         storeHours:
-          data.storeHours && Array.isArray(data.storeHours)
-            ? data.storeHours
-            : defaultStoreHours,
+          data.storeHours &&
+          Array.isArray(data.storeHours) &&
+          data.storeHours.length > 0
+            ? data.storeHours.map((hour) => ({
+                ...hour,
+                openTime: hour.openTime || '',
+                closeTime: hour.closeTime || '',
+                breaks: hour.breaks || [],
+              }))
+            : [...defaultStoreHours],
       }));
     }
   }, [data]);
@@ -201,7 +206,6 @@ export default function Setting() {
     []
   );
 
-  // Fixed handler specifically for StoreHours
   const handleStoreHoursChange = useCallback(
     (updatedStoreHours: StoreHour[]) => {
       setFormData((prev) => ({

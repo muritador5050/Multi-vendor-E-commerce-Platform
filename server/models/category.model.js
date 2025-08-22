@@ -131,16 +131,9 @@ const categorySchema = new mongoose.Schema(
     image: {
       type: String,
       default: '',
-      validate: {
-        validator: function (v) {
-          if (!v) return true; // Allow empty string
-          // Basic URL validation
-          return /^https?:\/\/.+/.test(v);
-        },
-        message: 'Image must be a valid URL',
-      },
     },
   },
+
   {
     timestamps: true,
     toJSON: { virtuals: true },

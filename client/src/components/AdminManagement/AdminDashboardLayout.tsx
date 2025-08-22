@@ -12,6 +12,7 @@ import { CustomersContents } from './CustomersManagement/CustomersContents';
 import BlogsContent from './Blogs/BlogsContent';
 import PaymentsContent from './Payments/PaymentsContent';
 import ReviewsContent from './Reviews/ReviewsContent';
+import CategoriesContent from './Categories/CategoriesContent';
 
 const AdminDashboardLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -24,6 +25,8 @@ const AdminDashboardLayout = () => {
         return <DashboardStats />;
       case 'vendors':
         return <VendorsContent />;
+      case 'categories':
+        return <CategoriesContent />;
       case 'orders':
         return <OrdersContent />;
       case 'products':

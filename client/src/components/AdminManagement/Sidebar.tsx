@@ -10,6 +10,7 @@ import {
   Rss,
   ScanEye,
   BriefcaseBusiness,
+  Factory,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,15 +27,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'blogs', label: 'Blogs', icon: Rss },
     { id: 'customers', label: 'Customers', icon: User },
+    { id: 'categories', label: 'Categories', icon: Factory },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'products', label: 'Products', icon: Package },
     { id: 'payments', label: 'Payments', icon: Banknote },
     { id: 'reviews', label: 'Reviews', icon: ScanEye },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart },
-    { id: 'vendors', label: 'Vendors', icon: BriefcaseBusiness },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'vendors', label: 'Vendors', icon: BriefcaseBusiness },
   ];
 
   return (

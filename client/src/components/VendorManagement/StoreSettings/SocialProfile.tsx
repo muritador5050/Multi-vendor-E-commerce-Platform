@@ -50,7 +50,7 @@ export default function SocialProfile({ data, onChange }: SocialMediaProps) {
             flex='1'
             maxW={{ md: '60%' }}
             name={field.name}
-            value={data[field.name as keyof SocialMedia]}
+            value={data[field.name as keyof SocialMedia] ?? ''}
             onChange={handleInputChange}
           />
         </FormControl>

@@ -70,7 +70,7 @@ router.post(
 router.post(
   '/upload-image',
   authenticate,
-  checkRole(['admin', 'vendor'], 'create'),
+  checkRole('admin', 'create'),
   (req, res, next) => {
     categoryImageUpload.single('categoryImage')(req, res, (err) => {
       if (err) {
@@ -284,12 +284,12 @@ router
   .route('/:id')
   .get(
     authenticate,
-    checkRole(['admin', 'vendor'], 'read'),
+    checkRole('admin', 'read'),
     asyncHandler(CategoryController.getCategoryById)
   )
-  .put(
+  .patch(
     authenticate,
-    checkRole(['admin', 'vendor'], 'edit'),
+    checkRole('admin', 'edit'),
     asyncHandler(CategoryController.updateCategory)
   )
   .delete(
