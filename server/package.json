@@ -5,12 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "dev:tunnel": "concurrently \"npm run dev\" \"npm run tunnel\"",
-    "tunnel": "lt --port 8000 --subdomain multi-vendor",
-    "start": "npm run dev:tunnel",
-    "test": "cross-env NODE_ENV=test jest --detectOpenHandles",
-    "test:watch": "cross-env NODE_ENV=test jest --watch",
-    "test:coverage": "cross-env NODE_ENV=test jest --coverage"
+    "dev:ngrok": "concurrently \"npm run dev\" \"npm run ngrok\"",
+    "ngrok": "ngrok http --url=brief-airedale-centrally.ngrok-free.app 8000",
+    "start": "npm run dev:ngrok"
   },
   "keywords": [],
   "author": "Abdulazeez Muritador <muritador5050@gmail.com>",
