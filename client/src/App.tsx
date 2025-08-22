@@ -50,8 +50,14 @@ function App() {
           <Route path='cart' element={<CartList />} />
           <Route path='checkout' element={<CheckoutPage />} />
           <Route path='payment' element={<PaymentPage />} />
-          <Route path='payment-success' element={<PaymentSuccessPage />} />
-          <Route path='payment-cancel' element={<PaymentFailedPage />} />
+          <Route
+            path='/payment-success/:provider'
+            element={<PaymentSuccessPage />}
+          />
+          <Route
+            path='/payment-cancel/:provider'
+            element={<PaymentFailedPage />}
+          />
           <Route
             path='/orders/:orderId/tracking'
             element={<OrderTrackingPage />}

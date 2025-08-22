@@ -42,6 +42,7 @@ const PaymentPage = () => {
         title: 'Error',
         description: 'No order data found. Please start from checkout.',
         status: 'error',
+        position: 'top-right',
         duration: 5000,
         isClosable: true,
       });
@@ -64,23 +65,10 @@ const PaymentPage = () => {
       }
 
       const checkoutUrl = paymentResult.data.checkoutUrl;
-
-      toast({
-        title: 'Redirecting to payment...',
-        description: 'You will be redirected to complete your payment.',
-        status: 'info',
-        duration: 3000,
-        position: 'top-right',
-        isClosable: true,
-      });
-
-      // Redirect to payment provider's checkout URL
       setTimeout(() => {
         window.location.href = checkoutUrl;
-      }, 1000);
+      }, 500);
     } catch (error) {
-      console.error('Payment creation error:', error);
-
       let errorMessage = 'Failed to create payment. Please try again.';
 
       if (error instanceof Error) {

@@ -23,40 +23,110 @@ import {
   HomeIcon,
   CreditCardIcon,
   ArrowRightSquareIcon,
-  // SquareX,
   CheckIcon,
 } from 'lucide-react';
 import { useGetPaymentById } from '@/context/PaymentContextService';
+import { useNavigate } from 'react-router-dom';
 
 const PaymentFailedPage = () => {
+  const navigate = useNavigate();
   const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [provider, setProvider] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [retryAttempts, setRetryAttempts] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Currency formatting helper
+  const formatCurrency = (
+    amount: number,
+    currency: string = 'USD',
+    provider: string
+  ) => {
+    const currencySymbols: { [key: string]: string } = {
+      USD: '$',
+      NGN: '₦',
+      usd: '$',
+      ngn: '₦',
+    };
+
+    const symbol = currencySymbols[currency] || '$';
+    const displayCurrency = currency.toUpperCase();
+
+    const displayAmount =
+      provider === 'paystack' && currency.toUpperCase() === 'NGN'
+        ? (amount / 100).toFixed(2)
+        : amount.toFixed(2);
+
+    return `${symbol}${displayAmount} ${displayCurrency}`;
+  };
+
+  const getProviderSpecificMessage = (provider: string) => {
+    const messages = {
+      stripe: {
+        retry: 'Try with a different credit/debit card',
+        contact: 'Contact your bank if the card was declined',
+        alternative: 'Consider trying Paystack for local payment methods',
+      },
+      paystack: {
+        retry: 'Try bank transfer, USSD, or different card',
+        contact: 'Ensure your account has sufficient funds',
+        alternative: 'Consider trying Stripe for international cards',
+      },
+    };
+
+    return messages[provider as keyof typeof messages] || messages.stripe;
+  };
+
+  // Extract payment details from URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    const reference = urlParams.get('reference') || urlParams.get('trxref');
-    const paymentIdParam = urlParams.get('payment_id');
 
-    const extractedPaymentId = paymentIdParam || sessionId || reference;
+    const detectedProvider = urlParams.get('provider');
+    const detectedOrderId = urlParams.get('order_id');
+    const reasonParam = urlParams.get('reason');
 
-    console.log('Payment URL params:', {
-      sessionId,
-      reference,
-      paymentIdParam,
-      extractedPaymentId,
+    // Extract payment ID based on provider or fallback method
+    let extractedPaymentId: string | null = null;
+
+    if (detectedProvider === 'stripe') {
+      extractedPaymentId = urlParams.get('session_id');
+    } else if (detectedProvider === 'paystack') {
+      extractedPaymentId =
+        urlParams.get('reference') || urlParams.get('trxref');
+    } else {
+      // Fallback method
+      extractedPaymentId =
+        urlParams.get('session_id') ||
+        urlParams.get('reference') ||
+        urlParams.get('trxref') ||
+        urlParams.get('payment_id');
+    }
+
+    console.log('Payment failure URL params:', {
+      provider: detectedProvider,
+      orderId: detectedOrderId,
+      paymentId: extractedPaymentId,
+      reason: reasonParam,
     });
 
-    if (!extractedPaymentId) {
-      setError('No payment reference found');
+    if (!extractedPaymentId && !detectedOrderId) {
+      setError('No payment or order reference found');
       return;
     }
 
     setPaymentId(extractedPaymentId);
+    setProvider(detectedProvider);
+    setOrderId(detectedOrderId);
+
+    // Set error if reason is provided
+    if (reasonParam) {
+      setError(
+        reasonParam === 'user_cancelled' ? 'Payment was cancelled' : reasonParam
+      );
+    }
   }, []);
 
-  // Use the hook to fetch payment data
+  // Fetch payment data
   const {
     data: paymentResponse,
     isLoading,
@@ -64,7 +134,7 @@ const PaymentFailedPage = () => {
     isError,
   } = useGetPaymentById(paymentId || '');
 
-  // Handle errors
+  // Handle query errors
   useEffect(() => {
     if (isError && queryError) {
       setError(queryError.message || 'Failed to fetch payment details');
@@ -72,49 +142,62 @@ const PaymentFailedPage = () => {
   }, [isError, queryError]);
 
   const paymentData = paymentResponse?.data;
+  const providerMessages = paymentData
+    ? getProviderSpecificMessage(paymentData.paymentProvider)
+    : null;
 
+  // Navigation handlers
   const handleRetryPayment = () => {
-    if (!paymentData?.orderId) {
-      // If no order data, redirect to checkout
+    const targetOrderId = paymentData?.orderId?._id || orderId;
+
+    if (!targetOrderId) {
       window.location.href = '/checkout';
       return;
     }
 
     setRetryAttempts((prev) => prev + 1);
 
-    // Navigate back to payment page with order data
-    window.location.href = `/payment?retry=true&orderId=${paymentData.orderId}`;
+    // Provider-specific retry URLs with smart fallback
+    const currentProvider = paymentData?.paymentProvider || provider;
+    const baseUrl = `/payment?retry=true&orderId=${targetOrderId}`;
+
+    // Suggest alternative provider after multiple failures
+    if (retryAttempts >= 2 && currentProvider === 'stripe') {
+      window.location.href = `${baseUrl}&suggested_provider=paystack&reason=stripe_failed`;
+    } else if (retryAttempts >= 2 && currentProvider === 'paystack') {
+      window.location.href = `${baseUrl}&suggested_provider=stripe&reason=paystack_failed`;
+    } else {
+      window.location.href = `${baseUrl}&provider=${currentProvider}`;
+    }
   };
 
   const handleBackToCart = () => {
-    // In real app: navigate('/cart')
-    window.location.href = '/cart';
+    navigate('/cart');
   };
 
   const handleBackToCheckout = () => {
-    // In real app: navigate('/checkout')
-    window.location.href = '/checkout';
+    const targetOrderId = paymentData?.orderId?._id || orderId;
+    if (targetOrderId) {
+      navigate(`/checkout?orderId=${targetOrderId}&change_payment=true`);
+    } else {
+      navigate('/checkout');
+    }
   };
 
   const handleContactSupport = () => {
-    // In real app: navigate('/support')
-    window.location.href = '/support';
+    const supportParams = new URLSearchParams({
+      issue: 'payment_failed',
+      paymentId: paymentId || 'unknown',
+      orderId: paymentData?.orderId?._id || orderId || 'unknown',
+      provider: paymentData?.paymentProvider || provider || 'unknown',
+    });
+
+    navigate(`/support?${supportParams.toString()}`);
   };
 
   const handleContinueShopping = () => {
-    // In real app: navigate('/')
-    window.location.href = '/';
+    navigate('/');
   };
-
-  // const getFailureReasonIcon = (reason: string) => {
-  //   if (
-  //     reason?.toLowerCase().includes('declined') ||
-  //     reason?.toLowerCase().includes('insufficient')
-  //   ) {
-  //     return CreditCardIcon;
-  //   }
-  //   return SquareX;
-  // };
 
   // Loading state - only show if we have a paymentId
   if (paymentId && isLoading) {
@@ -123,32 +206,65 @@ const PaymentFailedPage = () => {
         <VStack spacing={6}>
           <Spinner size='xl' color='red.500' thickness='4px' />
           <Text fontSize='lg'>Checking payment status...</Text>
+          <Text fontSize='sm' color='gray.600'>
+            Retrieving payment details for further assistance
+          </Text>
         </VStack>
       </Container>
     );
   }
 
   // Error state - no payment ID or fetch error
-  if (error || !paymentId || (paymentId && !isLoading && !paymentData)) {
+  if (
+    error ||
+    (!paymentId && !orderId) ||
+    (paymentId && !isLoading && !paymentData)
+  ) {
     return (
       <Container maxW='2xl' py={20}>
-        <Alert status='error' borderRadius='lg' mb={6}>
-          <AlertIcon />
-          <Box>
-            <Text fontWeight='bold'>Payment Information Unavailable</Text>
-            <Text>
-              {error ||
-                "We couldn't retrieve your payment details. Please contact support."}
-            </Text>
+        <VStack spacing={8} align='stretch'>
+          <Box textAlign='center'>
+            <XCircleIcon className='w-20 h-20 text-red-500 mx-auto mb-4' />
+            <Heading size='xl' color='red.500' mb={2}>
+              Payment Issue
+            </Heading>
           </Box>
-        </Alert>
-        <Button
-          colorScheme='blue'
-          onClick={handleContinueShopping}
-          leftIcon={<HomeIcon className='w-4 h-4' />}
-        >
-          Return to Home
-        </Button>
+
+          <Alert status='error' borderRadius='lg'>
+            <AlertIcon />
+            <Box>
+              <Text fontWeight='bold'>Payment Information Unavailable</Text>
+              <Text>
+                {error ||
+                  "We couldn't retrieve your payment details. Please try again or contact support."}
+              </Text>
+            </Box>
+          </Alert>
+
+          <VStack spacing={3}>
+            <Button
+              colorScheme='blue'
+              size='lg'
+              width='full'
+              onClick={() => navigate('/checkout')}
+              leftIcon={<CreditCardIcon className='w-4 h-4' />}
+            >
+              Try Payment Again
+            </Button>
+            <Button
+              variant='outline'
+              size='lg'
+              width='full'
+              onClick={handleContinueShopping}
+              leftIcon={<HomeIcon className='w-4 h-4' />}
+            >
+              Return to Home
+            </Button>
+            <Button variant='ghost' onClick={handleContactSupport}>
+              Contact Support
+            </Button>
+          </VStack>
+        </VStack>
       </Container>
     );
   }
@@ -181,62 +297,65 @@ const PaymentFailedPage = () => {
 
               <Divider />
 
-              {/* Failure Reason */}
-              {/* <Alert status='error' borderRadius='md'>
-                <AlertIcon as={getFailureReasonIcon(paymentData. ?? '')} />
-                <Box>
-                  <Text fontWeight='bold'>Reason for failure:</Text>
-                  <Text fontSize='sm' mt={1}>
-                    {paymentData?.failureReason ||
-                      'Payment processing failed. Please try again.'}
+              {paymentData?.paymentId && (
+                <Flex justify='space-between'>
+                  <Text color='gray.600'>Payment ID:</Text>
+                  <Text
+                    fontFamily='mono'
+                    fontSize='sm'
+                    maxW='200px'
+                    isTruncated
+                  >
+                    {paymentData.paymentId}
                   </Text>
-                </Box>
-              </Alert> */}
+                </Flex>
+              )}
 
               <Flex justify='space-between'>
-                <Text color='gray.600'>Payment ID:</Text>
-                <Text fontFamily='mono' fontSize='sm' maxW='200px' isTruncated>
-                  {paymentData?.paymentId || paymentData?._id}
+                <Text color='gray.600'>Order Reference:</Text>
+                <Text fontWeight='medium' fontFamily='mono' fontSize='sm'>
+                  {paymentData?.orderId?._id?.slice(-8).toUpperCase() ||
+                    orderId?.slice(-8).toUpperCase() ||
+                    'N/A'}
                 </Text>
               </Flex>
 
-              <Flex justify='space-between'>
-                <Text color='gray.600'>Order Number:</Text>
-                <Text fontWeight='medium'>
-                  {paymentData?.orderId._id || 'N/A'}
-                </Text>
-              </Flex>
+              {paymentData?.amount && (
+                <Flex justify='space-between'>
+                  <Text color='gray.600'>Amount:</Text>
+                  <Text fontWeight='bold' fontSize='lg'>
+                    {formatCurrency(
+                      paymentData.amount,
+                      paymentData.currency || 'USD',
+                      paymentData.paymentProvider
+                    )}
+                  </Text>
+                </Flex>
+              )}
+
+              {paymentData?.paymentProvider && (
+                <Flex justify='space-between'>
+                  <Text color='gray.600'>Payment Method:</Text>
+                  <Text textTransform='capitalize'>
+                    {paymentData.paymentProvider === 'stripe'
+                      ? 'Credit Card (Stripe)'
+                      : paymentData.paymentProvider === 'paystack'
+                      ? 'Paystack'
+                      : paymentData.paymentProvider}
+                  </Text>
+                </Flex>
+              )}
 
               <Flex justify='space-between'>
-                <Text color='gray.600'>Amount:</Text>
-                <Text fontWeight='bold' fontSize='lg'>
-                  {paymentData?.currency === 'NGN' ? '₦' : '$'}
-                  {paymentData?.amount.toFixed(2)}{' '}
-                  {paymentData?.currency.toUpperCase()}
-                </Text>
-              </Flex>
-
-              <Flex justify='space-between'>
-                <Text color='gray.600'>Payment Method:</Text>
-                <Text textTransform='capitalize'>
-                  {paymentData?.paymentProvider === 'stripe'
-                    ? 'Credit Card (Stripe)'
-                    : paymentData?.paymentProvider === 'paystack'
-                    ? 'Paystack'
-                    : paymentData?.paymentProvider}
-                </Text>
-              </Flex>
-
-              <Flex justify='space-between'>
-                <Text color='gray.600'>Attempted:</Text>
+                <Text color='gray.600'>Failed At:</Text>
                 <Text>
-                  {new Date(
-                    paymentData?.createdAt ?? paymentData?.updatedAt ?? ''
-                  ).toLocaleDateString()}{' '}
-                  at{' '}
-                  {new Date(
-                    paymentData?.createdAt ?? paymentData?.updatedAt ?? ''
-                  ).toLocaleTimeString()}
+                  {paymentData?.updatedAt
+                    ? `${new Date(
+                        paymentData.updatedAt
+                      ).toLocaleDateString()} at ${new Date(
+                        paymentData.updatedAt
+                      ).toLocaleTimeString()}`
+                    : 'Just now'}
                 </Text>
               </Flex>
             </VStack>
@@ -257,35 +376,52 @@ const PaymentFailedPage = () => {
                     Try a different payment method
                   </Text>
                   <Text fontSize='sm' color='gray.600'>
-                    Use another credit card, debit card, or payment option
+                    {providerMessages?.retry || 'Use another payment option'}
                   </Text>
                 </Box>
               </ListItem>
+
               <ListItem display='flex' alignItems='flex-start'>
                 <ListIcon as={CheckIcon} color='green.500' mt={1} />
                 <Box>
-                  <Text fontWeight='medium'>Check your card details</Text>
+                  <Text fontWeight='medium'>Check your payment details</Text>
                   <Text fontSize='sm' color='gray.600'>
-                    Ensure your card number, expiry date, and CVV are correct
+                    Verify card number, expiry date, CVV, and billing address
                   </Text>
                 </Box>
               </ListItem>
+
               <ListItem display='flex' alignItems='flex-start'>
                 <ListIcon as={CheckIcon} color='green.500' mt={1} />
                 <Box>
                   <Text fontWeight='medium'>Contact your bank</Text>
                   <Text fontSize='sm' color='gray.600'>
-                    Your bank may have declined the transaction for security
-                    reasons
+                    {providerMessages?.contact ||
+                      'Your bank may have declined the transaction'}
                   </Text>
                 </Box>
               </ListItem>
+
+              {retryAttempts >= 1 && providerMessages?.alternative && (
+                <ListItem display='flex' alignItems='flex-start'>
+                  <ListIcon as={CheckIcon} color='blue.500' mt={1} />
+                  <Box>
+                    <Text fontWeight='medium'>
+                      Try alternative payment provider
+                    </Text>
+                    <Text fontSize='sm' color='gray.600'>
+                      {providerMessages.alternative}
+                    </Text>
+                  </Box>
+                </ListItem>
+              )}
+
               <ListItem display='flex' alignItems='flex-start'>
                 <ListIcon as={CheckIcon} color='green.500' mt={1} />
                 <Box>
                   <Text fontWeight='medium'>Try again later</Text>
                   <Text fontSize='sm' color='gray.600'>
-                    Sometimes payment processors experience temporary issues
+                    Payment processors sometimes experience temporary issues
                   </Text>
                 </Box>
               </ListItem>

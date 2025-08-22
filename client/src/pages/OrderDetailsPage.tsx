@@ -92,7 +92,7 @@ const OrderDetailsPage = () => {
 
   if (error || !order) {
     return (
-      <Box maxW='4xl' mx='auto' p-6>
+      <Box maxW='4xl' mx='auto' p={6}>
         <Alert status='error'>
           <AlertIcon />
           <Text>
@@ -158,15 +158,15 @@ const OrderDetailsPage = () => {
             {order.products.map((item, index) => (
               <Flex key={index} w='100%' align='center'>
                 <Image
-                  src={item.product.images[0]}
-                  alt={item.product.name}
+                  src={item.product?.images[0]}
+                  alt={item.product?.name}
                   boxSize='80px'
                   objectFit='cover'
                   borderRadius='md'
                   mr={4}
                 />
                 <Box flex='1'>
-                  <Text fontWeight='medium'>{item.product.name}</Text>
+                  <Text fontWeight='medium'>{item.product?.name}</Text>
                 </Box>
                 <Box textAlign='right'>
                   <Text>

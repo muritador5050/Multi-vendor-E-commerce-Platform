@@ -124,15 +124,6 @@ const CheckoutPage = () => {
       const createdOrder = await createOrderMutation.mutateAsync(
         finalOrderData
       );
-
-      toast({
-        title: 'Order Created!',
-        description: 'Proceeding to payment...',
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-      });
-
       navigate('/payment', {
         state: {
           orderId: createdOrder.data?._id,

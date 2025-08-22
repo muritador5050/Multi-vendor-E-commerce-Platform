@@ -31,14 +31,24 @@ export interface Order {
     name: string;
     email: string;
   };
-  products: CreateOrderProduct[];
+  products: Array<{
+    product: {
+      _id: string;
+      name: string;
+      images: string[];
+    };
+    quantity: number;
+    price: number;
+    _id: string;
+  }>;
   shippingAddress: Address;
   billingAddress: Address;
   useSameAddress: boolean;
   paymentMethod: PaymentMethod;
   statusHistory: Array<{
+    _id: string;
     status: string;
-    changedAt: Date;
+    changedAt: string;
     changedBy: string;
     reason: string;
   }>;
