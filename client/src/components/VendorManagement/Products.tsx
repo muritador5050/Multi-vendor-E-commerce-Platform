@@ -242,13 +242,11 @@ export default function VendorProducts() {
     imagesToDelete: [],
   });
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const toast = useToast();
 
-  // API hooks with optimized settings
   const {
     data: vendorProducts,
     isLoading,
@@ -503,9 +501,6 @@ export default function VendorProducts() {
             position: 'top-right',
             duration: 2000,
           });
-
-          // Force immediate refetch
-          refetch();
         },
         onError: (error) => {
           toast({
@@ -518,13 +513,7 @@ export default function VendorProducts() {
         },
       }
     );
-  }, [
-    drawerState.editData,
-    drawerState.selectedImages,
-    updateMutation,
-    toast,
-    refetch,
-  ]);
+  }, [drawerState.editData, drawerState.selectedImages, updateMutation, toast]);
 
   const handleConfirmDelete = useCallback(() => {
     if (productToDelete) {
@@ -540,8 +529,6 @@ export default function VendorProducts() {
           });
           onDeleteClose();
           setProductToDelete(null);
-          // Force immediate refetch
-          refetch();
         },
         onError: (error) => {
           toast({
@@ -554,7 +541,7 @@ export default function VendorProducts() {
         },
       });
     }
-  }, [deleteMutation, toast, onDeleteClose, productToDelete, refetch]);
+  }, [deleteMutation, toast, onDeleteClose, productToDelete]);
 
   // Pagination handlers
   const handlePreviousPage = useCallback(() => {

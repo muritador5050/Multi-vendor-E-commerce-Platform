@@ -154,7 +154,7 @@ function Navbar() {
             <NavLink to='shop'>Shop</NavLink>
             <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-            <NavLink to='adminDashboard'>Admin Dashboard</NavLink>
+            <NavLink to='admin-dashboard'>Admin Dashboard</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
           </HStack>
           <Spacer display={{ base: 'none', md: 'flex' }} />
@@ -340,7 +340,7 @@ function Navbar() {
               <NavLink to='shop'>Shop</NavLink>
               <NavLink to='store-manager'>Store Manager</NavLink>
               <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-              <NavLink to='adminDashboard'>Admin-Dashboard</NavLink>
+              <NavLink to='admin-dashboard'>Admin-Dashboard</NavLink>
               <NavLink to='contact-us'>Contact Us</NavLink>
 
               {/* Categories Section */}

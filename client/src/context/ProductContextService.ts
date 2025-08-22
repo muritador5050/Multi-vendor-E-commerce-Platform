@@ -15,10 +15,12 @@ const productKeys = {
   all: ['product'] as const,
   lists: (params?: ProductQueryParams) =>
     [...productKeys.all, 'lists', { params }] as const,
+  vendorLists: (params?: Omit<ProductQueryParams, 'vendor'>) =>
+    [...productKeys.all, 'vendor-lists', { params }] as const,
   item: (id: string) => [productKeys.all, 'item', id] as const,
 };
 
-// API Functions
+// API Functions (unchanged)
 const getAllProducts = async (
   params: ProductQueryParams = {}
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
@@ -156,10 +158,13 @@ export const useOwnVendorProducts = (
   params: Omit<ProductQueryParams, 'vendor'> = {}
 ) => {
   return useQuery({
-    queryKey: productKeys.lists(params),
+    queryKey: productKeys.vendorLists(params),
     queryFn: () => getOwnVendorProducts(params),
     select: (data) => data.data,
-    staleTime: 30 * 1000,
+    staleTime: 5 * 1000,
+    gcTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -175,7 +180,9 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
+      // Invalidate both general and vendor-specific queries
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
     onError: (error) => {
       console.error('Create product failed:', error);
@@ -202,8 +209,9 @@ export const useToggleProductStatus = () => {
         }
       );
 
-      // Refresh lists
+      // Invalidate both general and vendor queries immediately
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
 
     onError: (error) => {
@@ -227,8 +235,12 @@ export const useUpdateProduct = () => {
     }) => updateProduct(id, product, files),
 
     onSuccess: (response, { id }) => {
+      // Update specific item cache
       queryClient.setQueryData(productKeys.item(id), response.data);
+
+      // Invalidate both lists immediately
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
 
     onError: (error) => {
@@ -244,9 +256,12 @@ export const useDeleteProduct = () => {
     mutationFn: deleteProduct,
 
     onSuccess: (response, deletedId) => {
+      // Remove specific item from cache
       queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
 
+      // Invalidate both lists immediately
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
 
     onError: (error) => {
