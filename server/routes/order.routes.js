@@ -4,7 +4,9 @@ const OrderController = require('../controllers/order.controller');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate } = require('../middlewares/authMiddleware');
 const checkRole = require('../middlewares/roleMiddleware');
+const requireEmailVerified = require('../middlewares/requireEmailVerified');
 
+router.use(authenticate, requireEmailVerified);
 /**
  * @openapi
  * /api/orders:
@@ -210,30 +212,26 @@ const checkRole = require('../middlewares/roleMiddleware');
  */
 router
   .route('/')
-  .post(authenticate, asyncHandler(OrderController.createOrder))
-  .get(
-    authenticate,
-    checkRole('admin', 'read'),
-    asyncHandler(OrderController.getAllOrders)
-  );
+  .post(asyncHandler(OrderController.createOrder))
+  .get(asyncHandler(OrderController.getAllOrders));
 
 router.get(
   '/analytics/sales-by-date',
-  authenticate,
+
   checkRole('vendor', 'read'),
   asyncHandler(OrderController.getDailySalesReport)
 );
 
 router.get(
   '/analytics/sales-by-product',
-  authenticate,
+
   checkRole('vendor', 'read'),
   asyncHandler(OrderController.getSalesByProduct)
 );
 
 router.get(
   '/analytics/vendor-sales-report',
-  authenticate,
+
   checkRole('vendor', 'read'),
   asyncHandler(OrderController.getVendorSalesAnalytics)
 );
@@ -306,7 +304,7 @@ router.get(
  */
 router.get(
   '/stats',
-  authenticate,
+
   checkRole('admin', 'read'),
   asyncHandler(OrderController.getOrderStats)
 );
@@ -370,7 +368,7 @@ router.get(
  */
 router.patch(
   '/:id/status',
-  authenticate,
+
   checkRole('admin', 'edit'),
   asyncHandler(OrderController.updateOrderStatus)
 );
@@ -452,7 +450,6 @@ router
   .route('/:id')
   .get(authenticate, asyncHandler(OrderController.getOrderById))
   .delete(
-    authenticate,
     checkRole('admin', 'delete'),
     asyncHandler(OrderController.deleteOrder)
   );

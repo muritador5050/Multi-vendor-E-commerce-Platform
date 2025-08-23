@@ -119,8 +119,8 @@ paymentSchema.statics.createStripePayment = async function (
       },
     ],
     mode: 'payment',
-    success_url: `${process.env.FRONTEND_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel`,
+    success_url: `${process.env.FRONTEND_URL}/payment-success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
     metadata: {
       idempotencyKey,
       orderId: orderId.toString(),
@@ -151,13 +151,13 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
   }
 
   const customerEmail = order.userId?.email || 'customer@example.com';
-
+  const paymentReference = `order_${orderId}_${Date.now()}`;
   const paymentData = {
     email: customerEmail,
     amount: amountInKobo,
     currency: 'NGN',
-    reference: `order_${orderId}_${Date.now()}`,
-    callback_url: `${process.env.FRONTEND_URL}/payment-success`,
+    reference: paymentReference,
+    callback_url: `${process.env.FRONTEND_URL}/payment-success/paystack?reference=${paymentReference}&order_id=${orderId}`,
     channels: [
       'card',
       'bank',
@@ -337,6 +337,74 @@ paymentSchema.statics.handleStripeWebhook = async function (req) {
           );
           break;
 
+        case 'payment_intent.payment_failed':
+          newPaymentStatus = 'failed';
+
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              failureReason:
+                session.last_payment_error?.message || 'Payment failed',
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
+
+          await this.syncOrderStatus(payment._id, dbSession);
+          break;
+
+        case 'payment_intent.canceled':
+          newPaymentStatus = 'failed';
+
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              failureReason: 'Payment cancelled',
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
+
+          await this.syncOrderStatus(payment._id, dbSession);
+          break;
+
+        case 'charge.refunded':
+          newPaymentStatus = 'refunded';
+
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
+
+          await Order.findByIdAndUpdate(
+            payment.orderId,
+            { orderStatus: 'refunded' },
+            { session: dbSession }
+          );
+          break;
+
+        case 'invoice.payment_failed':
+          newPaymentStatus = 'failed';
+
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: newPaymentStatus,
+              failureReason: 'Invoice payment failed',
+              transactionDetails: JSON.stringify(session),
+            },
+            { session: dbSession }
+          );
+
+          await this.syncOrderStatus(payment._id, dbSession);
+          break;
+
         default:
           console.log('Unhandled Stripe event type:', event.type);
       }
@@ -401,7 +469,7 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
           await Cart.findOneAndUpdate(
             { user: updatedOrder.userId },
             { $set: { items: [] } },
-            { session: dbSession }
+            { session: session_db }
           );
 
           await EmailService.sendOrderStatusUpdateEmail(updatedOrder);
@@ -418,9 +486,59 @@ paymentSchema.statics.handlePaystackWebhook = async function (req) {
             { session: session_db }
           );
 
-          // CORRECTED: Sync order status
           await this.syncOrderStatus(payment._id, session_db);
           console.log(`Payment ${payment._id} failed`);
+          break;
+        case 'transfer.success':
+          // Handle successful refund/transfer
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: 'refunded',
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
+
+          await Order.findByIdAndUpdate(
+            payment.orderId,
+            { orderStatus: 'refunded' },
+            { session: session_db }
+          );
+          break;
+
+        case 'dispute.create':
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: 'disputed',
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
+
+          await Order.findByIdAndUpdate(
+            payment.orderId,
+            { orderStatus: 'on_hold' },
+            { session: session_db }
+          );
+          break;
+
+        case 'dispute.resolve':
+          // Restore payment status based on dispute resolution
+          const disputeStatus =
+            data.status === 'resolved' ? 'completed' : 'failed';
+
+          await this.findByIdAndUpdate(
+            payment._id,
+            {
+              status: disputeStatus,
+              transactionDetails: JSON.stringify(data),
+            },
+            { session: session_db }
+          );
+
+          await this.syncOrderStatus(payment._id, session_db);
           break;
 
         default:

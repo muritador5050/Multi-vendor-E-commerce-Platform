@@ -142,6 +142,7 @@ const CheckoutPage = () => {
             ? error.message
             : 'There was an error creating your order. Please try again.',
         status: 'error',
+        position: 'top-right',
         duration: 5000,
         isClosable: true,
       });
