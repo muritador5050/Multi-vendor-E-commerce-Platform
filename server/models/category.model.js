@@ -68,47 +68,14 @@ const slugify = require('slugify');
  *           example: true
  *         message:
  *           type: string
- *           example: "We have 5 categories to choose from."
- *         pagination:
+ *           example: "Found 5 categories"
+ *         data:
  *           type: object
  *           properties:
- *             total:
- *               type: integer
- *               example: 25
- *             pages:
- *               type: integer
- *               example: 3
- *             page:
- *               type: integer
- *               example: 1
- *             limit:
- *               type: integer
- *               example: 10
- *         categories:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               id:
- *                 type: string
- *                 example: "60f7b1b5e1b2c3d4e5f6a7b8"
- *               name:
- *                 type: string
- *                 example: "Electronics"
- *               slug:
- *                 type: string
- *                 example: "electronics"
- *               image:
- *                 type: string
- *                 example: "https://example.com/image.jpg"
- *               createdAt:
- *                 type: string
- *                 format: date-time
- *                 example: "2023-01-15T10:30:00Z"
- *               updatedAt:
- *                 type: string
- *                 format: date-time
- *                 example: "2023-01-15T10:30:00Z"
+ *             categories:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Category'
  */
 
 const categorySchema = new mongoose.Schema(
@@ -117,9 +84,9 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: [true, 'Category name is required'],
       unique: true,
-      index: true,
       trim: true,
-      maxlength: [100, 'Category name cannot exceed 100 characters'],
+      maxlength: [50, 'Category name cannot exceed 50 characters'],
+      index: true,
     },
     slug: {
       type: String,
@@ -133,62 +100,27 @@ const categorySchema = new mongoose.Schema(
       default: '',
     },
   },
-
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+    toJSON: { virtuals: false },
+    toObject: { virtuals: false },
   }
 );
 
-// Query helper for pagination
-categorySchema.query.paginate = function ({ page, limit }) {
-  const skip = limit * (page - 1);
-  return this.skip(skip).limit(limit);
-};
-
-// Search filter query helper
-categorySchema.query.searchByText = function (search) {
-  if (search && search.trim()) {
-    const searchRegex = new RegExp(search.trim(), 'i');
-    return this.where({
-      $or: [{ name: searchRegex }, { slug: searchRegex }],
-    });
-  }
-  return this;
-};
-
-categorySchema.virtual('id').get(function () {
-  return this._id.toHexString();
-});
-
-// Auto-generate slug before saving
+// Optimized pre-save hook - combines both name trimming and slug generation
 categorySchema.pre('save', async function (next) {
-  if (this.isModified('name') || this.isNew) {
-    let baseSlug = slugify(this.name, { lower: true, strict: true });
-
-    if (this.isNew || this.slug !== baseSlug) {
-      let slug = baseSlug;
-      let counter = 1;
-
-      while (
-        await mongoose
-          .model('Category')
-          .findOne({ slug, _id: { $ne: this._id } })
-      ) {
-        slug = `${baseSlug}-${counter}`;
-        counter++;
-      }
-
-      this.slug = slug;
-    }
-  }
-  next();
-});
-
-categorySchema.pre('save', function (next) {
+  // Trim name first
   if (this.name) {
     this.name = this.name.trim();
+  }
+
+  // Generate slug if name is modified or document is new
+  if (this.isModified('name') || this.isNew) {
+    const baseSlug = slugify(this.name, { lower: true, strict: true });
+
+    if (this.isNew || this.slug !== baseSlug) {
+      this.slug = await this.constructor.generateUniqueSlug(baseSlug, this._id);
+    }
   }
   next();
 });
@@ -196,7 +128,7 @@ categorySchema.pre('save', function (next) {
 // Instance method to get safe public data
 categorySchema.methods.toPublicJSON = function () {
   return {
-    id: this._id,
+    _id: this._id,
     name: this.name,
     slug: this.slug,
     image: this.image || '/default-images/category-placeholder.jpg',
@@ -215,22 +147,20 @@ categorySchema.methods.getProductsWithPagination = async function (
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const parsedLimit = parseInt(limit);
 
+  const query = {
+    category: this._id,
+    isDeleted: false,
+    isActive: true,
+  };
+
   const [products, totalProducts] = await Promise.all([
-    Product.find({
-      category: this._id,
-      isDeleted: false,
-      isActive: true,
-    })
-      .sort('-createdAt')
+    Product.find(query)
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parsedLimit)
       .populate('vendor', 'name')
       .lean(),
-    Product.countDocuments({
-      category: this._id,
-      isDeleted: false,
-      isActive: true,
-    }),
+    Product.countDocuments(query),
   ]);
 
   return {
@@ -284,33 +214,34 @@ categorySchema.methods.deleteWithProducts = async function (force = false) {
 
 // Static method to validate ObjectId
 categorySchema.statics.isValidObjectId = function (id) {
-  return /^[0-9a-fA-F]{24}$/.test(id);
+  return mongoose.Types.ObjectId.isValid(id);
 };
 
-// Static method to create single category with validation
-categorySchema.statics.createWithValidation = async function (categoryData) {
-  const { name, image } = categoryData;
+// Static method to generate unique slug (extracted for reusability)
+categorySchema.statics.generateUniqueSlug = async function (
+  baseSlug,
+  excludeId = null
+) {
+  let slug = baseSlug;
+  let counter = 1;
 
-  if (!name) {
-    throw new Error('Category name is required');
+  const query = excludeId ? { slug, _id: { $ne: excludeId } } : { slug };
+
+  while (await this.findOne(query)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+    query.slug = slug;
   }
 
-  const existingCategory = await this.findOne({ name });
-  if (existingCategory) {
-    throw new Error(`Category ${name} already exists`);
-  }
-
-  return await this.create({
-    name,
-    image,
-    slug: slugify(name, { lower: true, strict: true }),
-  });
+  return slug;
 };
 
-// Static method to create bulk categories with validation
-categorySchema.statics.createBulkWithValidation = async function (categories) {
-  if (!Array.isArray(categories) || categories.length === 0) {
-    throw new Error('Categories must be a non-empty array');
+// Static method to create single or multiple categories with validation
+categorySchema.statics.createCategories = async function (data) {
+  const categories = Array.isArray(data) ? data : [data];
+
+  if (categories.length === 0) {
+    throw new Error('No categories provided');
   }
 
   // Validate each category has a name
@@ -320,49 +251,32 @@ categorySchema.statics.createBulkWithValidation = async function (categories) {
     }
   }
 
-  // Check for existing categories
-  const categoryNames = categories.map((c) => c.name);
+  // Check for existing categories by name
+  const categoryNames = categories.map((c) => c.name.trim());
   const existingCategories = await this.find({
     name: { $in: categoryNames },
-  });
+  }).select('name');
 
   if (existingCategories.length > 0) {
-    throw new Error(
-      `Some categories already exist: ${existingCategories
-        .map((e) => e.name)
-        .join(', ')}`
-    );
+    const existingNames = existingCategories.map((e) => e.name).join(', ');
+    throw new Error(`Categories already exist: ${existingNames}`);
   }
 
-  // Create categories with slugs
-  return await this.insertMany(
-    categories.map((c) => ({
-      ...c,
-      slug: slugify(c.name, { lower: true, strict: true }),
-    }))
-  );
-};
+  // For single category, use save() to trigger middleware
+  if (!Array.isArray(data)) {
+    const category = new this(categories[0]);
+    await category.save();
+    return category;
+  }
 
-// Static method to get categories with search and pagination
-categorySchema.statics.getWithPagination = async function (options = {}) {
-  const { page = 1, limit = 10, search, sort = { name: 1 } } = options;
+  const createdCategories = [];
+  for (const categoryData of categories) {
+    const category = new this(categoryData);
+    await category.save();
+    createdCategories.push(category);
+  }
 
-  const query = this.find().searchByText(search);
-
-  const [categories, total] = await Promise.all([
-    query.clone().paginate({ page, limit }).sort(sort),
-    query.clone().countDocuments(),
-  ]);
-
-  return {
-    categories,
-    pagination: {
-      total,
-      pages: Math.ceil(total / limit),
-      page,
-      limit,
-    },
-  };
+  return createdCategories;
 };
 
 // Static method to find by slug with products
@@ -372,11 +286,11 @@ categorySchema.statics.findBySlugWithProducts = async function (
 ) {
   const { includeProducts = false, page = 1, limit = 10 } = options;
 
-  if (!slug) {
+  if (!slug?.trim()) {
     throw new Error('Slug parameter is required');
   }
 
-  const category = await this.findOne({ slug });
+  const category = await this.findOne({ slug: slug.trim() });
   if (!category) {
     throw new Error('Category not found');
   }
@@ -386,10 +300,9 @@ categorySchema.statics.findBySlugWithProducts = async function (
   }
 
   const productData = await category.getProductsWithPagination({ page, limit });
-  const categoryData = category.toObject();
 
   return {
-    ...categoryData,
+    ...category.toObject(),
     ...productData,
   };
 };
@@ -410,31 +323,25 @@ categorySchema.statics.findByIdWithValidation = async function (id) {
 
 // Static method to update with validation
 categorySchema.statics.updateWithValidation = async function (id, updateData) {
-  if (!this.isValidObjectId(id)) {
-    throw new Error('Invalid category ID format');
-  }
+  const category = await this.findByIdWithValidation(id);
 
-  const category = await this.findById(id);
-  if (!category) {
-    throw new Error('Category not found');
-  }
-
-  // Check for name conflicts
-  if (updateData.name && updateData.name !== category.name) {
+  if (updateData.name && updateData.name.trim() !== category.name) {
+    const trimmedName = updateData.name.trim();
     const existingCategory = await this.findOne({
-      name: updateData.name,
+      name: trimmedName,
       _id: { $ne: id },
     });
+
     if (existingCategory) {
       throw new Error('Category name already exists');
     }
-    updateData.slug = slugify(updateData.name, { lower: true, strict: true });
   }
 
-  return await this.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
+  Object.keys(updateData).forEach((key) => {
+    category[key] = updateData[key];
   });
+
+  return await category.save();
 };
 
 module.exports = mongoose.model('Category', categorySchema);

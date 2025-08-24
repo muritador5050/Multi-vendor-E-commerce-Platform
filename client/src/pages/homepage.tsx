@@ -117,7 +117,7 @@ function HomePage() {
   });
 
   const { data: categoryResponse } = useCategories();
-  const categories = categoryResponse || [];
+  const categories = categoryResponse?.categories || [];
   const products = productsData?.products || [];
   const bikeProducts = bikeCategory?.products || [];
   const artProducts = artCategory?.products || [];

@@ -149,7 +149,6 @@ productSchema.pre('save', async function (next) {
     let uniqueSlug = baseSlug;
     let counter = 1;
 
-    // Check for existing slug and make it unique
     while (
       await this.constructor.findOne({
         slug: uniqueSlug,
@@ -186,9 +185,6 @@ productSchema.pre('save', function (next) {
   next();
 });
 
-// ============ STATIC METHODS ============
-
-// Helper method to validate ObjectId
 productSchema.statics.validateObjectId = function (id, fieldName = 'ID') {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error(`Invalid ${fieldName} format`);
@@ -234,6 +230,7 @@ productSchema.statics.createProducts = async function (productsData, vendorId) {
 };
 
 // Update product by ID
+// Update product by ID - FIXED VERSION
 productSchema.statics.updateById = async function (id, updateData, user) {
   this.validateObjectId(id, 'product ID');
 
@@ -244,29 +241,31 @@ productSchema.statics.updateById = async function (id, updateData, user) {
 
   this.checkPermissions(product, user, 'update');
 
-  // Merge new images with existing ones if provided
   if (updateData.images?.length) {
-    updateData.images = [...updateData.images, ...(product.images || [])];
+    product.images = [...updateData.images, ...(product.images || [])];
   }
 
   if (updateData.attributes) {
-    updateData.attributes = {
+    product.attributes = {
       ...product.attributes,
       ...updateData.attributes,
     };
   }
 
-  return this.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-    populate: [
-      { path: 'category', select: 'name slug image' },
-      { path: 'vendor', select: 'name email' },
-    ],
+  Object.keys(updateData).forEach((key) => {
+    if (key !== 'images' && key !== 'attributes') {
+      product[key] = updateData[key];
+    }
   });
+
+  await product.save();
+
+  return await this.findById(product._id)
+    .populate('category', 'name slug image')
+    .populate('vendor', 'name email')
+    .lean();
 };
 
-// Resolve category filter (by ID or slug)
 productSchema.statics.resolveCategoryFilter = async function (category) {
   const categoryDoc = mongoose.Types.ObjectId.isValid(category)
     ? await Category.findById(category)

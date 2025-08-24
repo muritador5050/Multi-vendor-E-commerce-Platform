@@ -39,9 +39,6 @@ export const vendorKeys = {
   topVendors: ['vendor', 'top'] as const,
 };
 
-// ===== API FUNCTIONS =====
-
-// Profile Management
 async function getVendorProfile(): Promise<ApiResponse<VendorProfile>> {
   return await apiClient.authenticatedApiRequest('/vendors/profile');
 }

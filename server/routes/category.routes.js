@@ -9,19 +9,22 @@ const {
   handleUploadError,
 } = require('../utils/FileUploads');
 
+// Upload middleware helper
+const handleImageUpload = (req, res, next) => {
+  categoryImageUpload.single('categoryImage')(req, res, (err) => {
+    if (err) {
+      return handleUploadError(err, req, res, next);
+    }
+    next();
+  });
+};
+
 /**
  * @openapi
  * /api/categories:
  *   get:
  *     summary: Get all categories
  *     tags: [Categories]
- *     parameters:
- *       - in: query
- *         name: includeProductCount
- *         schema:
- *           type: boolean
- *           default: false
- *         description: Include product count for each category
  *     responses:
  *       '200':
  *         description: A list of categories
@@ -36,19 +39,50 @@ router.get('/', asyncHandler(CategoryController.getAllCategories));
  * @openapi
  * /api/categories:
  *   post:
- *     summary: Create a new category
+ *     summary: Create single or multiple categories
  *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Category name
+ *                 example: "Electronics"
+ *               categoryImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Category image file
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CategoryInput'
+ *             oneOf:
+ *               - $ref: '#/components/schemas/CategoryInput'
+ *               - type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/CategoryInput'
+ *           examples:
+ *             single:
+ *               summary: Create single category
+ *               value:
+ *                 name: "Electronics"
+ *                 image: "https://example.com/electronics.jpg"
+ *             multiple:
+ *               summary: Create multiple categories
+ *               value:
+ *                 - name: "Electronics"
+ *                   image: "https://example.com/electronics.jpg"
+ *                 - name: "Clothing"
+ *                   image: "https://example.com/clothing.jpg"
  *     responses:
  *       '201':
- *         description: Category created successfully
+ *         description: Category/Categories created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -64,71 +98,8 @@ router.post(
   '/',
   authenticate,
   checkRole('admin', 'create'),
-  asyncHandler(CategoryController.createCategory)
-);
-
-router.post(
-  '/upload-image',
-  authenticate,
-  checkRole('admin', 'create'),
-  (req, res, next) => {
-    categoryImageUpload.single('categoryImage')(req, res, (err) => {
-      if (err) {
-        return handleUploadError(err, req, res, next);
-      }
-      next();
-    });
-  },
-  asyncHandler(CategoryController.uploadCategoryImage)
-);
-
-router.delete(
-  '/delete-image',
-  authenticate,
-  checkRole('admin', 'delete'),
-  asyncHandler(CategoryController.deleteCategoryImage)
-);
-
-/**
- * @openapi
- * /api/categories/bulk:
- *   post:
- *     summary: Create multiple categories from predefined list
- *     tags: [Categories]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: array
- *             items:
- *               $ref: '#/components/schemas/CategoryInput'
- *     responses:
- *       '201':
- *         description: Categories created successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Category'
- *       '401':
- *         description: Unauthorized
- *       '403':
- *         description: Forbidden
- */
-router.post(
-  '/bulk',
-  authenticate,
-  checkRole('admin', 'create'),
-  asyncHandler(CategoryController.createBulkCategories)
+  handleImageUpload,
+  asyncHandler(CategoryController.createCategories)
 );
 
 /**
@@ -199,6 +170,8 @@ router.get('/slug/:slug', asyncHandler(CategoryController.getCategoryBySlug));
  *               properties:
  *                 success:
  *                   type: boolean
+ *                 message:
+ *                   type: string
  *                 data:
  *                   $ref: '#/components/schemas/Category'
  *       '404':
@@ -222,6 +195,17 @@ router.get('/slug/:slug', asyncHandler(CategoryController.getCategoryBySlug));
  *     requestBody:
  *       required: true
  *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Electronics"
+ *               categoryImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: New category image file
  *         application/json:
  *           schema:
  *             type: object
@@ -242,6 +226,8 @@ router.get('/slug/:slug', asyncHandler(CategoryController.getCategoryBySlug));
  *               properties:
  *                 success:
  *                   type: boolean
+ *                 message:
+ *                   type: string
  *                 data:
  *                   $ref: '#/components/schemas/Category'
  *       '404':
@@ -290,6 +276,7 @@ router
   .patch(
     authenticate,
     checkRole('admin', 'edit'),
+    handleImageUpload,
     asyncHandler(CategoryController.updateCategory)
   )
   .delete(
