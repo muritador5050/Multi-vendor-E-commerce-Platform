@@ -68,7 +68,6 @@ class CategoryController {
     if (req.file) {
       updateData.image = `${BACKEND_URL}/uploads/categories/${req.file.filename}`;
 
-      // Delete old image asynchronously (don't wait for it)
       CategoryController._deleteOldImage(id).catch(() => {
         // Silently handle error - old image deletion is not critical
       });
