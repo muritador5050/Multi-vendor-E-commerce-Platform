@@ -7,7 +7,6 @@ import {
   Flex,
   Grid,
   GridItem,
-  HStack,
   IconButton,
   Image,
   SimpleGrid,
@@ -18,7 +17,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
-import ProductComponentCard from '@/components/reuseable/ProductComponentCard.tsx';
+import ProductComponentCard from '@/components/ProductCard/ProductComponentCard.tsx';
 import { useCategories } from '@/context/CategoryContextService';
 import {
   Truck,
@@ -41,7 +40,6 @@ import {
   BanknoteArrowUp,
   Shirt,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import {
   useProducts,
   useProductsByCategory,
@@ -124,8 +122,6 @@ function HomePage() {
   const artProducts = artCategory?.products || [];
   const toolsProducts = toolsCategory?.products || [];
   const smartPhoneProducts = smartphoneCategory?.products || [];
-  // Create a motion component for Box
-  const MotionBox = motion.create(Box);
 
   // Handle quick view
   const handleQuickView = (product: Product) => {
@@ -140,24 +136,36 @@ function HomePage() {
   };
 
   return (
-    <Box display='grid' gap={6} p={{ sm: 2, md: 6 }}>
+    <Box display='grid' gap={6} p={2}>
       <Grid
         templateAreas={{
           base: `"unset"`,
           md: `
+          "header header"
+          "side sider"
+          "foot foot"
+          "footer footer"
+          "footest footest"
+      `,
+          lg: `
       "header header side"
       "header header sider"
       "foot footer footest"
     `,
         }}
-        templateColumns={{ base: 'unset', md: '1fr 1fr 1fr' }}
+        templateColumns={{
+          base: 'unset',
+          md: '1fr 1fr',
+          lg: '1fr 1fr ',
+        }}
         templateRows={{
           base: 'unset',
-          md: 'auto auto auto',
+          md: '1fr 1fr',
+          lg: 'auto auto auto',
         }}
         gap={5}
       >
-        <GridItem bg='red.500' area={{ md: 'header' }}>
+        <GridItem bg='teal.400' area={{ md: 'header' }}>
           <Stack
             position='relative'
             direction='row'
@@ -176,69 +184,69 @@ function HomePage() {
               <Text color='white' fontSize='larger'>
                 Get 40% off
               </Text>
-              <Text color='white' fontWeight='semibold' fontSize='3xl'>
+              <Text
+                color='white'
+                fontWeight='semibold'
+                fontSize={{ base: 'xl', md: '3xl' }}
+              >
                 Keeping your ears safe and music loud
               </Text>
               <Text color='white'>Fulfill your music needs</Text>
               <Button w='fit-content'>Shop Now</Button>
             </Flex>
 
-            <Image src='/phone.png' alt='mutilvendor-img' />
+            <Image src='/phone.png' alt='accessories' />
           </Stack>
         </GridItem>
-        <GridItem p={3} bg='blue' area={{ md: 'side' }}>
-          <HStack alignItems='center'>
-            <Flex
-              direction='column'
-              gap={3}
-              position={{ md: 'absolute', lg: 'revert' }}
-            >
+        <GridItem p={3} bg='yellow.600' area={{ md: 'side' }}>
+          <Flex alignItems='center' justify='space-around'>
+            <Stack>
               <Text color='white' fontSize='larger'>
                 New iPhone
               </Text>
-              <Text color='white' fontWeight='semibold' fontSize='3xl'>
+              <Text
+                color='white'
+                fontWeight='semibold'
+                fontSize={{ base: 'xl', md: '3xl' }}
+              >
                 Be limitless <br /> or go home
               </Text>
-            </Flex>
+            </Stack>
 
             <Image
               src='/elegant-smartphone-composition-removebg-preview.png'
               alt='phone'
               boxSize='200px'
             />
-          </HStack>
+          </Flex>
         </GridItem>
         <GridItem p={3} bg='orange.500' area={{ md: 'sider' }}>
-          <HStack alignItems='center'>
-            <Flex
-              direction='column'
-              gap={3}
-              position={{ md: 'absolute', lg: 'revert' }}
-            >
+          <Flex alignItems='center' justify='space-around'>
+            <Stack>
               <Text color='white' fontSize='larger'>
                 House Hold
               </Text>
-              <Text color='white' fontWeight='semibold' fontSize='3xl'>
+              <Text
+                color='white'
+                fontWeight='semibold'
+                fontSize={{ base: 'xl', md: '3xl' }}
+              >
                 Drill like a pro
               </Text>
-            </Flex>
+            </Stack>
             <Image
               src='/view-3d-graphic-drill-removebg-preview.png'
               alt='drill'
               objectFit='cover'
               boxSize='200px'
             />
-          </HStack>
+          </Flex>
         </GridItem>
         <GridItem p={3} bg='white' area={{ md: 'foot' }}>
-          <HStack alignItems='center'>
-            <Flex
-              direction='column'
-              gap={3}
-              position={{ md: 'absolute', lg: 'revert' }}
-            >
+          <Flex alignItems='center' justify='space-around'>
+            <Stack>
               <Text fontSize='larger'>At lowest price</Text>
-              <Text fontWeight='semibold' fontSize='3xl'>
+              <Text fontWeight='semibold' fontSize={{ base: 'xl', md: '3xl' }}>
                 Art and Accessories
               </Text>
               <Button
@@ -252,24 +260,20 @@ function HomePage() {
               >
                 Shop Now
               </Button>
-            </Flex>
+            </Stack>
             <Image
               src='/abstract-dadaism-concept.jpg'
               alt='art'
               objectFit='cover'
               boxSize='200px'
             />
-          </HStack>
+          </Flex>
         </GridItem>
         <GridItem p={3} bg='white' area={{ md: 'footer' }}>
-          <HStack alignItems='center'>
-            <Flex
-              direction='column'
-              gap={3}
-              position={{ md: 'absolute', lg: 'revert' }}
-            >
+          <Flex alignItems='center' justify='space-around'>
+            <Stack>
               <Text fontSize='larger'>20% off</Text>
-              <Text fontWeight='semibold' fontSize='3xl'>
+              <Text fontWeight='semibold' fontSize={{ base: 'xl', md: '3xl' }}>
                 Laptop and computers
               </Text>
               <Button
@@ -283,23 +287,19 @@ function HomePage() {
               >
                 Shop now
               </Button>
-            </Flex>
+            </Stack>
             <Image
               src='/view-3d-laptop-device-with-screen-keyboard-removebg-preview.png'
               alt='laptop'
               boxSize={{ base: '150px', md: '200px' }}
             />
-          </HStack>
+          </Flex>
         </GridItem>
         <GridItem p={3} bg='white' area={{ md: 'footest' }}>
-          <HStack alignItems='center'>
-            <Flex
-              direction='column'
-              gap={3}
-              position={{ md: 'absolute', lg: 'revert' }}
-            >
+          <Flex alignItems='center' justify='space-around'>
+            <Stack>
               <Text fontSize='larger'>New Look</Text>
-              <Text fontWeight='semibold' fontSize='3xl'>
+              <Text fontWeight='semibold' fontSize={{ base: 'xl', md: '3xl' }}>
                 Go on ride <br /> hurry
               </Text>
               <Button
@@ -313,75 +313,64 @@ function HomePage() {
               >
                 Shop now
               </Button>
-            </Flex>
+            </Stack>
             <Image
               src='/close-up-bike-indoor-removebg-preview.png'
               alt='bicycle'
               boxSize='200px'
             />
-          </HStack>
+          </Flex>
         </GridItem>
       </Grid>
 
       <Box bg='white' overflowX='hidden' py={6} px={4} my={6}>
-        <Text mb={4} fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
+        <Text
+          mb={4}
+          fontWeight='bold'
+          fontSize={{ base: 'xl', md: '3xl' }}
+          fontFamily='cursive'
+        >
           Shop by category
         </Text>
-        <Flex overflow='hidden' position='relative' gap={4}>
-          {categories.map((category, index) => {
+        <Stack
+          overflow='auto'
+          display={'grid'}
+          gridTemplateColumns={{ base: 'auto auto', md: 'repeat(8, auto)' }}
+          gap={4}
+        >
+          {categories.map((category) => {
             const CategoryIcon = getCategoryIcon(category.name);
             const color = getCategoryColor(category.name);
             return (
-              <MotionBox
+              <Stack
                 key={category._id}
-                animate={{ x: ['100%', '-100%'] }}
-                transition={{
-                  duration: 10,
-                  delay: index * 0.5,
-                  repeat: Infinity,
-                  ease: 'linear',
+                as={ReactRouterLink}
+                to={`/products/category/${category.name
+                  .toLowerCase()
+                  .replace(/ & | /g, '-')}`}
+                maxH='100px'
+                align='center'
+                justify='center'
+                _hover={{
+                  bg: 'gray.200',
+                  borderRadius: 'full',
+                  boxShadow: 'lg',
                 }}
               >
-                <Stack
-                  key={category._id}
-                  as={ReactRouterLink}
-                  to={`/products/category/${category.name
-                    .toLowerCase()
-                    .replace(/ & | /g, '-')}`}
-                  borderRadius='xl'
-                  h={{ base: '150px', md: '250px' }}
-                  align='center'
-                  justify='center'
-                  flex='0 0 auto'
-                  minW={{ base: '50%', sm: '33.33%', md: '200px' }}
-                  border='1px solid'
-                  borderColor='gray.200'
-                  p={4}
-                  bg='gray.50'
-                  boxShadow='md'
-                >
-                  <Center
-                    w='80px'
-                    h='80px'
-                    borderRadius='full'
-                    border='2px solid green'
-                  >
-                    <IconButton
-                      icon={<CategoryIcon />}
-                      aria-label={category.name}
-                      variant='ghost'
-                      color={color}
-                      size='lg'
-                    />
-                  </Center>
-                  <Text fontSize='sm' fontWeight='medium'>
-                    {category.name}
-                  </Text>
-                </Stack>
-              </MotionBox>
+                <IconButton
+                  icon={<CategoryIcon />}
+                  aria-label={category.name}
+                  variant='ghost'
+                  color={color}
+                  size='lg'
+                />
+                <Text fontSize='sm' fontWeight='medium'>
+                  {category.name}
+                </Text>
+              </Stack>
             );
           })}
-        </Flex>
+        </Stack>
       </Box>
       <Box bg='white' p={6}>
         <Flex
@@ -389,20 +378,29 @@ function HomePage() {
           gap={{ base: 3 }}
           direction={{ base: 'column', md: 'row' }}
         >
-          <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
+          <Text
+            fontWeight='bold'
+            fontSize={{ base: 'xl', md: '3xl' }}
+            fontFamily='cursive'
+          >
             Explore in bikes
           </Text>
           <Spacer />
           <Button
-            bg='black'
-            color='white'
-            onClick={() => navigate(`/products/category/bikes`)}
+            colorScheme='teal'
+            onClick={() => navigate(`/products/category/bike`)}
           >
             View all
           </Button>
         </Flex>
-
-        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+        {bikeProducts.length === 0 && (
+          <Center>
+            <Text fontSize={'2xl'} fontWeight={'medium'} color={'gray'}>
+              No product for this category yet please come back shortly
+            </Text>
+          </Center>
+        )}
+        <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {bikeProducts.map((product) => (
             <ProductComponentCard
               key={product._id}
@@ -418,20 +416,30 @@ function HomePage() {
           gap={{ base: 3 }}
           direction={{ base: 'column', md: 'row' }}
         >
-          <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
+          <Text
+            fontWeight='bold'
+            fontSize={{ base: 'xl', md: '3xl' }}
+            fontFamily='cursive'
+          >
             Daily Use Tools
           </Text>
           <Spacer />
           <Button
-            bg='black'
-            color='white'
-            onClick={() => navigate(`/products/category/tools`)}
+            colorScheme='teal'
+            onClick={() => navigate(`/products/category/tool`)}
           >
             View all
           </Button>
         </Flex>
+        {toolsProducts.length === 0 && (
+          <Center>
+            <Text fontSize={'2xl'} fontWeight={'medium'} color={'gray'}>
+              No product for this category yet please come back shortly
+            </Text>
+          </Center>
+        )}
 
-        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+        <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {toolsProducts.map((product) => (
             <ProductComponentCard
               key={product._id}
@@ -451,19 +459,30 @@ function HomePage() {
       </Box>
       <Box bg='white' p={6}>
         <Flex>
-          <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
+          <Text
+            fontWeight='bold'
+            fontSize={{ base: 'xl', md: '3xl' }}
+            fontFamily='cursive'
+          >
             For art lovers
           </Text>
           <Spacer />
           <Button
-            bg='black'
-            color='white'
+            colorScheme='teal'
             onClick={() => navigate(`/products/category/art`)}
           >
             View all
           </Button>
         </Flex>
-        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+
+        {artProducts.length === 0 && (
+          <Center>
+            <Text fontSize={'2xl'} fontWeight={'medium'} color={'gray'}>
+              No product for this category yet please come back shortly
+            </Text>
+          </Center>
+        )}
+        <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {artProducts.map((product) => (
             <ProductComponentCard
               key={product._id}
@@ -475,19 +494,29 @@ function HomePage() {
       </Box>
       <Box bg='white' p={6}>
         <Flex>
-          <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
+          <Text
+            fontWeight='bold'
+            fontSize={{ base: 'xl', md: '3xl' }}
+            fontFamily='cursive'
+          >
             Smartphones and Electronics
           </Text>
           <Spacer />
           <Button
-            bg='black'
-            color='white'
-            onClick={() => navigate(`/products/category/electronics`)}
+            colorScheme='teal'
+            onClick={() => navigate(`/products/category/accessories`)}
           >
             View all
           </Button>
         </Flex>
-        <SimpleGrid columns={{ base: 2, md: 5 }} spacing={4} mt={6}>
+        {smartPhoneProducts.length === 0 && (
+          <Center>
+            <Text fontSize={'2xl'} fontWeight={'medium'} color={'gray'}>
+              No product for this category yet please come back shortly
+            </Text>
+          </Center>
+        )}
+        <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {smartPhoneProducts.map((product) => (
             <ProductComponentCard
               key={product._id}
@@ -500,15 +529,26 @@ function HomePage() {
 
       <Box bg='white' p={6}>
         <Flex>
-          <Text fontWeight='bold' fontSize='3xl' fontFamily='cursive'>
+          <Text
+            fontWeight='bold'
+            fontSize={{ base: 'xl', md: '3xl' }}
+            fontFamily='cursive'
+          >
             Most Popular
           </Text>
           <Spacer />
-          <Button bg='black' color='white' onClick={() => navigate(`/shop`)}>
+          <Button colorScheme='teal' onClick={() => navigate(`/shop`)}>
             View all
           </Button>
         </Flex>
-        <SimpleGrid columns={{ base: 1, md: 5 }} spacing={4} mt={6}>
+        {products.length === 0 && (
+          <Center>
+            <Text fontSize={'2xl'} fontWeight={'medium'} color={'gray'}>
+              No product yet please come back shortly
+            </Text>
+          </Center>
+        )}
+        <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {products.map((product) => (
             <ProductComponentCard
               key={product._id}

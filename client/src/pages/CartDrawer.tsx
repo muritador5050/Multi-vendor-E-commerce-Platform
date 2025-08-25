@@ -63,7 +63,7 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
           <Stack spacing={6}>
             {cart?.items.map((item) => {
               return (
-                <VStack key={item.product._id} bg='white'>
+                <VStack key={item.product._id} bg='teal.900'>
                   <Flex w='100%' align='center' justify='space-between' p={3}>
                     <Image
                       src={
@@ -75,7 +75,7 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
                       boxSize='70px'
                       objectFit='cover'
                       borderRadius='md'
-                      border='2px solid red'
+                      border='2px solid gray'
                     />
 
                     <VStack spacing={2} flex={1} mx={3} align='flex-start'>
@@ -123,6 +123,7 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
                       <IconButton
                         aria-label='Add quantity'
                         icon={<MinusIcon />}
+                        color={'white'}
                         onClick={() =>
                           updateQuantity.mutate({
                             productId: item.product._id,
@@ -131,10 +132,13 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
                         }
                         disabled={item.quantity <= 1}
                       />
-                      <Button size='xs'>{item.quantity}</Button>
+                      <Button size='xs' color={'white'}>
+                        {item.quantity}
+                      </Button>
                       <IconButton
                         aria-label='Add quantity'
                         icon={<AddIcon />}
+                        color={'white'}
                         onClick={() =>
                           updateQuantity.mutate({
                             productId: item.product._id,
@@ -154,9 +158,9 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
 
           <Divider />
 
-          <Box w='100%' bg='white' mt={8} p={3}>
+          <Box w='100%' bg='teal.900' mt={8} p={3}>
             <Flex align='center' justify='space-between'>
-              <Text fontWeight='light' fontSize='md'>
+              <Text fontWeight='light' fontSize='sm'>
                 Total Items:
               </Text>
               <Text fontWeight='bold' fontSize='xs' color='blue.600' ml={1}>
@@ -164,7 +168,7 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
               </Text>
             </Flex>
             <Flex align='center' justify='space-between'>
-              <Text fontWeight='light' fontSize='md'>
+              <Text fontWeight='light' fontSize='sm'>
                 Sub Total:
               </Text>
               <Text fontWeight='bold' fontSize='xs' color='red' ml={1}>
@@ -174,15 +178,16 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
           </Box>
 
           <Divider />
-          <Box my={5}>
-            <Text textAlign='center' fontFamily='cursive' color='black' mb={3}>
+          <Box bg='teal.900' my={5}>
+            <Text textAlign='center' fontFamily='cursive' mb={3}>
               Payment Details
             </Text>
-            <Flex w='100%' bg='white' p={3}>
+            <Flex w='100%' p={3}>
               <ButtonGroup>
                 <Button
                   variant='outline'
                   fontSize='xs'
+                  colorScheme='white'
                   px='30px'
                   onClick={() => {
                     setTimeout(() => navigate('/cart'), 100);

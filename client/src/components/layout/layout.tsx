@@ -74,12 +74,7 @@ function Layout() {
           <Outlet />
         </Flex>
       </Box>
-      <Box as='footer' bg='gray.800' color='white' p={4} textAlign='center'>
-        <Text fontSize='sm'>
-          © {new Date().getFullYear()} Multi-vendor Ecommerce platform. All
-          rights reserved.
-        </Text>
-      </Box>
+
       <Footer />
     </Box>
   );

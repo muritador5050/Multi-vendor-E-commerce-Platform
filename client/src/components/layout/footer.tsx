@@ -5,7 +5,6 @@ import {
   Stack,
   Text,
   Link,
-  // useColorModeValue,
   HStack,
   VStack,
   SimpleGrid,
@@ -13,13 +12,13 @@ import {
 
 const Footer = () => {
   return (
-    <Box bg='brand.700' color='white' mt='auto'>
+    <Box bg='teal.900' color='white' mt='auto'>
       <Container as={Stack} maxW='container.xl' py={10}>
         <SimpleGrid columns={{ base: 1, sm: 2, md: 4 }} spacing={8}>
           {/* Company */}
           <Stack spacing={6}>
             <Text fontSize='lg' fontWeight='bold'>
-              ShopApp
+              Multi-vendor Ecommerce platform
             </Text>
             <Text fontSize='sm'>
               Your one-stop shop for everything you need.
@@ -39,7 +38,7 @@ const Footer = () => {
               <Link as={RouterLink} to='/about' fontSize='sm'>
                 About Us
               </Link>
-              <Link as={RouterLink} to='/contact' fontSize='sm'>
+              <Link as={RouterLink} to='/contact-us' fontSize='sm'>
                 Contact
               </Link>
             </VStack>
@@ -49,10 +48,18 @@ const Footer = () => {
           <Stack spacing={6}>
             <Text fontWeight='bold'>Support</Text>
             <VStack spacing={2} align='start'>
-              <Link fontSize='sm'>Help Center</Link>
-              <Link fontSize='sm'>Terms of Service</Link>
-              <Link fontSize='sm'>Privacy Policy</Link>
-              <Link fontSize='sm'>Returns</Link>
+              <Link as={RouterLink} to='/help' fontSize='sm'>
+                Help Center
+              </Link>
+              <Link as={RouterLink} to='/services' fontSize='sm'>
+                Terms of Service
+              </Link>
+              <Link as={RouterLink} to='/policy' fontSize='sm'>
+                Privacy Policy
+              </Link>
+              <Link as={RouterLink} to='/returns' fontSize='sm'>
+                Returns
+              </Link>
             </VStack>
           </Stack>
 
@@ -60,8 +67,8 @@ const Footer = () => {
           <Stack spacing={6}>
             <Text fontWeight='bold'>Contact Us</Text>
             <VStack spacing={2} align='start'>
-              <Text fontSize='sm'>Email: support@shopapp.com</Text>
-              <Text fontSize='sm'>Phone: (555) 123-4567</Text>
+              <Text fontSize='sm'>Email: support@multivendor.com</Text>
+              <Text fontSize='sm'>Phone: (234) 8148945591</Text>
               <Text fontSize='sm'>Address: 123 Shop Street</Text>
             </VStack>
           </Stack>
@@ -79,7 +86,10 @@ const Footer = () => {
           justify={{ base: 'center', md: 'space-between' }}
           align={{ base: 'center', md: 'center' }}
         >
-          <Text fontSize='sm'>© 2024 ShopApp. All rights reserved</Text>
+          <Text fontSize='sm'>
+            © {new Date().getFullYear()} Multi-vendor Ecommerce platform. All
+            rights reserved.
+          </Text>
           <HStack spacing={6}>
             <Link fontSize='sm'>Facebook</Link>
             <Link fontSize='sm'>Twitter</Link>
