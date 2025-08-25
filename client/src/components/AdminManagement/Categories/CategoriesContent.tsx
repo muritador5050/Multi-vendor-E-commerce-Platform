@@ -46,6 +46,7 @@ import {
   MenuItem,
   Card,
   CardBody,
+  Stack,
 } from '@chakra-ui/react';
 import {
   FiEdit2,
@@ -53,6 +54,7 @@ import {
   FiPlus,
   FiMoreVertical,
   FiEye,
+  FiRefreshCw,
 } from 'react-icons/fi';
 import {
   useCategories,
@@ -98,14 +100,18 @@ export default function CategoriesContent() {
     isLoading: categoriesLoading,
     error: categoriesError,
     isError: isCategoriesError,
+    refetch,
+    isRefetching,
+    isFetching,
   } = useCategories();
 
-  // Extract categories array from the response
   const categories = categoriesData?.categories || [];
   const selectedCategory = categories.find(
     (category) => category._id === selectedCategoryId
   );
-  console.log('Categories:', categories);
+
+  console.log('Categories Data:', categoriesData);
+  console.log('Categories Array:', categories);
 
   // Mutation hooks
   const createCategoryMutation = useCreateCategory();
@@ -120,6 +126,30 @@ export default function CategoriesContent() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please select an image under 5MB',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please select an image file',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+        return;
+      }
+
       setSelectedFile(file);
 
       // Create preview URL
@@ -190,10 +220,18 @@ export default function CategoriesContent() {
 
     try {
       if (drawerMode === 'create') {
+        console.log(
+          'Creating category with data:',
+          formData,
+          'and file:',
+          selectedFile
+        );
+
         await createCategoryMutation.mutateAsync({
           data: formData,
           files: selectedFile || undefined,
         });
+
         toast({
           title: 'Success',
           description: 'Category created successfully',
@@ -203,11 +241,19 @@ export default function CategoriesContent() {
           isClosable: true,
         });
       } else if (drawerMode === 'edit') {
+        console.log(
+          'Updating category with data:',
+          formData,
+          'and file:',
+          selectedFile
+        );
+
         await updateCategoryMutation.mutateAsync({
           id: selectedCategoryId,
           categoryData: formData,
           files: selectedFile || undefined,
         });
+
         toast({
           title: 'Success',
           description: 'Category updated successfully',
@@ -217,10 +263,14 @@ export default function CategoriesContent() {
           isClosable: true,
         });
       }
+
+      resetForm();
       onDrawerClose();
     } catch (error) {
+      console.error('Category operation failed:', error);
       const errorMessage =
-        error instanceof Error ? error.message : 'An error occurred';
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+
       toast({
         title: 'Error',
         description: errorMessage,
@@ -234,6 +284,8 @@ export default function CategoriesContent() {
 
   const handleDelete = async () => {
     try {
+      console.log('Deleting category:', categoryToDelete);
+
       await deleteCategoryMutation.mutateAsync({
         id: categoryToDelete,
       });
@@ -249,8 +301,9 @@ export default function CategoriesContent() {
       onDeleteDialogClose();
       setCategoryToDelete('');
     } catch (error) {
+      console.error('Category deletion failed:', error);
       const errorMessage =
-        error instanceof Error ? error.message : 'An error occurred';
+        error instanceof Error ? error.message : 'Failed to delete category';
 
       toast({
         title: 'Error',
@@ -264,28 +317,40 @@ export default function CategoriesContent() {
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
+  const handleRefresh = () => {
+    console.log('Manually refreshing categories...');
+    refetch();
   };
 
   // Loading state
-  if (categoriesLoading) {
+  if (categoriesLoading && !categoriesData) {
     return (
       <Center h='400px'>
-        <Spinner size='xl' color='blue.500' />
+        <VStack spacing={4}>
+          <Spinner size='xl' color='blue.500' />
+          <Text color='gray.600'>Loading categories...</Text>
+        </VStack>
       </Center>
     );
   }
 
   // Error state
-  if (isCategoriesError) {
+  if (isCategoriesError && !categoriesData) {
     return (
       <Alert status='error' borderRadius='md'>
         <AlertIcon />
-        <Box>
+        <Box flex='1'>
           <AlertTitle>Error loading categories!</AlertTitle>
           <AlertDescription>
             {categoriesError instanceof Error
@@ -293,6 +358,9 @@ export default function CategoriesContent() {
               : 'Unknown error occurred'}
           </AlertDescription>
         </Box>
+        <Button size='sm' onClick={handleRefresh} ml={4}>
+          Retry
+        </Button>
       </Alert>
     );
   }
@@ -304,16 +372,40 @@ export default function CategoriesContent() {
         <Heading size='lg' color='gray.700'>
           Categories Management ({categories.length})
         </Heading>
-        <Button
-          leftIcon={<FiPlus />}
-          colorScheme='blue'
-          onClick={openCreateDrawer}
-          size='sm'
-          isDisabled={createCategoryMutation.isPending}
-        >
-          Add Category
-        </Button>
+        <Stack spacing={3} direction={'row'}>
+          <Button
+            leftIcon={<FiRefreshCw />}
+            isLoading={isRefetching || isFetching}
+            onClick={handleRefresh}
+            size='sm'
+            variant='outline'
+          >
+            {isRefetching ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Button
+            leftIcon={<FiPlus />}
+            colorScheme='blue'
+            onClick={openCreateDrawer}
+            size='sm'
+            isDisabled={createCategoryMutation.isPending}
+          >
+            Add Category
+          </Button>
+        </Stack>
       </Flex>
+
+      {/* Show error as warning if we have cached data */}
+      {isCategoriesError && categoriesData && (
+        <Alert status='warning' mb={4}>
+          <AlertIcon />
+          <AlertDescription>
+            Failed to refresh categories data. Showing cached data.
+          </AlertDescription>
+          <Button size='sm' onClick={handleRefresh} ml='auto'>
+            Retry
+          </Button>
+        </Alert>
+      )}
 
       {/* Categories Table */}
       <Card>
@@ -335,7 +427,22 @@ export default function CategoriesContent() {
                   <Tr>
                     <Td colSpan={6}>
                       <Center py={8}>
-                        <Text color='gray.500'>No categories found</Text>
+                        <VStack spacing={2}>
+                          <Text color='gray.500'>
+                            {categoriesLoading
+                              ? 'Loading categories...'
+                              : 'No categories found'}
+                          </Text>
+                          {!categoriesLoading && (
+                            <Button
+                              size='sm'
+                              onClick={openCreateDrawer}
+                              colorScheme='blue'
+                            >
+                              Create your first category
+                            </Button>
+                          )}
+                        </VStack>
                       </Center>
                     </Td>
                   </Tr>
@@ -357,7 +464,7 @@ export default function CategoriesContent() {
                           boxSize='40px'
                           objectFit='cover'
                           borderRadius='md'
-                          fallbackSrc='https://via.placeholder.com/40'
+                          fallbackSrc='https://via.placeholder.com/40x40?text=No+Image'
                         />
                       </Td>
                       <Td fontWeight='medium'>{category.name}</Td>
@@ -426,7 +533,10 @@ export default function CategoriesContent() {
       <Drawer
         isOpen={isDrawerOpen}
         placement='right'
-        onClose={onDrawerClose}
+        onClose={() => {
+          resetForm();
+          onDrawerClose();
+        }}
         size='md'
       >
         <DrawerOverlay />
@@ -450,14 +560,14 @@ export default function CategoriesContent() {
                       <Image
                         src={
                           selectedCategory.image ||
-                          'https://via.placeholder.com/300x200'
+                          'https://via.placeholder.com/300x200?text=No+Image'
                         }
                         alt={selectedCategory.name}
                         w='full'
                         h='200px'
                         objectFit='cover'
                         borderRadius='md'
-                        fallbackSrc='https://via.placeholder.com/300x200'
+                        fallbackSrc='https://via.placeholder.com/300x200?text=No+Image'
                       />
                     </Box>
                     <Box>
@@ -509,6 +619,10 @@ export default function CategoriesContent() {
                       value={formData.name}
                       onChange={(e) => handleFormChange('name', e.target.value)}
                       placeholder='Enter category name'
+                      isDisabled={
+                        createCategoryMutation.isPending ||
+                        updateCategoryMutation.isPending
+                      }
                     />
                   </FormControl>
 
@@ -519,6 +633,10 @@ export default function CategoriesContent() {
                       accept='image/*'
                       onChange={handleFileChange}
                       placeholder='Select an image file'
+                      isDisabled={
+                        createCategoryMutation.isPending ||
+                        updateCategoryMutation.isPending
+                      }
                     />
                     <Text fontSize='xs' color='gray.500' mt={1}>
                       Accepted formats: JPG, PNG, GIF. Max size: 5MB
@@ -538,11 +656,12 @@ export default function CategoriesContent() {
                         h='150px'
                         objectFit='cover'
                         borderRadius='md'
-                        fallbackSrc='https://via.placeholder.com/300x150'
+                        fallbackSrc='https://via.placeholder.com/300x150?text=No+Image'
                       />
                       {selectedFile && (
                         <Text fontSize='xs' color='gray.500' mt={1}>
-                          Selected: {selectedFile.name}
+                          Selected: {selectedFile.name} (
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                         </Text>
                       )}
                     </Box>
@@ -557,7 +676,10 @@ export default function CategoriesContent() {
               <Button
                 variant='outline'
                 mr={3}
-                onClick={onDrawerClose}
+                onClick={() => {
+                  resetForm();
+                  onDrawerClose();
+                }}
                 isDisabled={
                   createCategoryMutation.isPending ||
                   updateCategoryMutation.isPending
@@ -600,7 +722,7 @@ export default function CategoriesContent() {
             <AlertDialogBody>
               <Text>
                 Are you sure you want to delete this category? This action
-                cannot be undone.
+                cannot be undone and may affect related products.
               </Text>
             </AlertDialogBody>
 

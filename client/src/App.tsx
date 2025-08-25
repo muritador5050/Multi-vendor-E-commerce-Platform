@@ -111,8 +111,8 @@ function App() {
           <Tooltip hasArrow label='logout' bg='white' color='teal'>
             <IconButton
               aria-label='logout-btn'
-              icon={<LogOut size={48} />}
-              colorScheme='teal'
+              icon={<LogOut size={48} color='teal' />}
+              colorScheme='gray'
               size='lg'
               onClick={() => logout.mutateAsync()}
             />

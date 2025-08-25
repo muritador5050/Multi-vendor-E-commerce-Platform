@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link as ReactRouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -100,6 +100,7 @@ const getCategoryColor = (categoryName: string) => {
 
 function HomePage() {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { data: productsData } = useProducts();
   const { data: bikeCategory } = useProductsByCategory('bike', {
@@ -182,10 +183,7 @@ function HomePage() {
               <Button w='fit-content'>Shop Now</Button>
             </Flex>
 
-            <Image
-              src='	https://wpthemes.themehunk.com/multivendor-mania/wp-content/uploads/sites/229/2022/03/sliderw.png'
-              alt='mutilvendor-img'
-            />
+            <Image src='/phone.png' alt='mutilvendor-img' />
           </Stack>
         </GridItem>
         <GridItem p={3} bg='blue' area={{ md: 'side' }}>
@@ -395,7 +393,11 @@ function HomePage() {
             Explore in bikes
           </Text>
           <Spacer />
-          <Button bg='black' color='white'>
+          <Button
+            bg='black'
+            color='white'
+            onClick={() => navigate(`/products/category/bikes`)}
+          >
             View all
           </Button>
         </Flex>
@@ -420,7 +422,11 @@ function HomePage() {
             Daily Use Tools
           </Text>
           <Spacer />
-          <Button bg='black' color='white'>
+          <Button
+            bg='black'
+            color='white'
+            onClick={() => navigate(`/products/category/tools`)}
+          >
             View all
           </Button>
         </Flex>
@@ -440,6 +446,7 @@ function HomePage() {
           src='/spacejoy-9M66C_w_ToM-unsplash.jpg'
           alt='Photo'
           objectFit='cover'
+          sizes='200px'
         />
       </Box>
       <Box bg='white' p={6}>
@@ -448,7 +455,11 @@ function HomePage() {
             For art lovers
           </Text>
           <Spacer />
-          <Button bg='black' color='white'>
+          <Button
+            bg='black'
+            color='white'
+            onClick={() => navigate(`/products/category/art`)}
+          >
             View all
           </Button>
         </Flex>
@@ -468,7 +479,11 @@ function HomePage() {
             Smartphones and Electronics
           </Text>
           <Spacer />
-          <Button bg='black' color='white'>
+          <Button
+            bg='black'
+            color='white'
+            onClick={() => navigate(`/products/category/electronics`)}
+          >
             View all
           </Button>
         </Flex>
@@ -489,7 +504,7 @@ function HomePage() {
             Most Popular
           </Text>
           <Spacer />
-          <Button bg='black' color='white'>
+          <Button bg='black' color='white' onClick={() => navigate(`/shop`)}>
             View all
           </Button>
         </Flex>

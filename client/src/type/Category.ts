@@ -5,7 +5,6 @@ export interface Category {
   image: string;
   createdAt: string;
   updatedAt: string;
-  __v: number;
 }
 
 export interface CategoriesData {
