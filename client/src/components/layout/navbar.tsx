@@ -47,9 +47,11 @@ import { useIsAuthenticated } from '@/context/AuthContextService';
 function NavLink({
   children,
   to,
+  onClick,
 }: {
   children?: React.ReactNode;
   to?: string;
+  onClick?: () => void;
 }) {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
@@ -58,6 +60,7 @@ function NavLink({
     <ChakraLink
       as={ReactRouterLink}
       to={to}
+      onClick={onClick}
       position='relative'
       px={2}
       py={1}
@@ -353,13 +356,27 @@ function Navbar() {
           <DrawerBody bg={'teal.900'} color='white'>
             <Flex direction='column' p={4} gap={2}>
               {/* Main Navigation */}
-              <NavLink to='/'>Home</NavLink>
-              <NavLink to='blog'>Blog</NavLink>
-              <NavLink to='shop'>Shop</NavLink>
-              <NavLink to='store-manager'>Store Manager</NavLink>
-              <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-              <NavLink to='admin-dashboard'>Admin Dashboard</NavLink>
-              <NavLink to='contact-us'>Contact Us</NavLink>
+              <NavLink to='/' onClick={leftDrawer.onClose}>
+                Home
+              </NavLink>
+              <NavLink to='blog' onClick={leftDrawer.onClose}>
+                Blog
+              </NavLink>
+              <NavLink to='shop' onClick={leftDrawer.onClose}>
+                Shop
+              </NavLink>
+              <NavLink to='store-manager' onClick={leftDrawer.onClose}>
+                Store Manager
+              </NavLink>
+              <NavLink to='vendor-membership' onClick={leftDrawer.onClose}>
+                Vendor Membership
+              </NavLink>
+              <NavLink to='admin-dashboard' onClick={leftDrawer.onClose}>
+                Admin Dashboard
+              </NavLink>
+              <NavLink to='contact-us' onClick={leftDrawer.onClose}>
+                Contact Us
+              </NavLink>
 
               {/* Categories Section */}
               <Box mt={6}>
@@ -409,6 +426,7 @@ function Navbar() {
                           category.slug ||
                           category.name.toLowerCase().replace(/\s+/g, '-')
                         }`}
+                        onClick={leftDrawer.onClose}
                       >
                         <Text>{category.name}</Text>
                       </NavLink>

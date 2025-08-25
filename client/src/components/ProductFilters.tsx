@@ -26,11 +26,13 @@ export interface FilterState {
 interface ProductFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
+  onFilterApplied?: () => void;
 }
 
 export default function ProductFilters({
   filters,
   onFiltersChange,
+  onFilterApplied,
 }: ProductFiltersProps) {
   const format = (val: number) => `$${val}`;
   const parse = (val: string) => val.replace(/^\$/, '');
@@ -86,6 +88,7 @@ export default function ProductFilters({
       ...filters,
       [product]: newValues,
     });
+    onFilterApplied?.();
   };
 
   const resetFilters = () => {
@@ -98,6 +101,7 @@ export default function ProductFilters({
         size: [],
       },
     });
+    onFilterApplied?.();
   };
 
   return (

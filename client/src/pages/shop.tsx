@@ -10,6 +10,11 @@ import {
   Button,
   HStack,
   IconButton,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerBody,
 } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import ProductCard from '../components/ProductCard';
@@ -17,7 +22,7 @@ import ProductFilters, { type FilterState } from '../components/ProductFilters';
 import ProductQuickView from '../components/ProductQuickView';
 import type { Product, ProductQueryParams } from '@/type/product';
 import { useProducts } from '@/context/ProductContextService';
-import { RefreshCcw } from 'lucide-react';
+import { Filter, RefreshCcw } from 'lucide-react';
 
 interface SortOption {
   value: string;
@@ -36,6 +41,7 @@ const SORT_OPTIONS: SortOption[] = [
 export default function ShopPage() {
   // Modal state
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const filterDrawer = useDisclosure();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [filters, setFilters] = useState<FilterState>({
@@ -126,30 +132,54 @@ export default function ShopPage() {
 
   return (
     <Box bg='white'>
-      <Flex direction={{ base: 'column', md: 'row' }} gap={5}>
+      <Flex gap={5}>
         {/* Filters Sidebar */}
         <Stack
           position='static'
           left={0}
           flex={0.75}
-          order={{ base: 1, md: 0 }}
           p={4}
+          display={{ base: 'none', md: 'flex' }}
         >
           <ProductFilters
             filters={filters}
             onFiltersChange={handleFiltersChange}
           />
         </Stack>
+        <Drawer
+          placement='left'
+          onClose={filterDrawer.onClose}
+          isOpen={filterDrawer.isOpen}
+          size={{ base: 'xs', md: 'md' }}
+        >
+          <DrawerOverlay />
+          <DrawerContent maxW={{ base: '85vw', sm: '350px' }}>
+            <DrawerCloseButton />
+            <DrawerBody px={3} overflow='auto'>
+              <ProductFilters
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                onFilterApplied={filterDrawer.onClose}
+              />
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
 
         {/* Main Content */}
-        <Stack flex={3} order={{ base: 0, md: 1 }} p={4}>
+        <Stack flex={3} p={4}>
           {/* Results Header */}
           <Flex justifyContent='space-between' alignItems='center'>
-            <Text>
+            <Text display={{ base: 'none', md: 'flex' }}>
               {isLoading
                 ? 'Loading...'
                 : `Showing ${products.length} of ${pagination.total} results`}
             </Text>
+            <IconButton
+              aria-label='filter-product'
+              icon={<Filter />}
+              display={{ base: 'flex', md: 'none' }}
+              onClick={filterDrawer.onOpen}
+            />
             <HStack spacing={3}>
               <IconButton
                 aria-label='refresh'
@@ -161,7 +191,7 @@ export default function ShopPage() {
               />
               <Select
                 placeholder='Sort by'
-                w='200px'
+                w={{ base: '100px', md: 'fit-content' }}
                 value={sortBy}
                 onChange={handleSortChange}
               >
