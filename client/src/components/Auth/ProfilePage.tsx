@@ -14,6 +14,12 @@ import {
   StatNumber,
   useToast,
   useDisclosure,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from '@chakra-ui/react';
 import {
   Edit3,
@@ -36,13 +42,20 @@ import { useNavigate } from 'react-router-dom';
 import { formatDate } from '@/components/AdminManagement/Utils/Utils';
 import { UserGreeting } from './UserGreeting';
 import { EditProfileDrawer } from './components/EditProfileDrawer';
+import { useRef } from 'react';
 
 export const ProfilePage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isLogoutOpen,
+    onOpen: onLogoutOpen,
+    onClose: onLogoutClose,
+  } = useDisclosure();
   const navigate = useNavigate();
-  const logout = useLogout();
   const toast = useToast();
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const currentUser = useCurrentUser();
+  const logout = useLogout();
   const sendEmailVerification = useSendVerifyEmailLink();
 
   const handleSendVerification = async () => {
@@ -69,6 +82,32 @@ export const ProfilePage = () => {
         position: 'top-right',
         isClosable: true,
       });
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout.mutateAsync();
+      toast({
+        title: 'Logged out successfully',
+        description: 'You have been securely logged out.',
+        status: 'success',
+        duration: 3000,
+        position: 'top-right',
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: 'Logout failed',
+        description: 'There was an issue logging you out. Please try again.',
+        status: 'error',
+        duration: 5000,
+        position: 'top-right',
+        isClosable: true,
+      });
+    } finally {
+      onLogoutClose();
     }
   };
 
@@ -381,15 +420,66 @@ export const ProfilePage = () => {
                 </Button>
               </Box>
             )}
-            <Button
-              colorScheme='gray'
-              size='sm'
-              onClick={() => logout.mutate()}
-              leftIcon={<LogOut size={16} />}
-              width={{ base: 'full', sm: 'auto' }}
+            <Box
+              mt={4}
+              pt={4}
+              borderTop='1px solid'
+              borderColor='whiteAlpha.300'
             >
-              Logout
-            </Button>
+              <Button
+                colorScheme='red'
+                variant='outline'
+                size='sm'
+                onClick={onLogoutOpen}
+                leftIcon={<LogOut size={16} />}
+                width={{ base: 'full', sm: 'auto' }}
+                isLoading={logout.isPending}
+                loadingText='Logging out...'
+                _hover={{
+                  bg: 'red.50',
+                  borderColor: 'red.300',
+                  color: 'red.600',
+                }}
+              >
+                Logout
+              </Button>
+            </Box>
+            <AlertDialog
+              isOpen={isLogoutOpen}
+              leastDestructiveRef={cancelRef}
+              onClose={onLogoutClose}
+              isCentered
+              size={{ base: 'sm', md: 'md' }}
+            >
+              <AlertDialogOverlay>
+                <AlertDialogContent mx={{ base: 4, md: 0 }}>
+                  <AlertDialogHeader fontSize='lg' fontWeight='bold'>
+                    Confirm Logout
+                  </AlertDialogHeader>
+
+                  <AlertDialogBody>
+                    Are you sure you want to log out? You'll need to sign in
+                    again to access your account.
+                  </AlertDialogBody>
+
+                  <AlertDialogFooter>
+                    <Button ref={cancelRef} onClick={onLogoutClose} size='sm'>
+                      Cancel
+                    </Button>
+                    <Button
+                      colorScheme='red'
+                      onClick={handleLogout}
+                      ml={3}
+                      size='sm'
+                      isLoading={logout.isPending}
+                      loadingText='Logging out...'
+                    >
+                      Logout
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog>
           </Box>
           <EditProfileDrawer isOpen={isOpen} onClose={onClose} />
         </Box>

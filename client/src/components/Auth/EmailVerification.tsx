@@ -13,6 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircleIcon, WarningIcon } from '@chakra-ui/icons';
+import { useEffect } from 'react';
 
 export function EmailVerificationPage() {
   const { token } = useParams<{ token: string }>();
@@ -22,42 +23,61 @@ export function EmailVerificationPage() {
 
   const verifyEmailMutation = useVerifyEmail({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: authKeys.profile });
+      // Invalidate auth queries to refresh user state
+      queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+
       toast({
         title: 'Email verified successfully!',
         description:
           'Your account has been activated. Redirecting to your account...',
         status: 'success',
-        position: 'top',
+        position: 'top-right',
         duration: 4000,
         isClosable: true,
       });
+
+      // Navigate after a delay to let user see success message
       setTimeout(() => navigate('/my-account', { replace: true }), 3000);
     },
     onError: (error) => {
+      console.error('Email verification failed:', error);
+
       toast({
         title: 'Verification failed',
         description: error?.message || 'Please try again or contact support.',
         status: 'error',
-        position: 'top',
+        position: 'top-right',
         duration: 6000,
         isClosable: true,
       });
     },
   });
 
-  const handleVerifyEmail = () => {
-    if (token && !verifyEmailMutation.isPending) {
+  // Auto-trigger verification on component mount
+  useEffect(() => {
+    if (
+      token &&
+      !verifyEmailMutation.isPending &&
+      !verifyEmailMutation.isSuccess &&
+      !verifyEmailMutation.isError
+    ) {
       verifyEmailMutation.mutate(token);
     }
-  };
+  }, [token, verifyEmailMutation]);
 
   const handleGoHome = () => {
     navigate('/', { replace: true });
   };
 
+  const handleRetry = () => {
+    if (token) {
+      verifyEmailMutation.reset();
+      verifyEmailMutation.mutate(token);
+    }
+  };
+
   return (
-    <Container maxW='md' centerContent>
+    <Container maxW={{ base: 'sm', md: 'md', lg: 'lg' }} centerContent px={4}>
       <Box
         bg='white'
         shadow='xl'
@@ -67,6 +87,7 @@ export function EmailVerificationPage() {
         w='full'
         border='1px'
         borderColor='gray.100'
+        maxW='100%'
       >
         <VStack spacing={6} textAlign='center'>
           {/* Header */}
@@ -75,17 +96,17 @@ export function EmailVerificationPage() {
               Email Verification
             </Heading>
             <Text color='gray.600' fontSize='sm'>
-              Click the button below to verify your email address
+              We're verifying your email address automatically
             </Text>
           </Box>
 
-          {/* Status Content */}
+          {/* Loading State */}
           {verifyEmailMutation.isPending && (
             <VStack spacing={4}>
               <Box position='relative'>
                 <Spinner
                   size='xl'
-                  color='blue.500'
+                  color='teal.500'
                   thickness='4px'
                   speed='0.8s'
                 />
@@ -94,11 +115,11 @@ export function EmailVerificationPage() {
                   top='50%'
                   left='50%'
                   transform='translate(-50%, -50%)'
-                  bg='blue.50'
+                  bg='teal.50'
                   rounded='full'
                   p={2}
                 >
-                  <Icon boxSize={6} color='blue.500' as={CheckCircleIcon} />
+                  <Icon boxSize={4} color='teal.500' as={CheckCircleIcon} />
                 </Box>
               </Box>
               <VStack spacing={2}>
@@ -112,6 +133,7 @@ export function EmailVerificationPage() {
             </VStack>
           )}
 
+          {/* Success State */}
           {verifyEmailMutation.isSuccess && (
             <VStack spacing={4}>
               <Box
@@ -134,6 +156,7 @@ export function EmailVerificationPage() {
             </VStack>
           )}
 
+          {/* Error State */}
           {verifyEmailMutation.isError && (
             <VStack spacing={4}>
               <Box
@@ -156,9 +179,10 @@ export function EmailVerificationPage() {
               </VStack>
               <VStack spacing={3} w='full'>
                 <Button
-                  colorScheme='blue'
-                  onClick={handleVerifyEmail}
+                  colorScheme='teal'
+                  onClick={handleRetry}
                   w='full'
+                  size='lg'
                   isLoading={verifyEmailMutation.isPending}
                   loadingText='Retrying...'
                   disabled={verifyEmailMutation.isPending}
@@ -170,6 +194,7 @@ export function EmailVerificationPage() {
                   onClick={handleGoHome}
                   w='full'
                   size='sm'
+                  colorScheme='gray'
                 >
                   Go to Homepage
                 </Button>
@@ -177,41 +202,7 @@ export function EmailVerificationPage() {
             </VStack>
           )}
 
-          {/* Initial state - show verify button */}
-          {!verifyEmailMutation.isPending &&
-            !verifyEmailMutation.isSuccess &&
-            !verifyEmailMutation.isError &&
-            token && (
-              <VStack spacing={4}>
-                <Box
-                  bg='blue.50'
-                  rounded='full'
-                  p={3}
-                  border='2px'
-                  borderColor='blue.100'
-                >
-                  <Icon boxSize={8} color='blue.500' as={CheckCircleIcon} />
-                </Box>
-                <VStack spacing={2}>
-                  <Text fontSize='lg' fontWeight='semibold' color='gray.800'>
-                    Ready to verify
-                  </Text>
-                  <Text fontSize='sm' color='gray.600' textAlign='center'>
-                    Click the button below to verify your email address
-                  </Text>
-                </VStack>
-                <Button
-                  colorScheme='blue'
-                  onClick={handleVerifyEmail}
-                  w='full'
-                  size='lg'
-                >
-                  Verify Email
-                </Button>
-              </VStack>
-            )}
-
-          {/* No token case */}
+          {/* No Token State */}
           {!token && (
             <VStack spacing={4}>
               <Box
@@ -231,7 +222,12 @@ export function EmailVerificationPage() {
                   This link appears to be invalid or incomplete.
                 </Text>
               </VStack>
-              <Button colorScheme='blue' onClick={handleGoHome} w='full'>
+              <Button
+                colorScheme='teal'
+                onClick={handleGoHome}
+                w='full'
+                size='lg'
+              >
                 Go to Homepage
               </Button>
             </VStack>
