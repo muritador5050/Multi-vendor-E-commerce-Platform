@@ -24,26 +24,31 @@ function AccountPage() {
     <Box
       bg={'gray.400'}
       minH={'100vh'}
-      display={{ base: 'block', md: 'flex' }}
-      justifyContent='center'
-      alignContent={{ md: 'center' }}
+      display={'flex'}
+      alignItems={'center'}
+      justifyContent={'center'}
+      p={{ base: 4, md: 6 }}
     >
       <Stack
         borderRadius='xl'
         bg='whiteAlpha.600'
-        w={{ base: 'auto', md: '500px' }}
+        w={{ base: '100%', sm: '400px', md: '500px', lg: '450px' }}
+        maxW={'500px'}
+        p={{ base: 4, md: 6 }}
+        spacing={{ base: 3, md: 4 }}
+        mx={'auto'}
       >
         <Logo />
-        <Tabs isFitted variant='enclosed' colorScheme='yellow'>
+        <Tabs isFitted variant='enclosed' colorScheme='teal' size='sm'>
           <TabList>
-            <Tab>Login</Tab>
-            <Tab>Sign Up</Tab>
+            <Tab py={2}>Login</Tab>
+            <Tab py={2}>Sign Up</Tab>
           </TabList>
           <TabPanels>
-            <TabPanel>
+            <TabPanel p={{ base: 3, md: 4 }}>
               <LoginForm />
             </TabPanel>
-            <TabPanel>
+            <TabPanel p={{ base: 3, md: 4 }}>
               <RegisterForm />
             </TabPanel>
           </TabPanels>

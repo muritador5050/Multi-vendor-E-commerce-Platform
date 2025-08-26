@@ -384,7 +384,7 @@ export const ProfilePage = () => {
             <Button
               colorScheme='gray'
               size='sm'
-              onClick={() => logout.mutateAsync()}
+              onClick={() => logout.mutate()}
               leftIcon={<LogOut size={16} />}
               width={{ base: 'full', sm: 'auto' }}
             >

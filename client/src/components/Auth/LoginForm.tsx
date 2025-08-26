@@ -76,8 +76,8 @@ export default function LoginForm() {
   };
 
   return (
-    <Stack spacing={7} position='relative'>
-      <Heading>Login</Heading>
+    <Stack position='relative'>
+      <Heading color='teal.900'>Login</Heading>
 
       {loginMutation.error && (
         <Alert status='error' borderRadius='md'>
@@ -176,6 +176,7 @@ export default function LoginForm() {
               isChecked={rememberMe}
               onChange={handleRememberMeChange}
               disabled={loginMutation.isPending}
+              color={'teal.600'}
             >
               Remember me
             </Checkbox>

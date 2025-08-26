@@ -42,7 +42,7 @@ export default function RegisterForm() {
         title: 'Registration successful!',
         description: 'Check your email for a verification link.',
         status: 'success',
-        position: 'top',
+        position: 'top-right',
         duration: 6000,
         isClosable: true,
       });
@@ -79,8 +79,8 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Stack spacing={7}>
-        <Heading>Sign Up</Heading>
+      <Stack>
+        <Heading color='teal.900'>Sign Up</Heading>
 
         {registerMutation.error && (
           <Alert status='error' borderRadius='md'>

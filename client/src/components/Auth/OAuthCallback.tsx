@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -34,6 +34,9 @@ function OAuthCallback() {
     useState<LoadingStage>('authenticating');
   const [progress, setProgress] = useState(0);
 
+  // Memory leak fix: store timeout IDs to clear them on unmount
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
   useEffect(() => {
     const progressStages = [
       { stage: 'authenticating' as const, progress: 25, delay: 0 },
@@ -43,11 +46,20 @@ function OAuthCallback() {
     ];
 
     progressStages.forEach(({ stage, progress: stageProgress, delay }) => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setLoadingStage(stage);
         setProgress(stageProgress);
       }, delay);
+
+      // Store timeout ID for cleanup
+      timeoutsRef.current.push(timeoutId);
     });
+
+    // Cleanup function to clear all timeouts
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current = [];
+    };
   }, []);
 
   useEffect(() => {
@@ -86,26 +98,30 @@ function OAuthCallback() {
             const elapsedTime = Date.now() - startTime;
             const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
 
-            setTimeout(() => {
+            const successTimeoutId = setTimeout(() => {
               setLoadingStage('success');
-              setTimeout(() => {
+              const redirectTimeoutId = setTimeout(() => {
                 navigate(defaultRoute, { replace: true });
               }, 500);
+              timeoutsRef.current.push(redirectTimeoutId);
             }, remainingTime);
+            timeoutsRef.current.push(successTimeoutId);
           } else {
             // Fallback navigation if no user data
-            setTimeout(() => {
+            const fallbackTimeoutId = setTimeout(() => {
               navigate('/my-account', { replace: true });
             }, Math.max(0, minLoadingTime - (Date.now() - startTime)));
+            timeoutsRef.current.push(fallbackTimeoutId);
           }
         } catch (err) {
           console.error('OAuth callback error:', err);
           setLoadingStage('error');
-          setTimeout(() => {
+          const errorTimeoutId = setTimeout(() => {
             navigate('/my-account?error=oauth_processing_failed', {
               replace: true,
             });
           }, 2000);
+          timeoutsRef.current.push(errorTimeoutId);
         }
       } else if (error === 'oauth_failed' || error === 'account_inactive') {
         console.error('OAuth error:', error);
@@ -118,29 +134,38 @@ function OAuthCallback() {
           description:
             error === 'account_inactive'
               ? 'Please contact support or wait for account activation.'
-              : 'We couldn’t complete your login. Please try again.',
+              : "We couldn't complete your login. Please try again.",
           status: 'error',
           duration: 5000,
           isClosable: true,
           position: 'top',
         });
 
-        setTimeout(() => {
+        const errorRedirectTimeoutId = setTimeout(() => {
           const message =
             error === 'account_inactive' ? 'account_inactive' : 'oauth_failed';
 
           navigate(`/my-account?error=${message}`, { replace: true });
         }, 2000);
+        timeoutsRef.current.push(errorRedirectTimeoutId);
       } else {
         // No valid parameters, redirect to login
-        setTimeout(() => {
+        const defaultRedirectTimeoutId = setTimeout(() => {
           navigate('/my-account', { replace: true });
         }, Math.max(0, minLoadingTime - (Date.now() - startTime)));
+        timeoutsRef.current.push(defaultRedirectTimeoutId);
       }
     };
 
     processAuth();
-  }, [params, navigate, queryClient]);
+  }, [params, navigate, queryClient, toast]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const getStageConfig = () => {
     const configs: Record<
@@ -195,26 +220,26 @@ function OAuthCallback() {
   const stageConfig = getStageConfig();
 
   return (
-    <Center h='100vh' bg='gray.50'>
+    <Center h='100vh' bg='gray.50' px={{ base: 4, sm: 6, md: 8 }}>
       <Box
         bg='white'
         borderRadius='xl'
         boxShadow='xl'
-        p={8}
-        maxW='400px'
+        p={{ base: 6, sm: 8 }}
+        maxW={{ base: '340px', sm: '400px', md: '450px' }}
         w='90%'
         textAlign='center'
       >
-        <VStack spacing={6}>
+        <VStack spacing={{ base: 4, sm: 6 }}>
           <ScaleFade in={true} initialScale={0.9}>
             <Box
-              p={4}
+              p={{ base: 3, sm: 4 }}
               borderRadius='full'
               bg={`${stageConfig.color.split('.')[0]}.50`}
             >
               <Icon
                 as={stageConfig.icon}
-                boxSize={8}
+                boxSize={{ base: 6, sm: 8 }}
                 color={stageConfig.color}
                 className={loadingStage === 'success' ? '' : 'animate-pulse'}
               />
@@ -223,12 +248,17 @@ function OAuthCallback() {
 
           <VStack spacing={2}>
             <Fade in={true}>
-              <Text fontSize='xl' fontWeight='semibold' color='gray.800'>
+              <Text
+                fontSize={{ base: 'lg', sm: 'xl' }}
+                fontWeight='semibold'
+                color='gray.800'
+                px={2}
+              >
                 {stageConfig.text}
               </Text>
             </Fade>
 
-            <Text fontSize='sm' color='gray.600'>
+            <Text fontSize={{ base: 'xs', sm: 'sm' }} color='gray.600' px={2}>
               {stageConfig.subText}
             </Text>
           </VStack>
@@ -250,7 +280,12 @@ function OAuthCallback() {
           )}
 
           {loadingStage === 'error' && (
-            <Text fontSize='xs' color='gray.500'>
+            <Text
+              fontSize={{ base: '2xs', sm: 'xs' }}
+              color='gray.500'
+              px={2}
+              textAlign='center'
+            >
               Please try again or contact support if the issue persists
             </Text>
           )}
