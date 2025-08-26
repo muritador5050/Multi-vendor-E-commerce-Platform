@@ -44,6 +44,7 @@ import {
   IconButton,
   Tooltip,
   Stack,
+  Image,
 } from '@chakra-ui/react';
 import {
   Package,
@@ -125,10 +126,10 @@ const ProductRow = React.memo(
             flexShrink={0}
           >
             {product.images && product.images[0] ? (
-              <img
+              <Image
                 src={product.images[0]}
                 alt={product.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                objectFit='cover'
               />
             ) : (
               <Center h='100%' color='gray.400'>
@@ -582,7 +583,11 @@ export default function VendorProducts() {
         direction={{ base: 'column', sm: 'row' }}
         gap={4}
       >
-        <Heading size='lg' fontWeight='bold'>
+        <Heading
+          size='lg'
+          fontWeight='bold'
+          display={{ base: 'none', md: 'flex' }}
+        >
           Products Catalog
         </Heading>
         <Stack direction={'row'} align='center' spacing={3}>
@@ -605,17 +610,22 @@ export default function VendorProducts() {
         </Stack>
       </Flex>
 
-      <TableContainer>
-        <Table variant='simple' bg='white' borderRadius='lg' overflow='hidden'>
+      <TableContainer overflowX='auto'>
+        <Table
+          variant='simple'
+          bg='white'
+          borderRadius='lg'
+          size={{ base: 'sm', md: 'md' }}
+        >
           <Thead bg='gray.50'>
             <Tr>
               <Th>Product</Th>
-              <Th>Category</Th>
+              <Th display={{ base: 'none', md: 'table-cell' }}>Category</Th>
               <Th>Price</Th>
               <Th>Stock</Th>
               <Th>Status</Th>
-              <Th>Rating</Th>
-              <Th>Vendor</Th>
+              <Th display={{ base: 'none', md: 'table-cell' }}>Rating</Th>
+              <Th display={{ base: 'none', md: 'table-cell' }}>Vendor</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -718,7 +728,7 @@ export default function VendorProducts() {
                               : currentProduct.category?._id || ''
                           }
                           onChange={(e) => {
-                            const selectedCategory = categories.find(
+                            const selectedCategory = categories.categories.find(
                               (cat) => cat._id === e.target.value
                             );
                             if (selectedCategory) {
@@ -729,7 +739,7 @@ export default function VendorProducts() {
                           }}
                         >
                           <option value=''>Select a category</option>
-                          {categories.map((ctg) => (
+                          {categories.categories.map((ctg) => (
                             <option key={ctg._id} value={ctg._id}>
                               {ctg.name}
                             </option>

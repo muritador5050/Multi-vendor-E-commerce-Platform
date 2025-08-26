@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link as ReactRouterLink } from 'react-router-dom';
 import {
   Avatar,
@@ -41,14 +40,14 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
     >
       <HStack spacing={2}>
         <Avatar
-          display={{ base: 'none', md: 'block' }}
+          display={{ base: 'none', md: 'flex' }}
           size='sm'
           name='Store Owner'
           src={currentUser?.avatar}
         />
 
         <Text
-          display={{ base: 'none', md: 'block' }}
+          display={{ base: 'none', md: 'flex' }}
           fontWeight='bold'
           mr={{ md: '7em' }}
         >
@@ -64,9 +63,7 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
         >
           <IconButton
             onClick={onToggle}
-            variant='ghost'
-            colorScheme='white'
-            color='teal.400'
+            colorScheme='teal'
             aria-label='Toggle Sidebar'
             icon={<AlignJustify />}
           />
@@ -100,6 +97,7 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
             colorScheme='white'
             aria-label='Notification'
             icon={<Bell />}
+            display={{ base: 'none', md: 'flex' }}
           />
         </ChakraLink>
         <ChakraLink as={ReactRouterLink} to={'/store-manager/enquiry'}>
@@ -108,6 +106,7 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
             colorScheme='white'
             aria-label='Help'
             icon={<CircleHelp />}
+            display={{ base: 'none', md: 'flex' }}
           />
         </ChakraLink>
         <ChakraLink as={ReactRouterLink} to={'/store-manager/notices'}>
@@ -116,6 +115,7 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
             colorScheme='white'
             aria-label='Announcements'
             icon={<Megaphone />}
+            display={{ base: 'none', md: 'flex' }}
           />
         </ChakraLink>
         <ChakraLink as={ReactRouterLink} to={'/store-manager/knowledgebase'}>
@@ -124,6 +124,7 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
             colorScheme='white'
             aria-label='Docs'
             icon={<NotebookTabs />}
+            display={{ base: 'none', md: 'flex' }}
           />
         </ChakraLink>
         <ChakraLink as={ReactRouterLink} to={'/store-manager/profile'}>

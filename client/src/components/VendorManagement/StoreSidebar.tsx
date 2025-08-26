@@ -101,7 +101,7 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
                 Cancel
               </Button>
               <Button
-                colorScheme='red'
+                colorScheme='teal'
                 onClick={confirmLogout}
                 ml={3}
                 isLoading={isLoading}

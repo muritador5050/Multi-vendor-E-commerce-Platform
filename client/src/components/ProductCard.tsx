@@ -37,92 +37,76 @@ export default function ProductCard({
   const addToWishlist = useAddToWishlist();
   const removeFromWishlist = useRemoveFromWishlist();
 
-  const {
-    data: wishlistStatusResponse,
-    isLoading: isWishlistLoading,
-    error: wishlistError,
-  } = useWishlistStatus(product._id);
+  const { data: wishlistStatusResponse } = useWishlistStatus(product._id);
 
   const isInWishlist = wishlistStatusResponse?.data || false;
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await addToCartMutation.mutateAsync({
+    addToCartMutation.mutate(
+      {
         productId: product._id,
         quantity: 1,
-      });
-      toast({
-        title: 'Success!',
-        description: 'Product added to cart successfully!',
-        status: 'success',
-        duration: 3000,
-        position: 'top-right',
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to add product to cart. Please try again.',
-        status: 'error',
-        duration: 4000,
-        position: 'top-right',
-        isClosable: true,
-      });
-    }
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Success!',
+            description: 'Product added to cart successfully!',
+            status: 'success',
+            duration: 3000,
+            position: 'top-right',
+            isClosable: true,
+          });
+        },
+        onError: (error) => {
+          console.error('Failed to add to cart:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to add product to cart. Please try again.',
+            status: 'error',
+            duration: 4000,
+            position: 'top-right',
+            isClosable: true,
+          });
+        },
+      }
+    );
   };
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (wishlistError) {
-      toast({
-        title: 'Error',
-        description: 'Unable to determine wishlist status. Please try again.',
-        status: 'error',
-        duration: 3000,
-        position: 'top-right',
-        isClosable: true,
-      });
-      return;
-    }
+    const mutation = isInWishlist ? removeFromWishlist : addToWishlist;
+    const successMessage = isInWishlist
+      ? 'Product removed from wishlist successfully!'
+      : 'Product added to wishlist successfully!';
 
-    try {
-      if (isInWishlist) {
-        await removeFromWishlist.mutateAsync(product._id);
+    mutation.mutate(product._id, {
+      onSuccess: () => {
         toast({
-          title: 'Removed!',
-          description: 'Product removed from wishlist successfully!',
+          title: isInWishlist ? 'Removed!' : 'Added!',
+          description: successMessage,
           status: 'success',
           duration: 3000,
           position: 'top-right',
           isClosable: true,
         });
-      } else {
-        await addToWishlist.mutateAsync(product._id);
+      },
+      onError: (error) => {
+        console.error('Failed to update wishlist:', error);
         toast({
-          title: 'Added!',
-          description: 'Product added to wishlist successfully!',
-          status: 'success',
-          duration: 3000,
+          title: 'Error',
+          description: `Failed to ${
+            isInWishlist ? 'remove from' : 'add to'
+          } wishlist. Please try again.`,
+          status: 'error',
+          duration: 4000,
           position: 'top-right',
           isClosable: true,
         });
-      }
-    } catch (error) {
-      console.error('Failed to update wishlist:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to ${
-          isInWishlist ? 'remove from' : 'add to'
-        } wishlist. Please try again.`,
-        status: 'error',
-        duration: 4000,
-        position: 'top-right',
-        isClosable: true,
-      });
-    }
+      },
+    });
   };
 
   const handleQuickView = (e: React.MouseEvent) => {
@@ -152,10 +136,6 @@ export default function ProductCard({
     }
     return product.images[0];
   };
-
-  // Loading state for wishlist operations
-  const isWishlistPending =
-    addToWishlist.isPending || removeFromWishlist.isPending;
 
   return (
     <Card
@@ -248,8 +228,6 @@ export default function ProductCard({
         >
           <Button
             onClick={handleAddToCart}
-            isLoading={addToCartMutation.isPending}
-            loadingText='Adding...'
             variant='solid'
             colorScheme='blue'
             rightIcon={isInCart ? <Check size={16} /> : undefined}
@@ -267,9 +245,6 @@ export default function ProductCard({
               )
             }
             onClick={handleWishlistToggle}
-            isLoading={isWishlistPending || isWishlistLoading}
-            loadingText={isInWishlist ? 'Adding...' : 'Removing...'}
-            isDisabled={isWishlistLoading || !!wishlistError}
           >
             {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
           </Button>

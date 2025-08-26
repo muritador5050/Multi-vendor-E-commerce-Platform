@@ -16,11 +16,13 @@ const NavItem = ({ icon, children, isActive, onClick }: NavItemProps) => {
 
   return (
     <Tooltip
-      content='Add New'
+      content={children}
       placement='left'
       fontSize='md'
       p={2}
       boxShadow='lg'
+      borderRadius={'full'}
+      bg={'teal.900'}
     >
       <Button
         onMouseEnter={() =>

@@ -10,8 +10,8 @@ import {
 import Logo from '../logo/Logo';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
-import ProfilePage from './ProfilePage';
 import { useIsAuthenticated } from '@/context/AuthContextService';
+import { ProfilePage } from './ProfilePage';
 
 function AccountPage() {
   const { isAuthenticated } = useIsAuthenticated();

@@ -9,7 +9,7 @@ export function UserGreeting() {
   }
 
   return (
-    <Text fontWeight={'bold'} fontStyle={'italic'}>
+    <Text fontWeight={'bold'} color='gray.50' fontStyle={'italic'}>
       Hello, {user.name}!
     </Text>
   );

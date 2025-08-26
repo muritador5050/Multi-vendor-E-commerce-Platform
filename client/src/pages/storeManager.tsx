@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Box, Container } from '@chakra-ui/react';
 import Media from '../components/VendorManagement/media';
@@ -38,7 +38,7 @@ export default function StoreManagerDashboard() {
           onClose={() => setIsCollapsed(true)}
         />
         <Box ml={0} flex='1' transition='margin-left 0.3s ease-in'>
-          <Container maxW='7xl' py={4}>
+          <Container maxW='full' px={{ base: 2, md: 4 }}>
             <Routes>
               <Route index element={<VendorDashboard />} />
               <Route path='media' element={<Media />} />

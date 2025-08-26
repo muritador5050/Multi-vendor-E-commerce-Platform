@@ -39,16 +39,12 @@ function BlogPage() {
   // Color mode values
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
-  const headerBg = useColorModeValue('white', 'gray.800');
   const textColor = useColorModeValue('gray.900', 'white');
-  const mutedColor = useColorModeValue('gray.600', 'gray.400');
 
-  // Extract unique tags and set initial filtered blogs
   useEffect(() => {
     if (blogs && blogs.length > 0) {
       setFilteredBlogs(blogs);
 
-      // Get all unique tags from all blogs
       const tags = [...new Set(blogs.flatMap((blog) => blog.tags || []))];
       setAllTags(tags);
     }
@@ -105,21 +101,6 @@ function BlogPage() {
 
   return (
     <Box minH='100vh' bg={bgColor}>
-      {/* Header */}
-      <Box bg={headerBg} shadow='sm'>
-        <Container maxW='7xl' py={8}>
-          <VStack spacing={4} textAlign='center'>
-            <Heading as='h1' size='xl' color={textColor}>
-              Blog
-            </Heading>
-            <Text fontSize='xl' color={mutedColor} maxW='2xl'>
-              Discover insights, stories, and perspectives from our community of
-              writers and creators.
-            </Text>
-          </VStack>
-        </Container>
-      </Box>
-
       {/* Search and Filter Section */}
       <Container maxW='7xl' py={8}>
         <Flex direction={{ base: 'column', sm: 'row' }} gap={4} mb={8}>
@@ -138,8 +119,8 @@ function BlogPage() {
                 borderColor='gray.300'
                 _focus={{
                   ring: 2,
-                  ringColor: 'blue.500',
-                  borderColor: 'blue.500',
+                  ringColor: 'teal.500',
+                  borderColor: 'teal.500',
                 }}
               />
             </InputGroup>
@@ -155,8 +136,8 @@ function BlogPage() {
             borderColor='gray.300'
             _focus={{
               ring: 2,
-              ringColor: 'blue.500',
-              borderColor: 'blue.500',
+              ringColor: 'teal.500',
+              borderColor: 'teal.500',
             }}
           >
             <option value=''>All Tags</option>
@@ -170,7 +151,7 @@ function BlogPage() {
 
         {/* Results Count */}
         <Box mb={6}>
-          <Text color={mutedColor}>
+          <Text color={'teal.600'}>
             {isLoading
               ? 'Loading...'
               : `${filteredBlogs.length} ${
@@ -250,7 +231,7 @@ function BlogPage() {
                         {blog.tags.slice(0, 3).map((tag) => (
                           <Badge
                             key={tag}
-                            colorScheme='blue'
+                            colorScheme='teal'
                             borderRadius='full'
                             px={2.5}
                             py={0.5}
@@ -265,7 +246,7 @@ function BlogPage() {
                           </Badge>
                         ))}
                         {blog.tags.length > 3 && (
-                          <Text fontSize='xs' color={mutedColor}>
+                          <Text fontSize='xs' color={'teal.600'}>
                             +{blog.tags.length - 3} more
                           </Text>
                         )}
@@ -278,7 +259,7 @@ function BlogPage() {
                       size='md'
                       color={textColor}
                       mb={3}
-                      _hover={{ color: 'blue.600' }}
+                      _hover={{ color: 'teal.600' }}
                       cursor='pointer'
                       transition='colors 0.2s'
                     >
@@ -286,7 +267,7 @@ function BlogPage() {
                     </Heading>
 
                     {/* Excerpt */}
-                    <Text color={mutedColor} mb={4} lineHeight='relaxed'>
+                    <Text color={'gray.600'} mb={4} lineHeight='relaxed'>
                       {blog.excerpt || truncateText(blog.content, 120)}
                     </Text>
 
@@ -294,7 +275,7 @@ function BlogPage() {
                     <Flex
                       justify='space-between'
                       fontSize='sm'
-                      color={mutedColor}
+                      color={'gray.600'}
                       mb={4}
                     >
                       <HStack>
@@ -315,7 +296,7 @@ function BlogPage() {
                     <Flex
                       justify='space-between'
                       fontSize='sm'
-                      color={mutedColor}
+                      color={'teal.600'}
                       mb={4}
                     >
                       <HStack>
@@ -331,7 +312,7 @@ function BlogPage() {
                     {/* Read More Button */}
                     <Button
                       w='full'
-                      colorScheme='blue'
+                      colorScheme='teal'
                       size='md'
                       fontWeight='medium'
                       _hover={{ transform: 'translateY(-1px)' }}
@@ -354,7 +335,7 @@ function BlogPage() {
                   <Heading as='h3' size='lg' color={textColor}>
                     No blogs found
                   </Heading>
-                  <Text color={mutedColor} textAlign='center'>
+                  <Text color={'gray.600'} textAlign='center'>
                     Try adjusting your search terms or removing filters to see
                     more results.
                   </Text>
@@ -363,7 +344,7 @@ function BlogPage() {
                       setSearchTerm('');
                       setSelectedTag('');
                     }}
-                    colorScheme='blue'
+                    colorScheme='teal'
                   >
                     Clear Filters
                   </Button>
@@ -375,17 +356,17 @@ function BlogPage() {
             {filteredBlogs.length > 0 && (
               <Center mt={12}>
                 <HStack spacing={2}>
-                  <Button variant='outline' colorScheme='gray'>
+                  <Button variant='outline' colorScheme='teal'>
                     Previous
                   </Button>
-                  <Button colorScheme='blue'>1</Button>
-                  <Button variant='outline' colorScheme='gray'>
+                  <Button colorScheme='teal'>1</Button>
+                  <Button variant='outline' colorScheme='teal'>
                     2
                   </Button>
-                  <Button variant='outline' colorScheme='gray'>
+                  <Button variant='outline' colorScheme='teal'>
                     3
                   </Button>
-                  <Button variant='outline' colorScheme='gray'>
+                  <Button variant='outline' colorScheme='teal'>
                     Next
                   </Button>
                 </HStack>

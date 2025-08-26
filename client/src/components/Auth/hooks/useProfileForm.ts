@@ -63,6 +63,7 @@ export const useProfileForm = () => {
         title: 'Error',
         description: 'User not found. Please log in again.',
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -79,6 +80,7 @@ export const useProfileForm = () => {
         title: 'Profile updated successfully!',
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     } catch (err) {

@@ -39,7 +39,6 @@ export const EditProfileDrawer = ({
 }) => {
   //Colors
   const bgGradient = 'linear(to-br, blue.100, purple.50)';
-  const headerBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
   const { handleSubmit, handleInputChange, formData, isLoading } =
@@ -73,7 +72,6 @@ export const EditProfileDrawer = ({
 
   // Handle save button click
   const handleSaveClick = () => {
-    // Trigger form submission programmatically
     const form = document.getElementById(
       'edit-profile-form'
     ) as HTMLFormElement;
@@ -85,10 +83,15 @@ export const EditProfileDrawer = ({
   return (
     <Drawer isOpen={isOpen} placement='right' onClose={onClose} size='lg'>
       <DrawerOverlay bg='blackAlpha.600' backdropFilter='blur(10px)' />
-      <DrawerContent maxH='100vh' display='flex' flexDirection='column'>
+      <DrawerContent
+        maxH='100vh'
+        display='flex'
+        flexDirection='column'
+        bg='teal.900'
+        color='gray.500'
+      >
         <DrawerCloseButton />
         <DrawerHeader
-          bg={headerBg}
           borderBottom='1px'
           borderColor={borderColor}
           fontSize='xl'
@@ -105,7 +108,7 @@ export const EditProfileDrawer = ({
             <VStack spacing={6} align='stretch'>
               {/* Avatar Section */}
               <Box>
-                <Heading size='sm' mb={4} color='gray.600'>
+                <Heading size='sm' mb={4}>
                   Profile Picture
                 </Heading>
                 <Flex justify='center' mb={4}>
@@ -156,7 +159,7 @@ export const EditProfileDrawer = ({
 
               {/* Personal Information Section */}
               <Box>
-                <Heading size='sm' mb={4} color='gray.600'>
+                <Heading size='sm' mb={4}>
                   Personal Information
                 </Heading>
                 <VStack spacing={4}>
@@ -199,7 +202,7 @@ export const EditProfileDrawer = ({
 
               {/* Address Section */}
               <Box>
-                <Heading size='sm' mb={4} color='gray.600'>
+                <Heading size='sm' mb={4}>
                   Address Information
                 </Heading>
                 <VStack spacing={4}>
@@ -267,13 +270,13 @@ export const EditProfileDrawer = ({
             </VStack>
           </form>
         </DrawerBody>
-        <DrawerFooter bg={headerBg} borderTop='1px' borderColor={borderColor}>
+        <DrawerFooter borderTop='1px' borderColor={borderColor}>
           <HStack spacing={3} w='full' justifyContent='flex-end'>
-            <Button variant='outline' onClick={onClose}>
+            <Button variant='outline' colorScheme='teal' onClick={onClose}>
               Cancel
             </Button>
             <Button
-              colorScheme='blue'
+              colorScheme='teal'
               isLoading={isLoading || isUploading}
               loadingText={isUploading ? 'Uploading...' : 'Saving...'}
               leftIcon={<Icon as={Save} />}
