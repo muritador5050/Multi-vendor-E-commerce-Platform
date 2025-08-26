@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useOrders } from '@/context/OrderContextService';
 import { calculateTrend } from '../Utils/Utils';
 import { Box, Flex, Text } from '@chakra-ui/react';
@@ -9,10 +9,8 @@ export default function OrderStats() {
   const textColor = 'gray.600';
   const { data } = useOrders();
 
-  // Memoize orders extraction
   const orders = useMemo(() => data?.orders || [], [data?.orders]);
 
-  //Memo for stats calculation
   const stat = useMemo(() => {
     const totalRevenue = orders.reduce((sum, order) => {
       let price = 0;

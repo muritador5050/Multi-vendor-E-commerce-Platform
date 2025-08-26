@@ -38,6 +38,8 @@ import {
   Grid,
   GridItem,
   Stack,
+  InputGroup,
+  InputLeftElement,
 } from '@chakra-ui/react';
 import {
   ChevronDown,
@@ -176,6 +178,7 @@ const ReviewsContent: React.FC = () => {
       toast({
         title: 'Review approval toggled',
         status: 'success',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -184,6 +187,7 @@ const ReviewsContent: React.FC = () => {
         title: 'Failed to toggle approval',
         description: (err as Error)?.message || 'An error occurred',
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -197,6 +201,7 @@ const ReviewsContent: React.FC = () => {
         title: 'Review deleted',
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     } catch (err) {
@@ -204,6 +209,7 @@ const ReviewsContent: React.FC = () => {
         title: 'Failed to delete review',
         description: (err as Error)?.message || 'An error occurred',
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -276,23 +282,18 @@ const ReviewsContent: React.FC = () => {
         </Flex>
 
         <Flex mb={6} gap={4}>
-          <Box flex='1' position='relative'>
+          <InputGroup>
+            <InputLeftElement>
+              <Search size={18} />
+            </InputLeftElement>
             <Input
               placeholder='Search reviews...'
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               pl={10}
             />
-            <Box
-              position='absolute'
-              left={3}
-              top='50%'
-              transform='translateY(-50%)'
-              color='gray.500'
-            >
-              <Search size={18} />
-            </Box>
-          </Box>
+          </InputGroup>
+
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}

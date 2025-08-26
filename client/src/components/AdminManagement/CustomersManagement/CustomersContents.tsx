@@ -24,7 +24,6 @@ export const CustomersContents = () => {
 
   // Responsive values
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const cardPadding = useBreakpointValue({ base: 4, md: 6 });
 
   // Color mode values
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -67,7 +66,7 @@ export const CustomersContents = () => {
   };
 
   return (
-    <Box p={cardPadding} maxW='7xl' mx='auto'>
+    <Box maxW='7xl' mx='auto'>
       <Card
         bg={cardBg}
         borderRadius='xl'
@@ -195,7 +194,7 @@ const StatCard = ({
       transition='transform 0.2s'
       _hover={{ transform: 'translateY(-2px)' }}
     >
-      <CardBody p={{ base: 4, md: 6 }}>
+      <CardBody>
         <Flex align='center' direction={{ base: 'column', sm: 'row' }}>
           <Box
             p={{ base: 2, md: 3 }}

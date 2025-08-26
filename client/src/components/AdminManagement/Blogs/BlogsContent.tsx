@@ -24,6 +24,8 @@ import {
   Tag,
   TagLabel,
   useDisclosure,
+  InputGroup,
+  InputLeftElement,
 } from '@chakra-ui/react';
 import {
   ChevronDown,
@@ -113,6 +115,7 @@ const BlogsContent = () => {
         title: 'Blog status updated',
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     } catch {
@@ -120,6 +123,7 @@ const BlogsContent = () => {
         title: 'Failed to update blog status',
         status: 'error',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     }
@@ -132,6 +136,7 @@ const BlogsContent = () => {
         title: 'Blog deleted',
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     } catch {
@@ -139,6 +144,7 @@ const BlogsContent = () => {
         title: 'Failed to delete blog',
         status: 'error',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     }
@@ -167,7 +173,11 @@ const BlogsContent = () => {
   return (
     <Box p={6} bg='white' borderRadius='lg' boxShadow='sm'>
       <Flex justify='space-between' align='center' mb={6}>
-        <Text fontSize='xl' fontWeight='bold'>
+        <Text
+          display={{ base: 'none', md: 'flex' }}
+          fontSize='xl'
+          fontWeight='bold'
+        >
           Blog Management
         </Text>
         <HStack spacing={4}>
@@ -190,23 +200,18 @@ const BlogsContent = () => {
       </Flex>
 
       <Flex mb={6} gap={4}>
-        <Box flex='1' position='relative'>
+        <InputGroup>
+          <InputLeftElement>
+            <Search size={18} />
+          </InputLeftElement>
           <Input
             placeholder='Search blogs...'
             value={filters.search || ''}
             onChange={handleSearch}
             pl={10}
           />
-          <Box
-            position='absolute'
-            left={3}
-            top='50%'
-            transform='translateY(-50%)'
-            color='gray.500'
-          >
-            <Search size={18} />
-          </Box>
-        </Box>
+        </InputGroup>
+
         <Select
           value={
             filters.published === undefined

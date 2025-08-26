@@ -1,4 +1,4 @@
-import { Box, Container, Flex, useColorModeValue } from '@chakra-ui/react';
+import { Box, Container, useColorModeValue } from '@chakra-ui/react';
 import { useState } from 'react';
 import { DashboardStats } from './DashboardStats/DashboardStats';
 import { VendorsContent } from './VendorManagement/VendorsContent';
@@ -59,7 +59,7 @@ const AdminDashboardLayout = () => {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
       />
-      <Flex>
+      <Box position='relative' display='flex' flex='1'>
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -68,7 +68,7 @@ const AdminDashboardLayout = () => {
         <Container maxW={'full'} p={3}>
           {renderContent()}
         </Container>
-      </Flex>
+      </Box>
     </Box>
   );
 };

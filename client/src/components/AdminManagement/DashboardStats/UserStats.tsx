@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Table,
   Thead,
@@ -21,7 +20,6 @@ import {
   useColorModeValue,
   Divider,
   Grid,
-  useBreakpointValue,
 } from '@chakra-ui/react';
 import { FiUsers, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { useCurrentUser, useUsers } from '@/context/AuthContextService';
@@ -35,7 +33,7 @@ export const UserStats = () => {
   // Color mode values
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const cardBg = useColorModeValue('white', 'gray.700');
-  const cardPadding = useBreakpointValue({ base: 4, md: 6 });
+
   // Data and permission hooks
   const { data, isLoading, error } = useUsers();
   const currentUser = useCurrentUser();
@@ -68,7 +66,7 @@ export const UserStats = () => {
 
   return (
     <>
-      <Box p={cardPadding} maxW='7xl' mx='auto'>
+      <Box maxW='7xl' mx='auto'>
         <Card
           bg={cardBg}
           borderRadius='xl'
@@ -125,7 +123,7 @@ export const UserStats = () => {
               mb={4}
             >
               <TableContainer>
-                <Table variant='simple' size='md'>
+                <Table variant='simple' size={{ base: 'sm', md: 'md' }}>
                   <Thead bg='gray.100'>
                     <Tr>
                       <Th>User</Th>

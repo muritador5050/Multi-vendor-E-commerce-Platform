@@ -9,7 +9,7 @@ import RecentOrdersStats from './RecentOrdersStats';
 
 export const DashboardStats = () => {
   return (
-    <Box p={{ base: 4, md: 6 }}>
+    <Box>
       <Box
         display='grid'
         gridTemplateColumns={{

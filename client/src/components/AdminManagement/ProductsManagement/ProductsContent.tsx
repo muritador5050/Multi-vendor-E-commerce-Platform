@@ -41,6 +41,7 @@ import {
   Center,
   Alert,
   AlertIcon,
+  Stack,
 } from '@chakra-ui/react';
 import {
   Eye,
@@ -322,19 +323,27 @@ export const ProductsContent = () => {
     <Box>
       {/* Header */}
       <Flex justify='space-between' align='center' mb={6}>
-        <Text fontSize='xl' fontWeight='bold'>
+        <Text
+          display={{ base: 'none', md: 'flex' }}
+          fontSize='xl'
+          fontWeight='bold'
+        >
           Products Management
         </Text>
-        <HStack spacing={4}>
+        <Stack
+          width={{ base: 'full', md: 'fit-content' }}
+          direction={{ base: 'column', md: 'row' }}
+          spacing={4}
+        >
           <Input
             placeholder='Search products...'
-            w='200px'
+            w={{ base: 'full', md: '200px' }}
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
           />
           <Select
             placeholder='All Categories'
-            w='200px'
+            w={{ base: 'full', md: '200px' }}
             value={categoryFilter}
             onChange={(e) => handleCategoryFilterChange(e.target.value)}
           >
@@ -344,7 +353,7 @@ export const ProductsContent = () => {
               </option>
             ))}
           </Select>
-        </HStack>
+        </Stack>
       </Flex>
 
       {/* Products Table */}

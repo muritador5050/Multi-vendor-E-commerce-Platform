@@ -248,8 +248,12 @@ const VendorsTable = () => {
     <Box>
       {/* Header */}
       <Flex justify='space-between' align='center' mb={6}>
-        <Text fontSize='xl' fontWeight='bold'>
-          Vendors Management
+        <Text
+          display={{ base: 'none', md: 'flex' }}
+          fontSize='2xl'
+          fontWeight='bold'
+        >
+          Management Table
         </Text>
         <Flex gap={4}>
           <Select

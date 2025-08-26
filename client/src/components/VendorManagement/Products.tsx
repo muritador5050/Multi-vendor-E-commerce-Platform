@@ -610,54 +610,55 @@ export default function VendorProducts() {
         </Stack>
       </Flex>
 
-      <TableContainer overflowX='auto'>
-        <Table
-          variant='simple'
-          bg='white'
-          borderRadius='lg'
-          size={{ base: 'sm', md: 'md' }}
-        >
-          <Thead bg='gray.50'>
-            <Tr>
-              <Th>Product</Th>
-              <Th>Category</Th>
-              <Th>Price</Th>
-              <Th>Stock</Th>
-              <Th>Status</Th>
-              <Th>Rating</Th>
-              <Th>Vendor</Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {vendorProducts?.products.length === 0 ? (
+      <Box overflow={'hidden'}>
+        <TableContainer overflowX='auto'>
+          <Table
+            variant='simple'
+            bg='white'
+            borderRadius='lg'
+            size={{ base: 'sm', md: 'md' }}
+          >
+            <Thead bg='gray.50'>
               <Tr>
-                <Td colSpan={8} textAlign='center' py={10}>
-                  <Center color='gray.500' fontSize='xl'>
-                    No products available
-                  </Center>
-                </Td>
+                <Th>Product</Th>
+                <Th>Category</Th>
+                <Th>Price</Th>
+                <Th>Stock</Th>
+                <Th>Status</Th>
+                <Th>Rating</Th>
+                <Th>Vendor</Th>
+                <Th>Actions</Th>
               </Tr>
-            ) : (
-              vendorProducts?.products.map((product) => (
-                <ProductRow
-                  key={product._id}
-                  product={product}
-                  onView={handleView}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggleStatus={handleToggleStatus}
-                  isToggling={
-                    toggleMutation.variables === product._id &&
-                    toggleMutation.isPending
-                  }
-                />
-              ))
-            )}
-          </Tbody>
-        </Table>
-      </TableContainer>
-
+            </Thead>
+            <Tbody>
+              {vendorProducts?.products.length === 0 ? (
+                <Tr>
+                  <Td colSpan={8} textAlign='center' py={10}>
+                    <Center color='gray.500' fontSize='xl'>
+                      No products available
+                    </Center>
+                  </Td>
+                </Tr>
+              ) : (
+                vendorProducts?.products.map((product) => (
+                  <ProductRow
+                    key={product._id}
+                    product={product}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onToggleStatus={handleToggleStatus}
+                    isToggling={
+                      toggleMutation.variables === product._id &&
+                      toggleMutation.isPending
+                    }
+                  />
+                ))
+              )}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      </Box>
       {/* Drawer for viewing/editing product */}
       {currentProduct && (
         <Drawer

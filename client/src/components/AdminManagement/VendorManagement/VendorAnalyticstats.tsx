@@ -1,7 +1,5 @@
-import React from 'react';
 import {
   Box,
-  Container,
   Heading,
   Text,
   SimpleGrid,
@@ -103,82 +101,66 @@ export default function VendorAnalyticsStats() {
   ];
 
   return (
-    <Box minH='100vh' bg={bgColor} p={6}>
-      <Container maxW='7xl'>
-        <VStack spacing={8} align='stretch'>
-          {/* Header */}
-          <Box>
-            <Heading
-              size='xl'
-              mb={2}
-              color={useColorModeValue('gray.900', 'white')}
+    <Box bg={bgColor} p={6}>
+      <VStack spacing={8} align='stretch'>
+        {/* Status Distribution */}
+        <Card bg={cardBg} shadow='sm'>
+          <CardBody>
+            <VStack align='stretch' spacing={4}>
+              <Heading size='lg' color={'gray.900'}>
+                Vendor Status Distribution
+              </Heading>
+              <Flex wrap='wrap' gap={4}>
+                {statusItems.map((item, index) => (
+                  <HStack key={index} spacing={3}>
+                    <Circle size='4' bg={item.color} />
+                    <Text fontSize='sm' color={'gray.700'}>
+                      {item.label} ({item.count})
+                    </Text>
+                  </HStack>
+                ))}
+              </Flex>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        {/* Stats Grid */}
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+          {stats.map((stat, index) => (
+            <Card
+              key={index}
+              bg={cardBg}
+              shadow='sm'
+              _hover={{ shadow: 'lg' }}
+              transition='shadow 0.2s'
             >
-              Vendor Analytics
-            </Heading>
-            <Text color={useColorModeValue('gray.600', 'gray.400')}>
-              Overview of your vendor management system
-            </Text>
-          </Box>
-
-          {/* Stats Grid */}
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {stats.map((stat, index) => (
-              <Card
-                key={index}
-                bg={cardBg}
-                shadow='sm'
-                _hover={{ shadow: 'lg' }}
-                transition='shadow 0.2s'
-              >
-                <CardBody>
-                  <Flex justify='space-between' align='center'>
-                    <Stat>
-                      <StatLabel
-                        color={'gray.600'}
-                        fontSize='sm'
-                        fontWeight='medium'
-                      >
-                        {stat.label}
-                      </StatLabel>
-                      <StatNumber
-                        fontSize='3xl'
-                        fontWeight='bold'
-                        color={`${stat.color}.600`}
-                      >
-                        {stat.value}
-                      </StatNumber>
-                    </Stat>
-                    <Circle size='12' bg={stat.iconBg}>
-                      <Icon as={stat.icon} w={6} h={6} color='white' />
-                    </Circle>
-                  </Flex>
-                </CardBody>
-              </Card>
-            ))}
-          </SimpleGrid>
-
-          {/* Status Distribution */}
-          <Card bg={cardBg} shadow='sm'>
-            <CardBody>
-              <VStack align='stretch' spacing={4}>
-                <Heading size='lg' color={'gray.900'}>
-                  Vendor Status Distribution
-                </Heading>
-                <Flex wrap='wrap' gap={4}>
-                  {statusItems.map((item, index) => (
-                    <HStack key={index} spacing={3}>
-                      <Circle size='4' bg={item.color} />
-                      <Text fontSize='sm' color={'gray.700'}>
-                        {item.label} ({item.count})
-                      </Text>
-                    </HStack>
-                  ))}
+              <CardBody>
+                <Flex justify='space-between' align='center'>
+                  <Stat>
+                    <StatLabel
+                      color={'gray.600'}
+                      fontSize='sm'
+                      fontWeight='medium'
+                    >
+                      {stat.label}
+                    </StatLabel>
+                    <StatNumber
+                      fontSize='3xl'
+                      fontWeight='bold'
+                      color={`${stat.color}.600`}
+                    >
+                      {stat.value}
+                    </StatNumber>
+                  </Stat>
+                  <Circle size='12' bg={stat.iconBg}>
+                    <Icon as={stat.icon} w={6} h={6} color='white' />
+                  </Circle>
                 </Flex>
-              </VStack>
-            </CardBody>
-          </Card>
-        </VStack>
-      </Container>
+              </CardBody>
+            </Card>
+          ))}
+        </SimpleGrid>
+      </VStack>
     </Box>
   );
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Box,
   Flex,
@@ -139,6 +138,7 @@ export default function PaymentsContent() {
         title: 'Cannot cancel',
         description: 'Only pending payments can be cancelled',
         status: 'warning',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -160,6 +160,7 @@ export default function PaymentsContent() {
         title: 'Success',
         description: successMessage,
         status: 'success',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -185,6 +186,7 @@ export default function PaymentsContent() {
         description: `Payment ${selectedPayment._id} has been cancelled successfully`,
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
 
@@ -195,6 +197,7 @@ export default function PaymentsContent() {
         title: 'Error',
         description: 'Failed to cancel payment',
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -214,6 +217,7 @@ export default function PaymentsContent() {
         title: 'Status Updated',
         description: `Payment status updated to ${newStatus}`,
         status: 'success',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -225,6 +229,7 @@ export default function PaymentsContent() {
         title: 'Error',
         description: 'Failed to update payment status',
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -237,6 +242,7 @@ export default function PaymentsContent() {
       description: 'Payments data is being exported...',
       status: 'info',
       duration: 3000,
+      position: 'top-right',
       isClosable: true,
     });
   };

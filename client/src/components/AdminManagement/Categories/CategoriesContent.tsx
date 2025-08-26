@@ -126,12 +126,12 @@ export default function CategoriesContent() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         toast({
           title: 'File too large',
           description: 'Please select an image under 5MB',
           status: 'error',
+          position: 'top-right',
           duration: 3000,
           isClosable: true,
         });
@@ -144,6 +144,7 @@ export default function CategoriesContent() {
           title: 'Invalid file type',
           description: 'Please select an image file',
           status: 'error',
+          position: 'top-right',
           duration: 3000,
           isClosable: true,
         });
@@ -294,6 +295,7 @@ export default function CategoriesContent() {
         title: 'Success',
         description: 'Category deleted successfully',
         status: 'success',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -309,6 +311,7 @@ export default function CategoriesContent() {
         title: 'Error',
         description: errorMessage,
         status: 'error',
+        position: 'top-right',
         duration: 5000,
         isClosable: true,
       });
@@ -366,13 +369,21 @@ export default function CategoriesContent() {
   }
 
   return (
-    <Box p={6}>
+    <Box>
       {/* Header */}
       <Flex justify='space-between' align='center' mb={6}>
-        <Heading size='lg' color='gray.700'>
+        <Heading
+          display={{ base: 'none', md: 'flex' }}
+          size='lg'
+          color='gray.700'
+        >
           Categories Management ({categories.length})
         </Heading>
-        <Stack spacing={3} direction={'row'}>
+        <Stack
+          width={{ base: 'full', md: 'fit-content' }}
+          direction={'row'}
+          justifyContent='space-between'
+        >
           <Button
             leftIcon={<FiRefreshCw />}
             isLoading={isRefetching || isFetching}

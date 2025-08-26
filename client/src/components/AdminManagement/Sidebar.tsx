@@ -10,7 +10,7 @@ import {
   Rss,
   ScanEye,
   BriefcaseBusiness,
-  Factory,
+  Grid,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'blogs', label: 'Blogs', icon: Rss },
     { id: 'customers', label: 'Customers', icon: User },
-    { id: 'categories', label: 'Categories', icon: Factory },
+    { id: 'categories', label: 'Categories', icon: Grid },
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'payments', label: 'Payments', icon: Banknote },
@@ -49,30 +49,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
       bg='teal.900'
       color='white'
       borderRight='1px'
-      borderColor={'gray.700'}
+      borderColor={'gray.100'}
       minH='100vh'
-      overflow='hidden'
-      p={2}
       transition='width 0.3s ease-in'
       position={{ base: 'absolute', md: 'relative' }}
       zIndex={1}
+      overflow='hidden'
     >
-      {menuItems.map((item) => (
-        <Flex
-          key={item.id}
-          p={3}
-          mb={2}
-          borderRadius='md'
-          cursor='pointer'
-          bg={activeTab === item.id ? 'teal.500' : 'transparent'}
-          color={activeTab === item.id ? 'white' : 'inherit'}
-          _hover={{ bg: activeTab === item.id ? 'teal' : 'gray.400' }}
-          onClick={() => setActiveTab(item.id)}
-        >
-          <item.icon size={20} />
-          <Text ml={3}>{isCollapsed ? '' : item.label}</Text>
-        </Flex>
-      ))}
+      {/* Only render menu items if not collapsed on mobile */}
+      {(isDesktop || !isCollapsed) &&
+        menuItems.map((item) => (
+          <Flex
+            key={item.id}
+            p={3}
+            mb={2}
+            borderRadius='md'
+            cursor='pointer'
+            bg={activeTab === item.id ? 'teal.500' : 'transparent'}
+            color={activeTab === item.id ? 'white' : 'inherit'}
+            _hover={{ bg: activeTab === item.id ? 'teal' : 'gray.400' }}
+            onClick={() => setActiveTab(item.id)}
+          >
+            <item.icon size={20} />
+            <Text ml={3}>{isCollapsed ? '' : item.label}</Text>
+          </Flex>
+        ))}
     </Box>
   );
 };

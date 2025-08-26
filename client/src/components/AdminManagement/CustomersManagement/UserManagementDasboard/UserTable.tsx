@@ -164,7 +164,6 @@ export const UserTable = () => {
     []
   );
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages = [];
     const totalPages = pagination.totalPages;

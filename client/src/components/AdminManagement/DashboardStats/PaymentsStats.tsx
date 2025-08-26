@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useGetAllPayments } from '@/context/PaymentContextService';
 import { calculateTrend } from '../Utils/Utils';
 import { Box, Flex, Text } from '@chakra-ui/react';
@@ -10,7 +10,6 @@ export default function PaymentsStats() {
   const { data } = useGetAllPayments();
 
   const stat = useMemo(() => {
-    // Fixed: Check for payments array specifically
     if (!data?.data?.payments || !Array.isArray(data.data.payments)) {
       return {
         label: 'Total Payments',
@@ -20,7 +19,6 @@ export default function PaymentsStats() {
       };
     }
 
-    // Fixed: Access payments array correctly
     const totalPayments = data.data.payments.filter(
       (payment) => payment.status === 'completed'
     ).length;
