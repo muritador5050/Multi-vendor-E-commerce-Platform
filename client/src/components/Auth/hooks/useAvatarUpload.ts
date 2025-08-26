@@ -39,6 +39,7 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
         title: 'File too large',
         description: 'Please select an image smaller than 5MB',
         status: 'info',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -50,6 +51,7 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
         title: 'Empty file selected',
         description: 'Please select a file!',
         status: 'info',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -81,7 +83,6 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
       }
 
       if (!avatarUrl) {
-        console.error('No avatar URL in response:', uploadResponse);
         throw new Error('Invalid response: No avatar URL received');
       }
       onAvatarChange(avatarUrl);
@@ -90,6 +91,7 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
         title: 'Avatar uploaded successfully',
         description: 'Your profile picture has been updated',
         status: 'success',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });
@@ -109,6 +111,7 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
         title: 'Upload failed',
         description: 'Something went wrong',
         status: 'error',
+        position: 'top-right',
         duration: 5000,
         isClosable: true,
       });

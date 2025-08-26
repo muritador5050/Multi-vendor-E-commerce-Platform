@@ -620,12 +620,12 @@ export default function VendorProducts() {
           <Thead bg='gray.50'>
             <Tr>
               <Th>Product</Th>
-              <Th display={{ base: 'none', md: 'table-cell' }}>Category</Th>
+              <Th>Category</Th>
               <Th>Price</Th>
               <Th>Stock</Th>
               <Th>Status</Th>
-              <Th display={{ base: 'none', md: 'table-cell' }}>Rating</Th>
-              <Th display={{ base: 'none', md: 'table-cell' }}>Vendor</Th>
+              <Th>Rating</Th>
+              <Th>Vendor</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>

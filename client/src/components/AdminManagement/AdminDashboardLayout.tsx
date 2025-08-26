@@ -1,4 +1,4 @@
-import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
+import { Box, Container, Flex, useColorModeValue } from '@chakra-ui/react';
 import { useState } from 'react';
 import { DashboardStats } from './DashboardStats/DashboardStats';
 import { VendorsContent } from './VendorManagement/VendorsContent';
@@ -17,7 +17,11 @@ import CategoriesContent from './Categories/CategoriesContent';
 const AdminDashboardLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const bgColor = useColorModeValue('gray.50', 'gray.900');
+
+  const toggleSidebar = () => setIsCollapsed((prev) => !prev);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -49,13 +53,23 @@ const AdminDashboardLayout = () => {
   };
 
   return (
-    <Flex bg={bgColor} minH='100vh'>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <Box flex={1}>
-        <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-        <Box p={6}>{renderContent()}</Box>
-      </Box>
-    </Flex>
+    <Box bg={bgColor} minH='100vh'>
+      <Header
+        onToggle={toggleSidebar}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+      />
+      <Flex>
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isCollapsed={isCollapsed}
+        />
+        <Container maxW={'full'} p={3}>
+          {renderContent()}
+        </Container>
+      </Flex>
+    </Box>
   );
 };
 

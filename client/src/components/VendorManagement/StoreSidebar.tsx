@@ -34,7 +34,7 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
 
   // Handle logout action
   const handleLogoutClick = () => {
-    onOpen(); // Open confirmation dialog
+    onOpen();
   };
 
   const confirmLogout = async () => {

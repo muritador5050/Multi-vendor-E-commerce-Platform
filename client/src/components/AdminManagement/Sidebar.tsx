@@ -1,4 +1,4 @@
-import { Box, Flex } from '@chakra-ui/react';
+import { Flex, Text, useBreakpointValue, Box } from '@chakra-ui/react';
 import {
   Home,
   ShoppingCart,
@@ -16,15 +16,14 @@ import {
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isCollapsed: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
+  isCollapsed,
 }) => {
-  const cardBg = 'white';
-  const borderColor = 'gray.700';
-
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -39,20 +38,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'vendors', label: 'Vendors', icon: BriefcaseBusiness },
   ];
 
+  const isDesktop = useBreakpointValue({ base: false, md: true });
+
+  const desktopWidth = isCollapsed ? '80px' : '250px';
+  const mobileWidth = isCollapsed ? '0px' : '240px';
+
   return (
     <Box
-      w='250px'
-      bg={cardBg}
+      width={isDesktop ? desktopWidth : mobileWidth}
+      bg='teal.900'
+      color='white'
       borderRight='1px'
-      borderColor={borderColor}
+      borderColor={'gray.700'}
       minH='100vh'
-      p={4}
+      overflow='hidden'
+      p={2}
+      transition='width 0.3s ease-in'
+      position={{ base: 'absolute', md: 'relative' }}
+      zIndex={1}
     >
-      <Box fontSize='xl' fontWeight='bold' mb={8} color='teal.700'>
-        Admin Panel
-      </Box>
       {menuItems.map((item) => (
-        <Box
+        <Flex
           key={item.id}
           p={3}
           mb={2}
@@ -60,14 +66,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           cursor='pointer'
           bg={activeTab === item.id ? 'teal.500' : 'transparent'}
           color={activeTab === item.id ? 'white' : 'inherit'}
-          _hover={{ bg: activeTab === item.id ? 'teal' : 'gray.100' }}
+          _hover={{ bg: activeTab === item.id ? 'teal' : 'gray.400' }}
           onClick={() => setActiveTab(item.id)}
         >
-          <Flex align='center'>
-            <item.icon size={20} />
-            <Box ml={3}>{item.label}</Box>
-          </Flex>
-        </Box>
+          <item.icon size={20} />
+          <Text ml={3}>{isCollapsed ? '' : item.label}</Text>
+        </Flex>
       ))}
     </Box>
   );
