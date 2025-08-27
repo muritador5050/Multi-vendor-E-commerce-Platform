@@ -19,6 +19,7 @@ router.use('/api/payments', require('./payment.routes'));
 router.use('/api/carts', require('./cart.routes'));
 router.use('/api/wishlists', require('./wishlist.routes'));
 router.use('/api/blogs', require('./blog.routes'));
+router.use('/api/settings', require('./settings.routes'));
 router.use('/api/upload', require('./imageUpload.route'));
 
 module.exports = router;
