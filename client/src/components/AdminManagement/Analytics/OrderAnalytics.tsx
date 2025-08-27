@@ -43,6 +43,10 @@ import {
   RotateCcw,
   type LucideIcon,
 } from 'lucide-react';
+import {
+  useDailySalesReport,
+  useOrderStats,
+} from '@/context/OrderContextService';
 
 // TypeScript interfaces
 interface StatCardProps {
@@ -66,33 +70,35 @@ interface OrderStatusCardProps {
 }
 
 // Sample data - replace with your actual API data
-const salesByDateData = [
-  { _id: '2025-08-14', totalSales: 615.99, orders: 1 },
-  { _id: '2025-08-16', totalSales: 970.99, orders: 1 },
-  { _id: '2025-08-22', totalSales: 1710.89, orders: 11 },
-  { _id: '2025-08-23', totalSales: 34.99, orders: 1 },
-  { _id: '2025-08-27', totalSales: 951.95, orders: 5 },
-];
+// const salesByDateData = [
+//   { _id: '2025-08-14', totalSales: 615.99, orders: 1 },
+//   { _id: '2025-08-16', totalSales: 970.99, orders: 1 },
+//   { _id: '2025-08-22', totalSales: 1710.89, orders: 11 },
+//   { _id: '2025-08-23', totalSales: 34.99, orders: 1 },
+//   { _id: '2025-08-27', totalSales: 951.95, orders: 5 },
+// ];
 
-const orderStats = {
-  overview: {
-    totalOrders: 31,
-    totalRevenue: 12186.5,
-    averageOrderValue: 393.11290322580646,
-    pendingOrders: 11,
-    paidOrders: 15,
-    processingOrders: 2,
-    shippedOrders: 2,
-    deliveredOrders: 0,
-    cancelledOrders: 0,
-    returnedOrders: 1,
-    onHoldOrders: 0,
-  },
-};
+// const orderStats = {
+//   overview: {
+//     totalOrders: 31,
+//     totalRevenue: 12186.5,
+//     averageOrderValue: 393.11290322580646,
+//     pendingOrders: 11,
+//     paidOrders: 15,
+//     processingOrders: 2,
+//     shippedOrders: 2,
+//     deliveredOrders: 0,
+//     cancelledOrders: 0,
+//     returnedOrders: 1,
+//     onHoldOrders: 0,
+//   },
+// };
 
 const OrderAnalytics = () => {
+  const { data: salesByDateData } = useDailySalesReport();
+  const { data: orderStats } = useOrderStats();
   // Format data for charts
-  const chartData = salesByDateData.map((item) => ({
+  const chartData = salesByDateData?.map((item) => ({
     date: new Date(item._id).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -103,28 +109,28 @@ const OrderAnalytics = () => {
 
   // Order status data for pie chart
   const statusData = [
-    { name: 'Paid', value: orderStats.overview.paidOrders, color: '#48BB78' },
+    { name: 'Paid', value: orderStats?.overview.paidOrders, color: '#48BB78' },
     {
       name: 'Pending',
-      value: orderStats.overview.pendingOrders,
+      value: orderStats?.overview.pendingOrders,
       color: '#ED8936',
     },
     {
       name: 'Processing',
-      value: orderStats.overview.processingOrders,
+      value: orderStats?.overview.processingOrders,
       color: '#4299E1',
     },
     {
       name: 'Shipped',
-      value: orderStats.overview.shippedOrders,
+      value: orderStats?.overview.shippedOrders,
       color: '#9F7AEA',
     },
     {
       name: 'Returned',
-      value: orderStats.overview.returnedOrders,
+      value: orderStats?.overview.returnedOrders,
       color: '#F56565',
     },
-  ].filter((item) => item.value > 0);
+  ].filter((item) => (item?.value || 0) > 0);
 
   const StatCard: React.FC<StatCardProps> = ({
     icon,
@@ -236,28 +242,30 @@ const OrderAnalytics = () => {
           <StatCard
             icon={DollarSign}
             label='Total Revenue'
-            value={`$${orderStats.overview.totalRevenue.toLocaleString()}`}
+            value={`$${
+              orderStats?.overview.totalRevenue.toLocaleString() || '0'
+            }`}
             helpText='All time revenue'
             color='green.500'
           />
           <StatCard
             icon={ShoppingBag}
             label='Total Orders'
-            value={orderStats.overview.totalOrders.toLocaleString()}
+            value={orderStats?.overview.totalOrders.toLocaleString() || '0'}
             helpText='All orders placed'
             color='blue.500'
           />
           <StatCard
             icon={TrendingUp}
             label='Average Order Value'
-            value={`$${orderStats.overview.averageOrderValue.toFixed(2)}`}
+            value={`$${orderStats?.overview.averageOrderValue.toFixed(2)}`}
             helpText='Per order average'
             color='purple.500'
           />
           <StatCard
             icon={Clock}
             label='Pending Orders'
-            value={orderStats.overview.pendingOrders}
+            value={orderStats?.overview.pendingOrders || 0}
             helpText='Awaiting processing'
             color='orange.500'
             badge={{ text: 'Action Needed', colorScheme: 'orange' }}
@@ -370,37 +378,37 @@ const OrderAnalytics = () => {
               <OrderStatusCard
                 icon={CheckCircle}
                 label='Paid Orders'
-                count={orderStats.overview.paidOrders}
-                total={orderStats.overview.totalOrders}
+                count={orderStats?.overview.paidOrders || 0}
+                total={orderStats?.overview.totalOrders || 0}
                 color='#48BB78'
               />
               <OrderStatusCard
                 icon={Clock}
                 label='Pending Orders'
-                count={orderStats.overview.pendingOrders}
-                total={orderStats.overview.totalOrders}
+                count={orderStats?.overview.pendingOrders || 0}
+                total={orderStats?.overview.totalOrders || 0}
                 color='#ED8936'
               />
               <OrderStatusCard
                 icon={Package}
                 label='Processing'
-                count={orderStats.overview.processingOrders}
-                total={orderStats.overview.totalOrders}
+                count={orderStats?.overview.processingOrders || 0}
+                total={orderStats?.overview.totalOrders || 0}
                 color='#4299E1'
               />
               <OrderStatusCard
                 icon={Truck}
                 label='Shipped'
-                count={orderStats.overview.shippedOrders}
-                total={orderStats.overview.totalOrders}
+                count={orderStats?.overview.shippedOrders || 0}
+                total={orderStats?.overview.totalOrders || 0}
                 color='#9F7AEA'
               />
-              {orderStats.overview.returnedOrders > 0 && (
+              {(orderStats?.overview.returnedOrders || 0) > 0 && (
                 <OrderStatusCard
                   icon={RotateCcw}
                   label='Returned'
-                  count={orderStats.overview.returnedOrders}
-                  total={orderStats.overview.totalOrders}
+                  count={orderStats?.overview.returnedOrders || 0}
+                  total={orderStats?.overview.totalOrders || 0}
                   color='#F56565'
                 />
               )}
