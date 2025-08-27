@@ -19,9 +19,25 @@ import {
   VStack,
   useToast,
   Checkbox,
+  Alert,
+  AlertIcon,
+  Image,
 } from '@chakra-ui/react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+interface BuyNowProduct {
+  _id: string;
+  name: string;
+  price: number;
+  image?: string;
+  quantity: number;
+}
+
+interface LocationState {
+  buyNow?: boolean;
+  product?: BuyNowProduct;
+}
 
 const CheckoutPage = () => {
   const [orderData, setOrderData] = useState({
@@ -45,10 +61,65 @@ const CheckoutPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = useCurrentUser();
   const createOrderMutation = useCreateOrder();
   const { data: cartItems } = useCart();
   const shippingCost = 9.99;
+
+  // Check if this is a "Buy Now" flow
+  const locationState = location.state as LocationState;
+  const isBuyNow = locationState?.buyNow || false;
+  const buyNowProduct = locationState?.product;
+
+  // Determine what items to process
+  const itemsToProcess =
+    isBuyNow && buyNowProduct
+      ? [
+          {
+            product: {
+              _id: buyNowProduct._id,
+              name: buyNowProduct.name,
+              price: buyNowProduct.price,
+              images: buyNowProduct.image ? [buyNowProduct.image] : [],
+            },
+            quantity: buyNowProduct.quantity,
+            _id: `buynow-${buyNowProduct._id}`,
+          },
+        ]
+      : cartItems?.items || [];
+
+  // Calculate totals
+  const subtotal = itemsToProcess.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  );
+  const totalAmount = subtotal + shippingCost;
+
+  useEffect(() => {
+    // Redirect if no items to process
+    if (!isBuyNow && (!cartItems?.items || cartItems.items.length === 0)) {
+      toast({
+        title: 'No items to checkout',
+        description: 'Please add items to your cart first.',
+        status: 'warning',
+        position: 'top-right',
+        duration: 3000,
+      });
+      navigate('/cart');
+    }
+
+    if (isBuyNow && !buyNowProduct) {
+      toast({
+        title: 'Invalid product',
+        description: 'Product information is missing.',
+        status: 'error',
+        position: 'top-right',
+        duration: 3000,
+      });
+      navigate('/shop');
+    }
+  }, [isBuyNow, buyNowProduct, cartItems, navigate, toast]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -99,19 +170,19 @@ const CheckoutPage = () => {
         throw new Error('User not authenticated');
       }
 
-      const products = cartItems?.items.map((item) => ({
+      const products = itemsToProcess.map((item) => ({
         product: item.product._id,
         quantity: item.quantity,
         price: item.product.price,
       }));
 
       if (!products || products.length === 0) {
-        throw new Error('No products in cart');
+        throw new Error('No products to order');
       }
 
       const finalOrderData: CreateOrderRequest = {
         products,
-        totalPrice: (cartItems?.totalAmount || 0) + shippingCost,
+        totalPrice: totalAmount,
         shippingAddress: orderData.shippingAddress,
         billingAddress: orderData.useSameAddress
           ? orderData.shippingAddress
@@ -124,13 +195,15 @@ const CheckoutPage = () => {
       const createdOrder = await createOrderMutation.mutateAsync(
         finalOrderData
       );
+
       navigate('/payment', {
         state: {
           orderId: createdOrder.data?._id,
-          amount: (cartItems?.totalAmount || 0) + shippingCost,
+          amount: totalAmount,
           paymentMethod: orderData.paymentMethod,
-          subtotal: cartItems?.totalAmount || 0,
+          subtotal: subtotal,
           shippingCost: shippingCost,
+          isBuyNow: isBuyNow,
         },
       });
     } catch (error) {
@@ -151,8 +224,29 @@ const CheckoutPage = () => {
     }
   };
 
+  const handleBackNavigation = () => {
+    if (isBuyNow) {
+      navigate(-1); // Go back to product page
+    } else {
+      navigate('/cart'); // Go back to cart
+    }
+  };
+
   return (
     <Box maxW='7xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
+      {/* Buy Now Alert */}
+      {isBuyNow && (
+        <Alert status='info' mb={6} borderRadius='lg'>
+          <AlertIcon />
+          <Box>
+            <Text fontWeight='bold'>Express Checkout</Text>
+            <Text fontSize='sm'>
+              You're purchasing this item directly. This won't affect your cart.
+            </Text>
+          </Box>
+        </Alert>
+      )}
+
       <Grid templateColumns={{ base: '1fr', md: '2fr 1fr' }} gap={8}>
         {/* Left Column - Shipping and Payment */}
         <Box as='form' onSubmit={handleSubmit}>
@@ -382,11 +476,46 @@ const CheckoutPage = () => {
             </Heading>
 
             <VStack spacing={4} mb={6}>
-              {cartItems?.items.map((item) => (
-                <Flex key={item._id} width='full' justify='space-between'>
-                  <Text>
-                    {item.product.name} × {item.quantity}
-                  </Text>
+              {itemsToProcess.map((item, index) => (
+                <Flex
+                  key={item._id || index}
+                  width='full'
+                  align='center'
+                  gap={3}
+                >
+                  {/* Product Image */}
+                  <Box
+                    w='50px'
+                    h='50px'
+                    bg='gray.100'
+                    borderRadius='md'
+                    overflow='hidden'
+                    flexShrink={0}
+                  >
+                    {item.product.images && item.product.images[0] ? (
+                      <Image
+                        src={item.product.images[0]}
+                        alt={item.product.name}
+                        w='full'
+                        h='full'
+                        objectFit='cover'
+                      />
+                    ) : (
+                      <Box bg='gray.200' w='full' h='full' />
+                    )}
+                  </Box>
+
+                  {/* Product Details */}
+                  <Box flex='1'>
+                    <Text fontSize='sm' noOfLines={1} mb={1}>
+                      {item.product.name}
+                    </Text>
+                    <Text fontSize='xs' color='gray.300'>
+                      Qty: {item.quantity}
+                    </Text>
+                  </Box>
+
+                  {/* Price */}
                   <Text fontWeight='medium'>
                     ${(item.product.price * item.quantity).toFixed(2)}
                   </Text>
@@ -397,7 +526,7 @@ const CheckoutPage = () => {
             <VStack spacing={3} borderTopWidth='1px' pt={4} mb={6}>
               <Flex width='full' justify='space-between'>
                 <Text>Subtotal</Text>
-                <Text>${cartItems?.totalAmount.toFixed(2)}</Text>
+                <Text>${subtotal.toFixed(2)}</Text>
               </Flex>
               <Flex width='full' justify='space-between'>
                 <Text>Shipping</Text>
@@ -412,9 +541,7 @@ const CheckoutPage = () => {
                 borderTopWidth='1px'
               >
                 <Text>Total</Text>
-                <Text>
-                  ${((cartItems?.totalAmount || 0) + shippingCost).toFixed(2)}
-                </Text>
+                <Text>${totalAmount.toFixed(2)}</Text>
               </Flex>
             </VStack>
 
@@ -422,9 +549,9 @@ const CheckoutPage = () => {
               variant='outline'
               colorScheme='white'
               width='full'
-              onClick={() => navigate('/cart')}
+              onClick={handleBackNavigation}
             >
-              Back to Cart
+              {isBuyNow ? 'Back to Product' : 'Back to Cart'}
             </Button>
           </Box>
         </Box>

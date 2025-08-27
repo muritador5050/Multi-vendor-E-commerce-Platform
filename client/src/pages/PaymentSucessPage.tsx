@@ -223,17 +223,17 @@ const PaymentSuccessPage = () => {
           </Box>
         </Alert>
 
-        <Card mb={6}>
+        <Card bg='teal.900' color='gray.300' mb={6}>
           <CardBody>
             <VStack spacing={3} align='stretch'>
               <Flex justify='space-between'>
-                <Text color='gray.600'>Payment ID:</Text>
+                <Text color='gray.400'>Payment ID:</Text>
                 <Text fontFamily='mono' fontSize='sm'>
                   {paymentData.paymentId}
                 </Text>
               </Flex>
               <Flex justify='space-between'>
-                <Text color='gray.600'>Amount:</Text>
+                <Text color='gray.400'>Amount:</Text>
                 <Text fontWeight='bold'>
                   {formatCurrency(
                     paymentData.amount,
@@ -243,12 +243,12 @@ const PaymentSuccessPage = () => {
                 </Text>
               </Flex>
               <Flex justify='space-between'>
-                <Text color='gray.600'>Method:</Text>
+                <Text color='gray.400'>Method:</Text>
                 <Text>{getProviderDisplayName()}</Text>
               </Flex>
               {getCurrentOrderId() && (
                 <Flex justify='space-between'>
-                  <Text color='gray.600'>Order ID:</Text>
+                  <Text color='gray.400'>Order ID:</Text>
                   <Text fontFamily='mono' fontSize='sm'>
                     #{getCurrentOrderId()?.slice(-8).toUpperCase()}
                   </Text>
@@ -261,7 +261,7 @@ const PaymentSuccessPage = () => {
         <VStack spacing={3}>
           {paymentData.status === 'failed' && (
             <Button
-              colorScheme='blue'
+              colorScheme='teal'
               onClick={() => {
                 const currentOrderId = getCurrentOrderId();
                 const queryParams = new URLSearchParams({
@@ -276,7 +276,7 @@ const PaymentSuccessPage = () => {
             </Button>
           )}
 
-          <Button colorScheme='blue' onClick={() => refetch()}>
+          <Button colorScheme='teal' onClick={() => refetch()}>
             Refresh Status
           </Button>
 
@@ -294,8 +294,8 @@ const PaymentSuccessPage = () => {
     <Container maxW='2xl' py={20}>
       <VStack spacing={8} align='stretch'>
         {/* Success Header */}
-        <Box textAlign='center'>
-          <CheckCircle className='w-20 h-20 text-green-500 mx-auto mb-4' />
+        <Box bg='gray.300' p={2} textAlign='center'>
+          <CheckCircle color='green' />
           <Heading size='xl' mb={2} color='green.600'>
             Payment Successful!
           </Heading>
@@ -310,7 +310,7 @@ const PaymentSuccessPage = () => {
         </Box>
 
         {/* Payment Details */}
-        <Card>
+        <Card bg='teal.900' color='white'>
           <CardBody>
             <VStack spacing={4} align='stretch'>
               <Heading size='md' mb={2}>
@@ -318,7 +318,7 @@ const PaymentSuccessPage = () => {
               </Heading>
 
               <Flex justify='space-between'>
-                <Text color='gray.600'>Amount Paid:</Text>
+                <Text color='gray.400'>Amount Paid:</Text>
                 <Text fontWeight='bold' fontSize='lg'>
                   {formatCurrency(
                     paymentData.amount,
@@ -329,12 +329,12 @@ const PaymentSuccessPage = () => {
               </Flex>
 
               <Flex justify='space-between'>
-                <Text color='gray.600'>Payment Method:</Text>
+                <Text color='gray.400'>Payment Method:</Text>
                 <Text fontWeight='medium'>{getProviderDisplayName()}</Text>
               </Flex>
 
               <Flex justify='space-between'>
-                <Text color='gray.600'>Payment ID:</Text>
+                <Text color='gray.400'>Payment ID:</Text>
                 <Text fontFamily='mono' fontSize='sm' maxW='200px' isTruncated>
                   {paymentData.paymentId}
                 </Text>
@@ -342,7 +342,7 @@ const PaymentSuccessPage = () => {
 
               {paymentData.createdAt && (
                 <Flex justify='space-between'>
-                  <Text color='gray.600'>Payment Date:</Text>
+                  <Text color='gray.400'>Payment Date:</Text>
                   <Text>
                     {new Date(paymentData?.createdAt)?.toLocaleDateString()} at{' '}
                     {new Date(paymentData?.createdAt)?.toLocaleTimeString()}
@@ -357,7 +357,7 @@ const PaymentSuccessPage = () => {
         <VStack spacing={3}>
           {getCurrentOrderId() && (
             <Button
-              colorScheme='blue'
+              colorScheme='teal'
               size='lg'
               width='full'
               leftIcon={<FileText />}
@@ -369,7 +369,7 @@ const PaymentSuccessPage = () => {
 
           <Button
             variant='outline'
-            colorScheme='blue'
+            colorScheme='teal'
             size='lg'
             width='full'
             leftIcon={<ShoppingBag />}

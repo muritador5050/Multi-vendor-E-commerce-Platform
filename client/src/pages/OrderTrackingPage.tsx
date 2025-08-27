@@ -283,9 +283,7 @@ const OrderTrackingPage = () => {
                       />
                     </StepIndicator>
 
-                    <Box
-                    // flexShrink='0'
-                    >
+                    <Box>
                       <StepTitle
                         fontSize={isActive ? 'lg' : 'md'}
                         fontWeight={isActive ? 'bold' : 'normal'}

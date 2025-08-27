@@ -138,17 +138,24 @@ const PaymentPage = () => {
             </Box>
           </Alert>
 
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mb={6}>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+            mb={6}
+          >
             <Heading as='h2' fontSize='xl' mb={6}>
               Payment Processing
             </Heading>
 
             <VStack spacing={4} align='stretch'>
-              <Box p={4} bg='gray.50' borderRadius='md'>
-                <Text fontSize='sm' color='gray.600' mb={2}>
+              <Box bg='blue.50' color='blue.600' p={4} borderRadius='md'>
+                <Text fontSize='sm' mb={2}>
                   Payment Method:
                 </Text>
-                <Text fontWeight='semibold' fontSize='lg'>
+                <Text fontWeight='semibold' color='blue.700' fontSize='lg'>
                   {getPaymentMethodDisplay(orderData.paymentMethod)}
                 </Text>
               </Box>
@@ -162,14 +169,14 @@ const PaymentPage = () => {
                 </Text>
               </Box>
 
-              <Text fontSize='sm' color='gray.600' textAlign='center'>
+              <Text fontSize='sm' color='gray.400' textAlign='center'>
                 Click the button below to proceed to our secure payment partner.
               </Text>
 
               <VStack spacing={3}>
                 <Button
                   onClick={handlePayment}
-                  colorScheme='green'
+                  colorScheme='teal'
                   size='lg'
                   width='full'
                   isLoading={isProcessing}
@@ -184,6 +191,7 @@ const PaymentPage = () => {
 
                 <Button
                   variant='outline'
+                  color='gray.300'
                   width='full'
                   onClick={() => navigate('/checkout')}
                   disabled={isProcessing}
@@ -195,7 +203,7 @@ const PaymentPage = () => {
           </Box>
 
           {/* Security Information */}
-          <Box bg='gray.50' p={4} borderRadius='lg'>
+          <Box bg='teal.50' p={4} borderRadius='lg'>
             <Flex align='center' mb={2}>
               <Icon as={FiShield} color='green.500' mr={2} />
               <Heading as='h3' fontSize='md'>
@@ -212,14 +220,21 @@ const PaymentPage = () => {
 
         {/* Order Summary */}
         <Box>
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mb={6}>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+            mb={6}
+          >
             <Heading as='h2' fontSize='xl' mb={6}>
               Order Summary
             </Heading>
 
             <VStack spacing={3} mb={6}>
               <Flex width='full' justify='space-between'>
-                <Text color='gray.600'>Order ID:</Text>
+                <Text color='gray.400'>Order ID:</Text>
                 <Text fontFamily='mono' fontSize='sm'>
                   {orderData.orderId?.slice(-8)}...
                 </Text>
@@ -245,11 +260,11 @@ const PaymentPage = () => {
                 borderColor='gray.200'
               >
                 <Text>Total</Text>
-                <Text color='green.600'>${orderData.amount?.toFixed(2)}</Text>
+                <Text color='gray.400'>${orderData.amount?.toFixed(2)}</Text>
               </Flex>
             </VStack>
 
-            <Box fontSize='sm' color='gray.600' textAlign='center'>
+            <Box fontSize='sm' color='gray.400' textAlign='center'>
               <Text mb={2}>
                 <Icon as={FiLock} mr={1} />
                 SSL Secured Payment

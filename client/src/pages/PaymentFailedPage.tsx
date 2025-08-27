@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -273,7 +273,7 @@ const PaymentFailedPage = () => {
     <Container maxW='2xl' py={20}>
       <VStack spacing={8} align='stretch'>
         {/* Failed Header */}
-        <Box textAlign='center'>
+        <Box bg='gray.300' p={2} textAlign='center'>
           <XCircleIcon className='w-20 h-20 text-red-500 mx-auto mb-4' />
           <Heading size='xl' color='red.500' mb={2}>
             Payment Failed

@@ -4,7 +4,7 @@ import { DashboardStats } from './DashboardStats/DashboardStats';
 import { VendorsContent } from './VendorManagement/VendorsContent';
 import { OrdersContent } from './OrdersManagement/OrdersContent';
 import { ProductsContent } from './ProductsManagement/ProductsContent';
-import { AnalyticsContent } from './Analytics';
+import { AnalyticsContent } from './Analytics/Analytics';
 import { SettingsContent } from './SettingManagement/SettingsContent';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';

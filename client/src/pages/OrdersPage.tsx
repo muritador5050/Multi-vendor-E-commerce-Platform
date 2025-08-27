@@ -99,25 +99,19 @@ const OrdersPage = () => {
 
   return (
     <Box maxW='6xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
-      <Flex justify='space-between' align='center' mb={8}>
-        <Heading as='h1' fontSize='3xl'>
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        justify='space-between'
+        align='center'
+        mb={8}
+      >
+        <Heading as='h1' fontSize='3xl' mb={{ base: 3, md: 0 }}>
           Order History
         </Heading>
         <Button colorScheme='teal' onClick={() => navigate('/shop')}>
           Continue Shopping
         </Button>
       </Flex>
-
-      <Alert status='info' mb={6}>
-        <AlertIcon />
-        <Box>
-          <Text fontWeight='bold'>💡 Quick Tip</Text>
-          <Text fontSize='sm'>
-            To track any order, simply copy the Order ID and click the "Track
-            Order" button for real-time updates.
-          </Text>
-        </Box>
-      </Alert>
 
       {!userOrders || userOrders.length === 0 ? (
         <Box textAlign='center' py={20}>
@@ -147,14 +141,18 @@ const OrdersPage = () => {
               {/* Order Header */}
               <Flex justify='space-between' align='center' mb={4}>
                 <Box>
-                  <Text fontWeight='bold' fontSize='lg'>
+                  <Text fontWeight='semibold' fontSize='lg'>
                     Order #{order._id}
                   </Text>
                   <Text color='gray.300' fontSize='sm'>
                     Placed on {formatDate(order.createdAt)}
                   </Text>
                 </Box>
-                <VStack align='end' spacing={1}>
+                <VStack
+                  align='end'
+                  spacing={1}
+                  display={{ base: 'none', md: 'flex' }}
+                >
                   <Badge
                     colorScheme={getStatusColor(order.orderStatus)}
                     fontSize='sm'
@@ -207,7 +205,7 @@ const OrdersPage = () => {
                 color='gray.600'
                 borderRadius='md'
               >
-                <Grid templateColumns='1fr 1fr' gap={2} fontSize='sm'>
+                <Grid templateColumns={'1fr 1fr'} gap={2} fontSize='sm'>
                   <Text>Subtotal:</Text>
                   <Text textAlign='right'>
                     ${(order.totalPrice - order.shippingCost).toFixed(2)}

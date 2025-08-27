@@ -11,13 +11,10 @@ import {
   Alert,
   AlertIcon,
   Spinner,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   Heading,
   Stack,
 } from '@chakra-ui/react';
-import { ChevronRightIcon, ArrowBackIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon } from '@chakra-ui/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrderById } from '@/context/OrderContextService';
 
@@ -80,25 +77,6 @@ const OrderDetailsPage = () => {
 
   return (
     <Box maxW='6xl' mx='auto' px={{ base: 4, md: 8 }} py={8}>
-      {/* Breadcrumb Navigation */}
-      <Breadcrumb
-        spacing='8px'
-        separator={<ChevronRightIcon color='gray.500' />}
-        mb={6}
-      >
-        <BreadcrumbItem>
-          <BreadcrumbLink onClick={() => navigate('/')}>Home</BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbItem>
-          <BreadcrumbLink onClick={() => navigate('/orders')}>
-            Orders
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbItem isCurrentPage>
-          <BreadcrumbLink>Order #{order._id}</BreadcrumbLink>
-        </BreadcrumbItem>
-      </Breadcrumb>
-
       {/* Main Content */}
       <Grid templateColumns={{ base: '1fr', md: '2fr 1fr' }} gap={8}>
         {/* Left Column - Order Items */}
@@ -249,7 +227,12 @@ const OrderDetailsPage = () => {
       </Box>
 
       {/* Order Actions */}
-      <Flex justify='flex-end' mt={8} gap={4}>
+      <Flex
+        direction={{ base: 'column', md: 'row' }}
+        justify='flex-end'
+        mt={8}
+        gap={4}
+      >
         <Button variant='outline' onClick={() => navigate('/orders')}>
           Back to Orders
         </Button>
