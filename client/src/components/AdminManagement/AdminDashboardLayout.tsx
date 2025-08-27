@@ -1,10 +1,8 @@
 import { Box, Container, useColorModeValue } from '@chakra-ui/react';
 import { useState } from 'react';
-import { DashboardStats } from './DashboardStats/DashboardStats';
 import { VendorsContent } from './VendorManagement/VendorsContent';
 import { OrdersContent } from './OrdersManagement/OrdersContent';
 import { ProductsContent } from './ProductsManagement/ProductsContent';
-import { AnalyticsContent } from './Analytics/Analytics';
 import { SettingsContent } from './SettingManagement/SettingsContent';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -13,6 +11,9 @@ import BlogsContent from './Blogs/BlogsContent';
 import PaymentsContent from './Payments/PaymentsContent';
 import ReviewsContent from './Reviews/ReviewsContent';
 import CategoriesContent from './Categories/CategoriesContent';
+import { DashboardContent } from './Dashboard/Dashboard';
+import PaymentAnalytics from './Analytics/PaymentAnalytics';
+import OrderAnalytics from './Analytics/OrderAnalytics';
 
 const AdminDashboardLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -26,7 +27,7 @@ const AdminDashboardLayout = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardStats />;
+        return <DashboardContent />;
       case 'vendors':
         return <VendorsContent />;
       case 'categories':
@@ -35,8 +36,10 @@ const AdminDashboardLayout = () => {
         return <OrdersContent />;
       case 'products':
         return <ProductsContent />;
-      case 'analytics':
-        return <AnalyticsContent />;
+      case 'order-analytics':
+        return <OrderAnalytics />;
+      case 'payment-analytics':
+        return <PaymentAnalytics />;
       case 'customers':
         return <CustomersContents />;
       case 'settings':

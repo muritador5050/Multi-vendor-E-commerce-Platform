@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import { useVendorsForAdmin } from '@/context/VendorContextService';
 import { calculateTrend } from '../Utils/Utils';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { TrendingDown, TrendingUp, Users } from 'lucide-react';
 
 export default function VendorStats() {
   const cardBg = 'white';
-  const textColor = 'gray.600';
 
   //Hook
   const { data } = useVendorsForAdmin();
@@ -28,27 +27,23 @@ export default function VendorStats() {
   return (
     <Box
       bg={cardBg}
-      p={{ base: 4, md: 6 }}
+      p={6}
       borderRadius='lg'
       boxShadow='sm'
       border='1px'
-      borderColor='blue.400'
+      borderColor='gray'
       transition='transform 0.2s, box-shadow 0.2s'
       _hover={{
         transform: 'translateY(-2px)',
         boxShadow: 'md',
       }}
     >
-      <Text
-        fontSize={{ base: 'xs', md: 'sm' }}
-        color={textColor}
-        mb={2}
-        fontWeight='medium'
-        textTransform='uppercase'
-        letterSpacing='wide'
-      >
-        {stat.label}
-      </Text>
+      <Flex align='center' mb={4}>
+        <Box p={2} bg='purple.100' borderRadius='md' mr={3}>
+          <Users color='purple' />
+        </Box>
+        <Box fontWeight='bold'> {stat.label}</Box>
+      </Flex>
       <Text
         fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
         fontWeight='bold'

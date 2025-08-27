@@ -95,16 +95,19 @@ export interface PaymentAnalytics {
     smallestTransaction: number;
     successRate: string;
   };
+
   paymentCounts: {
     successful: number;
     failed: number;
     pending: number;
   };
+
   statusBreakdown: Array<{
     _id: string;
     count: number;
     totalAmount: number;
   }>;
+
   monthlyTrends: Array<{
     year: number;
     month: number;
@@ -113,12 +116,22 @@ export interface PaymentAnalytics {
     transactionCount: number;
     avgAmount: number;
   }>;
+
   paymentMethodBreakdown: Array<{
-    paymentMethod: string;
     count: number;
+    paymentProvider: string;
     totalAmount: number;
     avgAmount: number;
-    percentage: number;
   }>;
-  recentTransactions: Payment[];
+  recentTransactions: Array<{
+    _id: string;
+    orderId: {
+      _id: string;
+    };
+    paymentProvider: string;
+    paymentId: string;
+    amount: number;
+    status: string;
+    createdAt: string;
+  }>;
 }

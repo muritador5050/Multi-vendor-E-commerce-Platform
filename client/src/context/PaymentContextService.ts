@@ -125,8 +125,8 @@ export const useDeletePayment = () => {
 export const useGetPaymentAnalytics = (period: string = '12months') => {
   const queryString = buildQueryString({ period });
   const endpoint = queryString
-    ? `/payments/admin/analytics?${queryString}`
-    : '/payments/admin/analytics';
+    ? `/payments/analytics?${queryString}`
+    : '/payments/analytics';
 
   return useQuery<ApiResponse<PaymentAnalytics>, Error>({
     queryKey: paymentKeys.analytics(period),

@@ -1,37 +1,61 @@
 import { useMemo } from 'react';
-import { useOrders } from '@/context/OrderContextService';
+import { useOrderStats } from '@/context/OrderContextService';
 import { calculateTrend } from '../Utils/Utils';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 
 export default function OrderStats() {
   const cardBg = 'white';
-  const textColor = 'gray.600';
-  const { data } = useOrders();
-
-  const orders = useMemo(() => data?.orders || [], [data?.orders]);
+  const { data: orderStats } = useOrderStats();
+  console.log('Stats:', orderStats);
 
   const stat = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, order) => {
-      let price = 0;
-      if (typeof order.totalPrice === 'number') {
-        price = order.totalPrice;
-      } else if (typeof order.totalPrice === 'string') {
-        price = parseFloat(order.totalPrice) || 0;
-      }
-      return sum + price;
-    }, 0);
+    const currentRevenue = orderStats?.overview?.totalRevenue || 0;
+    const revenueTrend = calculateTrend(currentRevenue);
 
-    const revenueTrend = calculateTrend(totalRevenue);
     return {
       label: 'Total Revenue',
-      value: `$${totalRevenue?.toLocaleString('en-US', {
+      value: `$${currentRevenue.toLocaleString('en-US', {
         minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       })}`,
       change: revenueTrend.change,
       trend: revenueTrend.trend,
     };
-  }, [orders]);
+  }, [orderStats]);
+
+  // Handle loading state
+  if (!orderStats) {
+    return (
+      <Box
+        bg={cardBg}
+        p={{ base: 4, md: 6 }}
+        borderRadius='lg'
+        boxShadow='sm'
+        border='1px'
+        borderColor='blue.400'
+        transition='transform 0.2s, box-shadow 0.2s'
+        _hover={{
+          transform: 'translateY(-2px)',
+          boxShadow: 'md',
+        }}
+      >
+        <Flex align='center' mb={4}>
+          <Box p={2} bg='yellow.600' borderRadius='md' mr={3}>
+            <DollarSign color='yellow' />
+          </Box>
+          <Box fontWeight='bold'>Total Revenue</Box>
+        </Flex>
+        <Text
+          fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
+          fontWeight='bold'
+          mb={2}
+        >
+          Loading...
+        </Text>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -47,16 +71,12 @@ export default function OrderStats() {
         boxShadow: 'md',
       }}
     >
-      <Text
-        fontSize={{ base: 'xs', md: 'sm' }}
-        color={textColor}
-        mb={2}
-        fontWeight='medium'
-        textTransform='uppercase'
-        letterSpacing='wide'
-      >
-        {stat.label}
-      </Text>
+      <Flex align='center' mb={4}>
+        <Box p={2} bg='yellow.600' borderRadius='md' mr={3}>
+          <DollarSign color='yellow' />
+        </Box>
+        <Box fontWeight='bold'>{stat.label}</Box>
+      </Flex>
       <Text
         fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
         fontWeight='bold'

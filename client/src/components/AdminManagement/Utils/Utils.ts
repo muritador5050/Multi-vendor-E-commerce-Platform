@@ -12,8 +12,6 @@ export const formatCurrency = (amount: number) => {
 };
 
 export const calculateTrend = (current: number, previous?: number) => {
-  // Provide a default previous value if not provided
-  // Using 90% of current as mock previous value
   const prev = previous ?? (current > 0 ? current * 0.9 : 0);
 
   // Handle edge cases to prevent NaN

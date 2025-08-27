@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import { useGetAllPayments } from '@/context/PaymentContextService';
 import { calculateTrend } from '../Utils/Utils';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { CreditCard, TrendingDown, TrendingUp } from 'lucide-react';
 
 export default function PaymentsStats() {
   const cardBg = 'white';
-  const textColor = 'gray.600';
   const { data } = useGetAllPayments();
 
   const stat = useMemo(() => {
@@ -46,16 +45,12 @@ export default function PaymentsStats() {
         boxShadow: 'md',
       }}
     >
-      <Text
-        fontSize={{ base: 'xs', md: 'sm' }}
-        color={textColor}
-        mb={2}
-        fontWeight='medium'
-        textTransform='uppercase'
-        letterSpacing='wide'
-      >
-        {stat?.label}
-      </Text>
+      <Flex align='center' mb={4}>
+        <Box p={2} bg='blue.100' borderRadius='md' mr={3}>
+          <CreditCard color='blue' />
+        </Box>
+        <Box fontWeight='bold'> {stat.label}</Box>
+      </Flex>
       <Text
         fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
         fontWeight='bold'

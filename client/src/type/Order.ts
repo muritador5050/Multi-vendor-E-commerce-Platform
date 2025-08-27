@@ -101,10 +101,15 @@ export interface OrderStats {
   totalRevenue: number;
   averageOrderValue: number;
   pendingOrders: number;
+  paidOrders: number;
   processingOrders: number;
   shippedOrders: number;
   deliveredOrders: number;
   cancelledOrders: number;
+  returnedOrders: number;
+  onHoldOrders: number;
+  sameAddressOrders: number;
+  differentAddressOrders: number;
 }
 
 export interface MonthlyStats {
@@ -129,10 +134,10 @@ export interface DailySalesReport {
 }
 
 export interface ProductSalesReport {
-  productId: string;
-  name: string;
   totalQuantity: number;
   totalRevenue: number;
+  productId: string;
+  name: string;
 }
 
 export interface VendorSalesAnalytics {

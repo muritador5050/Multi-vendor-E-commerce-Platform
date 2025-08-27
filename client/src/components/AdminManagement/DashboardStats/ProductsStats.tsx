@@ -2,11 +2,10 @@ import { useMemo } from 'react';
 import { useProducts } from '@/context/ProductContextService';
 import { calculateTrend } from '../Utils/Utils';
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { TrendingDown, TrendingUp } from 'lucide-react';
+import { Package, TrendingDown, TrendingUp } from 'lucide-react';
 
 export default function ProductsStats() {
   const cardBg = 'white';
-  const textColor = 'gray.600';
   const { data } = useProducts();
 
   const stat = useMemo(() => {
@@ -35,16 +34,12 @@ export default function ProductsStats() {
         boxShadow: 'md',
       }}
     >
-      <Text
-        fontSize={{ base: 'xs', md: 'sm' }}
-        color={textColor}
-        mb={2}
-        fontWeight='medium'
-        textTransform='uppercase'
-        letterSpacing='wide'
-      >
-        {stat.label}
-      </Text>
+      <Flex align='center' mb={4}>
+        <Box p={2} bg='teal.100' borderRadius='md' mr={3}>
+          <Package color='teal' />
+        </Box>
+        <Box fontWeight='bold'> {stat.label}</Box>
+      </Flex>
       <Text
         fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
         fontWeight='bold'
