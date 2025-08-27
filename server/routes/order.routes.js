@@ -217,14 +217,12 @@ router
 
 router.get(
   '/analytics/sales-by-date',
-
-  checkRole('vendor', 'read'),
+  checkRole('admin', 'read'),
   asyncHandler(OrderController.getDailySalesReport)
 );
 
 router.get(
   '/analytics/sales-by-product',
-
   checkRole('vendor', 'read'),
   asyncHandler(OrderController.getSalesByProduct)
 );
@@ -304,7 +302,6 @@ router.get(
  */
 router.get(
   '/stats',
-
   checkRole('admin', 'read'),
   asyncHandler(OrderController.getOrderStats)
 );

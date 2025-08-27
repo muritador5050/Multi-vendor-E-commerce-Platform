@@ -817,6 +817,7 @@ class VendorController {
 
       res.json({
         success: true,
+        message: 'Successfully retrieving statistics',
         data: {
           totalOrders: vendor.totalOrders || 0,
           totalRevenue: vendor.totalRevenue || 0,

@@ -22,7 +22,7 @@ router.get(
 );
 
 router.get(
-  '/admin/analytics',
+  '/analytics',
   checkRole('admin', 'read'),
   asyncHandler(PaymentController.getPaymentAnalytics)
 );
