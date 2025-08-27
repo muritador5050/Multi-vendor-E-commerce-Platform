@@ -79,7 +79,7 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Stack>
+      <Stack spacing={9}>
         <Heading color='teal.900'>Sign Up</Heading>
 
         {registerMutation.error && (

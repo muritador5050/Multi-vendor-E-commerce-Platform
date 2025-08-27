@@ -30,13 +30,6 @@ import {
   VStack,
   HStack,
   Divider,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
   Spinner,
   Center,
   Select,
@@ -45,6 +38,7 @@ import {
   Tooltip,
   Stack,
   Image,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import {
   Package,
@@ -56,6 +50,7 @@ import {
   CheckCircle,
   XCircle,
   RefreshCcw,
+  Star,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Product, UpdateProductRequest } from '@/type/product';
@@ -98,7 +93,8 @@ const DetailItem = ({
   </HStack>
 );
 
-const ProductRow = React.memo(
+// Product Item Component for Grid Layout
+const ProductItem = React.memo(
   ({
     product,
     onView,
@@ -114,63 +110,155 @@ const ProductRow = React.memo(
     onToggleStatus: (productId: string) => void;
     isToggling: boolean;
   }) => (
-    <Tr>
-      <Td>
-        <HStack spacing={3}>
-          <Box
-            w='50px'
-            h='50px'
-            bg='gray.100'
-            borderRadius='md'
-            overflow='hidden'
-            flexShrink={0}
-          >
-            {product.images && product.images[0] ? (
-              <Image
-                src={product.images[0]}
-                alt={product.name}
-                objectFit='cover'
-              />
-            ) : (
-              <Center h='100%' color='gray.400'>
-                <Package size={20} />
-              </Center>
-            )}
-          </Box>
-          <Box>
-            <Text fontWeight='medium' noOfLines={1}>
-              {product.name}
-            </Text>
-            <Text fontSize='sm' color='gray.500' noOfLines={1}>
-              {product.description}
-            </Text>
-          </Box>
-        </HStack>
-      </Td>
-      <Td>
-        <Badge colorScheme='blue'>
-          {typeof product.category === 'string'
-            ? product.category
-            : product.category?.name || 'No Category'}
+    <Box
+      bg='white'
+      borderRadius='lg'
+      border='1px'
+      borderColor='gray.200'
+      p={4}
+      shadow='sm'
+      transition='all 0.2s'
+      _hover={{
+        shadow: 'md',
+        borderColor: 'blue.200',
+        transform: 'translateY(-2px)',
+      }}
+    >
+      {/* Product Image */}
+      <Box
+        w='full'
+        h='180px'
+        bg='gray.50'
+        borderRadius='md'
+        overflow='hidden'
+        mb={3}
+        position='relative'
+      >
+        {product.images && product.images[0] ? (
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            w='full'
+            h='full'
+            objectFit='cover'
+          />
+        ) : (
+          <Center h='full' color='gray.400'>
+            <Package size={40} />
+          </Center>
+        )}
+
+        {/* Status Badge Overlay */}
+        <Badge
+          position='absolute'
+          top={2}
+          right={2}
+          colorScheme={getStatusColor(product.isActive || false)}
+          size='sm'
+        >
+          {product.isActive ? 'Active' : 'Inactive'}
         </Badge>
-      </Td>
-      <Td>{formatPrice(product.price || 0)}</Td>
-      <Td>
-        <Badge colorScheme={getStockStatus(product.quantityInStock || 0).color}>
-          {product.quantityInStock || 0}
-        </Badge>
-      </Td>
-      <Td>
-        <HStack spacing={2}>
-          <Badge colorScheme={getStatusColor(product.isActive || false)}>
-            {product.isActive ? 'Active' : 'Inactive'}
+      </Box>
+
+      {/* Product Info */}
+      <VStack align='stretch' spacing={3}>
+        {/* Title and Description */}
+        <Box>
+          <Text fontWeight='bold' fontSize='lg' noOfLines={1} mb={1}>
+            {product.name}
+          </Text>
+          <Text fontSize='sm' color='gray.600' noOfLines={2} mb={2}>
+            {product.description}
+          </Text>
+        </Box>
+
+        {/* Category and Price Row */}
+        <Flex justify='space-between' align='center'>
+          <Badge colorScheme='blue' size='sm'>
+            {typeof product.category === 'string'
+              ? product.category
+              : product.category?.name || 'No Category'}
           </Badge>
+          <Text fontWeight='bold' fontSize='lg' color='green.600'>
+            {formatPrice(product.price || 0)}
+          </Text>
+        </Flex>
+
+        {/* Stock and Rating Row */}
+        <Flex justify='space-between' align='center'>
+          <HStack spacing={2}>
+            <Text fontSize='sm' color='gray.500'>
+              Stock:
+            </Text>
+            <Badge
+              colorScheme={getStockStatus(product.quantityInStock || 0).color}
+              size='sm'
+            >
+              {product.quantityInStock || 0}
+            </Badge>
+          </HStack>
+          <HStack spacing={1}>
+            <Star size={14} fill='currentColor' color='yellow.400' />
+            <Text fontSize='sm' color='gray.600'>
+              {(product.averageRating || 0).toFixed(1)}
+            </Text>
+          </HStack>
+        </Flex>
+
+        {/* Vendor Info */}
+        <Box py={2} borderTop='1px' borderColor='gray.100'>
+          <Text fontSize='xs' color='gray.500' mb={1}>
+            Vendor
+          </Text>
+          <Text fontSize='sm' fontWeight='medium' noOfLines={1}>
+            {product.vendor?.name || 'Unknown'}
+          </Text>
+          <Text fontSize='xs' color='gray.500' noOfLines={1}>
+            {product.vendor?.email || 'No Email'}
+          </Text>
+        </Box>
+
+        {/* Action Buttons */}
+        <Flex justify='space-between' align='center' pt={2}>
+          <HStack spacing={1}>
+            <Tooltip label='View details'>
+              <IconButton
+                size='sm'
+                variant='ghost'
+                colorScheme='blue'
+                icon={<Eye size={16} />}
+                onClick={() => onView(product)}
+                aria-label='View'
+              />
+            </Tooltip>
+            <Tooltip label='Edit product'>
+              <IconButton
+                size='sm'
+                variant='ghost'
+                colorScheme='orange'
+                icon={<Edit size={16} />}
+                onClick={() => onEdit(product)}
+                aria-label='Edit'
+              />
+            </Tooltip>
+            <Tooltip label='Delete product'>
+              <IconButton
+                size='sm'
+                variant='ghost'
+                colorScheme='red'
+                icon={<Trash2 size={16} />}
+                onClick={() => onDelete(product)}
+                aria-label='Delete'
+              />
+            </Tooltip>
+          </HStack>
+
           <Tooltip
             label={product.isActive ? 'Deactivate product' : 'Activate product'}
           >
             <IconButton
               size='sm'
-              variant='ghost'
+              variant='outline'
               colorScheme={product.isActive ? 'red' : 'green'}
               icon={
                 product.isActive ? (
@@ -184,55 +272,13 @@ const ProductRow = React.memo(
               aria-label={product.isActive ? 'Deactivate' : 'Activate'}
             />
           </Tooltip>
-        </HStack>
-      </Td>
-      <Td>{renderRating(product.averageRating || 0)}</Td>
-      <Td>
-        <VStack spacing={0} align='start'>
-          <Text fontSize='sm'>{product.vendor?.name || 'Unknown'}</Text>
-          <Text fontSize='xs' color='gray.500'>
-            {product.vendor?.email || 'No Email'}
-          </Text>
-        </VStack>
-      </Td>
-      <Td>
-        <HStack spacing={1}>
-          <Tooltip label='View details'>
-            <IconButton
-              size='sm'
-              variant='ghost'
-              colorScheme='blue'
-              icon={<Eye size={16} />}
-              onClick={() => onView(product)}
-              aria-label='View'
-            />
-          </Tooltip>
-          <Tooltip label='Edit product'>
-            <IconButton
-              size='sm'
-              variant='ghost'
-              colorScheme='orange'
-              icon={<Edit size={16} />}
-              onClick={() => onEdit(product)}
-              aria-label='Edit'
-            />
-          </Tooltip>
-          <Tooltip label='Delete product'>
-            <IconButton
-              size='sm'
-              variant='ghost'
-              colorScheme='red'
-              icon={<Trash2 size={16} />}
-              onClick={() => onDelete(product)}
-              aria-label='Delete'
-            />
-          </Tooltip>
-        </HStack>
-      </Td>
-    </Tr>
+        </Flex>
+      </VStack>
+    </Box>
   )
 );
 
+//VendorProduct
 export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerState, setDrawerState] = useState<DrawerState>({
@@ -576,6 +622,7 @@ export default function VendorProducts() {
 
   return (
     <Box>
+      {/* Header Section */}
       <Flex
         justify='space-between'
         align='center'
@@ -610,55 +657,43 @@ export default function VendorProducts() {
         </Stack>
       </Flex>
 
-      <Box overflow={'hidden'}>
-        <TableContainer overflowX='auto'>
-          <Table
-            variant='simple'
-            bg='white'
-            borderRadius='lg'
-            size={{ base: 'sm', md: 'md' }}
+      {/* Products Grid */}
+      <Box bg='gray.50' p={4} borderRadius='lg'>
+        {vendorProducts?.products.length === 0 ? (
+          <Center py={20} bg='white' borderRadius='lg'>
+            <VStack spacing={4}>
+              <Package size={64} color='gray' />
+              <Text fontSize='xl' color='gray.500' fontWeight='medium'>
+                No products available
+              </Text>
+              <Text fontSize='sm' color='gray.400' textAlign='center'>
+                Start by adding your first product to showcase your inventory
+              </Text>
+            </VStack>
+          </Center>
+        ) : (
+          <SimpleGrid
+            columns={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
+            spacing={4}
           >
-            <Thead bg='gray.50'>
-              <Tr>
-                <Th>Product</Th>
-                <Th>Category</Th>
-                <Th>Price</Th>
-                <Th>Stock</Th>
-                <Th>Status</Th>
-                <Th>Rating</Th>
-                <Th>Vendor</Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {vendorProducts?.products.length === 0 ? (
-                <Tr>
-                  <Td colSpan={8} textAlign='center' py={10}>
-                    <Center color='gray.500' fontSize='xl'>
-                      No products available
-                    </Center>
-                  </Td>
-                </Tr>
-              ) : (
-                vendorProducts?.products.map((product) => (
-                  <ProductRow
-                    key={product._id}
-                    product={product}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onToggleStatus={handleToggleStatus}
-                    isToggling={
-                      toggleMutation.variables === product._id &&
-                      toggleMutation.isPending
-                    }
-                  />
-                ))
-              )}
-            </Tbody>
-          </Table>
-        </TableContainer>
+            {vendorProducts?.products.map((product) => (
+              <ProductItem
+                key={product._id}
+                product={product}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onToggleStatus={handleToggleStatus}
+                isToggling={
+                  toggleMutation.variables === product._id &&
+                  toggleMutation.isPending
+                }
+              />
+            ))}
+          </SimpleGrid>
+        )}
       </Box>
+
       {/* Drawer for viewing/editing product */}
       {currentProduct && (
         <Drawer

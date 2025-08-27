@@ -42,6 +42,7 @@ import { useCart } from '@/context/CartContextService';
 import { useCategories } from '@/context/CategoryContextService';
 import React, { useState } from 'react';
 import { useIsAuthenticated } from '@/context/AuthContextService';
+import { useSettings } from '@/context/SettingsContextService';
 
 //NavLink Component
 function NavLink({
@@ -106,7 +107,7 @@ function Navbar() {
   const rightDrawer = useDisclosure();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-
+  const { data: settings } = useSettings();
   const { data: cart } = useCart();
   const { isAuthenticated } = useIsAuthenticated();
   const {
@@ -137,7 +138,10 @@ function Navbar() {
             fontFamily='Roboto, sans-serif'
             fontSize='16px'
           >
-            Welcome to Multivendor E-commerce platform
+            Welcome to{' '}
+            <Text as='span' color='orange'>
+              {settings?.data?.platformName}
+            </Text>
           </Text>
           <Text fontWeight='bold' color='white'>
             Call us:(+234)8148985591

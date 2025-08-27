@@ -23,6 +23,7 @@ import {
   Flex,
   Image,
   SimpleGrid,
+  Stack,
 } from '@chakra-ui/react';
 import { AddIcon, CloseIcon, AttachmentIcon } from '@chakra-ui/icons';
 import { useCategories } from '@/context/CategoryContextService';
@@ -59,8 +60,7 @@ const CreateProductPage: React.FC = () => {
 
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const toast = useToast();
-  const { data: categories = [], isLoading: loadingCategories } =
-    useCategories();
+  const { data: categories, isLoading: loadingCategories } = useCategories();
   const createProduct = useCreateProduct();
 
   const createEmptyProduct = (): ProductFormData => ({
@@ -282,10 +282,14 @@ const CreateProductPage: React.FC = () => {
   }
 
   return (
-    <Box p={8} maxW='6xl' mx='auto'>
+    <Box
+    // p={8} maxW='6xl' mx='auto'
+    >
       <Flex justify='space-between' align='center' mb={8}>
-        <Heading size='lg'>Create Products</Heading>
-        <Badge colorScheme='blue' fontSize='md' px={3} py={1}>
+        <Heading display={{ base: 'none', md: 'flex' }} size='lg'>
+          Create Products
+        </Heading>
+        <Badge colorScheme='teal' fontSize='md' px={3} py={1}>
           {formData.length} product{formData.length !== 1 ? 's' : ''}
         </Badge>
       </Flex>
@@ -336,7 +340,7 @@ const CreateProductPage: React.FC = () => {
                       }
                       placeholder='Select category'
                     >
-                      {categories.map((category: Category) => (
+                      {categories?.categories.map((category: Category) => (
                         <option key={category._id} value={category._id}>
                           {category.name}
                         </option>
@@ -555,7 +559,13 @@ const CreateProductPage: React.FC = () => {
         ))}
 
         {/* Action Buttons */}
-        <HStack w='full' justify='space-between' pt={4}>
+        <Stack
+          w='full'
+          direction={{ base: 'column', md: 'row' }}
+          justify='space-between'
+          pt={4}
+          my={5}
+        >
           <Button
             leftIcon={<AddIcon />}
             onClick={addProduct}
@@ -574,7 +584,7 @@ const CreateProductPage: React.FC = () => {
           >
             Create {formData.length} Product{formData.length !== 1 ? 's' : ''}
           </Button>
-        </HStack>
+        </Stack>
 
         {/* Error Alert */}
         {createProduct.error && (

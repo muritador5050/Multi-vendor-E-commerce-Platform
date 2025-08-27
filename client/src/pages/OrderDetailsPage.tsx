@@ -10,42 +10,21 @@ import {
   Button,
   Alert,
   AlertIcon,
-  Stepper,
-  Step,
-  StepIndicator,
-  StepStatus,
-  StepNumber,
-  StepSeparator,
-  StepTitle,
-  StepDescription,
   Spinner,
-  useSteps,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   Heading,
-  StepIcon,
+  Stack,
 } from '@chakra-ui/react';
 import { ChevronRightIcon, ArrowBackIcon } from '@chakra-ui/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrderById } from '@/context/OrderContextService';
 
-const statusSteps = [
-  { title: 'Order Placed', status: 'pending' },
-  { title: 'Processing', status: 'processing' },
-  { title: 'Shipped', status: 'shipped' },
-  { title: 'Delivered', status: 'delivered' },
-];
-
 const OrderDetailsPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { data: order, isLoading, error } = useOrderById(orderId || '');
-
-  const { activeStep } = useSteps({
-    index: statusSteps.findIndex((step) => step.status === order?.orderStatus),
-    count: statusSteps.length,
-  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,17 +47,6 @@ const OrderDetailsPage = () => {
       default:
         return 'gray';
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    };
-    return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
   if (isLoading) {
@@ -131,28 +99,24 @@ const OrderDetailsPage = () => {
         </BreadcrumbItem>
       </Breadcrumb>
 
-      {/* Header with Back Button */}
-      <Flex align='center' mb={6}>
-        <Button
-          variant='ghost'
-          leftIcon={<ArrowBackIcon />}
-          onClick={() => navigate(-1)}
-          mr={4}
-        >
-          Back
-        </Button>
-        <Heading as='h1' size='lg'>
-          Order Details
-        </Heading>
-      </Flex>
-
       {/* Main Content */}
       <Grid templateColumns={{ base: '1fr', md: '2fr 1fr' }} gap={8}>
         {/* Left Column - Order Items */}
-        <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
-          <Heading as='h2' size='md' mb={4}>
-            Order Items ({order.products.length})
-          </Heading>
+        <Box bg='teal.900' color='white' p={6} borderRadius='lg' boxShadow='sm'>
+          <Flex justify='space-between' alignItems='baseline'>
+            <Heading as='h2' size='md' mb={4}>
+              Order Items ({order.products.length})
+            </Heading>
+            <Badge
+              colorScheme={getStatusColor(order.orderStatus)}
+              fontSize='md'
+              px={3}
+              py={1}
+              borderRadius='full'
+            >
+              {order.orderStatus.toUpperCase()}
+            </Badge>
+          </Flex>
 
           <VStack spacing={4} divider={<Divider />}>
             {order.products.map((item, index) => (
@@ -183,54 +147,14 @@ const OrderDetailsPage = () => {
 
         {/* Right Column - Order Summary */}
         <VStack spacing={6} align='stretch'>
-          {/* Order Status Card */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
-            <Flex justify='space-between' align='center' mb={4}>
-              <Text fontWeight='bold'>Order Status</Text>
-              <Badge
-                colorScheme={getStatusColor(order.orderStatus)}
-                fontSize='md'
-                px={3}
-                py={1}
-                borderRadius='full'
-              >
-                {order.orderStatus.toUpperCase()}
-              </Badge>
-            </Flex>
-
-            <Stepper
-              index={activeStep}
-              orientation='vertical'
-              height='200px'
-              gap='0'
-            >
-              {statusSteps.map((step, index) => (
-                <Step key={index}>
-                  <StepIndicator>
-                    <StepStatus
-                      complete={<StepIcon />}
-                      incomplete={<StepNumber />}
-                      active={<StepNumber />}
-                    />
-                  </StepIndicator>
-                  <Box flexShrink='0'>
-                    <StepTitle>{step.title}</StepTitle>
-                    {index === activeStep && (
-                      <StepDescription>
-                        {order.orderStatus === 'delivered'
-                          ? 'Delivered on ' + formatDate(order.updatedAt)
-                          : 'Current status'}
-                      </StepDescription>
-                    )}
-                  </Box>
-                  <StepSeparator />
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
           {/* Shipping Information */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+          >
             <Heading as='h3' size='sm' mb={4}>
               Shipping Information
             </Heading>
@@ -264,7 +188,13 @@ const OrderDetailsPage = () => {
           </Box>
 
           {/* Order Summary */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm'>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+          >
             <Heading as='h3' size='sm' mb={4}>
               Order Summary
             </Heading>
@@ -291,26 +221,31 @@ const OrderDetailsPage = () => {
       </Grid>
 
       {/* Payment Information */}
-      <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mt={8}>
+      <Box
+        bg='teal.900'
+        color='white'
+        p={6}
+        borderRadius='lg'
+        boxShadow='sm'
+        mt={8}
+      >
         <Heading as='h3' size='md' mb={4}>
           Payment Information
         </Heading>
-        <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-          <Box>
-            <Text fontWeight='medium' mb={2}>
-              Payment Method
+        <Stack spacing={5}>
+          <Flex align='center' gap={9}>
+            <Text>Payment Method:</Text>
+            <Text fontFamily='cursive' color='orange'>
+              {order.paymentMethod || 'Not specified'}
             </Text>
-            <Text>{order.paymentMethod || 'Not specified'}</Text>
-          </Box>
-          <Box>
-            <Text fontWeight='medium' mb={2}>
-              Shipping Cost
-            </Text>
+          </Flex>
+          <Flex align='center' gap={9}>
+            <Text>Shipping Cost:</Text>
             <Badge colorScheme={'blue'} fontSize='md' px={3} py={1}>
               ${order.shippingCost}
             </Badge>
-          </Box>
-        </Grid>
+          </Flex>
+        </Stack>
       </Box>
 
       {/* Order Actions */}

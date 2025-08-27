@@ -76,7 +76,7 @@ export default function LoginForm() {
   };
 
   return (
-    <Stack position='relative'>
+    <Stack spacing={9} position='relative'>
       <Heading color='teal.900'>Login</Heading>
 
       {loginMutation.error && (
@@ -89,7 +89,7 @@ export default function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit}>
-        <Stack spacing={5} position='relative'>
+        <Stack spacing={7} position='relative'>
           <FormControl isRequired>
             <FormLabel>Email</FormLabel>
             <InputGroup>

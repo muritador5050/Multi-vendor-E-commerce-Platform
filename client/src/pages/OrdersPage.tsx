@@ -103,7 +103,7 @@ const OrdersPage = () => {
         <Heading as='h1' fontSize='3xl'>
           Order History
         </Heading>
-        <Button colorScheme='blue' onClick={() => navigate('/shop')}>
+        <Button colorScheme='teal' onClick={() => navigate('/shop')}>
           Continue Shopping
         </Button>
       </Flex>
@@ -127,7 +127,7 @@ const OrdersPage = () => {
           <Text color='gray.500' mb={6}>
             You haven't placed any orders yet.
           </Text>
-          <Button colorScheme='blue' onClick={() => navigate('/shop')}>
+          <Button colorScheme='teal' onClick={() => navigate('/shop')}>
             Start Shopping
           </Button>
         </Box>
@@ -136,7 +136,8 @@ const OrdersPage = () => {
           {userOrders.map((order) => (
             <Box
               key={order._id}
-              bg='white'
+              bg='teal.900'
+              color='white'
               p={6}
               borderRadius='lg'
               boxShadow='sm'
@@ -149,7 +150,7 @@ const OrdersPage = () => {
                   <Text fontWeight='bold' fontSize='lg'>
                     Order #{order._id}
                   </Text>
-                  <Text color='gray.600' fontSize='sm'>
+                  <Text color='gray.300' fontSize='sm'>
                     Placed on {formatDate(order.createdAt)}
                   </Text>
                 </Box>
@@ -162,13 +163,9 @@ const OrdersPage = () => {
                   >
                     {order.orderStatus?.toUpperCase()}
                   </Badge>
-                  <Text fontWeight='bold' fontSize='lg'>
-                    ${order.totalPrice.toFixed(2)}
-                  </Text>
                 </VStack>
               </Flex>
 
-              {/* Products - Fixed the nested mapping issue */}
               <Grid
                 templateColumns={{ base: '1fr', md: '1fr auto' }}
                 gap={6}
@@ -189,7 +186,7 @@ const OrdersPage = () => {
                         <Text fontWeight='medium'>
                           {item.product?.name || 'Unknown Product'}
                         </Text>
-                        <Text fontSize='sm' color='gray.600'>
+                        <Text fontSize='sm' color='gray.300'>
                           Quantity: {item.quantity} × $
                           {item.price?.toFixed(2) || '0.00'}
                         </Text>
@@ -203,7 +200,13 @@ const OrdersPage = () => {
               </Grid>
 
               {/* Order Summary */}
-              <Box mb={4} p={4} bg='gray.50' borderRadius='md'>
+              <Box
+                mb={4}
+                p={4}
+                bg='gray.300'
+                color='gray.600'
+                borderRadius='md'
+              >
                 <Grid templateColumns='1fr 1fr' gap={2} fontSize='sm'>
                   <Text>Subtotal:</Text>
                   <Text textAlign='right'>
@@ -231,6 +234,7 @@ const OrdersPage = () => {
                 <Button
                   variant='outline'
                   size='sm'
+                  colorScheme='white'
                   onClick={() => navigate(`/orders/${order._id}/tracking`)}
                 >
                   Track Order
@@ -238,6 +242,7 @@ const OrdersPage = () => {
                 <Button
                   variant='outline'
                   size='sm'
+                  colorScheme='white'
                   onClick={() => navigate(`/orders/${order._id}/details`)}
                 >
                   View Details

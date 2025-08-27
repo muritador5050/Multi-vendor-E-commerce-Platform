@@ -46,16 +46,15 @@ export default function CartList() {
   }
 
   return (
-    <Box>
+    <Box p={3}>
       {cart?.items.length === 0 ? (
         <Stack textAlign='center' spacing={6}>
           <Text fontWeight='bold' fontSize='xl'>
             Your cart is empty
           </Text>
           <Button
-            bg='black'
-            color='white'
-            _hover={{ bg: 'black' }}
+            mx='auto'
+            colorScheme='teal'
             onClick={() => navigate('/shop')}
           >
             Back To Shop
@@ -66,7 +65,7 @@ export default function CartList() {
           <Stack spacing={6}>
             {cart?.items.map((item) => {
               return (
-                <VStack key={item.product._id} bg='white'>
+                <VStack key={item.product._id} bg='teal.900' color='white'>
                   <Flex w='100%' align='center' justify='space-between' p={3}>
                     <Image
                       src={
@@ -114,7 +113,7 @@ export default function CartList() {
 
                     <IconButton
                       aria-label='delete item'
-                      colorScheme='red'
+                      colorScheme='orange'
                       icon={<DeleteIcon />}
                       size='xs'
                       alignSelf='flex-start'
@@ -142,8 +141,11 @@ export default function CartList() {
                           })
                         }
                         disabled={item.quantity <= 1}
+                        color='white'
                       />
-                      <Button size='xs'>{item.quantity}</Button>
+                      <Button size='xs' color='white'>
+                        {item.quantity}
+                      </Button>
                       <IconButton
                         aria-label='Add quantity'
                         icon={<AddIcon />}
@@ -153,6 +155,7 @@ export default function CartList() {
                             quantity: item.quantity + 1,
                           })
                         }
+                        color='white'
                       />
                     </ButtonGroup>
                     <Text fontWeight='extrabold' fontSize='xs'>
@@ -168,7 +171,8 @@ export default function CartList() {
 
           <Flex
             w='100%'
-            bg='white'
+            bg='teal.900'
+            color='white'
             align='center'
             justify='space-between'
             mt={8}
@@ -201,7 +205,7 @@ export default function CartList() {
               </Text>
             </Box>
             <Button
-              colorScheme='red'
+              colorScheme='orange'
               size='xs'
               onClick={() => clearCartMutation.mutate()}
             >
@@ -209,22 +213,23 @@ export default function CartList() {
             </Button>
           </Flex>
 
-          <Divider />
-          <Box my={5}>
-            <Text textAlign='center' fontFamily='cursive' color='black' mb={3}>
-              Payment Details
-            </Text>
-            <Flex w='100%' bg='white' p={3} justify='flex-end'>
-              <Button
-                colorScheme='blackAlpha'
-                fontSize='xs'
-                px='30px'
-                onClick={() => navigate('/checkout')}
-              >
-                Checkout
-              </Button>
-            </Flex>
-          </Box>
+          <Flex
+            w='100%'
+            bg='teal.900'
+            color='white'
+            my={5}
+            p={3}
+            justify='flex-end'
+          >
+            <Button
+              colorScheme='teal'
+              fontSize='xs'
+              px='30px'
+              onClick={() => navigate('/checkout')}
+            >
+              Checkout
+            </Button>
+          </Flex>
         </>
       )}
     </Box>

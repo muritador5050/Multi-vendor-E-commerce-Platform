@@ -153,15 +153,18 @@ const CheckoutPage = () => {
 
   return (
     <Box maxW='7xl' mx='auto' px={{ base: 4, md: 8 }} py={12}>
-      <Heading as='h1' fontSize='3xl' mb={8} fontWeight='bold'>
-        Checkout
-      </Heading>
-
       <Grid templateColumns={{ base: '1fr', md: '2fr 1fr' }} gap={8}>
         {/* Left Column - Shipping and Payment */}
         <Box as='form' onSubmit={handleSubmit}>
           {/* Shipping Information */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mb={6}>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+            mb={6}
+          >
             <Heading as='h2' fontSize='xl' mb={6}>
               Shipping Information
             </Heading>
@@ -222,7 +225,14 @@ const CheckoutPage = () => {
           </Box>
 
           {/* Billing Information */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mb={6}>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+            mb={6}
+          >
             <Heading as='h2' fontSize='xl' mb={4}>
               Billing Information
             </Heading>
@@ -295,7 +305,14 @@ const CheckoutPage = () => {
           </Box>
 
           {/* Payment Method */}
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mb={6}>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+            mb={6}
+          >
             <Heading as='h2' fontSize='xl' mb={6}>
               Payment Method
             </Heading>
@@ -340,7 +357,7 @@ const CheckoutPage = () => {
 
           <Button
             type='submit'
-            colorScheme='blue'
+            colorScheme='teal'
             size='lg'
             width='full'
             isLoading={isProcessing}
@@ -352,7 +369,14 @@ const CheckoutPage = () => {
 
         {/* Right Column - Order Summary */}
         <Box>
-          <Box bg='white' p={6} borderRadius='lg' boxShadow='sm' mb={6}>
+          <Box
+            bg='teal.900'
+            color='white'
+            p={6}
+            borderRadius='lg'
+            boxShadow='sm'
+            mb={6}
+          >
             <Heading as='h2' fontSize='xl' mb={6}>
               Order Summary
             </Heading>
@@ -396,7 +420,7 @@ const CheckoutPage = () => {
 
             <Button
               variant='outline'
-              colorScheme='gray'
+              colorScheme='white'
               width='full'
               onClick={() => navigate('/cart')}
             >

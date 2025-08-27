@@ -53,9 +53,9 @@ function Layout() {
       <Navbar />
       <Stack gap={4} spacing={4} p={4}>
         {!isExcludedPage() && (
-          <Heading size='lg'>{getCurrentPageName()}</Heading>
+          <Heading size='md'>{getCurrentPageName()}</Heading>
         )}
-        <Flex gap={2} align='center'>
+        <Flex gap={2} align='center' maxW='250px'>
           {!isExcludedPage() && (
             <>
               <Text>
@@ -64,7 +64,9 @@ function Layout() {
                 </ChakraLink>
               </Text>
               <Text>/</Text>
-              <Text>{getCurrentPageName()}</Text>
+              <Text maxW='150px' isTruncated>
+                {getCurrentPageName()}
+              </Text>
             </>
           )}
         </Flex>
