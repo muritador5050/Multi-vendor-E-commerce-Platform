@@ -19,12 +19,9 @@ import {
 } from '@chakra-ui/react';
 
 import {
-  Bell,
   ChartPie,
   ChartSpline,
-  CircleHelp,
   DollarSign,
-  Megaphone,
   Shield,
   ShoppingCart,
   Star,
@@ -35,16 +32,13 @@ import {
   useVendorStats,
 } from '@/context/VendorContextService';
 import {
-  useDailySalesReport,
   useProductSalesReport,
   useVendorSalesAnalytics,
 } from '@/context/OrderContextService';
 import { formatLastLogin } from '@/utils/TrackLoginTime';
-import { generateLastNDays, mergeWithSalesData } from '@/utils/GenerateDate';
-import DailySalesReportChart from '@/components/charts/DailySalesReportChart';
-import { SalesSummaryStats } from '@/components/charts/StoreStats';
-import StoreAnalytics from '@/components/charts/StoreAnalyticsChart';
-import SaleByProductPie from '@/components/charts/SalesProductPieChart';
+import { ProductSalesBarChart } from '../charts/ProductSalesBarChart';
+import { ProductSalesPieChart } from '../charts/ProductSalesPieChart';
+import { VendorSalesSummary } from '../charts/VendorSalesSummary';
 
 interface DashboardStats {
   totalOrders: number;
@@ -64,11 +58,6 @@ interface DashboardCard {
   icon: LucideIcon;
 }
 
-type DailySalesPoint = {
-  date: string;
-  totalSales: number;
-};
-
 type SalesPoint = {
   productId: string;
   name: string;
@@ -81,7 +70,7 @@ const getDashboardCards = (stats: DashboardStats): DashboardCard[] => [
     id: 1,
     label: 'Total Revenue',
     value: `$${stats?.totalRevenue}`,
-    change: '0%',
+    change: `from ${stats?.totalOrders} orders`,
     trend: 'increase',
     bgColor: 'red',
     icon: DollarSign,
@@ -90,7 +79,9 @@ const getDashboardCards = (stats: DashboardStats): DashboardCard[] => [
     id: 2,
     label: 'Total Orders',
     value: stats?.totalOrders,
-    change: '0%',
+    change: `$${(stats?.totalRevenue / stats?.totalOrders || 0).toFixed(
+      0
+    )} avg`,
     trend: 'increase',
     bgColor: 'purple',
     icon: ShoppingCart,
@@ -107,11 +98,11 @@ const getDashboardCards = (stats: DashboardStats): DashboardCard[] => [
   {
     id: 4,
     label: 'Status',
-    value: stats?.verificationStatus === 'verified' ? 'Verified' : 'Pending',
+    value: stats?.verificationStatus === 'approved' ? 'Approved' : 'Pending',
     change:
-      stats?.verificationStatus === 'verified' ? 'Active' : 'Under Review',
-    trend: stats?.verificationStatus === 'verified' ? 'increase' : 'decrease',
-    bgColor: stats?.verificationStatus === 'verified' ? 'green' : 'orange',
+      stats?.verificationStatus === 'approved' ? 'Active' : 'Under Review',
+    trend: stats?.verificationStatus === 'approved' ? 'increase' : 'decrease',
+    bgColor: stats?.verificationStatus === 'approved' ? 'green' : 'orange',
     icon: Shield,
   },
 ];
@@ -119,11 +110,9 @@ const getDashboardCards = (stats: DashboardStats): DashboardCard[] => [
 export default function VendorDashboard() {
   const { data, isFetching } = useVendorProfile();
   const { data: stats } = useVendorStats();
-  const { data: analyticsSales, isFetching: isAnalyticsFetching } =
+  const { data: salesReport, isFetching: isAnalyticsFetching } =
     useVendorSalesAnalytics();
-  const { data: dailySales, isFetching: dailySalesFetching } =
-    useDailySalesReport();
-  const { data: storeAnalytics } = useProductSalesReport();
+  const { data: salesByProduct } = useProductSalesReport();
 
   //Stats
   if (!stats) return null;
@@ -131,35 +120,20 @@ export default function VendorDashboard() {
 
   //Store analytics
   const salesData: SalesPoint[] =
-    storeAnalytics?.map((item) => ({
+    salesByProduct?.map((item) => ({
       productId: item.productId,
       name: item.name,
       totalQuantity: item.totalQuantity,
       totalRevenue: item.totalRevenue,
     })) ?? [];
 
-  //Daily-sale-report
-  const dialySalesData: DailySalesPoint[] =
-    dailySales?.map((item) => ({
-      date: new Date(item._id).toISOString(),
-      totalSales: item.totalSales,
-    })) || [];
-  const lastNDays = generateLastNDays(15);
-  const filledData = mergeWithSalesData(lastNDays, dialySalesData);
-
   if (isFetching)
     return (
       <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
-        Fetching daily...
+        Fetching Data...
       </Center>
     );
 
-  if (dailySalesFetching)
-    return (
-      <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
-        Fetching daily sales...
-      </Center>
-    );
   if (isAnalyticsFetching)
     return (
       <Center fontSize={'xl'} fontWeight={'bold'} color={'gray.300'}>
@@ -233,18 +207,7 @@ export default function VendorDashboard() {
       </SimpleGrid>
       <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
         <GridItem colSpan={{ md: 2 }}>
-          <Card>
-            <CardBody>
-              <DailySalesReportChart
-                title='Sales Report by Date'
-                data={filledData}
-                xKey='date'
-                yKey='totalSales'
-                yLabel='Sales'
-                lineColor='#4f46e5'
-              />
-            </CardBody>
-          </Card>
+          <VendorSalesSummary data={salesReport ?? null} />
         </GridItem>
 
         <GridItem>
@@ -257,16 +220,10 @@ export default function VendorDashboard() {
               color='white'
             >
               <ChartSpline />
-              <Text fontWeight='semibold'>Store Analytics</Text>
+              <Text fontWeight='semibold'>Sale-By-Product</Text>
             </CardHeader>
             <CardBody>
-              <StoreAnalytics
-                data={salesData}
-                xKey='name'
-                yKey='totalRevenue'
-                yLabel='Revenue ($)'
-                lineColor='#4f46e5'
-              />
+              <ProductSalesBarChart data={salesData} />
             </CardBody>
           </Card>
         </GridItem>
@@ -283,63 +240,8 @@ export default function VendorDashboard() {
               <Text fontWeight='semibold'>Sales by Products</Text>
             </CardHeader>
             <CardBody display='flex' flexDirection='column' alignItems='center'>
-              <SaleByProductPie />
+              <ProductSalesPieChart data={salesData} />
             </CardBody>
-          </Card>
-        </GridItem>
-        <GridItem>
-          <Card>
-            <CardHeader
-              display='flex'
-              alignItems='center'
-              gap={3}
-              bg='#203a43'
-              color='white'
-            >
-              <Bell />
-              <Text fontWeight='semibold'>Notifications</Text>
-            </CardHeader>
-            <CardBody></CardBody>
-          </Card>
-        </GridItem>
-        <GridItem>
-          <Card>
-            <CardHeader
-              display='flex'
-              alignItems='center'
-              gap={3}
-              bg='#203a43'
-              color='white'
-            >
-              <CircleHelp />
-              <Text fontWeight='semibold'>Inquiries</Text>
-            </CardHeader>
-            <CardBody></CardBody>
-          </Card>
-        </GridItem>
-        <GridItem>
-          <Card>
-            <CardHeader bg='#203a43' color='white'>
-              <Text fontWeight='semibold'>Store Stats</Text>
-            </CardHeader>
-            <CardBody>
-              {analyticsSales && <SalesSummaryStats data={analyticsSales} />}
-            </CardBody>
-          </Card>
-        </GridItem>
-        <GridItem>
-          <Card>
-            <CardHeader
-              display='flex'
-              alignItems='center'
-              gap={3}
-              bg='#203a43'
-              color='white'
-            >
-              <Megaphone />
-              <Text fontWeight='semibold'>Latest Topics</Text>
-            </CardHeader>
-            <CardBody></CardBody>
           </Card>
         </GridItem>
       </Grid>

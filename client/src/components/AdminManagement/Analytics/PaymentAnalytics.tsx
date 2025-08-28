@@ -35,7 +35,6 @@ import {
 } from 'recharts';
 import { useGetPaymentAnalytics } from '@/context/PaymentContextService';
 
-// TypeScript types based on your actual API response
 type PeriodType = '7days' | '30days' | '3months' | '6months' | '12months';
 
 interface PaymentOverview {
@@ -120,9 +119,9 @@ export default function PaymentAnalytics() {
 
   // Format currency with better formatting
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-NG', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'NGN',
+      currency: 'USD',
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -165,7 +164,7 @@ export default function PaymentAnalytics() {
         gap={{ base: 4, sm: 0 }}
       >
         <Heading size='lg' color={textColor}>
-          Analytics & Reports
+          Payment Analytics
         </Heading>
 
         {/* Period Selector */}
@@ -272,7 +271,7 @@ export default function PaymentAnalytics() {
                   <XAxis dataKey='monthName' tick={{ fontSize: 12 }} />
                   <YAxis
                     tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => `₦${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
                     formatter={(value: number) => [
