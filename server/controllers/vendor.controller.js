@@ -321,7 +321,15 @@ class VendorController {
       }
 
       const topVendors = await Vendor.aggregate([
-        { $match: { verificationStatus: 'approved' } },
+        {
+          $match: {
+            verificationStatus: 'approved',
+            totalOrders: { $gte: 3 },
+            totalRevenue: { $gte: 100 },
+            reviewCount: { $gte: 3 },
+            rating: { $gte: 3.5 },
+          },
+        },
         {
           $addFields: {
             topScore: {
@@ -350,6 +358,7 @@ class VendorController {
             rating: 1,
             reviewCount: 1,
             totalRevenue: 1,
+            totalOrders: 1,
             createdAt: 1,
             topScore: 1,
             verificationStatus: 1,

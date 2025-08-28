@@ -51,7 +51,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Analytics',
       icon: BarChart3,
       subItems: [
-        { id: 'general-analytics', label: 'General Analytics', icon: Dot },
         { id: 'payment-analytics', label: 'Payment Analytics', icon: Dot },
         { id: 'order-analytics', label: 'Order Analytics', icon: Dot },
         { id: 'review-analytics', label: 'Review Analytics', icon: Dot },
@@ -165,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   fontSize='sm'
                 >
                   <subItem.icon size={20} />
-                  <Text>{subItem.label}</Text>
+                  <Text color={'white'}>{subItem.label}</Text>
                 </Flex>
               ))}
             </Box>
