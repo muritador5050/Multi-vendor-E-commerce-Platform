@@ -8,7 +8,6 @@ import {
   Tooltip,
 } from 'recharts';
 
-// Product Sales Bar Chart Component
 interface ProductSalesBarChartProps {
   data: Array<{
     productId: string;

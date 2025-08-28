@@ -1,4 +1,4 @@
-import { Box, Container, useColorModeValue } from '@chakra-ui/react';
+import { Box, Center, Container, useColorModeValue } from '@chakra-ui/react';
 import { useState } from 'react';
 import { VendorsContent } from './VendorManagement/VendorsContent';
 import { OrdersContent } from './OrdersManagement/OrdersContent';
@@ -14,6 +14,7 @@ import CategoriesContent from './Categories/CategoriesContent';
 import { DashboardContent } from './Dashboard/Dashboard';
 import PaymentAnalytics from './Analytics/PaymentAnalytics';
 import OrderAnalytics from './Analytics/OrderAnalytics';
+import ReviewAnalytics from './Analytics/ReviewAnalytics';
 
 const AdminDashboardLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -40,6 +41,8 @@ const AdminDashboardLayout = () => {
         return <OrderAnalytics />;
       case 'payment-analytics':
         return <PaymentAnalytics />;
+      case 'review-analytics':
+        return <ReviewAnalytics />;
       case 'customers':
         return <CustomersContents />;
       case 'settings':
@@ -51,7 +54,11 @@ const AdminDashboardLayout = () => {
       case 'reviews':
         return <ReviewsContent />;
       default:
-        return 'No Data yet!';
+        return (
+          <Center color={'gray.600'} fontSize={'3xl'}>
+            Please wait data will appear shortly!
+          </Center>
+        );
     }
   };
 

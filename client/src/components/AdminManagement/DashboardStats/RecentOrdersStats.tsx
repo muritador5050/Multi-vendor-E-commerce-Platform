@@ -19,6 +19,24 @@ import { formatCurrency } from '../Utils/Utils';
 import { FiPackage } from 'react-icons/fi';
 import { SkeletonUtil } from '../Utils/Skeleton';
 
+// Helper function for status colors
+function getStatusColor(status: string) {
+  switch (status.toLowerCase()) {
+    case 'completed':
+      return 'green';
+    case 'pending':
+      return 'yellow';
+    case 'cancelled':
+      return 'red';
+    case 'processing':
+      return 'blue';
+    case 'shipped':
+      return 'purple';
+    default:
+      return 'gray';
+  }
+}
+
 export default function RecentOrdersStats() {
   const { data, isLoading } = useOrders({
     sortBy: 'createdAt',
@@ -34,25 +52,20 @@ export default function RecentOrdersStats() {
   return (
     <Box
       bg='white'
-      p={{ base: 4, md: 6 }}
+      p={4}
       borderRadius='lg'
       boxShadow='md'
       border='1px'
       borderColor='gray.100'
     >
-      <Text
-        fontSize={{ base: 'lg', md: 'xl' }}
-        fontWeight='bold'
-        mb={{ base: 3, md: 4 }}
-        color='gray.700'
-      >
+      <Text fontWeight='bold' mb={3} color='gray.700'>
         Recent Orders
       </Text>
       {isLoading ? (
         <Center h='150px'>
           <SkeletonUtil
             variant='table'
-            width='inherit'
+            width='400px'
             contentHeight={{ base: '150px ', md: '150px' }}
           />
         </Center>
@@ -61,9 +74,6 @@ export default function RecentOrdersStats() {
           <Icon as={FiPackage} boxSize={8} mb={3} />
           <Text fontSize='md' fontWeight='medium'>
             No orders found
-          </Text>
-          <Text fontSize='sm' mt={1}>
-            Your recent orders will appear here
           </Text>
         </Center>
       ) : (
@@ -75,57 +85,33 @@ export default function RecentOrdersStats() {
                 <Tr>
                   <Th
                     textAlign='left'
-                    py={4}
-                    px={4}
                     borderBottom='1px'
                     borderColor='gray.200'
-                    fontSize='sm'
-                    fontWeight='semibold'
                     color='gray.600'
-                    textTransform='uppercase'
-                    letterSpacing='wider'
                   >
                     Order ID
                   </Th>
                   <Th
                     textAlign='left'
-                    py={4}
-                    px={4}
                     borderBottom='1px'
                     borderColor='gray.200'
-                    fontSize='sm'
-                    fontWeight='semibold'
                     color='gray.600'
-                    textTransform='uppercase'
-                    letterSpacing='wider'
                   >
                     Customer
                   </Th>
                   <Th
                     textAlign='right'
-                    py={4}
-                    px={4}
                     borderBottom='1px'
                     borderColor='gray.200'
-                    fontSize='sm'
-                    fontWeight='semibold'
                     color='gray.600'
-                    textTransform='uppercase'
-                    letterSpacing='wider'
                   >
                     Amount
                   </Th>
                   <Th
                     textAlign='center'
-                    py={4}
-                    px={4}
                     borderBottom='1px'
                     borderColor='gray.200'
-                    fontSize='sm'
-                    fontWeight='semibold'
                     color='gray.600'
-                    textTransform='uppercase'
-                    letterSpacing='wider'
                   >
                     Status
                   </Th>
@@ -272,22 +258,4 @@ export default function RecentOrdersStats() {
       </Box>
     </Box>
   );
-}
-
-// Helper function for status colors
-function getStatusColor(status: string) {
-  switch (status.toLowerCase()) {
-    case 'completed':
-      return 'green';
-    case 'pending':
-      return 'yellow';
-    case 'cancelled':
-      return 'red';
-    case 'processing':
-      return 'blue';
-    case 'shipped':
-      return 'purple';
-    default:
-      return 'gray';
-  }
 }

@@ -105,7 +105,7 @@ export default function TopVendorsStats() {
   return (
     <Box
       bg={topVendors?.vendors.length ? 'gray.50' : 'blue.50'}
-      p={{ base: 4, md: 6 }}
+      p={4}
       borderRadius='lg'
       boxShadow='sm'
       border='1px'
@@ -113,9 +113,8 @@ export default function TopVendorsStats() {
       minH={topVendors?.vendors.length ? 'auto' : '200px'}
     >
       <Text
-        fontSize={{ base: 'lg', md: 'xl' }}
         fontWeight='bold'
-        mb={{ base: 3, md: 4 }}
+        mb={3}
         color={topVendors?.vendors.length ? 'inherit' : 'blue.600'}
       >
         Top Vendors
@@ -125,7 +124,7 @@ export default function TopVendorsStats() {
         <Center flexDirection='column' h='100%' py={8}>
           <Icon as={FiUsers} boxSize={8} color='blue.400' mb={3} />
           <Text fontSize='md' color='gray.600' mb={1}>
-            No top vendors yet
+            No top vendors yet!
           </Text>
           <Text fontSize='sm' color='gray.500'>
             Vendors will appear here when they meet the criteria

@@ -20,19 +20,18 @@ export const StatCard = ({
   colorScheme: string;
 }) => {
   const bg = useColorModeValue('white', 'gray.700');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
 
   return (
     <Card
       bg={bg}
       borderWidth='1px'
-      borderColor={borderColor}
+      borderColor={'blue.300'}
       borderRadius='lg'
       boxShadow='sm'
       transition='transform 0.2s'
       _hover={{ transform: 'translateY(-2px)' }}
     >
-      <CardBody p={{ base: 4, md: 6 }}>
+      <CardBody>
         <Flex align='center' direction={{ base: 'column', sm: 'row' }}>
           <Box
             p={{ base: 2, md: 3 }}

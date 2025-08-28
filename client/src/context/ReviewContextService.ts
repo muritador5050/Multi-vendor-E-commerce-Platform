@@ -11,6 +11,18 @@ import { buildQueryString } from '@/utils/QueryString';
 import type { ApiResponse } from '@/type/ApiResponse';
 import { apiClient } from '@/utils/Api';
 
+// React Query Keys
+export const reviewQueryKeys = {
+  all: ['reviews'] as const,
+  lists: () => [...reviewQueryKeys.all, 'list'] as const,
+  list: (params: ReviewParams) => [...reviewQueryKeys.lists(), params] as const,
+  details: () => [...reviewQueryKeys.all, 'detail'] as const,
+  detail: (id: string) => [...reviewQueryKeys.details(), id] as const,
+  stats: () => [...reviewQueryKeys.all, 'stats'] as const,
+  averageRating: (productId: string) =>
+    [...reviewQueryKeys.all, 'averageRating', productId] as const,
+};
+
 // API Functions
 const getReviews = async (
   params: ReviewParams = {}
@@ -63,18 +75,6 @@ const getReviewStats = async (): Promise<ApiResponse<ReviewStats>> => {
   );
 };
 
-// React Query Keys
-export const reviewQueryKeys = {
-  all: ['reviews'] as const,
-  lists: () => [...reviewQueryKeys.all, 'list'] as const,
-  list: (params: ReviewParams) => [...reviewQueryKeys.lists(), params] as const,
-  details: () => [...reviewQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...reviewQueryKeys.details(), id] as const,
-  stats: () => [...reviewQueryKeys.all, 'stats'] as const,
-  averageRating: (productId: string) =>
-    [...reviewQueryKeys.all, 'averageRating', productId] as const,
-};
-
 // Core Hooks
 export const useReviews = (params: ReviewParams = {}) => {
   return useQuery({
@@ -106,7 +106,7 @@ export const useReviewStats = () => {
   return useQuery({
     queryKey: reviewQueryKeys.stats(),
     queryFn: () => getReviewStats(),
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 1000 * 60 * 15,
   });
 };
 

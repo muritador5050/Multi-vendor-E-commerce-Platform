@@ -1,7 +1,6 @@
 import { Stack } from '@chakra-ui/react';
 import { FiUsers, FiUserCheck, FiUserX } from 'react-icons/fi';
 import { useUsers } from '@/context/AuthContextService';
-
 import { StatCard } from '../Utils/CardUtil';
 import { ErrorUtil } from '../Utils/Error';
 import { LoadingState } from '../CustomersManagement/UserManagementDasboard/LoadingState';

@@ -134,7 +134,6 @@ async function updateSettings<T extends SettingsResponse>(
   }
 }
 
-// Account Status - Fixed URL bug
 async function accountDeactivateByVendor(data: {
   reason?: string;
 }): Promise<ApiResponse<AccountStatusResponse>> {

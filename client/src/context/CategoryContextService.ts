@@ -18,10 +18,7 @@ const getCategories = async (): Promise<CategoriesData> => {
   const res = await apiClient.publicApiRequest<ApiResponse<CategoriesData>>(
     '/categories'
   );
-  console.log('Full API Response:', res);
-  console.log('Response data categories:', res.data?.categories);
 
-  // Handle the case where the API response might not have the expected structure
   if (!res.data || !res.data.categories) {
     console.warn('Categories data not found in response:', res);
     return { categories: [] };
@@ -89,7 +86,7 @@ export const useCategories = () => {
       console.error('Categories query failed:', error);
       return failureCount < 2; // Retry up to 2 times
     },
-    throwOnError: false, // Don't throw errors, handle them in components
+    throwOnError: false,
   });
 };
 
@@ -112,13 +109,11 @@ export const useCreateCategory = () => {
     mutationFn: ({ data, files }: { data: CategoryFormData; files?: File }) =>
       createCategory(data, files),
     onMutate: async () => {
-      // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: categoryKeys.lists() });
     },
     onSuccess: (newCategory) => {
       console.log('Category created successfully:', newCategory);
 
-      // Update the cache with the new category
       queryClient.setQueryData<CategoriesData>(
         categoryKeys.lists(),
         (oldData) => {
@@ -128,16 +123,9 @@ export const useCreateCategory = () => {
           };
         }
       );
-
-      // Also invalidate to ensure we get the latest data from server
-      queryClient.invalidateQueries({
-        queryKey: categoryKeys.lists(),
-        refetchType: 'active', // Only refetch active queries
-      });
     },
     onError: (error) => {
       console.error('Failed to create category:', error);
-      // Invalidate and refetch on error to ensure consistency
       queryClient.invalidateQueries({ queryKey: categoryKeys.lists() });
     },
   });
@@ -231,10 +219,8 @@ export const useDeleteCategory = () => {
 
       console.log('Category deleted successfully');
 
-      // Remove the individual category from cache
       queryClient.removeQueries({ queryKey: categoryKeys.details(id) });
 
-      // Invalidate the list to ensure consistency
       queryClient.invalidateQueries({
         queryKey: categoryKeys.lists(),
         refetchType: 'active',

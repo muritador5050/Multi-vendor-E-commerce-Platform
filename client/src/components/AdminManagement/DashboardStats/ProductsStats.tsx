@@ -10,7 +10,6 @@ export default function ProductsStats() {
 
   const stat = useMemo(() => {
     const totalProducts = data?.pagination.total;
-
     const productsTrend = calculateTrend(Number(totalProducts));
     return {
       label: 'Total Products',
@@ -23,8 +22,8 @@ export default function ProductsStats() {
   return (
     <Box
       bg={cardBg}
-      p={{ base: 4, md: 6 }}
-      borderRadius='lg'
+      p={3} // Reduced from 4-6 to 3
+      borderRadius='md' // Reduced from lg to md
       boxShadow='sm'
       border='1px'
       borderColor='blue.400'
@@ -34,16 +33,23 @@ export default function ProductsStats() {
         boxShadow: 'md',
       }}
     >
-      <Flex align='center' mb={4}>
-        <Box p={2} bg='teal.100' borderRadius='md' mr={3}>
-          <Package color='teal' />
+      <Flex align='center' mb={2}>
+        {' '}
+        {/* Reduced from mb={4} to mb={2} */}
+        <Box p={1.5} bg='teal.100' borderRadius='md' mr={2}>
+          {' '}
+          {/* Reduced padding and margin */}
+          <Package size={18} color='teal' /> {/* Made icon smaller */}
         </Box>
-        <Box fontWeight='bold'> {stat.label}</Box>
+        <Text fontSize='sm' fontWeight='semibold'>
+          {stat.label}
+        </Text>{' '}
+        {/* Smaller font */}
       </Flex>
       <Text
-        fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
+        fontSize={{ base: 'lg', md: 'xl' }} // Reduced from xl/2xl/3xl to lg/xl
         fontWeight='bold'
-        mb={2}
+        mb={1} // Reduced from mb={2} to mb={1}
       >
         {stat.value}
       </Text>
@@ -52,11 +58,13 @@ export default function ProductsStats() {
         color={stat.trend === 'up' ? 'green.500' : 'red.500'}
       >
         {stat.trend === 'up' ? (
-          <TrendingUp size={16} />
+          <TrendingUp size={14} />
         ) : (
-          <TrendingDown size={16} />
+          <TrendingDown size={14} />
         )}
-        <Text ml={1} fontSize={{ base: 'xs', md: 'sm' }} fontWeight='medium'>
+        <Text ml={1} fontSize='xs' fontWeight='medium'>
+          {' '}
+          {/* Consistent small font */}
           {stat.change}
         </Text>
       </Flex>

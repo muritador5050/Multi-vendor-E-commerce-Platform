@@ -7,7 +7,6 @@ import { DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 export default function OrderStats() {
   const cardBg = 'white';
   const { data: orderStats } = useOrderStats();
-  console.log('Stats:', orderStats);
 
   const stat = useMemo(() => {
     const currentRevenue = orderStats?.overview?.totalRevenue || 0;
@@ -24,13 +23,12 @@ export default function OrderStats() {
     };
   }, [orderStats]);
 
-  // Handle loading state
   if (!orderStats) {
     return (
       <Box
         bg={cardBg}
-        p={{ base: 4, md: 6 }}
-        borderRadius='lg'
+        p={3}
+        borderRadius='md'
         boxShadow='sm'
         border='1px'
         borderColor='blue.400'
@@ -40,17 +38,15 @@ export default function OrderStats() {
           boxShadow: 'md',
         }}
       >
-        <Flex align='center' mb={4}>
-          <Box p={2} bg='yellow.600' borderRadius='md' mr={3}>
-            <DollarSign color='yellow' />
+        <Flex align='center' mb={2}>
+          <Box p={1.5} bg='yellow.600' borderRadius='md' mr={2}>
+            <DollarSign size={18} color='yellow' />
           </Box>
-          <Box fontWeight='bold'>Total Revenue</Box>
+          <Text fontSize='sm' fontWeight='semibold'>
+            Total Revenue
+          </Text>
         </Flex>
-        <Text
-          fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
-          fontWeight='bold'
-          mb={2}
-        >
+        <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight='bold' mb={1}>
           Loading...
         </Text>
       </Box>
@@ -60,8 +56,8 @@ export default function OrderStats() {
   return (
     <Box
       bg={cardBg}
-      p={{ base: 4, md: 6 }}
-      borderRadius='lg'
+      p={3}
+      borderRadius='md'
       boxShadow='sm'
       border='1px'
       borderColor='blue.400'
@@ -71,17 +67,15 @@ export default function OrderStats() {
         boxShadow: 'md',
       }}
     >
-      <Flex align='center' mb={4}>
-        <Box p={2} bg='yellow.600' borderRadius='md' mr={3}>
-          <DollarSign color='yellow' />
+      <Flex align='center' mb={2}>
+        <Box p={1.5} bg='yellow.600' borderRadius='md' mr={2}>
+          <DollarSign size={18} color='yellow' />
         </Box>
-        <Box fontWeight='bold'>{stat.label}</Box>
+        <Text fontSize='sm' fontWeight='semibold'>
+          {stat.label}
+        </Text>
       </Flex>
-      <Text
-        fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
-        fontWeight='bold'
-        mb={2}
-      >
+      <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight='bold' mb={1}>
         {stat.value}
       </Text>
       <Flex
@@ -89,11 +83,11 @@ export default function OrderStats() {
         color={stat.trend === 'up' ? 'green.500' : 'red.500'}
       >
         {stat.trend === 'up' ? (
-          <TrendingUp size={16} />
+          <TrendingUp size={14} />
         ) : (
-          <TrendingDown size={16} />
+          <TrendingDown size={14} />
         )}
-        <Text ml={1} fontSize={{ base: 'xs', md: 'sm' }} fontWeight='medium'>
+        <Text ml={1} fontSize='xs' fontWeight='medium'>
           {stat.change}
         </Text>
       </Flex>

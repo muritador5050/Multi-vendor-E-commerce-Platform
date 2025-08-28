@@ -205,7 +205,7 @@ export default function VendorDashboard() {
           );
         })}
       </SimpleGrid>
-      <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
+      <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6} mb={6}>
         <GridItem colSpan={{ md: 2 }}>
           <VendorSalesSummary data={salesReport ?? null} />
         </GridItem>
@@ -237,7 +237,7 @@ export default function VendorDashboard() {
               color='white'
             >
               <ChartPie />
-              <Text fontWeight='semibold'>Sales by Products</Text>
+              <Text fontWeight='semibold'>Sales-By-Product</Text>
             </CardHeader>
             <CardBody display='flex' flexDirection='column' alignItems='center'>
               <ProductSalesPieChart data={salesData} />

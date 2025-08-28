@@ -1,3 +1,4 @@
+// VendorStats.js - Compact Version
 import { useMemo } from 'react';
 import { useVendorsForAdmin } from '@/context/VendorContextService';
 import { calculateTrend } from '../Utils/Utils';
@@ -6,10 +7,8 @@ import { TrendingDown, TrendingUp, Users } from 'lucide-react';
 
 export default function VendorStats() {
   const cardBg = 'white';
-
-  //Hook
   const { data } = useVendorsForAdmin();
-  //Memo
+
   const stat = useMemo(() => {
     const activeVendors = data?.vendors?.filter(
       (v) => v.verificationStatus == 'approved'
@@ -27,28 +26,26 @@ export default function VendorStats() {
   return (
     <Box
       bg={cardBg}
-      p={6}
-      borderRadius='lg'
+      p={3}
+      borderRadius='md'
       boxShadow='sm'
       border='1px'
-      borderColor='gray'
+      borderColor='blue.400' // Changed from gray to match others
       transition='transform 0.2s, box-shadow 0.2s'
       _hover={{
         transform: 'translateY(-2px)',
         boxShadow: 'md',
       }}
     >
-      <Flex align='center' mb={4}>
-        <Box p={2} bg='purple.100' borderRadius='md' mr={3}>
-          <Users color='purple' />
+      <Flex align='center' mb={2}>
+        <Box p={1.5} bg='purple.100' borderRadius='md' mr={2}>
+          <Users size={18} color='purple' />
         </Box>
-        <Box fontWeight='bold'> {stat.label}</Box>
+        <Text fontSize='sm' fontWeight='semibold'>
+          {stat.label}
+        </Text>
       </Flex>
-      <Text
-        fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }}
-        fontWeight='bold'
-        mb={2}
-      >
+      <Text fontSize={{ base: 'lg', md: 'xl' }} fontWeight='bold' mb={1}>
         {stat.value}
       </Text>
       <Flex
@@ -56,11 +53,11 @@ export default function VendorStats() {
         color={stat.trend === 'up' ? 'green.500' : 'red.500'}
       >
         {stat.trend === 'up' ? (
-          <TrendingUp size={16} />
+          <TrendingUp size={14} />
         ) : (
-          <TrendingDown size={16} />
+          <TrendingDown size={14} />
         )}
-        <Text ml={1} fontSize={{ base: 'xs', md: 'sm' }} fontWeight='medium'>
+        <Text ml={1} fontSize='xs' fontWeight='medium'>
           {stat.change}
         </Text>
       </Flex>

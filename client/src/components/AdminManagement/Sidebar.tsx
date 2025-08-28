@@ -54,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'general-analytics', label: 'General Analytics', icon: Dot },
         { id: 'payment-analytics', label: 'Payment Analytics', icon: Dot },
         { id: 'order-analytics', label: 'Order Analytics', icon: Dot },
+        { id: 'review-analytics', label: 'Review Analytics', icon: Dot },
       ],
     },
     { id: 'blogs', label: 'Blogs', icon: Rss },
