@@ -101,14 +101,12 @@ const ProductItem = React.memo(
     onEdit,
     onDelete,
     onToggleStatus,
-    isToggling,
   }: {
     product: Product;
     onView: (product: Product) => void;
     onEdit: (product: Product) => void;
     onDelete: (product: Product) => void;
     onToggleStatus: (productId: string) => void;
-    isToggling: boolean;
   }) => (
     <Box
       bg='white'
@@ -268,7 +266,6 @@ const ProductItem = React.memo(
                 )
               }
               onClick={() => onToggleStatus(product._id)}
-              isLoading={isToggling}
               aria-label={product.isActive ? 'Deactivate' : 'Activate'}
             />
           </Tooltip>
@@ -540,7 +537,7 @@ export default function VendorProducts() {
             selectedImages: [],
             imagesToDelete: [],
           }));
-
+          onDrawerClose();
           toast({
             title: 'Product updated',
             description: `${drawerState.editData?.name} has been updated successfully.`,
@@ -560,7 +557,13 @@ export default function VendorProducts() {
         },
       }
     );
-  }, [drawerState.editData, drawerState.selectedImages, updateMutation, toast]);
+  }, [
+    drawerState.editData,
+    drawerState.selectedImages,
+    onDrawerClose,
+    updateMutation,
+    toast,
+  ]);
 
   const handleConfirmDelete = useCallback(() => {
     if (productToDelete) {
@@ -684,10 +687,6 @@ export default function VendorProducts() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggleStatus={handleToggleStatus}
-                isToggling={
-                  toggleMutation.variables === product._id &&
-                  toggleMutation.isPending
-                }
               />
             ))}
           </SimpleGrid>

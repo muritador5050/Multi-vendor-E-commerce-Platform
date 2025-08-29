@@ -30,6 +30,7 @@ import { useCategories } from '@/context/CategoryContextService';
 import { useCreateProduct } from '@/context/ProductContextService';
 import type { ProductFormData } from '@/type/product';
 import type { Category } from '@/type/Category';
+import { useNavigate } from 'react-router-dom';
 
 interface FormErrors {
   name?: string;
@@ -40,6 +41,7 @@ interface FormErrors {
 }
 
 const CreateProductPage: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<ProductFormData[]>([
     {
       name: '',
@@ -257,8 +259,11 @@ const CreateProductPage: React.FC = () => {
         } created successfully!`,
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
+
+      navigate('/store-manager/products');
     } catch (error) {
       toast({
         title: 'Error creating products',
@@ -267,6 +272,7 @@ const CreateProductPage: React.FC = () => {
             ? error.message
             : 'An unexpected error occurred',
         status: 'error',
+        position: 'top-right',
         duration: 5000,
         isClosable: true,
       });

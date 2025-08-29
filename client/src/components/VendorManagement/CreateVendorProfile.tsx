@@ -366,6 +366,7 @@ const CreateVendorProfile: React.FC = () => {
         description: 'All documents must have a type and file selected.',
         status: 'error',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
       return false;

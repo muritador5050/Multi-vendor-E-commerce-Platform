@@ -180,7 +180,6 @@ export const useCreateProduct = () => {
       files?: File[];
     }) => createProduct(data, files),
     onSuccess: () => {
-      // Invalidate both general and vendor-specific queries
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
       queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
@@ -196,26 +195,36 @@ export const useToggleProductStatus = () => {
   return useMutation({
     mutationFn: toggleProductStatus,
 
-    onSuccess: (response, productId) => {
-      // Update the specific item with server response
-      queryClient.setQueryData(
-        productKeys.item(productId),
-        (oldData: Product) => {
-          if (!oldData) return oldData;
-          return {
-            ...oldData,
-            isActive: response.data?.isActive ?? oldData.isActive,
-          };
-        }
+    onMutate: async (productId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: productKeys.item(productId),
+      });
+
+      // Snapshot previous value
+      const previousProduct = queryClient.getQueryData(
+        productKeys.item(productId)
       );
 
-      // Invalidate both general and vendor queries immediately
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
+      // Optimistically update
+      queryClient.setQueryData(productKeys.item(productId), (old: Product) =>
+        old ? { ...old, isActive: !old.isActive } : old
+      );
+
+      return { previousProduct };
     },
 
-    onError: (error) => {
-      console.error('Toggle product status failed:', error);
+    onError: (_err, productId, context) => {
+      // Rollback on error
+      queryClient.setQueryData(
+        productKeys.item(productId),
+        context?.previousProduct
+      );
+    },
+
+    onSettled: (_response, _error, productId) => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: productKeys.item(productId) });
     },
   });
 };
@@ -238,9 +247,8 @@ export const useUpdateProduct = () => {
       // Update specific item cache
       queryClient.setQueryData(productKeys.item(id), response.data);
 
-      // Invalidate both lists immediately
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
+      // Invalidate ALL product-related queries using the base key
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
 
     onError: (error) => {
@@ -255,17 +263,46 @@ export const useDeleteProduct = () => {
   return useMutation({
     mutationFn: deleteProduct,
 
-    onSuccess: (response, deletedId) => {
-      // Remove specific item from cache
-      queryClient.removeQueries({ queryKey: productKeys.item(deletedId) });
+    onMutate: async (productId: string) => {
+      // Cancel queries
+      await queryClient.cancelQueries({ queryKey: productKeys.all });
 
-      // Invalidate both lists immediately
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
+      // Snapshot previous data
+      const previousLists = queryClient.getQueriesData({
+        queryKey: productKeys.all,
+      });
+
+      const updateData = (
+        oldData: ApiResponse<ProductPaginatedResponse> | undefined
+      ) => {
+        if (!oldData?.data?.products) return oldData;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            products: oldData.data.products.filter((p) => p._id !== productId),
+          },
+        };
+      };
+
+      // Update all matching queries
+      queryClient.setQueriesData({ queryKey: productKeys.all }, updateData);
+      queryClient.removeQueries({ queryKey: productKeys.item(productId) });
+
+      return { previousLists };
     },
 
-    onError: (error) => {
+    onError: (error, _productId: string, context) => {
+      // Restore previous data
+      context?.previousLists.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
       console.error('Delete product failed:', error);
+    },
+
+    onSettled: () => {
+      // Invalidate all product queries
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
     },
   });
 };
