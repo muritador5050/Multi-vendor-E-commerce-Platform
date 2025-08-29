@@ -69,6 +69,7 @@ async function registerVendor(
 /**
  * Login user with email and password
  */
+// In AuthContextService login function - ADD this line:
 async function login(email: string, password: string, rememberMe: boolean) {
   const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
     '/auth/login',
@@ -79,6 +80,8 @@ async function login(email: string, password: string, rememberMe: boolean) {
   );
 
   if (response.data?.accessToken) {
+    apiClient.setRememberMe(rememberMe);
+
     localStorage.removeItem('accessToken');
     sessionStorage.removeItem('accessToken');
 

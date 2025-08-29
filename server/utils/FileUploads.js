@@ -6,7 +6,7 @@ const fs = require('fs');
 const uploadConfigs = {
   avatar: {
     path: 'uploads/avatars/',
-    fileSize: 5 * 1024 * 1024, // 5MB
+    fileSize: 15 * 1024 * 1024,
     allowedTypes: /jpeg|jpg|png|gif|webp/,
     filenamePrefix: (req) => req.user?.id || 'user',
   },
@@ -34,13 +34,13 @@ const uploadConfigs = {
 
   categoryImage: {
     path: 'uploads/categories/',
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 15 * 1024 * 1024,
     allowedTypes: /jpeg|jpg|png|gif|webp/,
     filenamePrefix: (req) => req.body?.categoryId || 'category',
   },
   productImage: {
     path: 'uploads/products/',
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 15 * 1024 * 1024,
     allowedTypes: /jpeg|jpg|png|gif|webp/,
     filenamePrefix: (req) => req.body?.productId || 'product',
   },

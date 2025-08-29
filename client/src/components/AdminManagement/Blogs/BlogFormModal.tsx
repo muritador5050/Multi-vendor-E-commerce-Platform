@@ -191,6 +191,7 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
           title: 'Blog updated successfully',
           status: 'success',
           duration: 3000,
+          position: 'top-right',
           isClosable: true,
         });
       } else {
@@ -207,21 +208,21 @@ const BlogFormModal: React.FC<BlogFormModalProps> = ({
           files: imageFile!,
         });
 
-        console.log('BlogData:', createData);
         toast({
           title: 'Blog created successfully',
           status: 'success',
           duration: 3000,
+          position: 'top-right',
           isClosable: true,
         });
       }
       onClose();
     } catch (error) {
-      console.error('Error saving blog:', error);
       toast({
         title: 'Error saving blog',
         description: `${error}`,
         status: 'error',
+        position: 'top-right',
         duration: 3000,
         isClosable: true,
       });

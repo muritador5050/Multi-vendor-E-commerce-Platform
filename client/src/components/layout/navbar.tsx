@@ -118,7 +118,10 @@ function Navbar() {
     isFetching,
   } = useCategories();
 
-  const categories = categoriesData?.categories || [];
+  const categories = React.useMemo(
+    () => categoriesData?.categories || [],
+    [categoriesData]
+  );
 
   function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value);
@@ -287,7 +290,7 @@ function Navbar() {
                     </>
                   )}
                   {categories.map((category, idx) => (
-                    <Box key={category._id || `category-${idx}`}>
+                    <Box key={category._id}>
                       <MenuItem
                         as={ReactRouterLink}
                         to={`/products/category/${category.slug}`}

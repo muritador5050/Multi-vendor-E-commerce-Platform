@@ -1,83 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
 
-/**
- * @openapi
- * components:
- *   schemas:
- *     Category:
- *       type: object
- *       required:
- *         - name
- *       properties:
- *         _id:
- *           type: string
- *           description: MongoDB ObjectId
- *           example: "60f7b1b5e1b2c3d4e5f6a7b8"
- *         name:
- *           type: string
- *           description: Category name
- *           example: "Electronics"
- *         slug:
- *           type: string
- *           description: URL-friendly version of the name
- *           example: "electronics"
- *         image:
- *           type: string
- *           description: Category image URL
- *           example: "https://example.com/image.jpg"
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: Category creation timestamp
- *           example: "2023-01-15T10:30:00Z"
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           description: Category last update timestamp
- *           example: "2023-01-15T10:30:00Z"
- *     CategoryInput:
- *       type: object
- *       required:
- *         - name
- *       properties:
- *         name:
- *           type: string
- *           description: Category name
- *           example: "Electronics"
- *         image:
- *           type: string
- *           description: Category image URL
- *           example: "https://example.com/image.jpg"
- *     CategoryResponse:
- *       type: object
- *       properties:
- *         success:
- *           type: boolean
- *           example: true
- *         message:
- *           type: string
- *           example: "Category created successfully"
- *         data:
- *           $ref: '#/components/schemas/Category'
- *     CategoriesListResponse:
- *       type: object
- *       properties:
- *         success:
- *           type: boolean
- *           example: true
- *         message:
- *           type: string
- *           example: "Found 5 categories"
- *         data:
- *           type: object
- *           properties:
- *             categories:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Category'
- */
-
 const categorySchema = new mongoose.Schema(
   {
     name: {
@@ -107,210 +30,46 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
-// Optimized pre-save hook - combines both name trimming and slug generation
+// Pre-save middleware for slug generation
 categorySchema.pre('save', async function (next) {
-  // Trim name first
-  if (this.name) {
-    this.name = this.name.trim();
-  }
-
-  // Generate slug if name is modified or document is new
   if (this.isModified('name') || this.isNew) {
-    const baseSlug = slugify(this.name, { lower: true, strict: true });
+    let baseSlug = slugify(this.name, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
 
-    if (this.isNew || this.slug !== baseSlug) {
-      this.slug = await this.constructor.generateUniqueSlug(baseSlug, this._id);
+    // Ensure slug is unique
+    while (await this.constructor.findOne({ slug, _id: { $ne: this._id } })) {
+      slug = `${baseSlug}-${counter++}`;
     }
+
+    this.slug = slug;
   }
   next();
 });
 
-// Instance method to get safe public data
-categorySchema.methods.toPublicJSON = function () {
-  return {
-    _id: this._id,
-    name: this.name,
-    slug: this.slug,
-    image: this.image || '/default-images/category-placeholder.jpg',
-    createdAt: this.createdAt,
-    updatedAt: this.updatedAt,
-  };
+// ====================== STATIC METHODS ======================
+
+// Create a single category
+categorySchema.statics.createOne = async function (data) {
+  // Check if category with same name already exists
+  const existingCategory = await this.findOne({ name: data.name.trim() });
+  if (existingCategory) {
+    throw new Error('Category name already exists');
+  }
+
+  const category = new this(data);
+  return await category.save();
 };
 
-// Instance method to get products with pagination
-categorySchema.methods.getProductsWithPagination = async function (
-  options = {}
-) {
-  const { page = 1, limit = 10 } = options;
-  const Product = mongoose.model('Product');
-
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-  const parsedLimit = parseInt(limit);
-
-  const query = {
-    category: this._id,
-    isDeleted: false,
-    isActive: true,
-  };
-
-  const [products, totalProducts] = await Promise.all([
-    Product.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parsedLimit)
-      .populate('vendor', 'name')
-      .lean(),
-    Product.countDocuments(query),
-  ]);
-
-  return {
-    products,
-    productCount: totalProducts,
-    pagination: {
-      page: parseInt(page),
-      limit: parsedLimit,
-      total: totalProducts,
-      pages: Math.ceil(totalProducts / parsedLimit),
-    },
-  };
+// Get all categories
+categorySchema.statics.getAll = async function () {
+  return await this.find({}).sort({ name: 1 }).lean();
 };
 
-// Instance method to check if category can be deleted
-categorySchema.methods.canBeDeleted = async function () {
-  const Product = mongoose.model('Product');
-  const productCount = await Product.countDocuments({
-    category: this._id,
-    isDeleted: false,
-  });
-
-  return { canDelete: productCount === 0, productCount };
-};
-
-// Instance method to delete with product handling
-categorySchema.methods.deleteWithProducts = async function (force = false) {
-  const Product = mongoose.model('Product');
-  const { canDelete, productCount } = await this.canBeDeleted();
-
-  if (!canDelete && !force) {
-    throw new Error(
-      `Cannot delete category. It has ${productCount} products associated with it. Use force=true to delete anyway.`
-    );
-  }
-
-  if (force && productCount > 0) {
-    await Product.updateMany(
-      { category: this._id },
-      { $unset: { category: 1 } }
-    );
-  }
-
-  await this.deleteOne();
-
-  return {
-    deleted: true,
-    productsUpdated: force ? productCount : 0,
-  };
-};
-
-// Static method to validate ObjectId
-categorySchema.statics.isValidObjectId = function (id) {
-  return mongoose.Types.ObjectId.isValid(id);
-};
-
-// Static method to generate unique slug (extracted for reusability)
-categorySchema.statics.generateUniqueSlug = async function (
-  baseSlug,
-  excludeId = null
-) {
-  let slug = baseSlug;
-  let counter = 1;
-
-  const query = excludeId ? { slug, _id: { $ne: excludeId } } : { slug };
-
-  while (await this.findOne(query)) {
-    slug = `${baseSlug}-${counter}`;
-    counter++;
-    query.slug = slug;
-  }
-
-  return slug;
-};
-
-// Static method to create single or multiple categories with validation
-categorySchema.statics.createCategories = async function (data) {
-  const categories = Array.isArray(data) ? data : [data];
-
-  if (categories.length === 0) {
-    throw new Error('No categories provided');
-  }
-
-  // Validate each category has a name
-  for (const category of categories) {
-    if (!category.name?.trim()) {
-      throw new Error('Each category must have a valid name');
-    }
-  }
-
-  // Check for existing categories by name
-  const categoryNames = categories.map((c) => c.name.trim());
-  const existingCategories = await this.find({
-    name: { $in: categoryNames },
-  }).select('name');
-
-  if (existingCategories.length > 0) {
-    const existingNames = existingCategories.map((e) => e.name).join(', ');
-    throw new Error(`Categories already exist: ${existingNames}`);
-  }
-
-  // For single category, use save() to trigger middleware
-  if (!Array.isArray(data)) {
-    const category = new this(categories[0]);
-    await category.save();
-    return category;
-  }
-
-  const createdCategories = [];
-  for (const categoryData of categories) {
-    const category = new this(categoryData);
-    await category.save();
-    createdCategories.push(category);
-  }
-
-  return createdCategories;
-};
-
-// Static method to find by slug with products
-categorySchema.statics.findBySlugWithProducts = async function (
-  slug,
-  options = {}
-) {
-  const { includeProducts = false, page = 1, limit = 10 } = options;
-
-  if (!slug?.trim()) {
-    throw new Error('Slug parameter is required');
-  }
-
-  const category = await this.findOne({ slug: slug.trim() });
-  if (!category) {
-    throw new Error('Category not found');
-  }
-
-  if (!includeProducts) {
-    return category;
-  }
-
-  const productData = await category.getProductsWithPagination({ page, limit });
-
-  return {
-    ...category.toObject(),
-    ...productData,
-  };
-};
-
-// Static method to find by ID with validation
-categorySchema.statics.findByIdWithValidation = async function (id) {
-  if (!this.isValidObjectId(id)) {
-    throw new Error('Invalid category ID format');
+// Find category by ID
+categorySchema.statics.getById = async function (id) {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error('Invalid category ID');
   }
 
   const category = await this.findById(id);
@@ -321,27 +80,122 @@ categorySchema.statics.findByIdWithValidation = async function (id) {
   return category;
 };
 
-// Static method to update with validation
-categorySchema.statics.updateWithValidation = async function (id, updateData) {
-  const category = await this.findByIdWithValidation(id);
+// Find category by slug
+categorySchema.statics.getBySlug = async function (slug) {
+  if (!slug || !slug.trim()) {
+    throw new Error('Slug is required');
+  }
 
+  const category = await this.findOne({ slug: slug.trim() });
+  if (!category) {
+    throw new Error('Category not found');
+  }
+
+  return category;
+};
+
+// Update category by ID
+categorySchema.statics.updateById = async function (id, updateData) {
+  const category = await this.getById(id);
+
+  // Check name uniqueness if name is being updated
   if (updateData.name && updateData.name.trim() !== category.name) {
-    const trimmedName = updateData.name.trim();
-    const existingCategory = await this.findOne({
-      name: trimmedName,
+    const existing = await this.findOne({
+      name: updateData.name.trim(),
       _id: { $ne: id },
     });
 
-    if (existingCategory) {
+    if (existing) {
       throw new Error('Category name already exists');
     }
   }
 
-  Object.keys(updateData).forEach((key) => {
-    category[key] = updateData[key];
-  });
-
+  Object.assign(category, updateData);
   return await category.save();
+};
+
+// Delete category by ID
+categorySchema.statics.deleteById = async function (id) {
+  const category = await this.getById(id);
+
+  // Check if category has products
+  const hasProducts = await category.hasProducts();
+  if (hasProducts) {
+    const productCount = await category.getProductCount();
+    throw new Error(`Cannot delete category with ${productCount} products`);
+  }
+
+  // Use normal mongoose delete
+  await this.findByIdAndDelete(id);
+  return { deleted: true, categoryId: id };
+};
+
+// ====================== INSTANCE METHODS ======================
+
+// Get product count for this category
+categorySchema.methods.getProductCount = async function () {
+  const Product = mongoose.model('Product');
+  return await Product.countDocuments({
+    category: this._id,
+    isDeleted: false,
+  });
+};
+
+// Check if category has products
+categorySchema.methods.hasProducts = async function () {
+  const count = await this.getProductCount();
+  return count > 0;
+};
+
+// Get products with pagination
+categorySchema.methods.getProductsWithPagination = async function (
+  options = {}
+) {
+  const { page = 1, limit = 10 } = options;
+  const Product = mongoose.model('Product');
+
+  const skip = (page - 1) * limit;
+
+  const [products, totalProducts] = await Promise.all([
+    Product.find({
+      category: this._id,
+      isDeleted: false,
+      isActive: true,
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('vendor', 'name')
+      .lean(),
+    Product.countDocuments({
+      category: this._id,
+      isDeleted: false,
+    }),
+  ]);
+
+  return {
+    products,
+    productCount: totalProducts,
+    pagination: {
+      page,
+      limit,
+      total: totalProducts,
+      pages: Math.ceil(totalProducts / limit),
+    },
+  };
+};
+
+// Get formatted category data
+categorySchema.methods.toJSON = function () {
+  const category = this.toObject();
+  return {
+    _id: category._id,
+    name: category.name,
+    slug: category.slug,
+    image: category.image || '/default-images/category-placeholder.jpg',
+    createdAt: category.createdAt,
+    updatedAt: category.updatedAt,
+  };
 };
 
 module.exports = mongoose.model('Category', categorySchema);

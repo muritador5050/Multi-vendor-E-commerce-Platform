@@ -31,7 +31,14 @@ export const Header = ({
       justify='space-between'
       align='center'
     >
-      <Stack direction={'row'} alignItems={'center'} gap={3}>
+      <Stack
+        direction={'row'}
+        display={'flex'}
+        justifyContent={'space-between'}
+        alignItems={'center'}
+        gap={3}
+        width={{ base: 'full', md: 'fit-content' }}
+      >
         <Text fontSize='xl' fontWeight='bold'>
           Admin Panel
         </Text>

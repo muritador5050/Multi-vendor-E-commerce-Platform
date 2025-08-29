@@ -43,6 +43,7 @@ const BlogDrawer: React.FC<BlogDrawerProps> = ({ isOpen, onClose, blog }) => {
         title: `Blog ${blog.published ? 'unpublished' : 'published'}`,
         status: 'success',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     } catch {
@@ -50,6 +51,7 @@ const BlogDrawer: React.FC<BlogDrawerProps> = ({ isOpen, onClose, blog }) => {
         title: 'Failed to update blog status',
         status: 'error',
         duration: 3000,
+        position: 'top-right',
         isClosable: true,
       });
     }

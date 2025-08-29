@@ -9,7 +9,6 @@ const {
   handleUploadError,
 } = require('../utils/FileUploads');
 
-// Upload middleware helper
 const handleImageUpload = (req, res, next) => {
   categoryImageUpload.single('categoryImage')(req, res, (err) => {
     if (err) {

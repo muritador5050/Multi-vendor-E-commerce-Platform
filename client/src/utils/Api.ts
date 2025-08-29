@@ -14,6 +14,7 @@ class ApiClient {
   private isRefreshing = false;
   private refreshPromise: Promise<string> | null = null;
   private refreshAttempts = 0;
+  private rememberMe: boolean = false;
 
   /**
    * Fetch with timeout and abort controller
@@ -46,6 +47,25 @@ class ApiClient {
       return payload.exp * 1000 > Date.now() + TOKEN_REFRESH_BUFFER;
     } catch {
       return false;
+    }
+  }
+
+  private getToken(): string | null {
+    return (
+      localStorage.getItem('accessToken') ||
+      sessionStorage.getItem('accessToken')
+    );
+  }
+
+  private setToken(token: string): void {
+    const wasRemembered = localStorage.getItem('rememberMe') === 'true';
+
+    if (this.rememberMe || wasRemembered) {
+      localStorage.setItem('accessToken', token);
+      sessionStorage.removeItem('accessToken');
+    } else {
+      sessionStorage.setItem('accessToken', token);
+      localStorage.removeItem('accessToken');
     }
   }
 
@@ -108,7 +128,7 @@ class ApiClient {
         throw new ApiError('Invalid token response', 401);
       }
 
-      localStorage.setItem('accessToken', data.accessToken);
+      this.setToken(data.accessToken);
       return data.accessToken;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
@@ -125,8 +145,7 @@ class ApiClient {
    * Clear authentication and redirect to home
    */
   private clearAuthAndRedirect(): void {
-    localStorage.removeItem('accessToken');
-    this.refreshAttempts = 0;
+    this.clearAuth();
     if (!window.location.pathname.includes('/my-account')) {
       window.location.href = '/';
     }
@@ -225,7 +244,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     try {
-      let token = localStorage.getItem('accessToken');
+      let token = this.getToken();
 
       if (token && !this.isTokenValid(token)) {
         token = await this.refreshToken();
@@ -301,7 +320,7 @@ class ApiClient {
     options: Omit<RequestInit, 'body'> = {}
   ): Promise<T> {
     try {
-      let token = localStorage.getItem('accessToken');
+      let token = this.getToken();
 
       if (token && !this.isTokenValid(token)) {
         token = await this.refreshToken();
@@ -395,14 +414,15 @@ class ApiClient {
     }
   }
 
+  public setRememberMe(remember: boolean): void {
+    this.rememberMe = remember;
+  }
+
   /**
    * Utility method to check if user is authenticated
    */
   public isAuthenticated(): boolean {
-    const localToken = localStorage.getItem('accessToken');
-    const sessionToken = sessionStorage.getItem('accessToken');
-
-    const token = localToken || sessionToken;
+    const token = this.getToken();
     return this.isTokenValid(token);
   }
 
@@ -412,12 +432,13 @@ class ApiClient {
   public clearAuth(): void {
     localStorage.removeItem('accessToken');
     sessionStorage.removeItem('accessToken');
+    localStorage.removeItem('rememberMe');
     this.refreshAttempts = 0;
+    this.rememberMe = false;
 
-    // Dispatch custom event to notify React components
     window.dispatchEvent(
       new CustomEvent('auth:logout', {
-        detail: { reason: 'token_expired' },
+        detail: { reason: 'manual_logout' },
       })
     );
   }

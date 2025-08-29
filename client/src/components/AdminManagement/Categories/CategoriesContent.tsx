@@ -110,9 +110,6 @@ export default function CategoriesContent() {
     (category) => category._id === selectedCategoryId
   );
 
-  console.log('Categories Data:', categoriesData);
-  console.log('Categories Array:', categories);
-
   // Mutation hooks
   const createCategoryMutation = useCreateCategory();
   const updateCategoryMutation = useUpdateCategory();
@@ -212,7 +209,7 @@ export default function CategoriesContent() {
         title: 'Validation Error',
         description: 'Category name is required',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         position: 'top-right',
         isClosable: true,
       });
@@ -221,18 +218,10 @@ export default function CategoriesContent() {
 
     try {
       if (drawerMode === 'create') {
-        console.log(
-          'Creating category with data:',
-          formData,
-          'and file:',
-          selectedFile
-        );
-
         await createCategoryMutation.mutateAsync({
           data: formData,
-          files: selectedFile || undefined,
+          files: selectedFile!,
         });
-
         toast({
           title: 'Success',
           description: 'Category created successfully',
@@ -242,17 +231,10 @@ export default function CategoriesContent() {
           isClosable: true,
         });
       } else if (drawerMode === 'edit') {
-        console.log(
-          'Updating category with data:',
-          formData,
-          'and file:',
-          selectedFile
-        );
-
         await updateCategoryMutation.mutateAsync({
           id: selectedCategoryId,
-          categoryData: formData,
-          files: selectedFile || undefined,
+          data: formData,
+          files: selectedFile!,
         });
 
         toast({
@@ -268,10 +250,8 @@ export default function CategoriesContent() {
       resetForm();
       onDrawerClose();
     } catch (error) {
-      console.error('Category operation failed:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'An unexpected error occurred';
-
       toast({
         title: 'Error',
         description: errorMessage,
@@ -283,14 +263,9 @@ export default function CategoriesContent() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (id: string) => {
     try {
-      console.log('Deleting category:', categoryToDelete);
-
-      await deleteCategoryMutation.mutateAsync({
-        id: categoryToDelete,
-      });
-
+      await deleteCategoryMutation.mutateAsync(id);
       toast({
         title: 'Success',
         description: 'Category deleted successfully',
@@ -299,11 +274,9 @@ export default function CategoriesContent() {
         duration: 3000,
         isClosable: true,
       });
-
       onDeleteDialogClose();
       setCategoryToDelete('');
     } catch (error) {
-      console.error('Category deletion failed:', error);
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to delete category';
 
@@ -475,7 +448,6 @@ export default function CategoriesContent() {
                           boxSize='40px'
                           objectFit='cover'
                           borderRadius='md'
-                          fallbackSrc='https://via.placeholder.com/40x40?text=No+Image'
                         />
                       </Td>
                       <Td fontWeight='medium'>{category.name}</Td>
@@ -747,7 +719,7 @@ export default function CategoriesContent() {
               </Button>
               <Button
                 colorScheme='red'
-                onClick={handleDelete}
+                onClick={() => handleDelete(selectedCategoryId)}
                 ml={3}
                 isLoading={deleteCategoryMutation.isPending}
                 loadingText='Deleting...'

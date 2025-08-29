@@ -13,11 +13,11 @@ import {
   Tooltip,
   Center,
   Icon,
+  Spinner,
 } from '@chakra-ui/react';
 import { useOrders } from '@/context/OrderContextService';
 import { formatCurrency } from '../Utils/Utils';
 import { FiPackage } from 'react-icons/fi';
-import { SkeletonUtil } from '../Utils/Skeleton';
 
 // Helper function for status colors
 function getStatusColor(status: string) {
@@ -63,11 +63,7 @@ export default function RecentOrdersStats() {
       </Text>
       {isLoading ? (
         <Center h='150px'>
-          <SkeletonUtil
-            variant='table'
-            width='400px'
-            contentHeight={{ base: '150px ', md: '150px' }}
-          />
+          <Spinner />
         </Center>
       ) : data?.orders.length === 0 ? (
         <Center flexDirection='column' h='150px' color='gray.500'>

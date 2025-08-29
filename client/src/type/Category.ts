@@ -7,11 +7,16 @@ export interface Category {
   updatedAt: string;
 }
 
-export interface CategoriesData {
+export interface CategoriesResponse {
   categories: Category[];
 }
 
 export interface CategoryFormData {
   name: string;
+  image?: string;
+}
+
+export interface UpdateCategoryData {
+  name?: string;
   image?: string;
 }
