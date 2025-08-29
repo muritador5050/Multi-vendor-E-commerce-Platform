@@ -35,12 +35,12 @@ const fetchProductById = async (id: string): Promise<ApiResponse<Product>> => {
 };
 
 const fetchProductsByCategory = async (
-  categorySlug: string,
+  slug: string,
   params: ProductQueryParams
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {
   const queryString = buildQueryString(params);
   return await apiClient.publicApiRequest(
-    `/products/category/${categorySlug}${queryString ? `?${queryString}` : ''}`
+    `/products/category/${slug}${queryString ? `?${queryString}` : ''}`
   );
 };
 
@@ -132,15 +132,15 @@ export const useProductById = (id: string) => {
 };
 
 export const useProductsByCategory = (
-  categorySlug: string,
+  slug: string,
   params: Omit<ProductQueryParams, 'category'> = {}
 ) => {
   return useQuery({
-    queryKey: productKeys.lists({ ...params, category: categorySlug }),
-    queryFn: () => fetchProductsByCategory(categorySlug, params),
+    queryKey: productKeys.lists({ ...params, category: slug }),
+    queryFn: () => fetchProductsByCategory(slug, params),
     select: (data) => data.data,
     staleTime: 30 * 1000,
-    enabled: !!categorySlug,
+    enabled: !!slug,
   });
 };
 

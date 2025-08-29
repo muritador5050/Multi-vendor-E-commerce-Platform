@@ -60,7 +60,7 @@ export default function ShopPage() {
 
   const queryParams: ProductQueryParams = {
     page: currentPage,
-    limit: 12,
+    limit: 10,
     sort: sortBy,
     minPrice: filters.priceRange[0],
     maxPrice: filters.priceRange[1],
@@ -206,7 +206,7 @@ export default function ShopPage() {
 
           {/* Error Message */}
           {error && (
-            <Text color='red.500' textAlign='center'>
+            <Text color='red.500' fontSize='xl' textAlign='center'>
               {error instanceof Error ? error.message : 'An error occurred'}
             </Text>
           )}
@@ -224,14 +224,14 @@ export default function ShopPage() {
 
           {/* Empty State */}
           {!isLoading && products.length === 0 && !error && (
-            <Text textAlign='center' color='gray.500' mt={8}>
+            <Text textAlign='center' fontSize='xl' color='gray.600' mt={8}>
               No products found matching your criteria.
             </Text>
           )}
 
           {/* Loading State */}
           {isLoading && (
-            <Text textAlign='center' color='gray.500' mt={8}>
+            <Text textAlign='center' fontSize='xl' color='gray.600' mt={8}>
               Loading products...
             </Text>
           )}

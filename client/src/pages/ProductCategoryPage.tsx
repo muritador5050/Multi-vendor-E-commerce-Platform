@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Flex,
@@ -7,12 +7,14 @@ import {
   Select,
   SimpleGrid,
   useDisclosure,
+  Center,
 } from '@chakra-ui/react';
 import ProductCard from '../components/ProductCard';
 import ProductQuickView from '../components/ProductQuickView';
 import type { Product } from '@/type/product';
 import { useParams } from 'react-router-dom';
 import ProductCategoryFilters from '@/components/ProductCategoryFilter';
+import { useProductsByCategory } from '@/context/ProductContextService';
 
 // Types for filters
 interface FilterState {
@@ -34,93 +36,39 @@ const SORT_OPTIONS: SortOption[] = [
   { value: '-averageRating', label: 'Top Rated' },
 ];
 
-const apiBase = import.meta.env.VITE_API_URL;
-
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const response = await fetch(`${apiBase}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
-
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ message: 'Network error' }));
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
-  }
-
-  return response.json();
-};
-
 export default function ProductCategoryPage() {
   const { slug } = useParams<{ slug: string }>();
-  console.log('Category slug:', slug);
   // Modal state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
-  // Data state
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Filter and sort state
+  const [sortBy, setSortBy] = useState<string>('-createdAt');
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<FilterState>({
     priceRange: [5, 650],
     stockStatus: [],
   });
 
-  // Sort state
-  const [sortBy, setSortBy] = useState<string>('-createdAt');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
+  // Build query params for the hook
+  const queryParams = {
+    page: currentPage,
+    limit: 10,
+    sort: sortBy,
+    minPrice: filters.priceRange[0],
+    maxPrice: filters.priceRange[1],
+    ...(filters.stockStatus.length > 0 && {
+      isActive: filters.stockStatus.includes('in-stock'),
+    }),
+  };
 
-  // Fetch products for the category directly using slug
-  const fetchProducts = useCallback(async () => {
-    if (!slug) return;
+  const {
+    data: productData,
+    isLoading: loading,
+    isError,
+  } = useProductsByCategory(slug || '', queryParams);
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Build query parameters
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '10',
-        sort: sortBy,
-        minPrice: filters.priceRange[0].toString(),
-        maxPrice: filters.priceRange[1].toString(),
-      });
-
-      if (filters.stockStatus.length > 0) {
-        const isInStock = filters.stockStatus.includes('in-stock');
-        params.append('isActive', isInStock.toString());
-      }
-      const data = await apiRequest(`/products/category/${slug}?${params}`);
-
-      if (data.success && data.data) {
-        setProducts(data.data.products || data.data || []);
-        setTotalResults(data.data.pagination?.total || data.data.length || 0);
-      } else {
-        setError(data.message || 'Failed to fetch products');
-      }
-    } catch (err) {
-      setError('Failed to fetch products');
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug, filters, sortBy, currentPage]);
-
-  // Fetch products when dependencies change
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  const products = productData?.products || [];
+  const totalResults = productData?.pagination?.total || products.length || 0;
+  const error = isError ? 'Failed to fetch products' : null;
 
   // Handle filter changes
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -188,9 +136,9 @@ export default function ProductCategoryPage() {
 
           {/* Error Message */}
           {error && (
-            <Text color='red.500' textAlign='center'>
+            <Center color='red.500' fontSize={'xl'} textAlign='center'>
               {error}
-            </Text>
+            </Center>
           )}
 
           {/* Products Grid */}
@@ -206,16 +154,16 @@ export default function ProductCategoryPage() {
 
           {/* Empty State */}
           {!loading && products.length === 0 && !error && (
-            <Text textAlign='center' color='gray.500' mt={8}>
+            <Center textAlign='center' fontSize='xl' color='gray.500' mt={8}>
               No products found matching your criteria.
-            </Text>
+            </Center>
           )}
 
           {/* Loading State */}
           {loading && (
-            <Text textAlign='center' color='gray.500' mt={8}>
+            <Center textAlign='center' fontSize='xl' color='gray.600' mt={8}>
               Loading products...
-            </Text>
+            </Center>
           )}
         </Stack>
       </Flex>

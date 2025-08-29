@@ -296,7 +296,7 @@ function Navbar() {
                         to={`/products/category/${category.slug}`}
                         _hover={{ bg: 'yellow.50' }}
                       >
-                        <Text>{category.name}</Text>
+                        <Text>{category.slug}</Text>
                       </MenuItem>
                       {idx < categories.length - 1 && <MenuDivider />}
                     </Box>
