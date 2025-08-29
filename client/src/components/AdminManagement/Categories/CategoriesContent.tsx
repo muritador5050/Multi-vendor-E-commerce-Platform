@@ -263,9 +263,9 @@ export default function CategoriesContent() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     try {
-      await deleteCategoryMutation.mutateAsync(id);
+      await deleteCategoryMutation.mutateAsync(categoryToDelete);
       toast({
         title: 'Success',
         description: 'Category deleted successfully',
@@ -442,13 +442,28 @@ export default function CategoriesContent() {
                       }
                     >
                       <Td>
-                        <Image
-                          src={category.image}
-                          alt={category.name}
-                          boxSize='40px'
-                          objectFit='cover'
-                          borderRadius='md'
-                        />
+                        {category.image ? (
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            boxSize='40px'
+                            objectFit='cover'
+                            borderRadius='md'
+                          />
+                        ) : (
+                          <Box
+                            boxSize='40px'
+                            bg='gray.100'
+                            borderRadius='md'
+                            display='flex'
+                            alignItems='center'
+                            justifyContent='center'
+                          >
+                            <Text fontSize='xs' color='gray.500'>
+                              No Image
+                            </Text>
+                          </Box>
+                        )}
                       </Td>
                       <Td fontWeight='medium'>{category.name}</Td>
                       <Td>
@@ -632,15 +647,17 @@ export default function CategoriesContent() {
                       <Text fontSize='sm' color='gray.600' mb={2}>
                         Image Preview
                       </Text>
-                      <Image
-                        src={imagePreview || formData.image}
-                        alt='Preview'
-                        w='full'
-                        h='150px'
-                        objectFit='cover'
-                        borderRadius='md'
-                        fallbackSrc='https://via.placeholder.com/300x150?text=No+Image'
-                      />
+                      {(imagePreview || formData.image) && (
+                        <Image
+                          src={imagePreview || formData.image}
+                          alt='Preview'
+                          w='full'
+                          h='150px'
+                          objectFit='cover'
+                          borderRadius='md'
+                          fallbackSrc='https://via.placeholder.com/300x150?text=No+Image'
+                        />
+                      )}
                       {selectedFile && (
                         <Text fontSize='xs' color='gray.500' mt={1}>
                           Selected: {selectedFile.name} (
@@ -719,7 +736,7 @@ export default function CategoriesContent() {
               </Button>
               <Button
                 colorScheme='red'
-                onClick={() => handleDelete(selectedCategoryId)}
+                onClick={handleDelete}
                 ml={3}
                 isLoading={deleteCategoryMutation.isPending}
                 loadingText='Deleting...'
