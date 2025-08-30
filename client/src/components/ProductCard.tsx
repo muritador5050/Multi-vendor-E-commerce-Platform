@@ -115,9 +115,7 @@ export default function ProductCard({
   };
 
   const handleNavigateToProduct = () => {
-    navigate(`/product/${product._id}`, {
-      state: { product },
-    });
+    navigate(`/product/${product._id}`);
   };
 
   // Calculate discounted price

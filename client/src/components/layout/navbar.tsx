@@ -33,6 +33,8 @@ import {
   AlertIcon,
   VStack,
   Center,
+  Image,
+  Spinner,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
@@ -40,22 +42,34 @@ import Logo from '../logo/Logo';
 import CartDrawer from '@/pages/CartDrawer';
 import { useCart } from '@/context/CartContextService';
 import { useCategories } from '@/context/CategoryContextService';
-import React, { useState } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useIsAuthenticated } from '@/context/AuthContextService';
 import { useSettings } from '@/context/SettingsContextService';
+import { useProducts } from '@/context/ProductContextService';
+import type { Product } from '@/type/product';
 
-//NavLink Component
-function NavLink({
-  children,
-  to,
-  onClick,
-}: {
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
+interface SearchState {
+  query: string;
+  results: Product[];
+  isLoading: boolean;
+  showResults: boolean;
+}
+
+interface NavLinkProps {
   children?: React.ReactNode;
   to?: string;
   onClick?: () => void;
-}) {
+}
+
+function NavLink({ children, to, onClick }: NavLinkProps) {
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string): boolean => location.pathname === path;
 
   return (
     <ChakraLink
@@ -101,15 +115,27 @@ function NavLink({
   );
 }
 
-//Navbar Component
+// Main Navbar Component
 function Navbar() {
   const leftDrawer = useDisclosure();
   const rightDrawer = useDisclosure();
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
+
+  // Search state
+  const [searchState, setSearchState] = useState<SearchState>({
+    query: '',
+    results: [],
+    isLoading: false,
+    showResults: false,
+  });
+
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // API hooks
+  const { isAuthenticated } = useIsAuthenticated();
   const { data: settings } = useSettings();
   const { data: cart } = useCart();
-  const { isAuthenticated } = useIsAuthenticated();
+  const { data: products } = useProducts();
   const {
     data: categoriesData,
     isLoading: categoriesLoading,
@@ -118,14 +144,135 @@ function Navbar() {
     isFetching,
   } = useCategories();
 
-  const categories = React.useMemo(
+  const categories: Category[] = React.useMemo(
     () => categoriesData?.categories || [],
     [categoriesData]
   );
 
-  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setSearch(e.target.value);
-  }
+  // Search products
+  const searchProducts = useCallback(
+    async (searchTerm: string): Promise<void> => {
+      if (searchTerm.trim().length < 2) {
+        setSearchState((prev) => ({
+          ...prev,
+          results: [],
+          showResults: false,
+          isLoading: false,
+        }));
+        return;
+      }
+
+      setSearchState((prev) => ({ ...prev, isLoading: true }));
+
+      try {
+        if (!products?.products || !Array.isArray(products.products)) {
+          setSearchState((prev) => ({
+            ...prev,
+            results: [],
+            showResults: true,
+            isLoading: false,
+          }));
+          return;
+        }
+
+        const filteredProducts: Product[] = products.products.filter(
+          (product: Product) => {
+            const nameMatch = product.name
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase());
+            const descriptionMatch = product.description
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase());
+
+            return nameMatch || descriptionMatch;
+          }
+        );
+
+        setSearchState((prev) => ({
+          ...prev,
+          results: filteredProducts,
+          showResults: true,
+          isLoading: false,
+        }));
+      } catch (error) {
+        console.error('Search failed:', error);
+        setSearchState((prev) => ({
+          ...prev,
+          results: [],
+          showResults: true,
+          isLoading: false,
+        }));
+      }
+    },
+    [products]
+  );
+
+  // Debounced search
+  const debouncedSearch = useCallback(
+    (searchTerm: string): void => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
+        searchProducts(searchTerm);
+      }, 300);
+    },
+    [searchProducts]
+  );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle search input changes
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>): void => {
+      const value = e.target.value;
+      setSearchState((prev) => ({ ...prev, query: value }));
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
+
+  // Handle search focus
+  const handleSearchFocus = useCallback((): void => {
+    if (searchState.query.trim().length >= 2) {
+      setSearchState((prev) => ({ ...prev, showResults: true }));
+    }
+  }, [searchState.query]);
+
+  // Handle search result click
+  const handleSearchResultClick = useCallback((): void => {
+    setSearchState((prev) => ({
+      ...prev,
+      query: '',
+      showResults: false,
+      results: [],
+    }));
+  }, []);
+
+  // Handle click outside search to close results
+  const handleClickOutside = useCallback((e: MouseEvent): void => {
+    const target = e.target as HTMLElement;
+    const searchContainer = document.querySelector('[data-search-container]');
+
+    if (searchContainer && !searchContainer.contains(target)) {
+      setSearchState((prev) => ({ ...prev, showResults: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [handleClickOutside]);
 
   return (
     <>
@@ -143,7 +290,7 @@ function Navbar() {
           >
             Welcome to{' '}
             <Text as='span' color='orange'>
-              {settings?.data?.platformName}
+              {settings?.data?.platformName || 'Our Platform'}
             </Text>
           </Text>
           <Text fontWeight='bold' color='white'>
@@ -153,12 +300,13 @@ function Navbar() {
 
         <Flex
           alignItems='center'
-          justify={'space-between'}
+          justify='space-between'
           borderTop='1px solid'
           borderBottom='1px solid'
           borderColor='whiteAlpha.300'
         >
           <Logo />
+
           {/* Desktop Links */}
           <HStack
             spacing={4}
@@ -169,10 +317,11 @@ function Navbar() {
             <NavLink to='blog'>Blog</NavLink>
             <NavLink to='shop'>Shop</NavLink>
             <NavLink to='store-manager'>Store Manager</NavLink>
-            <NavLink to='vendor-membership'>Vendor Membership</NavLink>
-            <NavLink to='admin-dashboard'>Admin Dashboard</NavLink>
+            <NavLink to='sell-with-us'>Sell With Us</NavLink>
+            <NavLink to='admin-dashboard'>Admin Panel</NavLink>
             <NavLink to='contact-us'>Contact Us</NavLink>
           </HStack>
+
           <HStack color='white'>
             {/* Mobile Menu Button */}
             <IconButton
@@ -183,7 +332,8 @@ function Navbar() {
               variant='ghost'
               colorScheme='white'
             />
-            <ChakraLink as={ReactRouterLink} to={'/wishlist'}>
+
+            <ChakraLink as={ReactRouterLink} to='/wishlist'>
               <IconButton
                 icon={<Heart />}
                 aria-label='Favorites'
@@ -192,7 +342,7 @@ function Navbar() {
               />
             </ChakraLink>
 
-            <ChakraLink as={ReactRouterLink} to={'my-account'}>
+            <ChakraLink as={ReactRouterLink} to='my-account'>
               <IconButton
                 icon={<UserRound />}
                 aria-label='Account'
@@ -210,30 +360,30 @@ function Navbar() {
                   colorScheme='white'
                   onClick={rightDrawer.onOpen}
                 />
-                {cart?.items.length !== 0 && (
+                {cart?.items && cart.items.length > 0 && (
                   <Badge
-                    w={{ base: '20px', sm: '25px' }}
-                    h={{ base: '20px', sm: '25px' }}
+                    w={{ base: '20px', md: '25px' }}
+                    h={{ base: '20px', md: '25px' }}
                     borderRadius='full'
-                    bg='yellow.400'
+                    bg='orange'
                     position='absolute'
                     top='-10px'
                     right='-10px'
                     display='grid'
                     placeContent='center'
                   >
-                    <Center>{cart?.items.length}</Center>
+                    <Center>{cart.items.length}</Center>
                   </Badge>
                 )}
               </Box>
-              {cart?.items.length && cart.items.length > 0 && (
+              {cart?.items && cart.items.length > 0 && cart.totalAmount && (
                 <Text
                   display={{ base: 'none', md: 'block' }}
                   alignSelf='flex-end'
                   fontWeight='bold'
                   color='white'
                 >
-                  ${cart?.totalAmount.toFixed(2)}
+                  ${cart.totalAmount.toFixed(2)}
                 </Text>
               )}
             </Flex>
@@ -246,7 +396,7 @@ function Navbar() {
               as={Button}
               leftIcon={<AlignLeft />}
               h={14}
-              w={64}
+              w={48}
               display={{ base: 'none', lg: 'flex' }}
               bg='yellow.500'
               _hover={{ bg: 'yellow.600' }}
@@ -257,7 +407,7 @@ function Navbar() {
             >
               {categoriesLoading && !categoriesData
                 ? 'Loading...'
-                : `All Categories`}
+                : 'All Categories'}
             </MenuButton>
             <MenuList maxH='400px' overflowY='auto'>
               {categoriesLoading && !categoriesData ? (
@@ -289,14 +439,14 @@ function Navbar() {
                       <MenuDivider />
                     </>
                   )}
-                  {categories.map((category, idx) => (
+                  {categories.map((category: Category, idx: number) => (
                     <Box key={category._id}>
                       <MenuItem
                         as={ReactRouterLink}
                         to={`/products/category/${category.slug}`}
                         _hover={{ bg: 'yellow.50' }}
                       >
-                        <Text>{category.slug}</Text>
+                        <Text>{category.name}</Text>
                       </MenuItem>
                       {idx < categories.length - 1 && <MenuDivider />}
                     </Box>
@@ -310,19 +460,176 @@ function Navbar() {
             </MenuList>
           </Menu>
 
-          <InputGroup>
-            <InputLeftElement pointerEvents={'none'}>
-              <SearchIcon color='gray.300' />
-            </InputLeftElement>
-            <Input
-              bg='white'
-              h={14}
-              placeholder='Search for Products'
-              type='search'
-              value={search}
-              onChange={handleSearchChange}
-            />
-          </InputGroup>
+          {/* Search Input with Results */}
+          <Box position='relative' flex='1' data-search-container>
+            <InputGroup>
+              <InputLeftElement pointerEvents='none' h={14}>
+                {searchState.isLoading ? (
+                  <Spinner size='sm' color='gray.300' />
+                ) : (
+                  <SearchIcon color='gray.300' />
+                )}
+              </InputLeftElement>
+              <Input
+                bg='white'
+                h={14}
+                placeholder='Search for Products'
+                type='text'
+                value={searchState.query}
+                onChange={handleSearchChange}
+                onFocus={handleSearchFocus}
+                borderRadius='md'
+                _focus={{
+                  borderColor: 'yellow.500',
+                  boxShadow: '0 0 0 1px var(--chakra-colors-yellow-500)',
+                }}
+              />
+            </InputGroup>
+
+            {/* Search Results Dropdown */}
+            {searchState.showResults && (
+              <Box
+                position='absolute'
+                top='calc(100% + 4px)'
+                left={0}
+                right={0}
+                bg='white'
+                border='1px solid'
+                borderColor='gray.200'
+                borderRadius='md'
+                boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                zIndex={1000}
+                maxH='400px'
+                overflowY='auto'
+              >
+                {searchState.results.length > 0 ? (
+                  <>
+                    {/* Results header */}
+                    <Box
+                      px={4}
+                      py={2}
+                      borderBottom='1px solid'
+                      borderColor='gray.100'
+                      bg='gray.50'
+                    >
+                      <Text fontSize='sm' color='gray.600' fontWeight='medium'>
+                        {searchState.results.length} product
+                        {searchState.results.length !== 1 ? 's' : ''} found
+                      </Text>
+                    </Box>
+
+                    {/* Product results */}
+                    {searchState.results.map(
+                      (product: Product, index: number) => (
+                        <Box
+                          key={product._id || `product-${index}`}
+                          as={ReactRouterLink}
+                          to={`/product/${product._id}`}
+                          onClick={handleSearchResultClick}
+                          display='block'
+                          p={3}
+                          _hover={{ bg: 'yellow.50' }}
+                          transition='background-color 0.2s'
+                          cursor='pointer'
+                          borderBottom={
+                            index < searchState.results.length - 1
+                              ? '1px solid'
+                              : 'none'
+                          }
+                          borderColor='gray.100'
+                        >
+                          <HStack spacing={3} w='100%'>
+                            {/* Product Image */}
+                            {product.images?.[0] ? (
+                              <Image
+                                src={product.images[0]}
+                                alt={product.name || 'Product image'}
+                                boxSize='50px'
+                                objectFit='cover'
+                                borderRadius='md'
+                                fallback={
+                                  <Box
+                                    boxSize='50px'
+                                    bg='gray.100'
+                                    borderRadius='md'
+                                    display='flex'
+                                    alignItems='center'
+                                    justifyContent='center'
+                                  >
+                                    <Text fontSize='xs' color='gray.500'>
+                                      No img
+                                    </Text>
+                                  </Box>
+                                }
+                              />
+                            ) : (
+                              <Box
+                                boxSize='50px'
+                                bg='gray.100'
+                                borderRadius='md'
+                                display='flex'
+                                alignItems='center'
+                                justifyContent='center'
+                              >
+                                <Text fontSize='xs' color='gray.500'>
+                                  No img
+                                </Text>
+                              </Box>
+                            )}
+
+                            {/* Product Details */}
+                            <VStack
+                              align='start'
+                              spacing={1}
+                              flex={1}
+                              overflow='hidden'
+                            >
+                              <Text
+                                fontWeight='medium'
+                                fontSize='sm'
+                                noOfLines={1}
+                                color='gray.800'
+                                width='100%'
+                              >
+                                {product.name || 'Unnamed Product'}
+                              </Text>
+                              {product.description && (
+                                <Text
+                                  fontSize='xs'
+                                  color='gray.600'
+                                  noOfLines={1}
+                                  width='100%'
+                                >
+                                  {product.description}
+                                </Text>
+                              )}
+                              <Text
+                                color='green.600'
+                                fontSize='sm'
+                                fontWeight='bold'
+                              >
+                                $
+                                {typeof product.price === 'number'
+                                  ? product.price.toFixed(2)
+                                  : '0.00'}
+                              </Text>
+                            </VStack>
+                          </HStack>
+                        </Box>
+                      )
+                    )}
+                  </>
+                ) : (
+                  // No results found
+                  <Box p={4} textAlign='center'>
+                    <Text color='gray.500' fontSize='sm'>
+                      No products found for "{searchState.query}"
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
 
           <Button
             h={14}
@@ -344,7 +651,7 @@ function Navbar() {
             <ChakraLink
               _hover={{ textDecoration: 'none' }}
               as={ReactRouterLink}
-              to={'/vendor-register'}
+              to='/vendor-register/?plan=starter'
             >
               Become a vendor
             </ChakraLink>
@@ -352,6 +659,7 @@ function Navbar() {
         </Flex>
       </Stack>
 
+      {/* Left Drawer (Mobile Menu) */}
       <Drawer
         placement='left'
         onClose={leftDrawer.onClose}
@@ -360,7 +668,7 @@ function Navbar() {
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton color='white' />
-          <DrawerBody bg={'teal.900'} color='white'>
+          <DrawerBody bg='teal.900' color='white'>
             <Flex direction='column' p={4} gap={2}>
               {/* Main Navigation */}
               <NavLink to='/' onClick={leftDrawer.onClose}>
@@ -375,11 +683,11 @@ function Navbar() {
               <NavLink to='store-manager' onClick={leftDrawer.onClose}>
                 Store Manager
               </NavLink>
-              <NavLink to='vendor-membership' onClick={leftDrawer.onClose}>
-                Vendor Membership
+              <NavLink to='sell-with-us' onClick={leftDrawer.onClose}>
+                Sell With Us
               </NavLink>
               <NavLink to='admin-dashboard' onClick={leftDrawer.onClose}>
-                Admin Dashboard
+                Admin Panel
               </NavLink>
               <NavLink to='contact-us' onClick={leftDrawer.onClose}>
                 Contact Us
@@ -426,7 +734,7 @@ function Navbar() {
                   </Alert>
                 ) : categories.length > 0 ? (
                   <VStack spacing={2} align='stretch'>
-                    {categories.map((category) => (
+                    {categories.map((category: Category) => (
                       <NavLink
                         key={category._id}
                         to={`/products/category/${
@@ -440,7 +748,6 @@ function Navbar() {
                     ))}
                   </VStack>
                 ) : (
-                  // No categories
                   <Text color='gray.500' fontSize='sm'>
                     No categories available
                   </Text>
@@ -461,14 +768,14 @@ function Navbar() {
                 mt={6}
                 onClick={() => navigate('/my-account')}
               >
-                {isAuthenticated ? 'View profile' : 'Login/Sign-Up '}
+                {isAuthenticated ? 'View profile' : 'Login/Sign-Up'}
               </Button>
             </Flex>
           </DrawerBody>
         </DrawerContent>
       </Drawer>
 
-      {/* RightDrawer (Cart) */}
+      {/* Right Drawer (Cart) */}
       <Drawer
         placement='right'
         onClose={rightDrawer.onClose}

@@ -46,7 +46,7 @@ export default function ProductQuickView({
         description: 'Product added to cart!',
         status: 'success',
         duration: 2000,
-        position: 'top',
+        position: 'top-right',
       });
     } catch {
       toast({
@@ -54,7 +54,7 @@ export default function ProductQuickView({
         description: 'Failed to add product to cart',
         status: 'error',
         duration: 2000,
-        position: 'top',
+        position: 'top-right',
       });
     }
   };

@@ -1,11 +1,10 @@
 import { LogOut } from 'lucide-react';
-import { Box, Tooltip, IconButton, Stack } from '@chakra-ui/react';
+import { Box, Tooltip, IconButton, Stack, Center } from '@chakra-ui/react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
 import ShopPage from './pages/shop';
 import ContactUs from './pages/contactUs';
 import StoreManagerDashboard from './pages/storeManager';
-import VendorMembership from './pages/vendorMemberShip';
 import Layout from './components/layout/layout';
 import AccountPage from './components/Auth/accountPage';
 import WishList from './pages/wishList';
@@ -29,6 +28,8 @@ import PaymentFailedPage from './pages/PaymentFailedPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 import OrdersPage from './pages/OrdersPage';
 import BlogPage from './pages/BlogPage';
+import SellWithUs from './pages/SellWithUs';
+import HowItWorks from './pages/HowItWorks';
 
 //App
 function App() {
@@ -67,7 +68,8 @@ function App() {
             path='/orders/:orderId/details'
             element={<OrderDetailsPage />}
           />
-          <Route path='vendor-membership' element={<VendorMembership />} />
+          <Route path='sell-with-us' element={<SellWithUs />} />
+          <Route path='how-it-works' element={<HowItWorks />} />
           <Route path='oauth/callback' element={<OAuthCallback />} />
           <Route
             path='admin-dashboard/*'
@@ -81,10 +83,7 @@ function App() {
           <Route
             path='store-manager/*'
             element={
-              <ProtectedRoute
-                allowedRoles={['vendor', 'admin']}
-                showAccessDenied={true}
-              >
+              <ProtectedRoute allowedRoles={['vendor']} showAccessDenied={true}>
                 <StoreManagerDashboard />
               </ProtectedRoute>
             }
@@ -92,7 +91,14 @@ function App() {
           <Route path='contact-us' element={<ContactUs />} />
           <Route path='wishlist' element={<WishList />} />
           <Route path='vendor-register' element={<VendorRegistration />} />
-          <Route path='*' element={<Box>404 Not Found</Box>} />
+          <Route
+            path='*'
+            element={
+              <Center fontSize='xl' mt={6} color={'gray.500'}>
+                404( Page Not Found)
+              </Center>
+            }
+          />
           <Route path='my-account' element={<AccountPage />} />
           <Route path='auth/forgot-password' element={<ForgotPasswordForm />} />
           <Route

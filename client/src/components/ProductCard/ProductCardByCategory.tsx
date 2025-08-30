@@ -21,13 +21,12 @@ type ProductProps = {
   onQuickView: (product: Product) => void;
 };
 
-export default function ProductComponentCard({
+export default function ProductCardByCategory({
   product,
   onQuickView,
 }: ProductProps) {
   const navigate = useNavigate();
   const toast = useToast();
-
   const addToCartMutation = useAddToCart();
   const isInCart = useIsInCart(product._id);
   const addToWishlist = useAddToWishlist();
@@ -89,9 +88,7 @@ export default function ProductComponentCard({
     onQuickView(product);
   };
   const handleNavigateToProduct = () => {
-    navigate(`/product/${product._id}`, {
-      state: { product },
-    });
+    navigate(`/product/${product._id}`);
   };
 
   return (

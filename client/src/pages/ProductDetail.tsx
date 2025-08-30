@@ -19,30 +19,35 @@ import {
   VStack,
   HStack,
   Divider,
+  Spinner,
 } from '@chakra-ui/react';
 import { AddIcon, MinusIcon } from '@chakra-ui/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAddToCart } from '../context/CartContextService';
 
-import type { Product } from '@/type/product';
 import { ReviewComponent } from './ReviewComponent';
 import { useCurrentUser } from '@/context/AuthContextService';
+import { useProductById } from '@/context/ProductContextService';
 
 export default function ProductDetail(): React.ReactElement {
-  const location = useLocation();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const product: Product = location.state?.product || null;
-  const [quantity, setQuantity] = useState(1);
-  const currentUser = useCurrentUser();
   const toast = useToast();
+  const currentUser = useCurrentUser();
+
+  const { data: product, isLoading } = useProductById(id as string);
+
+  const [quantity, setQuantity] = useState(1);
   const addToCartMutation = useAddToCart();
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!product) return;
+
     try {
       addToCartMutation.mutate({
         productId: product._id,
-        quantity: quantity,
+        quantity,
       });
       toast({
         title: 'Product Added',
@@ -64,6 +69,8 @@ export default function ProductDetail(): React.ReactElement {
   };
 
   const handleBuyNow = () => {
+    if (!product) return;
+
     if (!currentUser) {
       toast({
         title: 'Authentication Required',
@@ -83,23 +90,31 @@ export default function ProductDetail(): React.ReactElement {
           name: product.name,
           price: product.price,
           image: product.images?.[0],
-          quantity: quantity,
+          quantity,
         },
       },
     });
   };
 
   const handleIncreaseQuantity = () => {
-    if (quantity < product.quantityInStock) {
-      setQuantity(() => quantity + 1);
+    if (product && quantity < product.quantityInStock) {
+      setQuantity((q) => q + 1);
     }
   };
 
   const handleDecreaseQuantity = () => {
     if (quantity > 1) {
-      setQuantity(() => quantity - 1);
+      setQuantity((q) => q - 1);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Flex justify='center' align='center' h='300px'>
+        <Spinner size='xl' color='teal.500' />
+      </Flex>
+    );
+  }
 
   if (!product) {
     return (
@@ -126,7 +141,7 @@ export default function ProductDetail(): React.ReactElement {
             src={
               product.images && product.images.length > 0
                 ? product.images[0]
-                : product.images[1]
+                : '/placeholder.jpg'
             }
             alt={product.name}
             borderRadius='lg'
@@ -227,7 +242,7 @@ export default function ProductDetail(): React.ReactElement {
                   <Text fontWeight='semibold' minW='120px'>
                     Category:
                   </Text>
-                  <Text>{product.category.name || 'N/A'}</Text>
+                  <Text>{product.category?.name || 'N/A'}</Text>
                 </HStack>
                 <HStack>
                   <Text fontWeight='semibold' minW='120px'>
@@ -235,7 +250,6 @@ export default function ProductDetail(): React.ReactElement {
                   </Text>
                   <Text>{product.quantityInStock} units</Text>
                 </HStack>
-                {/* Add more specifications as needed */}
               </VStack>
             </Box>
           </TabPanel>

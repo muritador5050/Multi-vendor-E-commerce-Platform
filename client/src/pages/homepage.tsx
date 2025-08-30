@@ -17,7 +17,6 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import PaypalIcon from '../assets/8666366_paypal_icon.svg';
-import ProductComponentCard from '@/components/ProductCard/ProductComponentCard.tsx';
 import { useCategories } from '@/context/CategoryContextService';
 import {
   Truck,
@@ -46,6 +45,7 @@ import {
 } from '@/context/ProductContextService';
 import ProductQuickView from '@/components/ProductQuickView';
 import type { Product } from '@/type/product';
+import ProductCardByCategory from '@/components/ProductCard/ProductCardByCategory';
 
 const getCategoryIcon = (categoryName: string) => {
   const iconMap: Record<string, React.ElementType> = {
@@ -402,7 +402,7 @@ function HomePage() {
         )}
         <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {bikeProducts.map((product) => (
-            <ProductComponentCard
+            <ProductCardByCategory
               key={product._id}
               product={product}
               onQuickView={handleQuickView}
@@ -441,7 +441,7 @@ function HomePage() {
 
         <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {toolsProducts.map((product) => (
-            <ProductComponentCard
+            <ProductCardByCategory
               key={product._id}
               product={product}
               onQuickView={handleQuickView}
@@ -484,7 +484,7 @@ function HomePage() {
         )}
         <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {artProducts.map((product) => (
-            <ProductComponentCard
+            <ProductCardByCategory
               key={product._id}
               product={product}
               onQuickView={handleQuickView}
@@ -518,7 +518,7 @@ function HomePage() {
         )}
         <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {smartPhoneProducts.map((product) => (
-            <ProductComponentCard
+            <ProductCardByCategory
               key={product._id}
               product={product}
               onQuickView={handleQuickView}
@@ -550,7 +550,7 @@ function HomePage() {
         )}
         <SimpleGrid columns={{ sm: 2, md: 5 }} spacing={4} mt={6}>
           {products.map((product) => (
-            <ProductComponentCard
+            <ProductCardByCategory
               key={product._id}
               product={product}
               onQuickView={handleQuickView}
