@@ -50,7 +50,7 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
     <Box
       bg='#203a43'
       color='white'
-      minH='calc(100vh - 80px)'
+      minH='100vh'
       transition='width 0.3s ease'
       width={isDesktop ? desktopWidth : mobileWidth}
       overflow='hidden'

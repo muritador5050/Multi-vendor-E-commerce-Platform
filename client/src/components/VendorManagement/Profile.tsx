@@ -22,6 +22,8 @@ import {
   Link,
   useColorModeValue,
   SimpleGrid,
+  useBreakpointValue,
+  Tooltip,
 } from '@chakra-ui/react';
 import {
   MapPin,
@@ -64,6 +66,17 @@ const VendorProfile: React.FC = () => {
   const bg = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
+
+  // Responsive tab configuration
+  const tabOrientation = useBreakpointValue({
+    base: 'horizontal' as const,
+    md: 'horizontal' as const,
+  });
+
+  const tabVariant = useBreakpointValue({
+    base: 'enclosed-colored' as const,
+    md: 'enclosed' as const,
+  });
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -240,31 +253,77 @@ const VendorProfile: React.FC = () => {
       )}
 
       <Container maxW='7xl' py={8}>
-        {/* Tabs */}
+        {/* Tabs - Made responsive */}
         <Tabs
-          variant='enclosed'
+          variant={tabVariant}
           bg={cardBg}
           borderRadius='xl'
           shadow='sm'
           border='1px'
           borderColor={borderColor}
+          orientation={tabOrientation}
+          isFitted
         >
-          <TabList>
-            <Tab>
-              <Icon as={Store} w={4} h={4} mr={2} />
-              Overview
+          <TabList
+            overflowX={{ base: 'auto', md: 'visible' }}
+            flexWrap={{ base: 'nowrap', md: 'wrap' }}
+            pb={{ base: 1, md: 0 }}
+            sx={{
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              scrollbarWidth: 'none',
+            }}
+          >
+            <Tab whiteSpace='nowrap' py={4}>
+              <Tooltip label='Overview' hasArrow>
+                <Flex
+                  align='center'
+                  justify={{ base: 'center', md: 'flex-start' }}
+                >
+                  <Icon as={Store} w={4} h={4} mr={{ base: 0, md: 2 }} />
+                  <Text display={{ base: 'none', md: 'block' }}>Overview</Text>
+                </Flex>
+              </Tooltip>
             </Tab>
-            <Tab>
-              <Icon as={Building} w={4} h={4} mr={2} />
-              Business Info
+            <Tab whiteSpace='nowrap' py={4}>
+              <Tooltip label='Business Info' hasArrow>
+                <Flex
+                  align='center'
+                  justify={{ base: 'center', md: 'flex-start' }}
+                >
+                  <Icon as={Building} w={4} h={4} mr={{ base: 0, md: 2 }} />
+                  <Text display={{ base: 'none', md: 'block' }}>
+                    Business Info
+                  </Text>
+                </Flex>
+              </Tooltip>
             </Tab>
-            <Tab>
-              <Icon as={TrendingUp} w={4} h={4} mr={2} />
-              Performance
+            <Tab whiteSpace='nowrap' py={4}>
+              <Tooltip label='Performance' hasArrow>
+                <Flex
+                  align='center'
+                  justify={{ base: 'center', md: 'flex-start' }}
+                >
+                  <Icon as={TrendingUp} w={4} h={4} mr={{ base: 0, md: 2 }} />
+                  <Text display={{ base: 'none', md: 'block' }}>
+                    Performance
+                  </Text>
+                </Flex>
+              </Tooltip>
             </Tab>
-            <Tab>
-              <Icon as={Clock} w={4} h={4} mr={2} />
-              Contact & Hours
+            <Tab whiteSpace='nowrap' py={4}>
+              <Tooltip label='Contact & Hours' hasArrow>
+                <Flex
+                  align='center'
+                  justify={{ base: 'center', md: 'flex-start' }}
+                >
+                  <Icon as={Clock} w={4} h={4} mr={{ base: 0, md: 2 }} />
+                  <Text display={{ base: 'none', md: 'block' }}>
+                    Contact & Hours
+                  </Text>
+                </Flex>
+              </Tooltip>
             </Tab>
           </TabList>
 
@@ -574,7 +633,11 @@ const VendorProfile: React.FC = () => {
                     <Heading size='md' mb={4}>
                       Customer Satisfaction
                     </Heading>
-                    <Flex align='center' gap={6}>
+                    <Flex
+                      align='center'
+                      gap={6}
+                      direction={{ base: 'column', md: 'row' }}
+                    >
                       <Flex align='center' gap={2}>
                         <HStack>
                           {[1, 2, 3, 4, 5].map((star) => (

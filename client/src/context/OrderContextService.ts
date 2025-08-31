@@ -8,6 +8,7 @@ import type {
   VendorSalesAnalytics,
   OrdersResponse,
   CreateOrderRequest,
+  VendorOrdersResponse,
 } from '@/type/Order';
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
@@ -90,6 +91,12 @@ const getVendorSalesAnalytics = async (): Promise<
   );
 };
 
+const getVendorRelatedOrders = async (): Promise<
+  ApiResponse<VendorOrdersResponse>
+> => {
+  return await apiClient.authenticatedApiRequest('/orders/analytics/vendor');
+};
+
 // Query Hooks with Data Selection
 export const useOrders = (params: OrderParams = {}) => {
   return useQuery({
@@ -146,6 +153,16 @@ export const useVendorSalesAnalytics = () => {
     queryKey: orderKeys.vendorSales(),
     queryFn: getVendorSalesAnalytics,
     select: (data: ApiResponse<VendorSalesAnalytics>) => data.data,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+export const useGetVendorRelatedOrders = () => {
+  return useQuery({
+    queryKey: orderKeys.lists(),
+    queryFn: getVendorRelatedOrders,
+    select: (data: ApiResponse<VendorOrdersResponse>) => data.data,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

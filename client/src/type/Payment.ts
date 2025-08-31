@@ -135,3 +135,41 @@ export interface PaymentAnalytics {
     createdAt: string;
   }>;
 }
+
+export interface VendorPaymentProduct {
+  product: string;
+  productName: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+export interface VendorPayment {
+  _id: string;
+  orderId: string;
+  paymentProvider: string;
+  paymentId: string;
+  status: string;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  vendorProducts: VendorPaymentProduct[];
+  vendorAmount: number;
+  totalPaymentAmount: number;
+  userName: string;
+  userEmail: string;
+  vendorPercentage: number;
+}
+
+export interface VendorPaymentPagination {
+  currentPage: number;
+  totalPages: number;
+  totalPayments: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface VendorPaymentsResponse {
+  payments: VendorPayment[];
+  pagination: VendorPaymentPagination;
+}

@@ -145,3 +145,47 @@ export interface VendorSalesAnalytics {
   totalOrders: number;
   totalProductsSold: number;
 }
+
+export interface VendorOrderProduct {
+  product: string;
+  quantity: number;
+  price: number;
+  productName: string;
+  productImages: string[];
+}
+
+export interface VendorOrder {
+  _id: string;
+  userId: string;
+  vendorProducts: VendorOrderProduct[];
+  orderStatus:
+    | 'pending'
+    | 'paid'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled'
+    | 'returned'
+    | 'on_hold';
+  shippingAddress: Address;
+  paymentMethod: PaymentMethod;
+  trackingNumber: string;
+  createdAt: string;
+  updatedAt: string;
+  vendorOrderTotal: number;
+  userName: string;
+  userEmail: string;
+}
+
+export interface VendorOrderPagination {
+  currentPage: number;
+  totalPages: number;
+  totalOrders: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+export interface VendorOrdersResponse {
+  orders: VendorOrder[];
+  pagination: VendorOrderPagination;
+}

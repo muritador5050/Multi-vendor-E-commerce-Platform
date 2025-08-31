@@ -1,23 +1,10 @@
-import { Link as ReactRouterLink } from 'react-router-dom';
-import {
-  Avatar,
-  Flex,
-  HStack,
-  IconButton,
-  Link as ChakraLink,
-  Text,
-} from '@chakra-ui/react';
-import {
-  AlignJustify,
-  Bell,
-  CircleHelp,
-  Megaphone,
-  NotebookTabs,
-} from 'lucide-react';
+import { Avatar, Flex, HStack, IconButton, Text } from '@chakra-ui/react';
+import { AlignJustify } from 'lucide-react';
 import { LinkItems } from './Utils/linkItems';
 import { useLocation } from 'react-router-dom';
 import { Tooltip } from '../ui/tooltip';
 import { useCurrentUser } from '@/context/AuthContextService';
+import { useVendorProfile } from '@/context/VendorContextService';
 
 interface ToggleProp {
   onToggle: () => void;
@@ -26,6 +13,8 @@ interface ToggleProp {
 export default function StoreNavbar({ onToggle }: ToggleProp) {
   const location = useLocation();
   const currentUser = useCurrentUser();
+  const { data } = useVendorProfile();
+
   return (
     <Flex
       bg='#203a43'
@@ -63,9 +52,10 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
         >
           <IconButton
             onClick={onToggle}
-            colorScheme='teal'
             aria-label='Toggle Sidebar'
             icon={<AlignJustify />}
+            bg='transparent'
+            colorScheme='white'
           />
         </Tooltip>
         {LinkItems.map((link, idx) => {
@@ -90,47 +80,9 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
         })}
       </HStack>
 
-      <HStack spacing={1}>
-        <ChakraLink as={ReactRouterLink} to={'/store-manager/messages'}>
-          <IconButton
-            variant='ghost'
-            colorScheme='white'
-            aria-label='Notification'
-            icon={<Bell />}
-            display={{ base: 'none', md: 'flex' }}
-          />
-        </ChakraLink>
-        <ChakraLink as={ReactRouterLink} to={'/store-manager/enquiry'}>
-          <IconButton
-            variant='ghost'
-            colorScheme='white'
-            aria-label='Help'
-            icon={<CircleHelp />}
-            display={{ base: 'none', md: 'flex' }}
-          />
-        </ChakraLink>
-        <ChakraLink as={ReactRouterLink} to={'/store-manager/notices'}>
-          <IconButton
-            variant='ghost'
-            colorScheme='white'
-            aria-label='Announcements'
-            icon={<Megaphone />}
-            display={{ base: 'none', md: 'flex' }}
-          />
-        </ChakraLink>
-        <ChakraLink as={ReactRouterLink} to={'/store-manager/knowledgebase'}>
-          <IconButton
-            variant='ghost'
-            colorScheme='white'
-            aria-label='Docs'
-            icon={<NotebookTabs />}
-            display={{ base: 'none', md: 'flex' }}
-          />
-        </ChakraLink>
-        <ChakraLink as={ReactRouterLink} to={'/store-manager/profile'}>
-          <Avatar size='sm' name='Store Owner' src={currentUser?.avatar} />
-        </ChakraLink>
-      </HStack>
+      <Text fontWeight='bold' fontSize='xl' fontFamily='fantasy' color='orange'>
+        {data?.generalSettings?.storeName}
+      </Text>
     </Flex>
   );
 }

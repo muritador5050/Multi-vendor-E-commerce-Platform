@@ -333,7 +333,10 @@ function Navbar() {
               colorScheme='white'
             />
 
-            <ChakraLink as={ReactRouterLink} to='/wishlist'>
+            <ChakraLink
+              as={ReactRouterLink}
+              to={!isAuthenticated ? '/my-account' : '/wishlist'}
+            >
               <IconButton
                 icon={<Heart />}
                 aria-label='Favorites'
@@ -353,13 +356,15 @@ function Navbar() {
 
             <Flex>
               <Box position='relative' display='inline-block'>
-                <IconButton
-                  icon={<ShoppingBag />}
-                  aria-label='Cart'
-                  variant='ghost'
-                  colorScheme='white'
-                  onClick={rightDrawer.onOpen}
-                />
+                {isAuthenticated && (
+                  <IconButton
+                    icon={<ShoppingBag />}
+                    aria-label='Cart'
+                    variant='ghost'
+                    colorScheme='white'
+                    onClick={rightDrawer.onOpen}
+                  />
+                )}
                 {cart?.items && cart.items.length > 0 && (
                   <Badge
                     w={{ base: '20px', md: '25px' }}

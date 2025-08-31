@@ -37,7 +37,7 @@ export function VendorSalesSummary({ data }: VendorSalesSummaryProps) {
   const stats = [
     {
       label: 'Total Sales',
-      value: `$${data.totalSales.toLocaleString()}`,
+      value: `$${data.totalSales}`,
       icon: DollarSign,
       color: 'green.500',
     },

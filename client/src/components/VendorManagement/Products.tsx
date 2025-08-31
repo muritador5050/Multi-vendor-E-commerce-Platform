@@ -38,7 +38,10 @@ import {
   Tooltip,
   Stack,
   Image,
-  SimpleGrid,
+  useBreakpointValue,
+  Grid,
+  GridItem,
+  AspectRatio,
 } from '@chakra-ui/react';
 import {
   Package,
@@ -51,6 +54,11 @@ import {
   XCircle,
   RefreshCcw,
   Star,
+  ShoppingCart,
+  Tag,
+  BarChart3,
+  User,
+  Calendar,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Product, UpdateProductRequest } from '@/type/product';
@@ -70,7 +78,6 @@ import {
 } from '@/context/ProductContextService';
 import { useCategories } from '@/context/CategoryContextService';
 
-// Simplified drawer state
 interface DrawerState {
   product: Product | null;
   isEditing: boolean;
@@ -83,18 +90,24 @@ interface DrawerState {
 const DetailItem = ({
   label,
   children,
+  icon,
 }: {
   label: string;
   children: React.ReactNode;
+  icon?: React.ReactElement;
 }) => (
-  <HStack justify='space-between'>
-    <Text fontWeight='medium'>{label}:</Text>
+  <HStack justify='space-between' spacing={3}>
+    <HStack>
+      {icon && React.cloneElement(icon)}
+      <Text fontWeight='medium' fontSize='sm'>
+        {label}
+      </Text>
+    </HStack>
     {children}
   </HStack>
 );
 
-// Product Item Component for Grid Layout
-const ProductItem = React.memo(
+const ProductCard = React.memo(
   ({
     product,
     onView,
@@ -107,153 +120,211 @@ const ProductItem = React.memo(
     onEdit: (product: Product) => void;
     onDelete: (product: Product) => void;
     onToggleStatus: (productId: string) => void;
-  }) => (
-    <Box
-      bg='white'
-      borderRadius='lg'
-      border='1px'
-      borderColor='gray.200'
-      p={4}
-      shadow='sm'
-      transition='all 0.2s'
-      _hover={{
-        shadow: 'md',
-        borderColor: 'blue.200',
-        transform: 'translateY(-2px)',
-      }}
-    >
-      {/* Product Image */}
+  }) => {
+    const isMobile = useBreakpointValue({ base: true, md: false });
+
+    return (
       <Box
-        w='full'
-        h='180px'
-        bg='gray.50'
-        borderRadius='md'
+        bg='white'
+        borderRadius='xl'
         overflow='hidden'
-        mb={3}
+        boxShadow='sm'
+        border='1px solid'
+        borderColor='gray.100'
+        transition='all 0.3s ease'
+        _hover={{
+          transform: 'translateY(-4px)',
+          boxShadow: 'xl',
+          borderColor: 'blue.100',
+        }}
         position='relative'
+        height='100%'
+        display='flex'
+        flexDirection='column'
       >
-        {product.images && product.images[0] ? (
-          <Image
-            src={product.images[0]}
-            alt={product.name}
-            w='full'
-            h='full'
-            objectFit='cover'
-          />
-        ) : (
-          <Center h='full' color='gray.400'>
-            <Package size={40} />
-          </Center>
-        )}
-
-        {/* Status Badge Overlay */}
-        <Badge
-          position='absolute'
-          top={2}
-          right={2}
-          colorScheme={getStatusColor(product.isActive || false)}
-          size='sm'
-        >
-          {product.isActive ? 'Active' : 'Inactive'}
-        </Badge>
-      </Box>
-
-      {/* Product Info */}
-      <VStack align='stretch' spacing={3}>
-        {/* Title and Description */}
-        <Box>
-          <Text fontWeight='bold' fontSize='lg' noOfLines={1} mb={1}>
-            {product.name}
-          </Text>
-          <Text fontSize='sm' color='gray.600' noOfLines={2} mb={2}>
-            {product.description}
-          </Text>
+        {/* Status indicator */}
+        <Box position='absolute' top={3} right={3} zIndex={1}>
+          <Badge
+            colorScheme={getStatusColor(product.isActive || false)}
+            borderRadius='full'
+            px={2}
+            py={1}
+            fontSize='xs'
+          >
+            {product.isActive ? 'Active' : 'Inactive'}
+          </Badge>
         </Box>
 
-        {/* Category and Price Row */}
-        <Flex justify='space-between' align='center'>
-          <Badge colorScheme='blue' size='sm'>
-            {typeof product.category === 'string'
-              ? product.category
-              : product.category?.name || 'No Category'}
-          </Badge>
-          <Text fontWeight='bold' fontSize='lg' color='green.600'>
-            {formatPrice(product.price || 0)}
-          </Text>
-        </Flex>
+        {/* Product Image */}
+        <AspectRatio ratio={4 / 3}>
+          <Box bg='gray.50' position='relative' overflow='hidden'>
+            {product.images && product.images[0] ? (
+              <Image
+                src={product.images[0]}
+                alt={product.name}
+                objectFit='cover'
+                w='100%'
+                h='100%'
+                transition='transform 0.3s ease'
+                _hover={{ transform: 'scale(1.05)' }}
+              />
+            ) : (
+              <Center h='full' color='gray.300'>
+                <Package size={isMobile ? 32 : 40} />
+              </Center>
+            )}
 
-        {/* Stock and Rating Row */}
-        <Flex justify='space-between' align='center'>
-          <HStack spacing={2}>
-            <Text fontSize='sm' color='gray.500'>
-              Stock:
+            {/* Quick action overlay */}
+            <Box
+              position='absolute'
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              bg='blackAlpha.600'
+              opacity={0}
+              transition='opacity 0.3s ease'
+              _hover={{ opacity: 1 }}
+              display='flex'
+              alignItems='center'
+              justifyContent='center'
+              gap={2}
+            >
+              <IconButton
+                aria-label='View product'
+                icon={<Eye size={16} />}
+                size='sm'
+                colorScheme='whiteAlpha'
+                onClick={() => onView(product)}
+              />
+              <IconButton
+                aria-label='Edit product'
+                icon={<Edit size={16} />}
+                size='sm'
+                colorScheme='whiteAlpha'
+                onClick={() => onEdit(product)}
+              />
+            </Box>
+          </Box>
+        </AspectRatio>
+
+        {/* Product Info */}
+        <Box p={4} flex={1} display='flex' flexDirection='column'>
+          {/* Title and Category */}
+          <Box mb={3}>
+            <Text
+              fontWeight='bold'
+              fontSize={{ base: 'md', md: 'lg' }}
+              noOfLines={2}
+              mb={1}
+              color='gray.800'
+            >
+              {product.name}
             </Text>
             <Badge
-              colorScheme={getStockStatus(product.quantityInStock || 0).color}
-              size='sm'
+              colorScheme='blue'
+              variant='subtle'
+              fontSize='xs'
+              borderRadius='md'
             >
-              {product.quantityInStock || 0}
+              {typeof product.category === 'string'
+                ? product.category
+                : product.category?.name || 'No Category'}
             </Badge>
-          </HStack>
-          <HStack spacing={1}>
-            <Star size={14} fill='currentColor' color='yellow.400' />
-            <Text fontSize='sm' color='gray.600'>
-              {(product.averageRating || 0).toFixed(1)}
-            </Text>
-          </HStack>
-        </Flex>
+          </Box>
 
-        {/* Vendor Info */}
-        <Box py={2} borderTop='1px' borderColor='gray.100'>
-          <Text fontSize='xs' color='gray.500' mb={1}>
-            Vendor
+          {/* Description */}
+          <Text fontSize='sm' color='gray.600' noOfLines={2} mb={4} flex={1}>
+            {product.description}
           </Text>
-          <Text fontSize='sm' fontWeight='medium' noOfLines={1}>
-            {product.vendor?.name || 'Unknown'}
-          </Text>
-          <Text fontSize='xs' color='gray.500' noOfLines={1}>
-            {product.vendor?.email || 'No Email'}
-          </Text>
+
+          {/* Stats Row */}
+          <Grid
+            templateColumns='repeat(2, 1fr)'
+            gap={2}
+            mb={4}
+            fontSize='xs'
+            color='gray.500'
+          >
+            <HStack>
+              <ShoppingCart size={12} />
+              <Text>{product.quantityInStock || 0} in stock</Text>
+            </HStack>
+            <HStack>
+              <Star size={12} fill='currentColor' color='yellow.400' />
+              <Text>{(product.averageRating || 0).toFixed(1)}</Text>
+            </HStack>
+          </Grid>
+
+          {/* Price and Actions */}
+          <Flex justify='space-between' align='flex-end'>
+            <Box>
+              <Text
+                fontWeight='bold'
+                fontSize='xl'
+                color='green.600'
+                lineHeight={1}
+              >
+                {formatPrice(product.price || 0)}
+              </Text>
+              {product.discount > 0 && (
+                <Text fontSize='xs' color='red.500' mt={-1}>
+                  {product.discount}% off
+                </Text>
+              )}
+            </Box>
+
+            <HStack spacing={1}>
+              {!isMobile && (
+                <>
+                  <Tooltip label='Delete product'>
+                    <IconButton
+                      size='sm'
+                      variant='ghost'
+                      colorScheme='red'
+                      icon={<Trash2 size={14} />}
+                      onClick={() => onDelete(product)}
+                      aria-label='Delete'
+                    />
+                  </Tooltip>
+                  <Tooltip label={product.isActive ? 'Deactivate' : 'Activate'}>
+                    <IconButton
+                      size='sm'
+                      variant='outline'
+                      colorScheme={product.isActive ? 'red' : 'green'}
+                      icon={
+                        product.isActive ? (
+                          <XCircle size={14} />
+                        ) : (
+                          <CheckCircle size={14} />
+                        )
+                      }
+                      onClick={() => onToggleStatus(product._id)}
+                      aria-label='Toggle status'
+                    />
+                  </Tooltip>
+                </>
+              )}
+            </HStack>
+          </Flex>
         </Box>
 
-        {/* Action Buttons */}
-        <Flex justify='space-between' align='center' pt={2}>
-          <HStack spacing={1}>
-            <Tooltip label='View details'>
-              <IconButton
-                size='sm'
-                variant='ghost'
-                colorScheme='blue'
-                icon={<Eye size={16} />}
-                onClick={() => onView(product)}
-                aria-label='View'
-              />
-            </Tooltip>
-            <Tooltip label='Edit product'>
-              <IconButton
-                size='sm'
-                variant='ghost'
-                colorScheme='orange'
-                icon={<Edit size={16} />}
-                onClick={() => onEdit(product)}
-                aria-label='Edit'
-              />
-            </Tooltip>
-            <Tooltip label='Delete product'>
-              <IconButton
-                size='sm'
-                variant='ghost'
-                colorScheme='red'
-                icon={<Trash2 size={16} />}
-                onClick={() => onDelete(product)}
-                aria-label='Delete'
-              />
-            </Tooltip>
-          </HStack>
-
-          <Tooltip
-            label={product.isActive ? 'Deactivate product' : 'Activate product'}
+        {/* Mobile action bar */}
+        {isMobile && (
+          <Flex
+            borderTop='1px solid'
+            borderColor='gray.100'
+            p={2}
+            justify='space-around'
           >
+            <IconButton
+              size='sm'
+              variant='ghost'
+              colorScheme='red'
+              icon={<Trash2 size={16} />}
+              onClick={() => onDelete(product)}
+              aria-label='Delete'
+            />
             <IconButton
               size='sm'
               variant='outline'
@@ -266,16 +337,16 @@ const ProductItem = React.memo(
                 )
               }
               onClick={() => onToggleStatus(product._id)}
-              aria-label={product.isActive ? 'Deactivate' : 'Activate'}
+              aria-label='Toggle status'
             />
-          </Tooltip>
-        </Flex>
-      </VStack>
-    </Box>
-  )
+          </Flex>
+        )}
+      </Box>
+    );
+  }
 );
 
-//VendorProduct
+// VendorProduct Component
 export default function VendorProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [drawerState, setDrawerState] = useState<DrawerState>({
@@ -298,7 +369,7 @@ export default function VendorProducts() {
     isRefetching,
   } = useOwnVendorProducts({
     page: currentPage,
-    limit: 10,
+    limit: 12,
   });
 
   const toggleMutation = useToggleProductStatus();
@@ -323,7 +394,7 @@ export default function VendorProducts() {
     pages: 0,
     hasNext: false,
     hasPrev: false,
-    limit: 10,
+    limit: 12,
   };
 
   const updateDrawerState = useCallback((updates: Partial<DrawerState>) => {
@@ -624,7 +695,7 @@ export default function VendorProducts() {
     : drawerState.product;
 
   return (
-    <Box>
+    <Box my={6}>
       {/* Header Section */}
       <Flex
         justify='space-between'
@@ -633,63 +704,74 @@ export default function VendorProducts() {
         direction={{ base: 'column', sm: 'row' }}
         gap={4}
       >
-        <Heading
-          size='lg'
-          fontWeight='bold'
-          display={{ base: 'none', md: 'flex' }}
-        >
-          Products Catalog
+        <Heading size='lg' fontWeight='bold' color='gray.800'>
+          My Products
         </Heading>
         <Stack direction={'row'} align='center' spacing={3}>
           <IconButton
             aria-label='refresh-product'
-            icon={<RefreshCcw />}
+            icon={<RefreshCcw size={18} />}
             onClick={() => refetch()}
             isLoading={isRefetching}
+            variant='outline'
           />
 
           <Button
-            leftIcon={<Package size={16} />}
+            leftIcon={<Package size={18} />}
             colorScheme='blue'
             size='md'
             w={{ base: 'full', sm: 'auto' }}
             onClick={() => navigate('/store-manager/create-product')}
           >
-            Add Product
+            Add New Product
           </Button>
         </Stack>
       </Flex>
 
       {/* Products Grid */}
-      <Box bg='gray.50' p={4} borderRadius='lg'>
+      <Box>
         {vendorProducts?.products.length === 0 ? (
-          <Center py={20} bg='white' borderRadius='lg'>
-            <VStack spacing={4}>
-              <Package size={64} color='gray' />
+          <Center py={20} bg='white' borderRadius='xl' boxShadow='sm'>
+            <VStack spacing={4} textAlign='center'>
+              <Package size={64} color='gray.300' />
               <Text fontSize='xl' color='gray.500' fontWeight='medium'>
-                No products available
+                No products yet
               </Text>
-              <Text fontSize='sm' color='gray.400' textAlign='center'>
-                Start by adding your first product to showcase your inventory
+              <Text fontSize='sm' color='gray.400' maxW='md'>
+                Start by adding your first product to showcase in your store
               </Text>
+              <Button
+                colorScheme='blue'
+                mt={4}
+                onClick={() => navigate('/store-manager/create-product')}
+              >
+                Create Your First Product
+              </Button>
             </VStack>
           </Center>
         ) : (
-          <SimpleGrid
-            columns={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
-            spacing={4}
+          <Grid
+            templateColumns={{
+              base: 'repeat(1, 1fr)',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)',
+              xl: 'repeat(5, 1fr)',
+            }}
+            gap={{ base: 4, md: 6 }}
           >
             {vendorProducts?.products.map((product) => (
-              <ProductItem
-                key={product._id}
-                product={product}
-                onView={handleView}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggleStatus={handleToggleStatus}
-              />
+              <GridItem key={product._id}>
+                <ProductCard
+                  product={product}
+                  onView={handleView}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleStatus={handleToggleStatus}
+                />
+              </GridItem>
             ))}
-          </SimpleGrid>
+          </Grid>
         )}
       </Box>
 
@@ -704,10 +786,10 @@ export default function VendorProducts() {
           <DrawerOverlay />
           <DrawerContent>
             <DrawerCloseButton />
-            <DrawerHeader>
+            <DrawerHeader borderBottomWidth='1px'>
               {drawerState.isEditing ? 'Edit Product' : 'Product Details'}
             </DrawerHeader>
-            <DrawerBody>
+            <DrawerBody py={4}>
               <VStack spacing={4} align='stretch'>
                 {drawerState.isEditing ? (
                   // Edit Form
@@ -856,87 +938,92 @@ export default function VendorProducts() {
                     />
 
                     <Heading size='md'>{currentProduct.name}</Heading>
-                    <Text color='gray.400'>{currentProduct.description}</Text>
+                    <Text color='gray.600'>{currentProduct.description}</Text>
                     <Divider />
 
-                    <DetailItem label='Category'>
-                      <Badge colorScheme='blue'>
-                        {typeof currentProduct.category === 'string'
-                          ? currentProduct.category
-                          : currentProduct.category?.name || 'No Category'}
-                      </Badge>
-                    </DetailItem>
-
-                    <DetailItem label='Price'>
-                      <Text>{formatPrice(currentProduct.price || 0)}</Text>
-                    </DetailItem>
-
-                    <DetailItem label='Stock'>
-                      <Badge
-                        colorScheme={
-                          getStockStatus(currentProduct.quantityInStock || 0)
-                            .color
-                        }
-                      >
-                        {currentProduct.quantityInStock || 0}
-                      </Badge>
-                    </DetailItem>
-
-                    <DetailItem label='Status'>
-                      <Badge
-                        colorScheme={getStatusColor(
-                          currentProduct.isActive || false
-                        )}
-                      >
-                        {currentProduct.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </DetailItem>
-
-                    <DetailItem label='Rating'>
-                      <Box>
-                        {renderRating(currentProduct.averageRating || 0)}
-                      </Box>
-                    </DetailItem>
-
-                    <DetailItem label='Total Reviews'>
-                      <Text>{currentProduct.totalReviews || 0}</Text>
-                    </DetailItem>
-
-                    <DetailItem label='Vendor'>
-                      <VStack spacing={0} align='end'>
-                        <Text fontSize='sm'>
-                          {currentProduct.vendor?.name || 'Unknown'}
-                        </Text>
-                        <Text fontSize='xs' color='gray.400'>
-                          {currentProduct.vendor?.email || 'No Email'}
-                        </Text>
-                      </VStack>
-                    </DetailItem>
-
-                    {currentProduct.discount && currentProduct.discount > 0 && (
-                      <DetailItem label='Discount'>
-                        <Badge colorScheme='red'>
-                          {currentProduct.discount}%
+                    <VStack spacing={3} align='stretch'>
+                      <DetailItem label='Category' icon={<Tag />}>
+                        <Badge colorScheme='blue'>
+                          {typeof currentProduct.category === 'string'
+                            ? currentProduct.category
+                            : currentProduct.category?.name || 'No Category'}
                         </Badge>
                       </DetailItem>
-                    )}
 
-                    <DetailItem label='Created'>
-                      <Text fontSize='sm'>
-                        {formatDate(currentProduct.createdAt || '')}
-                      </Text>
-                    </DetailItem>
+                      <DetailItem label='Price' icon={<ShoppingCart />}>
+                        <Text fontWeight='bold'>
+                          {formatPrice(currentProduct.price || 0)}
+                        </Text>
+                      </DetailItem>
 
-                    <DetailItem label='Updated'>
-                      <Text fontSize='sm'>
-                        {formatDate(currentProduct.updatedAt || '')}
-                      </Text>
-                    </DetailItem>
+                      <DetailItem label='Stock' icon={<BarChart3 />}>
+                        <Badge
+                          colorScheme={
+                            getStockStatus(currentProduct.quantityInStock || 0)
+                              .color
+                          }
+                        >
+                          {currentProduct.quantityInStock || 0}
+                        </Badge>
+                      </DetailItem>
+
+                      <DetailItem label='Status' icon={<CheckCircle />}>
+                        <Badge
+                          colorScheme={getStatusColor(
+                            currentProduct.isActive || false
+                          )}
+                        >
+                          {currentProduct.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </DetailItem>
+
+                      <DetailItem label='Rating' icon={<Star />}>
+                        <Box>
+                          {renderRating(currentProduct.averageRating || 0)}
+                        </Box>
+                      </DetailItem>
+
+                      <DetailItem label='Total Reviews' icon={<BarChart3 />}>
+                        <Text>{currentProduct.totalReviews || 0}</Text>
+                      </DetailItem>
+
+                      <DetailItem label='Vendor' icon={<User />}>
+                        <VStack spacing={0} align='end'>
+                          <Text fontSize='sm'>
+                            {currentProduct.vendor?.name || 'Unknown'}
+                          </Text>
+                          <Text fontSize='xs' color='gray.500'>
+                            {currentProduct.vendor?.email || 'No Email'}
+                          </Text>
+                        </VStack>
+                      </DetailItem>
+
+                      {currentProduct.discount &&
+                        currentProduct.discount > 0 && (
+                          <DetailItem label='Discount' icon={<Tag />}>
+                            <Badge colorScheme='red'>
+                              {currentProduct.discount}%
+                            </Badge>
+                          </DetailItem>
+                        )}
+
+                      <DetailItem label='Created' icon={<Calendar />}>
+                        <Text fontSize='sm'>
+                          {formatDate(currentProduct.createdAt || '')}
+                        </Text>
+                      </DetailItem>
+
+                      <DetailItem label='Updated' icon={<Calendar />}>
+                        <Text fontSize='sm'>
+                          {formatDate(currentProduct.updatedAt || '')}
+                        </Text>
+                      </DetailItem>
+                    </VStack>
                   </>
                 )}
               </VStack>
             </DrawerBody>
-            <DrawerFooter>
+            <DrawerFooter borderTopWidth='1px'>
               <Button variant='outline' mr={3} onClick={handleDrawerClose}>
                 {drawerState.isEditing ? 'Cancel' : 'Close'}
               </Button>
@@ -1001,7 +1088,7 @@ export default function VendorProducts() {
               variant='outline'
               onClick={handlePreviousPage}
               isDisabled={!pagination.hasPrev}
-              leftIcon={<ChevronLeft />}
+              leftIcon={<ChevronLeft size={16} />}
             >
               Previous
             </Button>
@@ -1015,7 +1102,7 @@ export default function VendorProducts() {
               variant='outline'
               onClick={handleNextPage}
               isDisabled={!pagination.hasNext}
-              rightIcon={<ChevronRight />}
+              rightIcon={<ChevronRight size={16} />}
             >
               Next
             </Button>

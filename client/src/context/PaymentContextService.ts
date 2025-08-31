@@ -8,6 +8,7 @@ import type {
   PaymentFilters,
   SinglePaymentResponse,
   UpdatePaymentStatusData,
+  VendorPaymentsResponse,
 } from '@/type/Payment';
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
@@ -134,5 +135,15 @@ export const useGetPaymentAnalytics = (period: string = '12months') => {
       await apiClient.authenticatedApiRequest<ApiResponse<PaymentAnalytics>>(
         endpoint
       ),
+  });
+};
+
+export const useGetVendorRelatedPayments = () => {
+  return useQuery<ApiResponse<VendorPaymentsResponse>, Error>({
+    queryKey: paymentKeys.analytics(),
+    queryFn: async () =>
+      await apiClient.authenticatedApiRequest<
+        ApiResponse<VendorPaymentsResponse>
+      >('/payments/analytics/vendor'),
   });
 };

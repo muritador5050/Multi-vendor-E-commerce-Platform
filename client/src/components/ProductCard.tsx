@@ -19,6 +19,7 @@ import {
   useWishlistStatus,
   useRemoveFromWishlist,
 } from '@/context/WishlistContextService';
+import { useIsAuthenticated } from '@/context/AuthContextService';
 
 interface ProductCardProps {
   product: Product;
@@ -31,7 +32,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const navigate = useNavigate();
   const toast = useToast();
-
+  const { isAuthenticated } = useIsAuthenticated();
   const addToCartMutation = useAddToCart();
   const isInCart = useIsInCart(product._id);
   const addToWishlist = useAddToWishlist();
@@ -43,6 +44,11 @@ export default function ProductCard({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/my-account');
+      return;
+    }
+
     addToCartMutation.mutate(
       {
         productId: product._id,
@@ -76,6 +82,11 @@ export default function ProductCard({
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate('/my-account');
+      return;
+    }
 
     const mutation = isInWishlist ? removeFromWishlist : addToWishlist;
     const successMessage = isInWishlist
