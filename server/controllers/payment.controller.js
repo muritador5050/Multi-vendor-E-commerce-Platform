@@ -199,6 +199,30 @@ class PaymentController {
       data: analytics,
     });
   }
+
+  static async getVendorPayments(req, res) {
+    try {
+      const vendorId = req.user.id;
+      const { payments, pagination } = await Payment.getVendorPayments(
+        vendorId,
+        req.query
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Vendor payments retrieved successfully',
+        data: {
+          payments,
+          pagination,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = PaymentController;

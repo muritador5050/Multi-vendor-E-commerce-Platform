@@ -734,6 +734,159 @@ orderSchema.methods.getPaymentStatus = async function () {
   return payment ? payment.status : null;
 };
 
+
+
+// Get orders containing products from a specific vendor
+orderSchema.statics.getVendorOrders = async function (vendorId, queryParams = {}) {
+  const {
+    page = 1,
+    limit = 10,
+    orderStatus,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    startDate,
+    endDate,
+  } = queryParams;
+
+  const matchStage = {
+    isDeleted: false,
+  };
+
+  if (orderStatus) matchStage.orderStatus = orderStatus;
+  
+  if (startDate || endDate) {
+    matchStage.createdAt = {};
+    if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+    if (endDate) matchStage.createdAt.$lte = new Date(endDate);
+  }
+
+  const pipeline = [
+    { $match: matchStage },
+    { $unwind: '$products' },
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'products.product',
+        foreignField: '_id',
+        as: 'productInfo',
+      },
+    },
+    { $unwind: '$productInfo' },
+    {
+      $match: {
+        'productInfo.vendor': new mongoose.Types.ObjectId(vendorId),
+      },
+    },
+    {
+      $group: {
+        _id: '$_id',
+        userId: { $first: '$userId' },
+        vendorProducts: {
+          $push: {
+            product: '$products.product',
+            quantity: '$products.quantity',
+            price: '$products.price',
+            productName: '$productInfo.name',
+            productImages: '$productInfo.images',
+          },
+        },
+        orderStatus: { $first: '$orderStatus' },
+        totalPrice: { $first: '$totalPrice' },
+        shippingCost: { $first: '$shippingCost' },
+        shippingAddress: { $first: '$shippingAddress' },
+        paymentMethod: { $first: '$paymentMethod' },
+        trackingNumber: { $first: '$trackingNumber' },
+        createdAt: { $first: '$createdAt' },
+        updatedAt: { $first: '$updatedAt' },
+      },
+    },
+    {
+      $addFields: {
+        vendorOrderTotal: {
+          $reduce: {
+            input: '$vendorProducts',
+            initialValue: 0,
+            in: {
+              $add: ['$$value', { $multiply: ['$$this.quantity', '$$this.price'] }]
+            }
+          }
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userInfo',
+      },
+    },
+    { $unwind: '$userInfo' },
+    {
+      $project: {
+        userId: 1,
+        userName: '$userInfo.name',
+        userEmail: '$userInfo.email',
+        vendorProducts: 1,
+        vendorOrderTotal: 1,
+        orderStatus: 1,
+        shippingAddress: 1,
+        paymentMethod: 1,
+        trackingNumber: 1,
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
+    { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
+    { $skip: (parseInt(page) - 1) * parseInt(limit) },
+    { $limit: parseInt(limit) },
+  ];
+
+  const countPipeline = [
+    { $match: matchStage },
+    { $unwind: '$products' },
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'products.product',
+        foreignField: '_id',
+        as: 'productInfo',
+      },
+    },
+    { $unwind: '$productInfo' },
+    {
+      $match: {
+        'productInfo.vendor': new mongoose.Types.ObjectId(vendorId),
+      },
+    },
+    {
+      $group: {
+        _id: '$_id',
+      },
+    },
+    { $count: 'total' },
+  ];
+
+  const [orders, totalResult] = await Promise.all([
+    this.aggregate(pipeline),
+    this.aggregate(countPipeline),
+  ]);
+
+  const total = totalResult[0]?.total || 0;
+
+  return {
+    orders,
+    pagination: {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      totalOrders: total,
+      hasNextPage: (parseInt(page) - 1) * parseInt(limit) + orders.length < total,
+      hasPrevPage: parseInt(page) > 1,
+    },
+  };
+};
+
+
 orderSchema.virtual('timeline').get(function () {
   return this.statusHistory
     .map((entry) => ({

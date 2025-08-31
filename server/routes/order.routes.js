@@ -216,6 +216,12 @@ router
   .get(asyncHandler(OrderController.getAllOrders));
 
 router.get(
+  '/analytics/vendor',
+  checkRole('vendor', 'read'),
+  asyncHandler(OrderController.getVendorOrders)
+);
+
+router.get(
   '/analytics/sales-by-date',
   checkRole('admin', 'read'),
   asyncHandler(OrderController.getDailySalesReport)

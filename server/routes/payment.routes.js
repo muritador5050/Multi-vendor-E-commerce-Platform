@@ -22,6 +22,12 @@ router.get(
 );
 
 router.get(
+  '/analytics/vendor',
+  checkRole('vendor', 'read'),
+  asyncHandler(PaymentController.getVendorPayments)
+);
+
+router.get(
   '/analytics',
   checkRole('admin', 'read'),
   asyncHandler(PaymentController.getPaymentAnalytics)

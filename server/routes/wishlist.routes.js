@@ -4,8 +4,6 @@ const router = express.Router();
 const { asyncHandler } = require('../utils/asyncHandler');
 const { authenticate } = require('../middlewares/authMiddleware');
 
-router.use(authenticate);
-
 /**
  * @openapi
  * /api/wishlist:
@@ -108,8 +106,8 @@ router.use(authenticate);
  */
 router
   .route('/')
-  .post(asyncHandler(WishlistController.addToWishlist))
-  .get(asyncHandler(WishlistController.getWishlist));
+  .post(authenticate, asyncHandler(WishlistController.addToWishlist))
+  .get(authenticate, asyncHandler(WishlistController.getWishlist));
 
 /**
  * @openapi
@@ -133,7 +131,11 @@ router
  *       '500':
  *         description: Internal server error
  */
-router.route('/count').get(asyncHandler(WishlistController.getWishlistCount));
+router.get(
+  '/count',
+  authenticate,
+  asyncHandler(WishlistController.getWishlistCount)
+);
 
 /**
  * @openapi
@@ -197,12 +199,16 @@ router.route('/count').get(asyncHandler(WishlistController.getWishlistCount));
  *       '500':
  *         description: Internal server error
  */
-router
-  .route('/:productId')
-  .delete(asyncHandler(WishlistController.removeFromWishlist));
+router.delete(
+  '/:productId',
+  authenticate,
+  asyncHandler(WishlistController.removeFromWishlist)
+);
 
-router
-  .route('/check/:productId')
-  .get(asyncHandler(WishlistController.checkWishlistStatus));
+router.get(
+  '/check/:productId',
+  authenticate,
+  asyncHandler(WishlistController.checkWishlistStatus)
+);
 
 module.exports = router;

@@ -919,4 +919,177 @@ paymentSchema.statics.syncOrderStatus = async function (
   }
 };
 
+// Get payments for vendor's products
+paymentSchema.statics.getVendorPayments = async function (
+  vendorId,
+  queryParams = {}
+) {
+  const {
+    page = 1,
+    limit = 10,
+    status,
+    paymentProvider,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    startDate,
+    endDate,
+  } = queryParams;
+
+  const matchStage = {};
+
+  if (status) matchStage.status = status;
+  if (paymentProvider) matchStage.paymentProvider = paymentProvider;
+
+  if (startDate || endDate) {
+    matchStage.createdAt = {};
+    if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+    if (endDate) matchStage.createdAt.$lte = new Date(endDate);
+  }
+
+  const pipeline = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'orderId',
+        foreignField: '_id',
+        as: 'order',
+      },
+    },
+    { $unwind: '$order' },
+    { $unwind: '$order.products' },
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'order.products.product',
+        foreignField: '_id',
+        as: 'productInfo',
+      },
+    },
+    { $unwind: '$productInfo' },
+    {
+      $match: {
+        'productInfo.vendor': new mongoose.Types.ObjectId(vendorId),
+      },
+    },
+    {
+      $group: {
+        _id: '$_id',
+        orderId: { $first: '$orderId' },
+        paymentProvider: { $first: '$paymentProvider' },
+        paymentId: { $first: '$paymentId' },
+        status: { $first: '$status' },
+        paidAt: { $first: '$paidAt' },
+        createdAt: { $first: '$createdAt' },
+        updatedAt: { $first: '$updatedAt' },
+        userId: { $first: '$userId' },
+        vendorProducts: {
+          $push: {
+            product: '$order.products.product',
+            productName: '$productInfo.name',
+            quantity: '$order.products.quantity',
+            price: '$order.products.price',
+            total: {
+              $multiply: ['$order.products.quantity', '$order.products.price'],
+            },
+          },
+        },
+        vendorAmount: {
+          $sum: {
+            $multiply: ['$order.products.quantity', '$order.products.price'],
+          },
+        },
+        totalPaymentAmount: { $first: '$amount' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userInfo',
+      },
+    },
+    { $unwind: '$userInfo' },
+    {
+      $project: {
+        orderId: 1,
+        paymentProvider: 1,
+        paymentId: 1,
+        status: 1,
+        paidAt: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        userName: '$userInfo.name',
+        userEmail: '$userInfo.email',
+        vendorProducts: 1,
+        vendorAmount: 1,
+        totalPaymentAmount: 1,
+        vendorPercentage: {
+          $multiply: [
+            { $divide: ['$vendorAmount', '$totalPaymentAmount'] },
+            100,
+          ],
+        },
+      },
+    },
+    { $sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 } },
+    { $skip: (parseInt(page) - 1) * parseInt(limit) },
+    { $limit: parseInt(limit) },
+  ];
+
+  const countPipeline = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'orderId',
+        foreignField: '_id',
+        as: 'order',
+      },
+    },
+    { $unwind: '$order' },
+    { $unwind: '$order.products' },
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'order.products.product',
+        foreignField: '_id',
+        as: 'productInfo',
+      },
+    },
+    { $unwind: '$productInfo' },
+    {
+      $match: {
+        'productInfo.vendor': new mongoose.Types.ObjectId(vendorId),
+      },
+    },
+    {
+      $group: {
+        _id: '$_id',
+      },
+    },
+    { $count: 'total' },
+  ];
+
+  const [payments, totalResult] = await Promise.all([
+    this.aggregate(pipeline),
+    this.aggregate(countPipeline),
+  ]);
+
+  const total = totalResult[0]?.total || 0;
+
+  return {
+    payments,
+    pagination: {
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(limit)),
+      totalPayments: total,
+      hasNextPage:
+        (parseInt(page) - 1) * parseInt(limit) + payments.length < total,
+      hasPrevPage: parseInt(page) > 1,
+    },
+  };
+};
+
 module.exports = mongoose.model('Payment', paymentSchema);
