@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import  { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Flex,
@@ -25,6 +25,7 @@ import {
   Truck,
   Users,
   Ambulance,
+  type LucideIcon,
 } from 'lucide-react';
 
 import {
@@ -69,7 +70,7 @@ interface FormData {
 
 interface TabItem {
   name: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon
 }
 
 const tabName: TabItem[] = [

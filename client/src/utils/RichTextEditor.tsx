@@ -40,7 +40,7 @@ export default function RichTextEditor({
         toolbar:
           'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
       }}
-      onEditorChange={(content) => onChange(content)}
+      onEditorChange={(content: string) => onChange(content)}
     />
   );
 }
