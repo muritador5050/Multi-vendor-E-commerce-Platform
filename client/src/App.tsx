@@ -52,11 +52,11 @@ function App() {
           <Route path='checkout' element={<CheckoutPage />} />
           <Route path='payments' element={<PaymentPage />} />
           <Route
-            path='/payment/success/:provider'
+            path='/payments/success/:provider'
             element={<PaymentSuccessPage />}
           />
           <Route
-            path='/payment/cancel/:provider'
+            path='/payments/cancel/:provider'
             element={<PaymentFailedPage />}
           />
           <Route
