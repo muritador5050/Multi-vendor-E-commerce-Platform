@@ -41,16 +41,16 @@ function App() {
       <Routes>
         <Route path='/' element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path='blog' element={<BlogPage />} />
+          <Route path='blogs' element={<BlogPage />} />
           <Route path='shop' element={<ShopPage />} />
           <Route
             path='products/category/:slug'
             element={<ProductCategoryPage />}
           />
           <Route path='product/:id' element={<ProductDetail />} />
-          <Route path='cart' element={<CartList />} />
+          <Route path='carts' element={<CartList />} />
           <Route path='checkout' element={<CheckoutPage />} />
-          <Route path='payment' element={<PaymentPage />} />
+          <Route path='payments' element={<PaymentPage />} />
           <Route
             path='/payment-success/:provider'
             element={<PaymentSuccessPage />}
@@ -60,7 +60,7 @@ function App() {
             element={<PaymentFailedPage />}
           />
           <Route
-            path='/orders/:orderId/tracking'
+            path='/orders/:orderId/track'
             element={<OrderTrackingPage />}
           />
           <Route path='orders' element={<OrdersPage />} />
@@ -89,8 +89,11 @@ function App() {
             }
           />
           <Route path='contact-us' element={<ContactUs />} />
-          <Route path='wishlist' element={<WishList />} />
-          <Route path='vendor-register' element={<VendorRegistration />} />
+          <Route path='wishlists' element={<WishList />} />
+          <Route
+            path='/users/register/vendor'
+            element={<VendorRegistration />}
+          />
           <Route
             path='*'
             element={
@@ -100,13 +103,16 @@ function App() {
             }
           />
           <Route path='my-account' element={<AccountPage />} />
-          <Route path='auth/forgot-password' element={<ForgotPasswordForm />} />
           <Route
-            path='auth/reset-password/:token'
+            path='/users/forgot-password'
+            element={<ForgotPasswordForm />}
+          />
+          <Route
+            path='/users/reset-password/:token'
             element={<ResetPasswordForm />}
           />
           <Route
-            path='auth/verify-email/:token'
+            path='/users/verify-email/:token'
             element={<EmailVerificationPage />}
           />
         </Route>

@@ -196,7 +196,7 @@ const SellWithUs = () => {
                 color='teal.900'
                 _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
                 rightIcon={<Icon as={FaArrowRight} />}
-                onClick={() => navigate('/vendor-register/?plan=starter')}
+                onClick={() => navigate('/register/vendor/?plan=starter')}
               >
                 Get Started Free
               </Button>
@@ -385,7 +385,7 @@ const SellWithUs = () => {
                         variant={plan.popular ? 'solid' : 'outline'}
                         size='lg'
                         onClick={() =>
-                          navigate(`/vendor-register/?${plan.planRoute}`)
+                          navigate(`/register/vendor/?${plan.planRoute}`)
                         }
                       >
                         Get Started
@@ -465,7 +465,7 @@ const SellWithUs = () => {
                 color='teal.900'
                 _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
                 rightIcon={<Icon as={FaArrowRight} />}
-                onClick={() => navigate('/vendor-register/?plan=starter')}
+                onClick={() => navigate('/register/vendor/?plan=starter')}
               >
                 Start Selling Now
               </Button>

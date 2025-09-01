@@ -23,6 +23,7 @@ import { useState } from 'react';
 export default function ForgotPasswordForm() {
   const toast = useToast();
   const [email, setEmail] = useState('');
+
   const forgotPassword = useForgotPassword({
     onSuccess: () => {
       toast({

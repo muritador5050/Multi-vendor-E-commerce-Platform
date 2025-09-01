@@ -190,7 +190,7 @@ export default function CartDrawer({ onClose }: CartDrawerProp) {
                   colorScheme='white'
                   px='30px'
                   onClick={() => {
-                    setTimeout(() => navigate('/cart'), 100);
+                    setTimeout(() => navigate('/carts'), 100);
                     onClose();
                   }}
                 >

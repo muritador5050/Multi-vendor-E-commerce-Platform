@@ -106,7 +106,7 @@ const CheckoutPage = () => {
         position: 'top-right',
         duration: 3000,
       });
-      navigate('/cart');
+      navigate('/carts');
     }
 
     if (isBuyNow && !buyNowProduct) {
@@ -196,7 +196,7 @@ const CheckoutPage = () => {
         finalOrderData
       );
 
-      navigate('/payment', {
+      navigate('/payments', {
         state: {
           orderId: createdOrder.data?._id,
           amount: totalAmount,
@@ -228,7 +228,7 @@ const CheckoutPage = () => {
     if (isBuyNow) {
       navigate(-1); // Go back to product page
     } else {
-      navigate('/cart'); // Go back to cart
+      navigate('/carts');
     }
   };
 

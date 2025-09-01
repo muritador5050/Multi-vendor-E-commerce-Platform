@@ -137,7 +137,7 @@ export default function LoginForm() {
 
           <Button
             as={RouterLink}
-            to='/auth/forgot-password'
+            to='/users/forgot-password'
             variant='link'
             size='sm'
             colorScheme='teal'

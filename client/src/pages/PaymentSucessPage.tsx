@@ -55,7 +55,6 @@ const PaymentSuccessPage = () => {
   // Extract payment details from URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    console.log('URL Params:', Object.fromEntries(urlParams));
 
     // Get provider and order ID
     const detectedProvider = urlParams.get('provider');
@@ -76,12 +75,6 @@ const PaymentSuccessPage = () => {
         urlParams.get('trxref') ||
         urlParams.get('payment_id');
     }
-
-    console.log('Extracted payment details:', {
-      paymentId: extractedPaymentId,
-      provider: detectedProvider,
-      orderId: detectedOrderId,
-    });
 
     setPaymentId(extractedPaymentId);
     setProvider(detectedProvider);

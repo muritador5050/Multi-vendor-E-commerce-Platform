@@ -172,7 +172,7 @@ const PaymentFailedPage = () => {
   };
 
   const handleBackToCart = () => {
-    navigate('/cart');
+    navigate('/carts');
   };
 
   const handleBackToCheckout = () => {

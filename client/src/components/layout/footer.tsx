@@ -35,7 +35,7 @@ const Footer = () => {
               <Link as={RouterLink} to='/shop' fontSize='sm'>
                 Products
               </Link>
-              <Link as={RouterLink} to='/about' fontSize='sm'>
+              <Link as={RouterLink} to='/how-it-works' fontSize='sm'>
                 About Us
               </Link>
               <Link as={RouterLink} to='/contact-us' fontSize='sm'>
@@ -48,16 +48,16 @@ const Footer = () => {
           <Stack spacing={6}>
             <Text fontWeight='bold'>Support</Text>
             <VStack spacing={2} align='start'>
-              <Link as={RouterLink} to='/help' fontSize='sm'>
+              <Link as={RouterLink} to='#' fontSize='sm'>
                 Help Center
               </Link>
-              <Link as={RouterLink} to='/services' fontSize='sm'>
+              <Link as={RouterLink} to='#' fontSize='sm'>
                 Terms of Service
               </Link>
-              <Link as={RouterLink} to='/policy' fontSize='sm'>
+              <Link as={RouterLink} to='#' fontSize='sm'>
                 Privacy Policy
               </Link>
-              <Link as={RouterLink} to='/returns' fontSize='sm'>
+              <Link as={RouterLink} to='#' fontSize='sm'>
                 Returns
               </Link>
             </VStack>

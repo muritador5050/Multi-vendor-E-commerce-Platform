@@ -233,7 +233,7 @@ const OrdersPage = () => {
                   variant='outline'
                   size='sm'
                   colorScheme='white'
-                  onClick={() => navigate(`/orders/${order._id}/tracking`)}
+                  onClick={() => navigate(`/orders/${order._id}/track`)}
                 >
                   Track Order
                 </Button>

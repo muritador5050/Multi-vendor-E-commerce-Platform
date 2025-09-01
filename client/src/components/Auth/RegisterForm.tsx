@@ -36,6 +36,7 @@ export default function RegisterForm() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const registerMutation = useRegister({
     onSuccess: () => {
       toast({

@@ -4,7 +4,7 @@ import * as React from 'react';
 
 export interface TooltipProps extends Omit<ChakraTooltipProps, 'label'> {
   showArrow?: boolean;
-  portalled?: boolean; // Note: Chakra v2 uses a prop called `usePortal`, not `portalled`
+  portalled?: boolean;
   content: string;
   disabled?: boolean;
 }

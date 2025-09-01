@@ -34,10 +34,10 @@ export const useAvatarUpload = (onAvatarChange: (url: string) => void) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 15 * 1024 * 1024) {
       toast({
         title: 'File too large',
-        description: 'Please select an image smaller than 5MB',
+        description: 'Please select an image smaller than 15MB',
         status: 'info',
         position: 'top-right',
         duration: 3000,

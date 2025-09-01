@@ -34,7 +34,6 @@ function OAuthCallback() {
     useState<LoadingStage>('authenticating');
   const [progress, setProgress] = useState(0);
 
-  // Memory leak fix: store timeout IDs to clear them on unmount
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
@@ -51,11 +50,9 @@ function OAuthCallback() {
         setProgress(stageProgress);
       }, delay);
 
-      // Store timeout ID for cleanup
       timeoutsRef.current.push(timeoutId);
     });
 
-    // Cleanup function to clear all timeouts
     return () => {
       timeoutsRef.current.forEach(clearTimeout);
       timeoutsRef.current = [];

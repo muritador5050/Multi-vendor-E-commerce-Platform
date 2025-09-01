@@ -42,7 +42,7 @@ async function register(
   password: string,
   confirmPassword: string
 ) {
-  return apiClient.publicApiRequest<ApiResponse<null>>('/auth/register', {
+  return apiClient.publicApiRequest<ApiResponse<null>>('/users/register', {
     method: 'POST',
     body: JSON.stringify({ name, email, password, confirmPassword }),
   });
@@ -58,7 +58,7 @@ async function registerVendor(
   confirmPassword: string
 ) {
   return apiClient.publicApiRequest<ApiResponse<null>>(
-    '/auth/vendor-register',
+    '/users/register/vendor',
     {
       method: 'POST',
       body: JSON.stringify({ name, email, password, confirmPassword }),
@@ -69,10 +69,9 @@ async function registerVendor(
 /**
  * Login user with email and password
  */
-// In AuthContextService login function - ADD this line:
 async function login(email: string, password: string, rememberMe: boolean) {
   const response = await apiClient.publicApiRequest<ApiResponse<AuthResponse>>(
-    '/auth/login',
+    '/users/login',
     {
       method: 'POST',
       body: JSON.stringify({ email, password, rememberMe }),
@@ -104,7 +103,7 @@ async function login(email: string, password: string, rememberMe: boolean) {
 async function googleLogin() {
   window.location.href = `${
     apiBase || 'http://localhost:8000/api'
-  }/auth/google-signup`;
+  }/users/google-signup`;
 }
 
 /**
@@ -113,7 +112,7 @@ async function googleLogin() {
 async function logout() {
   try {
     const response = await apiClient.authenticatedApiRequest<ApiResponse<null>>(
-      '/auth/logout',
+      '/users/logout',
       {
         method: 'POST',
       }
@@ -131,7 +130,7 @@ async function logout() {
  */
 async function forgotPassword(email: string) {
   return apiClient.publicApiRequest<ApiResponse<null>>(
-    '/auth/forgot-password',
+    '/users/forgot-password',
     {
       method: 'POST',
       body: JSON.stringify({ email }),
@@ -144,7 +143,7 @@ async function forgotPassword(email: string) {
  */
 async function resetPassword(token: string, password: string) {
   return apiClient.publicApiRequest<ApiResponse<null>>(
-    `/auth/reset-password/${token}`,
+    `/users/reset-password/${token}`,
     {
       method: 'POST',
       body: JSON.stringify({ password }),
@@ -157,7 +156,7 @@ async function resetPassword(token: string, password: string) {
  */
 async function verifyEmail(token: string) {
   return apiClient.publicApiRequest<ApiResponse<null>>(
-    `/auth/verify-email/${token}`,
+    `/users/verify-email/${token}`,
     {
       method: 'GET',
     }
@@ -166,7 +165,7 @@ async function verifyEmail(token: string) {
 
 async function sendEmailVerificationLink() {
   return await apiClient.authenticatedApiRequest<ApiResponse<null>>(
-    '/auth/resend-verification',
+    '/users/resend-verification',
     {
       method: 'POST',
     }
@@ -180,7 +179,7 @@ async function fetchUsers(
   params: UserQueryParams = {}
 ): Promise<ApiResponse<PaginatedUsers>> {
   const queryString = buildQueryString(params);
-  const url = `/auth/users${queryString ? `?${queryString}` : ''}`;
+  const url = `/users${queryString ? `?${queryString}` : ''}`;
   return await apiClient.authenticatedApiRequest<ApiResponse<PaginatedUsers>>(
     url
   );
@@ -191,13 +190,13 @@ async function fetchUsers(
  */
 async function getUserById(id: string) {
   return apiClient.authenticatedApiRequest<ApiResponse<UserStatus>>(
-    `/auth/users/${id}`
+    `/users/${id}`
   );
 }
 /**Toggle user verification */
 async function verifyUser(id: string) {
   return apiClient.authenticatedApiRequest<ApiResponse<User>>(
-    `/auth/verify-user/${id}`,
+    `/users/verify/${id}`,
     {
       method: 'PATCH',
     }
@@ -209,7 +208,7 @@ async function verifyUser(id: string) {
  */
 async function getProfile() {
   return apiClient.authenticatedApiRequest<ApiResponse<ProfileData>>(
-    '/auth/profile'
+    '/users/profile'
   );
 }
 
@@ -218,7 +217,7 @@ async function getProfile() {
  */
 async function updateUserProfile(id: string, data: Partial<User>) {
   return apiClient.authenticatedApiRequest<ApiResponse<Partial<User>>>(
-    `/auth/users/${id}`,
+    `/users/${id}`,
     {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -230,7 +229,7 @@ async function updateUserProfile(id: string, data: Partial<User>) {
  * Delete a user account
  */
 async function deleteUser(id: string) {
-  return apiClient.authenticatedApiRequest(`/auth/users/${id}`, {
+  return apiClient.authenticatedApiRequest(`/users/${id}`, {
     method: 'DELETE',
   });
 }
@@ -240,7 +239,7 @@ async function deleteUser(id: string) {
  */
 async function deactivateUser(id: string) {
   return apiClient.authenticatedApiRequest<ApiResponse<UserStatusUpdate>>(
-    `/auth/users/${id}/deactivate`,
+    `/users/${id}/deactivate`,
     {
       method: 'PATCH',
     }
@@ -252,7 +251,7 @@ async function deactivateUser(id: string) {
  */
 async function activateUser(id: string) {
   return apiClient.authenticatedApiRequest<ApiResponse<UserStatusUpdate>>(
-    `/auth/users/${id}/activate`,
+    `/users/${id}/activate`,
     {
       method: 'PATCH',
     }
@@ -267,7 +266,7 @@ async function invalidateUserTokens(id: string, reason?: string) {
   const requestBody = reason ? { reason } : {};
   return apiClient.authenticatedApiRequest<
     ApiResponse<{ invalidatedAt: string; reason: string }>
-  >(`/auth/users/${id}/invalidate-tokens`, {
+  >(`/users/${id}/invalidate-tokens`, {
     method: 'POST',
     body: JSON.stringify(requestBody),
   });
@@ -278,7 +277,7 @@ async function invalidateUserTokens(id: string, reason?: string) {
  */
 async function getUserStatus(id: string) {
   return apiClient.authenticatedApiRequest<ApiResponse<UserStatus>>(
-    `/auth/users/${id}/status`
+    `/users/${id}/status`
   );
 }
 
@@ -287,11 +286,29 @@ async function getUserStatus(id: string) {
  */
 function getOnlineUsers() {
   return apiClient.authenticatedApiRequest<ApiResponse<User[]>>(
-    '/auth/online-users',
+    '/users/online',
     {
       method: 'GET',
     }
   );
+}
+
+/**
+ * Upload file to server
+ */
+async function uploadAvatar<T = unknown>(file: File) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return apiClient.authenticatedApiRequest<ApiResponse<T>>('/users/avatar', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+async function deleteAvatar() {
+  return apiClient.authenticatedApiRequest(`/users/avatar`, {
+    method: 'DELETE',
+  });
 }
 
 /**
@@ -328,21 +345,6 @@ function validateRegistration(
 
   const matchError = validators.passwordMatch(password, confirmPassword);
   if (matchError) throw new ApiError(matchError, 400);
-}
-
-/**
- * Upload file to server
- */
-async function uploadAvatar<T = unknown>(file: File) {
-  const formData = new FormData();
-  formData.append('avatar', file);
-  return apiClient.authenticatedApiRequest<ApiResponse<T>>(
-    '/auth/users/avatar',
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
 }
 
 /**
@@ -800,6 +802,19 @@ export const useUploadAvatar = () => {
   return useMutation({
     mutationFn: async (file: File) => {
       const response = await uploadAvatar(file);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+    },
+  });
+};
+
+export const useDeleteAvatar = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await deleteAvatar();
       return response;
     },
     onSuccess: () => {

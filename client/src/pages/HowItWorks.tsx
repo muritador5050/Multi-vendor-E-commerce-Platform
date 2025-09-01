@@ -260,7 +260,7 @@ const HowItWorks = () => {
                 color='purple.900'
                 _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
                 rightIcon={<Icon as={FaArrowRight} />}
-                onClick={() => navigate('/vendor-register')}
+                onClick={() => navigate('/register/vendor')}
               >
                 Start Your Journey
               </Button>
@@ -532,7 +532,7 @@ const HowItWorks = () => {
                 color='purple.900'
                 _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
                 rightIcon={<Icon as={FaArrowRight} />}
-                onClick={() => navigate('/vendor-register')}
+                onClick={() => navigate('/register/vendor')}
               >
                 Get Started Free
               </Button>

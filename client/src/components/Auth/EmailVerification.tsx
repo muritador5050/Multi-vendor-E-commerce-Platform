@@ -36,7 +36,6 @@ export function EmailVerificationPage() {
         isClosable: true,
       });
 
-      // Navigate after a delay to let user see success message
       setTimeout(() => navigate('/my-account', { replace: true }), 3000);
     },
     onError: (error) => {
