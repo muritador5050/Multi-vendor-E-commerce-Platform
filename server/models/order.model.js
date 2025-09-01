@@ -734,10 +734,11 @@ orderSchema.methods.getPaymentStatus = async function () {
   return payment ? payment.status : null;
 };
 
-
-
 // Get orders containing products from a specific vendor
-orderSchema.statics.getVendorOrders = async function (vendorId, queryParams = {}) {
+orderSchema.statics.getVendorOrders = async function (
+  vendorId,
+  queryParams = {}
+) {
   const {
     page = 1,
     limit = 10,
@@ -753,7 +754,7 @@ orderSchema.statics.getVendorOrders = async function (vendorId, queryParams = {}
   };
 
   if (orderStatus) matchStage.orderStatus = orderStatus;
-  
+
   if (startDate || endDate) {
     matchStage.createdAt = {};
     if (startDate) matchStage.createdAt.$gte = new Date(startDate);
@@ -807,11 +808,14 @@ orderSchema.statics.getVendorOrders = async function (vendorId, queryParams = {}
             input: '$vendorProducts',
             initialValue: 0,
             in: {
-              $add: ['$$value', { $multiply: ['$$this.quantity', '$$this.price'] }]
-            }
-          }
-        }
-      }
+              $add: [
+                '$$value',
+                { $multiply: ['$$this.quantity', '$$this.price'] },
+              ],
+            },
+          },
+        },
+      },
     },
     {
       $lookup: {
@@ -880,12 +884,12 @@ orderSchema.statics.getVendorOrders = async function (vendorId, queryParams = {}
       currentPage: parseInt(page),
       totalPages: Math.ceil(total / parseInt(limit)),
       totalOrders: total,
-      hasNextPage: (parseInt(page) - 1) * parseInt(limit) + orders.length < total,
+      hasNextPage:
+        (parseInt(page) - 1) * parseInt(limit) + orders.length < total,
       hasPrevPage: parseInt(page) > 1,
     },
   };
 };
-
 
 orderSchema.virtual('timeline').get(function () {
   return this.statusHistory

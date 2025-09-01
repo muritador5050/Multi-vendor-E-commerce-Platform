@@ -28,7 +28,7 @@ class EmailService {
   }
 
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/users/verify-email/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -91,7 +91,7 @@ class EmailService {
   }
 
   async sendResendVerificationEmail(user, token) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/users/verify-email/${token}`;
 
     const html = `
     <!DOCTYPE html>
@@ -196,7 +196,7 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(user, token) {
-    const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password/${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/users/reset-password/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -725,12 +725,10 @@ class EmailService {
       orderStatus,
       trackingNumber,
       estimatedDelivery,
-      deliveredAt,
-      products = [], // This defaults to empty array but the issue is deeper
+      products = [],
       totalPrice,
     } = orderData;
 
-    // Add validation to ensure we have the required data
     if (!orderData || !userId || !orderId) {
       console.error('Missing required order data:', {
         orderData,
@@ -740,15 +738,12 @@ class EmailService {
       throw new Error('Missing required order data');
     }
 
-    // Ensure products is an array, even if it comes as undefined/null
     const safeProducts = Array.isArray(products) ? products : [];
 
-    // If products is empty, we should log this for debugging
     if (safeProducts.length === 0) {
       console.warn(`Order ${orderId} has no products array or empty products`);
     }
 
-    // Format dates with error handling
     const formattedOrderDate = orderData.createdAt
       ? new Date(orderData.createdAt).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -765,7 +760,6 @@ class EmailService {
         })
       : null;
 
-    // Status-specific content
     let statusTitle,
       statusMessage,
       nextSteps,
@@ -816,8 +810,8 @@ class EmailService {
         nextSteps = ['Contact our support team if you have any questions'];
     }
 
-    const trackOrderUrl = `${process.env.FRONTEND_URL}/track-order/${orderId}`;
-    const contactUrl = `${process.env.FRONTEND_URL}/contact`;
+    const trackOrderUrl = `${process.env.FRONTEND_URL}/orders/${orderId}/track`;
+    const contactUrl = `${process.env.FRONTEND_URL}/contact-us`;
     const shopUrl = process.env.FRONTEND_URL;
 
     // Safely handle user data

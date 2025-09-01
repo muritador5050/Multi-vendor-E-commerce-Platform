@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const cache = require('apicache').middleware;
 const { authLimiter } = require('../middlewares/rateLimiter');
 
 //Routes
 router.use(
-  '/api/auth',
+  '/api/users',
   // authLimiter,
   require('./user.routes')
 );
@@ -19,6 +18,5 @@ router.use('/api/carts', require('./cart.routes'));
 router.use('/api/wishlists', require('./wishlist.routes'));
 router.use('/api/blogs', require('./blog.routes'));
 router.use('/api/settings', require('./settings.routes'));
-router.use('/api/upload', require('./imageUpload.route'));
 
 module.exports = router;

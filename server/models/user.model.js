@@ -494,7 +494,7 @@ userSchema.methods.resetPassword = function (newPassword) {
 };
 
 userSchema.methods.processPasswordReset = async function (resetToken) {
-  const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
+  const resetLink = `${process.env.FRONTEND_URL}/users/reset-password/${resetToken}`;
   await EmailService.sendPasswordResetEmail(this, resetToken);
   return resetLink;
 };

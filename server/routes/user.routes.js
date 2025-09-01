@@ -8,12 +8,8 @@ const { validation } = require('../middlewares/validation.middleware');
 const { register, login } = require('../services/auth.validation');
 const { avatarUpload, handleUploadError } = require('../utils/FileUploads');
 const trackUserActivity = require('../middlewares/activityMiddleware');
+const requireEmailVerified = require('../middlewares/requireEmailVerified');
 
-// ============================================================================
-// PUBLIC ROUTES (No authentication required)
-// ============================================================================
-
-// Registration routes
 /**
  * @openapi
  * /api/auth/register:
@@ -70,32 +66,59 @@ router.post(
   asyncHandler(UserController.registerUser)
 );
 
+/**
+ * @openapi
+ * /auth/register/vendor:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new vendor
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserRegister'
+ *     responses:
+ *       201:
+ *         description: Vendor created successfully
+ */
 router.post(
-  '/vendor-register',
+  '/register/vendor',
   validation(register),
   asyncHandler(UserController.registerVendorUser)
 );
 
-// Login routes
 /**
  * @openapi
- * /api/auth/login:
+ * /auth/login:
  *   post:
- *     tags:
- *      - Auth
- *     summary: Login registered user
+ *     tags: [Auth]
+ *     summary: Login user
  *     requestBody:
- *         required: true
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserLogin'
+ *     responses:
+ *       200:
+ *         description: Login successful
  *         content:
  *           application/json:
  *             schema:
- *               $ref: "#/components/schemas/UserLogin"
- *   responses:
- *       200:
- *         content:
- *            accessToken:
- *               type: string
- *               example: hjuy574h47hfhfb367fbb290vbiuf9hgf
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/UserPublic'
+ *                     accessToken:
+ *                       type: string
  */
 router.post(
   '/login',
@@ -110,34 +133,25 @@ router.get('/google/callback', UserController.googleCallback);
 // Token management routes
 /**
  * @openapi
- * /api/auth/refresh-token:
+ * /auth/refresh-token:
  *   post:
- *     tags:
- *       - Auth
- *     summary: Refresh access token using refresh token
+ *     tags: [Auth]
+ *     summary: Refresh access token
  *     responses:
  *       200:
- *         description: Access token refreshed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
+ *         description: Token refreshed successfully
  */
 router.post('/refresh-token', asyncHandler(UserController.refreshToken));
 
 /**
  * @openapi
- * /api/auth/logout:
+ * /auth/logout:
  *   post:
- *     tags:
- *       - Auth
- *     summary: Logout user and clear refresh token and cookies
+ *     tags: [Auth]
+ *     summary: Logout user
  *     responses:
  *       200:
- *         description: User logged out successfully
+ *         description: Logout successful
  */
 router.post('/logout', asyncHandler(UserController.logOut));
 
@@ -252,7 +266,7 @@ router.get(
 
 // Avatar management routes
 router.post(
-  '/users/avatar',
+  '/avatar',
   authenticate,
   avatarUpload.single('avatar'),
   asyncHandler(UserController.uploadAvatar),
@@ -260,7 +274,7 @@ router.post(
 );
 
 router.delete(
-  '/delete-avatar',
+  '/avatar',
   authenticate,
   asyncHandler(UserController.deleteAvatar)
 );
@@ -274,7 +288,7 @@ router.post(
 
 // User self-management routes
 router.patch(
-  '/users/:id/deactivate',
+  '/:id/deactivate',
   authenticate,
   asyncHandler(UserController.deactivateUser)
 );
@@ -302,14 +316,31 @@ router.patch(
  *                 $ref: '#/components/schemas/UserPublic'
  */
 router.get(
-  '/users',
+  '/',
   authenticate,
   checkRole('admin', 'read'),
   asyncHandler(UserController.getAllUsers)
 );
 
+/**
+ * @openapi
+ * /users/online:
+ *   get:
+ *     tags: [Users]
+ *     summary: Get online users
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: minutes
+ *         in: query
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Online users retrieved
+ */
 router.get(
-  '/online-users',
+  '/online',
   authenticate,
   checkRole('admin', 'read'),
   asyncHandler(UserController.getOnlineUsers)
@@ -317,26 +348,26 @@ router.get(
 
 // Individual user management by admin
 router.get(
-  '/users/:id/status',
+  '/:id/status',
   authenticate,
   asyncHandler(UserController.getUserStatus)
 );
 
 router.post(
-  '/users/:id/invalidate-tokens',
+  '/:id/invalidate-tokens',
   authenticate,
   asyncHandler(UserController.invalidateUserTokens)
 );
 
 router.patch(
-  '/users/:id/activate',
+  '/:id/activate',
   authenticate,
   checkRole('admin', 'edit'),
   asyncHandler(UserController.activateUser)
 );
 
 router.patch(
-  '/verify-user/:id',
+  '/verify/:id',
   authenticate,
   checkRole('admin', 'edit'),
   asyncHandler(UserController.verifyUserByAdmin)
@@ -344,29 +375,63 @@ router.patch(
 
 /**
  * @openapi
- * /api/auth/users/{id}:
+ * /users/{id}:
  *   get:
- *     tags:
- *       - Auth
- *     summary: Get user by ID (Admin only)
+ *     tags: [Users]
+ *     summary: Get user by ID
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: User details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UserPublic'
+ *         description: User details retrieved
+ *   put:
+ *     tags: [Users]
+ *     summary: Update user profile
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *   delete:
+ *     tags: [Users]
+ *     summary: Delete user (Admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
  */
 router
-  .route('/users/:id')
+  .route('/:id')
   .get(authenticate, asyncHandler(UserController.getUserById))
-  .patch(authenticate, asyncHandler(UserController.updateUserProfile))
+  .patch(
+    authenticate,
+    requireEmailVerified,
+    asyncHandler(UserController.updateUserProfile)
+  )
   .delete(
     authenticate,
     checkRole('admin', 'delete'),
