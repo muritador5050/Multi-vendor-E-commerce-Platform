@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -62,12 +61,20 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (
-      FRONTEND_URL &&
-      (origin === FRONTEND_URL || FRONTEND_URL.includes(origin))
-    ) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL, // localhost:5173
+      process.env.FRONTEND_URL_PROD, // Vercel URL
+      'https://multi-vendor-e-commerce-platform.vercel.app',
+      'http://localhost:5173',
+    ].filter(Boolean);
+
+    console.log('Checking origin:', origin);
+    console.log('Allowed origins:', allowedOrigins);
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
