@@ -9,7 +9,7 @@ const passport = require('passport');
 
 // Local modules
 const { globalErrorHandler } = require('./utils/globalErrorHandler');
-const { FRONTEND_URL, NODE_ENV } = require('./configs');
+const { FRONTEND_URL, NODE_ENV, FRONTEND_URL_PROD } = require('./configs');
 const { connectDB } = require('./database/index');
 const { specs, swaggerUi } = require('./swagger');
 const { generalLimiter } = require('./middlewares/rateLimiter');
@@ -61,12 +61,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    const allowedOrigins = [
-      process.env.FRONTEND_URL, // localhost:5173
-      process.env.FRONTEND_URL_PROD, // Vercel URL
-      'https://multi-vendor-e-commerce-platform.vercel.app',
-      'http://localhost:5173',
-    ].filter(Boolean);
+    const allowedOrigins = [FRONTEND_URL, FRONTEND_URL_PROD].filter(Boolean);
 
     console.log('Checking origin:', origin);
     console.log('Allowed origins:', allowedOrigins);

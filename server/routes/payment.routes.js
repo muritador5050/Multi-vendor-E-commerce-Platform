@@ -9,22 +9,6 @@ const requireEmailVerified = require('../middlewares/requireEmailVerified');
 router.post('/webhooks/stripe', PaymentController.processWebhooks);
 router.post('/webhooks/paystack', PaymentController.processWebhooks);
 
-router.get('/success/:provider', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Payment page accessed',
-    provider: req.params.provider,
-  });
-});
-
-router.get('/cancel/:provider', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Payment cancel page accessed',
-    provider: req.params.provider,
-  });
-});
-
 router.use(authenticate, requireEmailVerified);
 
 router.post('/', asyncHandler(PaymentController.createPayment));
