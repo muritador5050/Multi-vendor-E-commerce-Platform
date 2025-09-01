@@ -1,4 +1,3 @@
-import React from 'react';
 import GalleryFileUpload from '@/utils/GalleryFileUpload';
 import RichTextEditor from '@/utils/RichTextEditor';
 import {

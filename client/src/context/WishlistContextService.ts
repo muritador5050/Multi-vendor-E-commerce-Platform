@@ -94,7 +94,6 @@ export const useAddToWishlist = () => {
         productId,
       ]);
 
-      // Optimistically update count - Fix: Handle ApiResponse<number> correctly
       queryClient.setQueryData(
         ['wishlist-count'],
         (old: ApiResponse<number> | undefined) => {
@@ -103,7 +102,6 @@ export const useAddToWishlist = () => {
         }
       );
 
-      // Optimistically update status - Fix: Handle ApiResponse<boolean> correctly
       queryClient.setQueryData(
         ['wishlist-status', productId],
         (old: ApiResponse<boolean> | undefined) => {
@@ -114,7 +112,7 @@ export const useAddToWishlist = () => {
 
       return { previousCount, previousStatus };
     },
-    onError: (err, productId, context) => {
+    onError: (_err, productId, context) => {
       // Rollback on error
       if (context?.previousCount) {
         queryClient.setQueryData(['wishlist-count'], context.previousCount);
@@ -134,7 +132,6 @@ export const useAddToWishlist = () => {
   });
 };
 
-// Enhanced removeFromWishlist with correct types
 export const useRemoveFromWishlist = () => {
   const queryClient = useQueryClient();
 
@@ -187,7 +184,7 @@ export const useRemoveFromWishlist = () => {
 
       return { previousWishlist, previousCount, previousStatus };
     },
-    onError: (err, productId, context) => {
+    onError: (_err, productId, context) => {
       // Rollback on error
       if (context?.previousWishlist) {
         queryClient.setQueryData(['wishlist'], context.previousWishlist);

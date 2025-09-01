@@ -154,7 +154,7 @@ export default function PaymentsContent() {
     onStatusOpen();
   };
 
-  const executeAction = (action: string, successMessage: string) => {
+  const executeAction = (_action: string, successMessage: string) => {
     setTimeout(() => {
       toast({
         title: 'Success',

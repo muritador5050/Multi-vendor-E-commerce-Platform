@@ -11,18 +11,6 @@ export const validators = {
     if (!password) return 'Password is required';
     if (password.length < 8)
       return 'Password must be at least 8 characters long';
-
-    const checks = [
-      { test: /[A-Z]/, msg: 'uppercase letter' },
-      { test: /[a-z]/, msg: 'lowercase letter' },
-      { test: /\d/, msg: 'number' },
-      { test: /\W/, msg: 'special character' },
-    ];
-
-    // const missing = checks.filter((check) => !check.test.test(password));
-    // if (missing.length) {
-    //   return `Password must contain: ${missing.map((m) => m.msg).join(', ')}`;
-    // }
     return null;
   },
 

@@ -69,31 +69,6 @@ interface OrderStatusCardProps {
   color: string;
 }
 
-// Sample data - replace with your actual API data
-// const salesByDateData = [
-//   { _id: '2025-08-14', totalSales: 615.99, orders: 1 },
-//   { _id: '2025-08-16', totalSales: 970.99, orders: 1 },
-//   { _id: '2025-08-22', totalSales: 1710.89, orders: 11 },
-//   { _id: '2025-08-23', totalSales: 34.99, orders: 1 },
-//   { _id: '2025-08-27', totalSales: 951.95, orders: 5 },
-// ];
-
-// const orderStats = {
-//   overview: {
-//     totalOrders: 31,
-//     totalRevenue: 12186.5,
-//     averageOrderValue: 393.11290322580646,
-//     pendingOrders: 11,
-//     paidOrders: 15,
-//     processingOrders: 2,
-//     shippedOrders: 2,
-//     deliveredOrders: 0,
-//     cancelledOrders: 0,
-//     returnedOrders: 1,
-//     onHoldOrders: 0,
-//   },
-// };
-
 const OrderAnalytics = () => {
   const { data: salesByDateData } = useDailySalesReport();
   const { data: orderStats } = useOrderStats();

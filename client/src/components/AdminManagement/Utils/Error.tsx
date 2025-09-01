@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Text,
   Flex,
@@ -11,7 +10,18 @@ import {
   AlertDescription,
   useColorModeValue,
   useBreakpointValue,
+  type AlertProps,
 } from '@chakra-ui/react';
+
+interface ErrorUtilProps extends Omit<AlertProps, 'status'> {
+  title?: string;
+  message?: string;
+  status?: 'info' | 'warning' | 'success' | 'error' | 'loading';
+  supportText?: string;
+  showSupportText?: boolean;
+  minHeight?: { base: string; md: string };
+  maxWidth?: string;
+}
 
 export const ErrorUtil = ({
   title = 'Something went wrong',
@@ -22,8 +32,7 @@ export const ErrorUtil = ({
   minHeight = { base: '150px', md: '200px' },
   maxWidth = '7xl',
   ...alertProps
-}) => {
-  // Color mode values
+}: ErrorUtilProps) => {
   const cardBg = useColorModeValue('white', 'gray.700');
   const cardPadding = useBreakpointValue({ base: 4, md: 6 });
 
@@ -32,7 +41,7 @@ export const ErrorUtil = ({
       <Card bg={cardBg} borderRadius='xl' boxShadow='sm'>
         <CardBody>
           <Alert
-            status={status}
+            status={status} // ✅ no type error now
             borderRadius='lg'
             variant='left-accent'
             flexDirection='column'
