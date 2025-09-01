@@ -104,7 +104,7 @@ class ApiClient {
 
     try {
       const response = await this.fetchWithTimeout(
-        `${apiBase}/auth/refresh-token`,
+        `${apiBase}/users/refresh-token`,
         {
           method: 'POST',
           credentials: 'include',

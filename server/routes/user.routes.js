@@ -12,7 +12,7 @@ const requireEmailVerified = require('../middlewares/requireEmailVerified');
 
 /**
  * @openapi
- * /api/auth/register:
+ * /users/register:
  *   post:
  *     summary: Register a new user
  *     tags: [Auth]
@@ -68,7 +68,7 @@ router.post(
 
 /**
  * @openapi
- * /auth/register/vendor:
+ * /users/register/vendor:
  *   post:
  *     tags: [Auth]
  *     summary: Register a new vendor
@@ -90,7 +90,7 @@ router.post(
 
 /**
  * @openapi
- * /auth/login:
+ * /users/login:
  *   post:
  *     tags: [Auth]
  *     summary: Login user
@@ -133,7 +133,7 @@ router.get('/google/callback', UserController.googleCallback);
 // Token management routes
 /**
  * @openapi
- * /auth/refresh-token:
+ * /users/refresh-token:
  *   post:
  *     tags: [Auth]
  *     summary: Refresh access token
@@ -145,7 +145,7 @@ router.post('/refresh-token', asyncHandler(UserController.refreshToken));
 
 /**
  * @openapi
- * /auth/logout:
+ * /users/logout:
  *   post:
  *     tags: [Auth]
  *     summary: Logout user
