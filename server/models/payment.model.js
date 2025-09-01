@@ -6,6 +6,16 @@ const Order = require('./order.model');
 const Cart = require('./cart.model');
 const EmailService = require('../services/emailService');
 
+const getFrontendUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      process.env.FRONTEND_URL_PROD ||
+      'https://multi-vendor-e-commerce-platform.vercel.app'
+    );
+  }
+  return process.env.FRONTEND_URL || 'http://localhost:5173';
+};
+
 /**
  * @openapi
  * components:
@@ -119,8 +129,8 @@ paymentSchema.statics.createStripePayment = async function (
       },
     ],
     mode: 'payment',
-    success_url: `${process.env.FRONTEND_URL}/payment-success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-    cancel_url: `${process.env.FRONTEND_URL}/payment-cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
+    success_url: `${getFrontendUrl()}/payment-success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+    cancel_url: `${getFrontendUrl()}/payment-cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
     metadata: {
       idempotencyKey,
       orderId: orderId.toString(),
@@ -157,7 +167,7 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
     amount: amountInKobo,
     currency: 'NGN',
     reference: paymentReference,
-    callback_url: `${process.env.FRONTEND_URL}/payment-success/paystack?reference=${paymentReference}&order_id=${orderId}`,
+    callback_url: `${getFrontendUrl()}/payment-success/paystack?reference=${paymentReference}&order_id=${orderId}`,
     channels: [
       'card',
       'bank',
