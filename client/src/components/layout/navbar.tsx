@@ -314,7 +314,7 @@ function Navbar() {
             color='white'
           >
             <NavLink to='/'>Home</NavLink>
-            <NavLink to='blog'>Blog</NavLink>
+            <NavLink to='blogs'>Blog</NavLink>
             <NavLink to='shop'>Shop</NavLink>
             <NavLink to='store-manager'>Store Manager</NavLink>
             <NavLink to='sell-with-us'>Sell With Us</NavLink>
@@ -335,7 +335,7 @@ function Navbar() {
 
             <ChakraLink
               as={ReactRouterLink}
-              to={!isAuthenticated ? '/my-account' : '/wishlist'}
+              to={!isAuthenticated ? '/my-account' : '/wishlists'}
             >
               <IconButton
                 icon={<Heart />}
@@ -656,7 +656,7 @@ function Navbar() {
             <ChakraLink
               _hover={{ textDecoration: 'none' }}
               as={ReactRouterLink}
-              to='/vendor-register/?plan=starter'
+              to='/register/vendor/?plan=starter'
             >
               Become a vendor
             </ChakraLink>
@@ -679,7 +679,7 @@ function Navbar() {
               <NavLink to='/' onClick={leftDrawer.onClose}>
                 Home
               </NavLink>
-              <NavLink to='blog' onClick={leftDrawer.onClose}>
+              <NavLink to='blogs' onClick={leftDrawer.onClose}>
                 Blog
               </NavLink>
               <NavLink to='shop' onClick={leftDrawer.onClose}>
