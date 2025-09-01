@@ -90,10 +90,7 @@ function App() {
           />
           <Route path='contact-us' element={<ContactUs />} />
           <Route path='wishlists' element={<WishList />} />
-          <Route
-            path='/users/register/vendor'
-            element={<VendorRegistration />}
-          />
+          <Route path='/register/vendor' element={<VendorRegistration />} />
           <Route
             path='*'
             element={
