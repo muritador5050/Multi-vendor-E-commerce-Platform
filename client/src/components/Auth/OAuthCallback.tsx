@@ -34,7 +34,7 @@ function OAuthCallback() {
     useState<LoadingStage>('authenticating');
   const [progress, setProgress] = useState(0);
 
-  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const progressStages = [
