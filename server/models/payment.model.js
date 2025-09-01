@@ -129,8 +129,8 @@ paymentSchema.statics.createStripePayment = async function (
       },
     ],
     mode: 'payment',
-    success_url: `${getFrontendUrl()}/payment-success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
-    cancel_url: `${getFrontendUrl()}/payment-cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
+    success_url: `${getFrontendUrl()}/payment/success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}`,
+    cancel_url: `${getFrontendUrl()}/payment/cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
     metadata: {
       idempotencyKey,
       orderId: orderId.toString(),
@@ -167,7 +167,7 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
     amount: amountInKobo,
     currency: 'NGN',
     reference: paymentReference,
-    callback_url: `${getFrontendUrl()}/payment-success/paystack?reference=${paymentReference}&order_id=${orderId}`,
+    callback_url: `${getFrontendUrl()}/payment/success/paystack?reference=${paymentReference}&order_id=${orderId}`,
     channels: [
       'card',
       'bank',
