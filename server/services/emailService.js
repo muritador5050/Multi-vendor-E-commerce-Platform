@@ -1,6 +1,16 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+const getFrontendUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      process.env.FRONTEND_URL_PROD ||
+      'https://multi-vendor-e-commerce-platform.vercel.app'
+    );
+  }
+  return process.env.FRONTEND_URL || 'http://localhost:5173';
+};
+
 //Email service
 class EmailService {
   constructor() {
@@ -28,7 +38,7 @@ class EmailService {
   }
 
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/users/verify-email/${token}`;
+    const verificationUrl = `${getFrontendUrl()}/users/verify-email/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -91,7 +101,7 @@ class EmailService {
   }
 
   async sendResendVerificationEmail(user, token) {
-    const verificationUrl = `${process.env.FRONTEND_URL}/users/verify-email/${token}`;
+    const verificationUrl = `${getFrontendUrl()}/users/verify-email/${token}`;
 
     const html = `
     <!DOCTYPE html>
@@ -196,7 +206,7 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(user, token) {
-    const resetUrl = `${process.env.FRONTEND_URL}/users/reset-password/${token}`;
+    const resetUrl = `${getFrontendUrl()}/users/reset-password/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -245,7 +255,7 @@ class EmailService {
   }
 
   async sendAccountActivationEmail(user, reason = null) {
-    const loginUrl = `${process.env.FRONTEND_URL}/my-account`;
+    const loginUrl = `${getFrontendUrl()}/my-account`;
 
     const html = `
       <!DOCTYPE html>
@@ -308,7 +318,7 @@ class EmailService {
   }
 
   async sendAccountDeactivationEmail(user, reason = null) {
-    const supportUrl = `${process.env.FRONTEND_URL}/support`;
+    const supportUrl = `${getFrontendUrl()}/support`;
 
     const html = `
       <!DOCTYPE html>
@@ -371,7 +381,7 @@ class EmailService {
   }
 
   async sendVendorVerificationEmail(user, status, notes = null) {
-    const dashboardUrl = `${process.env.FRONTEND_URL}/store-manager`;
+    const dashboardUrl = `${getFrontendUrl()}/store-manager`;
     const supportEmail = process.env.SUPPORT_EMAIL || 'support@example.com';
 
     let html, text, subject;
@@ -810,9 +820,9 @@ class EmailService {
         nextSteps = ['Contact our support team if you have any questions'];
     }
 
-    const trackOrderUrl = `${process.env.FRONTEND_URL}/orders/${orderId}/track`;
-    const contactUrl = `${process.env.FRONTEND_URL}/contact-us`;
-    const shopUrl = process.env.FRONTEND_URL;
+    const trackOrderUrl = `${getFrontendUrl()}/orders/${orderId}/track`;
+    const contactUrl = `${getFrontendUrl()}/contact-us`;
+    const shopUrl = getFrontendUrl();
 
     // Safely handle user data
     const userName = userId?.name || 'Customer';
