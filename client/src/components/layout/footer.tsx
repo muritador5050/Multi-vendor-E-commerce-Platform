@@ -48,16 +48,16 @@ const Footer = () => {
           <Stack spacing={6}>
             <Text fontWeight='bold'>Support</Text>
             <VStack spacing={2} align='start'>
-              <Link as={RouterLink} to='#' fontSize='sm'>
+              <Link as={RouterLink} to='/help-center' fontSize='sm'>
                 Help Center
               </Link>
-              <Link as={RouterLink} to='#' fontSize='sm'>
+              <Link as={RouterLink} to='/terms-of-service' fontSize='sm'>
                 Terms of Service
               </Link>
-              <Link as={RouterLink} to='#' fontSize='sm'>
+              <Link as={RouterLink} to='privacy-policy' fontSize='sm'>
                 Privacy Policy
               </Link>
-              <Link as={RouterLink} to='#' fontSize='sm'>
+              <Link as={RouterLink} to='/returns' fontSize='sm'>
                 Returns
               </Link>
             </VStack>

@@ -115,14 +115,14 @@ export default function ProductCategoryPage() {
         <Stack flex={3} order={{ base: 0, md: 1 }} p={4}>
           {/* Results Header */}
           <Flex justifyContent='space-between' alignItems='center'>
-            <Text>
+            <Text display={{ base: 'none', md: 'flex' }}>
               {loading
                 ? 'Loading...'
                 : `Showing ${products.length} of ${totalResults} results`}
             </Text>
             <Select
               placeholder='Sort by'
-              w='20%'
+              w={{ base: 'full', md: '20%' }}
               value={sortBy}
               onChange={handleSortChange}
             >
@@ -142,7 +142,31 @@ export default function ProductCategoryPage() {
           )}
 
           {/* Products Grid */}
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+          <SimpleGrid
+            columns={{
+              base: 2,
+              sm: 2,
+              md: 3,
+              lg: 4,
+              xl: 5,
+              '2xl': 6,
+            }}
+            spacing={{
+              base: 2,
+              sm: 3,
+              md: 4,
+              lg: 5,
+              xl: 6,
+            }}
+            minChildWidth={{
+              base: '140px',
+              sm: '160px',
+              md: '180px',
+              lg: '200px',
+            }}
+            maxW='100%'
+            px={{ base: 2, sm: 4, md: 6 }}
+          >
             {products.map((product) => (
               <ProductCard
                 key={product._id}

@@ -30,6 +30,11 @@ import OrdersPage from './pages/OrdersPage';
 import BlogPage from './pages/BlogPage';
 import SellWithUs from './pages/SellWithUs';
 import HowItWorks from './pages/HowItWorks';
+import Support from './pages/Support';
+import HelpCenter from './pages/HelpCenter';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Returns from './pages/Returns';
 
 //App
 function App() {
@@ -43,6 +48,11 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path='blogs' element={<BlogPage />} />
           <Route path='shop' element={<ShopPage />} />
+          <Route path='support' element={<Support />} />
+          <Route path='help-center' element={<HelpCenter />} />
+          <Route path='terms-of-service' element={<TermsOfService />} />
+          <Route path='privacy-policy' element={<PrivacyPolicy />} />
+          <Route path='returns' element={<Returns />} />
           <Route
             path='products/category/:slug'
             element={<ProductCategoryPage />}
@@ -89,7 +99,7 @@ function App() {
             }
           />
           <Route path='contact-us' element={<ContactUs />} />
-          <Route path='wishlists' element={<WishList />} />
+          <Route path='/wishlists' element={<WishList />} />
           <Route path='/register/vendor' element={<VendorRegistration />} />
           <Route
             path='*'
