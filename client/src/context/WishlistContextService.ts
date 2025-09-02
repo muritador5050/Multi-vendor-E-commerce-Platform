@@ -79,9 +79,12 @@ export const useAddToWishlist = () => {
   return useMutation({
     mutationKey: ['add-to-wishlist'],
     mutationFn: (productId: string) => wishlistApi.addToWishlist(productId),
-    onSuccess: () => {
+    onSuccess: (_data, productId) => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
       queryClient.invalidateQueries({ queryKey: ['wishlist-count'] });
+      queryClient.invalidateQueries({
+        queryKey: ['wishlist-status', productId],
+      });
     },
   });
 };
@@ -92,9 +95,12 @@ export const useRemoveFromWishlist = () => {
     mutationKey: ['remove-from-wishlist'],
     mutationFn: (productId: string) =>
       wishlistApi.removeFromWishlist(productId),
-    onSuccess: () => {
+    onSuccess: (_data, productId) => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
       queryClient.invalidateQueries({ queryKey: ['wishlist-count'] });
+      queryClient.invalidateQueries({
+        queryKey: ['wishlist-status', productId],
+      });
     },
   });
 };
