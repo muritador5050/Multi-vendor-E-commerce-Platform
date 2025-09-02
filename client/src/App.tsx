@@ -30,7 +30,6 @@ import OrdersPage from './pages/OrdersPage';
 import BlogPage from './pages/BlogPage';
 import SellWithUs from './pages/SellWithUs';
 import HowItWorks from './pages/HowItWorks';
-import Support from './pages/Support';
 import HelpCenter from './pages/HelpCenter';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -48,7 +47,6 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path='blogs' element={<BlogPage />} />
           <Route path='shop' element={<ShopPage />} />
-          <Route path='support' element={<Support />} />
           <Route path='help-center' element={<HelpCenter />} />
           <Route path='terms-of-service' element={<TermsOfService />} />
           <Route path='privacy-policy' element={<PrivacyPolicy />} />
