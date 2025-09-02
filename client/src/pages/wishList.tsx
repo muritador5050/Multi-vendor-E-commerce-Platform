@@ -83,7 +83,6 @@ function WishList() {
         </Thead>
         <Tbody>
           {wishlist.data.map((item) => {
-            // Safely access nested properties
             const product = item?.product;
             if (!product) return null;
 
@@ -91,7 +90,6 @@ function WishList() {
             const productPrice = product.price || 0;
             const isInStock = product.isActive ?? false;
 
-            // Check if this item is being removed optimistically
             const isBeingRemoved = pendingRemoval.some(
               (mutation) => mutation.variables === product._id
             );
@@ -99,7 +97,6 @@ function WishList() {
             return (
               <Tr
                 key={item._id || product._id}
-                // Add visual feedback for optimistic removal
                 opacity={isBeingRemoved ? 0.5 : 1}
                 transition='opacity 0.2s ease'
               >

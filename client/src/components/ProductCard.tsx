@@ -311,6 +311,8 @@ export default function ProductCard({
           colorScheme={isInCart ? 'green' : 'blue'}
           leftIcon={isInCart ? <Check size={16} /> : undefined}
           fontSize={{ base: 'xs', md: 'sm' }}
+          isLoading={addToCartMutation.isPending}
+          loadingText='Adding...'
         >
           {isInCart ? 'Added to Cart' : 'Add to Cart'}
         </Button>

@@ -16,8 +16,6 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  VStack,
-  HStack,
   Divider,
   Spinner,
 } from '@chakra-ui/react';
@@ -202,7 +200,7 @@ export default function ProductDetail(): React.ReactElement {
       <Divider mb={8} />
 
       {/* Tabbed Content Section */}
-      <Tabs colorScheme='teal' isLazy>
+      <Tabs colorScheme='teal' isLazy variant='line'>
         <Box overflowX='auto'>
           <TabList flexShrink={0} minW='fit-content'>
             <Tab whiteSpace='nowrap'>Description</Tab>
@@ -229,31 +227,23 @@ export default function ProductDetail(): React.ReactElement {
           </TabPanel>
 
           <TabPanel>
-            <Box>
-              <Heading size='md' mb={4}>
-                Specifications
-              </Heading>
-              <VStack align='start' spacing={2}>
-                <HStack>
-                  <Text fontWeight='semibold' minW='120px'>
-                    Product ID:
-                  </Text>
-                  <Text>{product._id}</Text>
-                </HStack>
-                <HStack>
-                  <Text fontWeight='semibold' minW='120px'>
-                    Category:
-                  </Text>
-                  <Text>{product.category?.name || 'N/A'}</Text>
-                </HStack>
-                <HStack>
-                  <Text fontWeight='semibold' minW='120px'>
-                    Stock:
-                  </Text>
-                  <Text>{product.quantityInStock} units</Text>
-                </HStack>
-              </VStack>
-            </Box>
+            <Heading size='md' mb={4}>
+              Specifications
+            </Heading>
+            <Stack p={0} align='start' spacing={2}>
+              <Flex gap={2}>
+                <Text fontWeight='semibold'>Product ID:</Text>
+                <Text>{product._id.slice(-6)}</Text>
+              </Flex>
+              <Flex gap={2}>
+                <Text fontWeight='semibold'>Category:</Text>
+                <Text>{product.category?.name || 'N/A'}</Text>
+              </Flex>
+              <Flex gap={2}>
+                <Text fontWeight='semibold'>Stock:</Text>
+                <Text>{product.quantityInStock} units</Text>
+              </Flex>
+            </Stack>
           </TabPanel>
         </TabPanels>
       </Tabs>

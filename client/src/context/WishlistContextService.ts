@@ -8,7 +8,6 @@ import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-// API functions
 const wishlistApi = {
   getWishlist: async (
     params: WishlistParams = {}
@@ -18,7 +17,6 @@ const wishlistApi = {
     return await apiClient.authenticatedApiRequest(endpoint);
   },
 
-  // Add product to wishlist
   addToWishlist: async (
     productId: string
   ): Promise<ApiResponse<WishlistItem>> => {
@@ -28,19 +26,16 @@ const wishlistApi = {
     });
   },
 
-  // Remove product from wishlist
   removeFromWishlist: async (productId: string): Promise<ApiResponse> => {
     return await apiClient.authenticatedApiRequest(`/wishlists/${productId}`, {
       method: 'DELETE',
     });
   },
 
-  // Get wishlist count - Fixed return type to match backend response
   getWishlistCount: async (): Promise<ApiResponse<number>> => {
     return await apiClient.authenticatedApiRequest('/wishlists/count');
   },
 
-  // Fixed return type to match backend response
   checkWishlistStatus: async (
     productId: string
   ): Promise<ApiResponse<boolean>> => {
@@ -82,6 +77,7 @@ export const useWishlistStatus = (productId: string) => {
 export const useAddToWishlist = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['add-to-wishlist'],
     mutationFn: (productId: string) => wishlistApi.addToWishlist(productId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
@@ -93,6 +89,7 @@ export const useAddToWishlist = () => {
 export const useRemoveFromWishlist = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['remove-from-wishlist'],
     mutationFn: (productId: string) =>
       wishlistApi.removeFromWishlist(productId),
     onSuccess: () => {
