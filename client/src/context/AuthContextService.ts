@@ -81,18 +81,14 @@ async function login(email: string, password: string, rememberMe: boolean) {
   if (response.data?.accessToken) {
     apiClient.setRememberMe(rememberMe);
 
-    localStorage.removeItem('accessToken');
-    sessionStorage.removeItem('accessToken');
-
-    localStorage.setItem('savedEmail', email);
-
     if (rememberMe) {
-      localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('rememberMe', 'true');
     } else {
-      sessionStorage.setItem('accessToken', response.data.accessToken);
       localStorage.removeItem('rememberMe');
     }
+
+    apiClient.setToken(response.data.accessToken);
+    localStorage.setItem('savedEmail', email);
   }
   return response;
 }
@@ -670,8 +666,12 @@ export const useLogout = (options?: { onSuccess?: () => void }) => {
     mutationFn: async () => {
       return logout();
     },
-    onSuccess: options?.onSuccess,
-    onSettled: () => {
+    onSuccess: () => {
+      queryClient.clear();
+      options?.onSuccess?.();
+      navigate('/', { replace: true });
+    },
+    onError: () => {
       queryClient.clear();
       navigate('/', { replace: true });
     },

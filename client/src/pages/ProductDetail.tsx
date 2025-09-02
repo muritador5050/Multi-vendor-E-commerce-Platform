@@ -202,12 +202,14 @@ export default function ProductDetail(): React.ReactElement {
       <Divider mb={8} />
 
       {/* Tabbed Content Section */}
-      <Tabs colorScheme='teal'>
-        <TabList>
-          <Tab>Description</Tab>
-          <Tab>Reviews</Tab>
-          <Tab>Specifications</Tab>
-        </TabList>
+      <Tabs colorScheme='teal' isLazy>
+        <Box overflowX='auto'>
+          <TabList flexShrink={0} minW='fit-content'>
+            <Tab whiteSpace='nowrap'>Description</Tab>
+            <Tab whiteSpace='nowrap'>Reviews</Tab>
+            <Tab whiteSpace='nowrap'>Specifications</Tab>
+          </TabList>
+        </Box>
 
         <TabPanels>
           <TabPanel>

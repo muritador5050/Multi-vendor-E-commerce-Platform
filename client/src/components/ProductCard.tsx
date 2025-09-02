@@ -7,10 +7,12 @@ import {
   Card,
   CardBody,
   CardFooter,
-  ButtonGroup,
   useToast,
+  AspectRatio,
+  Badge,
+  HStack,
 } from '@chakra-ui/react';
-import { Heart, Check } from 'lucide-react';
+import { Heart, Check, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAddToCart, useIsInCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
@@ -39,7 +41,6 @@ export default function ProductCard({
   const removeFromWishlist = useRemoveFromWishlist();
 
   const { data: wishlistStatusResponse } = useWishlistStatus(product._id);
-
   const isInWishlist = wishlistStatusResponse?.data || false;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -149,115 +150,185 @@ export default function ProductCard({
   return (
     <Card
       bg='white'
-      boxShadow='none'
-      border='none'
-      cursor='pointer'
+      borderRadius={{ base: 'md', md: 'lg' }}
       overflow='hidden'
+      cursor='pointer'
       role='group'
+      border={{ base: '1px solid', md: 'none' }}
+      borderColor='gray.100'
+      boxShadow={{ base: 'sm', md: 'none' }}
       _hover={{
         md: {
-          bg: 'white',
           boxShadow: '2xl',
-          pb: '28',
+          transform: 'translateY(-4px)',
         },
-        position: 'relative',
       }}
-      transition='all 0.3s ease-in-out'
+      transition='all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      maxW='100%'
+      w='100%'
     >
-      <CardBody onClick={handleNavigateToProduct}>
-        <Box position='relative'>
-          <Image
-            src={getProductImage()}
-            alt={product.name || 'Product image'}
-            borderRadius='lg'
-            objectFit='cover'
-            width='100%'
-            height='250px'
-            fallbackSrc='/placeholder-image.jpg'
-          />
+      <CardBody p={{ base: 2, sm: 3, md: 4 }} onClick={handleNavigateToProduct}>
+        {/* Image Container */}
+        <Box position='relative' mb={{ base: 2, md: 3 }}>
+          <AspectRatio ratio={1}>
+            <Image
+              src={getProductImage()}
+              alt={product.name || 'Product image'}
+              borderRadius={{ base: 'sm', md: 'md' }}
+              objectFit='cover'
+              fallbackSrc='/placeholder-image.jpg'
+              transition='transform 0.3s ease'
+              _groupHover={{
+                md: { transform: 'scale(1.05)' },
+              }}
+            />
+          </AspectRatio>
+
+          {/* Discount Badge */}
+          {discount > 0 && (
+            <Badge
+              position='absolute'
+              top={2}
+              left={2}
+              colorScheme='red'
+              fontSize={{ base: '2xs', sm: 'xs' }}
+              px={2}
+              py={1}
+              borderRadius='md'
+            >
+              -{discount}%
+            </Badge>
+          )}
+
+          {/* Wishlist Button - Always visible on mobile, hover on desktop */}
+          <Button
+            onClick={handleWishlistToggle}
+            position='absolute'
+            top={2}
+            right={2}
+            size={{ base: 'sm', md: 'md' }}
+            colorScheme={'gray'}
+            variant={isInWishlist ? 'solid' : 'ghost'}
+            opacity={{ base: 1, md: 0 }}
+            bg='whiteAlpha.900'
+            _groupHover={{ opacity: 1 }}
+            transition='opacity 0.3s ease'
+            minW='auto'
+            h='auto'
+            p={2}
+          >
+            <Heart
+              size={16}
+              fill={isInWishlist ? 'red' : 'none'}
+              color={isInWishlist ? 'white' : 'gray'}
+            />
+          </Button>
+
+          {/* Quick View Button - Desktop only */}
           <Button
             onClick={handleQuickView}
             position='absolute'
-            inset={0}
-            margin='auto'
-            maxW='fit-content'
+            bottom={2}
+            left='50%'
+            transform='translateX(-50%)'
+            size='sm'
+            colorScheme='blue'
+            leftIcon={<Eye size={14} />}
+            opacity={{ base: 0, md: 0 }}
+            display={{ base: 'none', md: 'flex' }}
+            _groupHover={{ opacity: 1 }}
+            transition='opacity 0.3s ease'
             fontSize='xs'
-            fontWeight='thin'
-            colorScheme='yellow'
-            color='white'
-            opacity={{ md: 0 }}
-            transition='all 0.4s ease-in-out'
-            _groupHover={{
-              opacity: 1,
-            }}
           >
             Quick View
           </Button>
         </Box>
-        <Stack mt={3} textAlign='center'>
-          <Text fontWeight='medium' fontFamily='cursive'>
+
+        {/* Product Info */}
+        <Stack spacing={{ base: 1, md: 2 }} textAlign='center'>
+          <Text
+            fontWeight='medium'
+            fontSize={{ base: 'sm', md: 'md' }}
+            lineHeight='short'
+            noOfLines={2}
+            minH={{ base: '32px', md: '40px' }}
+            fontFamily='inherit'
+          >
             {product.name}
           </Text>
-          <Box>
-            <Text color='gray.500' as={product.discount ? 's' : undefined}>
-              ${product.price.toFixed(2)}
-            </Text>
-            {discount > 0 && (
-              <Text color='teal.600' fontWeight='bold'>
-                ${discountedPrice.toFixed(2)}
+
+          {/* Price Section */}
+          <HStack justify='center' spacing={2}>
+            {discount > 0 ? (
+              <>
+                <Text
+                  color='gray.400'
+                  fontSize={{ base: 'xs', md: 'sm' }}
+                  textDecoration='line-through'
+                >
+                  ${product.price.toFixed(2)}
+                </Text>
+                <Text
+                  color='red.500'
+                  fontWeight='bold'
+                  fontSize={{ base: 'sm', md: 'md' }}
+                >
+                  ${discountedPrice.toFixed(2)}
+                </Text>
+              </>
+            ) : (
+              <Text
+                color='gray.700'
+                fontWeight='semibold'
+                fontSize={{ base: 'sm', md: 'md' }}
+              >
+                ${product.price.toFixed(2)}
               </Text>
             )}
-          </Box>
+          </HStack>
         </Stack>
       </CardBody>
+
+      {/* Footer with Add to Cart - Always visible on mobile */}
       <CardFooter
-        sx={{
-          position: { md: 'absolute' },
-          transform: { md: 'translateY(100%)' },
-          zIndex: { md: 1 },
-          opacity: { md: 0 },
-          bottom: { md: 0 },
-          left: { md: 0 },
-        }}
-        w='100%'
-        bg='white'
-        transition='all 0.4s ease-in-out'
+        p={{ base: 2, sm: 3, md: 4 }}
+        pt={{ base: 0, md: 4 }}
+        display={{ base: 'block', md: 'block' }}
+        opacity={{ base: 1, md: 0 }}
+        transform={{ base: 'none', md: 'translateY(10px)' }}
         _groupHover={{
-          transform: 'translateY(0)',
-          opacity: 1,
+          md: {
+            opacity: 1,
+            transform: 'translateY(0)',
+          },
         }}
+        transition='all 0.3s ease'
       >
-        <ButtonGroup
-          display='flex'
-          flexDirection='column'
-          gap={4}
-          justifyContent='center'
+        <Button
+          onClick={handleAddToCart}
           w='100%'
-          transition='transform 0.3s ease-in-out'
+          size={{ base: 'sm', md: 'md' }}
+          colorScheme={isInCart ? 'green' : 'blue'}
+          leftIcon={isInCart ? <Check size={16} /> : undefined}
+          fontSize={{ base: 'xs', md: 'sm' }}
         >
-          <Button
-            onClick={handleAddToCart}
-            variant='solid'
-            colorScheme='blue'
-            rightIcon={isInCart ? <Check size={16} /> : undefined}
-          >
-            {isInCart ? 'Added to Cart' : 'Add to Cart'}
-          </Button>
-          <Button
-            variant='ghost'
-            colorScheme={isInWishlist ? 'red' : 'blue'}
-            leftIcon={
-              isInWishlist ? (
-                <Heart size={16} fill='red' color='red' />
-              ) : (
-                <Heart size={16} />
-              )
-            }
-            onClick={handleWishlistToggle}
-          >
-            {isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-          </Button>
-        </ButtonGroup>
+          {isInCart ? 'Added to Cart' : 'Add to Cart'}
+        </Button>
+
+        {/* Mobile Quick View Button */}
+        <Button
+          onClick={handleQuickView}
+          w='100%'
+          mt={2}
+          size='sm'
+          variant='outline'
+          colorScheme='blue'
+          leftIcon={<Eye size={14} />}
+          fontSize='xs'
+          display={{ base: 'flex', md: 'none' }}
+        >
+          Quick View
+        </Button>
       </CardFooter>
     </Card>
   );

@@ -1,7 +1,6 @@
 import {
   Box,
   VStack,
-  useBreakpointValue,
   useDisclosure,
   AlertDialog,
   AlertDialogOverlay,
@@ -10,6 +9,13 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
   Button,
+  Drawer,
+  DrawerBody,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
 } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LinkItems } from './Utils/linkItems';
@@ -19,15 +25,19 @@ import { useIsAuthenticated, useLogout } from '@/context/AuthContextService';
 
 interface SidebarProps {
   isCollapsed: boolean;
-  onClose?: () => void;
+  onCloseDrawer: () => void;
+  isOpenDrawer: boolean;
 }
 
-export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
+export default function StoreSidebar({
+  isCollapsed,
+  isOpenDrawer,
+  onCloseDrawer,
+}: SidebarProps) {
   const navigate = useNavigate();
   const { isLoading } = useIsAuthenticated();
   const logout = useLogout();
   const location = useLocation();
-  const isDesktop = useBreakpointValue({ base: false, md: true });
 
   const { isOpen, onOpen, onClose: closeDialog } = useDisclosure();
   const cancelRef = useRef(null);
@@ -37,14 +47,11 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
     onOpen();
   };
 
-  const confirmLogout = async () => {
-    await logout.mutateAsync();
+  const confirmLogout = () => {
+    logout.mutate();
     closeDialog();
     navigate('/');
   };
-
-  const desktopWidth = isCollapsed ? '60px' : '240px';
-  const mobileWidth = isCollapsed ? '0' : '240px';
 
   return (
     <Box
@@ -52,11 +59,10 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
       color='white'
       minH='100vh'
       transition='width 0.3s ease'
-      width={isDesktop ? desktopWidth : mobileWidth}
+      width={isCollapsed ? '60px' : '240px'}
       overflow='hidden'
       whiteSpace='nowrap'
-      position={{ base: 'absolute', md: 'relative' }}
-      zIndex={1}
+      display={{ base: 'none', md: 'block' }}
     >
       <VStack spacing={1} align='stretch' mt={2}>
         {LinkItems.map((link) => (
@@ -71,9 +77,6 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
               } else {
                 navigate(link.path);
               }
-              if (!isDesktop && onClose) {
-                onClose();
-              }
             }}
             isDisabled={isLoading && link.type === 'logout'}
           >
@@ -81,6 +84,40 @@ export default function StoreSidebar({ isCollapsed, onClose }: SidebarProps) {
           </NavItem>
         ))}
       </VStack>
+
+      <Drawer isOpen={isOpenDrawer} placement='left' onClose={onCloseDrawer}>
+        <DrawerOverlay />
+        <DrawerContent bg='#203a43' color='white'>
+          <DrawerCloseButton />
+          <DrawerHeader>Store menu</DrawerHeader>
+
+          <DrawerBody>
+            <VStack spacing={1} align='stretch' mt={2}>
+              {LinkItems.map((link) => (
+                <NavItem
+                  key={link.name}
+                  icon={link.icon}
+                  path={link.path}
+                  isActive={location.pathname === link.path}
+                  onClick={() => {
+                    if (link.type === 'logout') {
+                      handleLogoutClick();
+                    } else {
+                      navigate(link.path);
+                      onCloseDrawer?.();
+                    }
+                  }}
+                  isDisabled={isLoading && link.type === 'logout'}
+                >
+                  {link.name}
+                </NavItem>
+              ))}
+            </VStack>
+          </DrawerBody>
+
+          <DrawerFooter></DrawerFooter>
+        </DrawerContent>
+      </Drawer>
       {/* 🧾 Logout Confirmation Modal */}
       <AlertDialog
         isOpen={isOpen}

@@ -107,7 +107,8 @@ export const useProducts = (params: ProductQueryParams = {}) => {
     queryKey: productKeys.lists(params),
     queryFn: () => getAllProducts(params),
     select: (data) => data.data,
-    staleTime: 30 * 1000,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
     retry: (failureCount, error) => {
       if (
         error instanceof ApiError &&
@@ -161,10 +162,10 @@ export const useOwnVendorProducts = (
     queryKey: productKeys.vendorLists(params),
     queryFn: () => getOwnVendorProducts(params),
     select: (data) => data.data,
-    staleTime: 5 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 2 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };
 

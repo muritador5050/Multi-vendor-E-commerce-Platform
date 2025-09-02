@@ -1,11 +1,17 @@
+import { useState } from 'react';
 import {
   Flex,
   Text,
-  useBreakpointValue,
   Box,
   Collapse,
+  Drawer,
+  DrawerBody,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
 } from '@chakra-ui/react';
-import { useState } from 'react';
 import {
   ShoppingCart,
   Package,
@@ -35,12 +41,16 @@ interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   isCollapsed: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   isCollapsed,
+  isOpen,
+  onClose,
 }) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
@@ -67,11 +77,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'vendors', label: 'Vendors', icon: BriefcaseBusiness },
   ];
 
-  const isDesktop = useBreakpointValue({ base: false, md: true });
-
-  const desktopWidth = isCollapsed ? '80px' : '250px';
-  const mobileWidth = isCollapsed ? '0px' : '240px';
-
   const toggleExpanded = (itemId: string) => {
     setExpandedItems((prev) =>
       prev.includes(itemId)
@@ -88,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     } else {
       // Regular menu item
       setActiveTab(item.id);
+      onClose?.();
     }
   };
 
@@ -97,6 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (!expandedItems.includes(parentId)) {
       setExpandedItems((prev) => [...prev, parentId]);
     }
+    onClose?.();
   };
 
   const isItemActive = (item: MenuItem) => {
@@ -175,21 +182,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <Box
-      width={isDesktop ? desktopWidth : mobileWidth}
-      bg='teal.900'
-      color='white'
-      borderRight='1px'
-      borderColor={'gray.100'}
-      minH='100vh'
-      transition='width 0.3s ease-in'
-      position={{ base: 'absolute', md: 'relative' }}
-      zIndex={1}
-      overflow='hidden'
-    >
-      {/* Only render menu items if not collapsed on mobile */}
-      {(isDesktop || !isCollapsed) &&
-        menuItems.map((item) => renderMenuItem(item))}
-    </Box>
+    <>
+      <Box
+        width={isCollapsed ? '80px' : '250px'}
+        bg='teal.900'
+        color='white'
+        borderRight='1px'
+        borderColor={'gray.100'}
+        minH='100vh'
+        transition='width 0.3s ease-in'
+        zIndex={1}
+        overflow='hidden'
+        display={{ base: 'none', md: 'block' }}
+      >
+        {menuItems.map((item) => renderMenuItem(item))}
+      </Box>
+      <Drawer isOpen={isOpen} placement='left' onClose={onClose}>
+        <DrawerOverlay />
+        <DrawerContent bg='teal.900' color='white'>
+          <DrawerCloseButton />
+          <DrawerHeader>Menu</DrawerHeader>
+          <DrawerBody>
+            {menuItems.map((item) => renderMenuItem(item))}
+          </DrawerBody>
+
+          <DrawerFooter></DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 };

@@ -180,7 +180,7 @@ export default function ShopPage() {
               display={{ base: 'flex', md: 'none' }}
               onClick={filterDrawer.onOpen}
             />
-            <HStack spacing={3}>
+            <Stack direction='row' spacing={3}>
               <IconButton
                 aria-label='refresh'
                 size='sm'
@@ -191,7 +191,7 @@ export default function ShopPage() {
               />
               <Select
                 placeholder='Sort by'
-                w={{ base: '100px', md: 'fit-content' }}
+                w={{ base: 'full', md: 'fit-content' }}
                 value={sortBy}
                 onChange={handleSortChange}
               >
@@ -201,7 +201,7 @@ export default function ShopPage() {
                   </option>
                 ))}
               </Select>
-            </HStack>
+            </Stack>
           </Flex>
 
           {/* Error Message */}
@@ -212,7 +212,42 @@ export default function ShopPage() {
           )}
 
           {/* Products Grid */}
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+          {/* <SimpleGrid spacing={{ base: 3, md: 4, lg: 5 }} minChildWidth='200px'>
+            {products.map((product: Product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+                onQuickView={handleQuickView}
+              />
+            ))}
+          </SimpleGrid> */}
+
+          <SimpleGrid
+            columns={{
+              base: 2,
+              sm: 2,
+              md: 3,
+              lg: 4,
+              xl: 5,
+              '2xl': 6,
+            }}
+            spacing={{
+              base: 2,
+              sm: 3,
+              md: 4,
+              lg: 5,
+              xl: 6,
+            }}
+            minChildWidth={{
+              base: '140px',
+              sm: '160px',
+              md: '180px',
+              lg: '200px',
+            }}
+            maxW='100%'
+            // mx='auto'
+            px={{ base: 2, sm: 4, md: 6 }}
+          >
             {products.map((product: Product) => (
               <ProductCard
                 key={product._id}

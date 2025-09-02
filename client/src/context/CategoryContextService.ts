@@ -62,6 +62,7 @@ export const useCategories = () => {
     queryFn: getCategories,
     select: (data) => data.data,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 

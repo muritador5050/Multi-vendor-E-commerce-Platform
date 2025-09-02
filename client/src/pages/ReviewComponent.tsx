@@ -10,7 +10,6 @@ import {
   VStack,
   HStack,
   Avatar,
-  Badge,
   Textarea,
   FormControl,
   FormLabel,
@@ -25,10 +24,12 @@ import {
   ModalFooter,
   Spinner,
   Center,
+  IconButton,
   Divider,
+  Flex,
+  Stack,
 } from '@chakra-ui/react';
 import { StarIcon } from '@chakra-ui/icons';
-
 import {
   useAverageRating,
   useCreateReview,
@@ -37,6 +38,7 @@ import {
 } from '@/context/ReviewContextService';
 import type { Review } from '@/type/Review';
 import { useCurrentUser } from '@/context/AuthContextService';
+import { Edit } from 'lucide-react';
 
 export const ReviewComponent: React.FC<{ productId: string }> = ({
   productId,
@@ -118,21 +120,23 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
     const starSize = size === 'sm' ? 3 : size === 'md' ? 4 : 5;
 
     return (
-      <HStack spacing={1}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <StarIcon
-            key={star}
-            w={starSize}
-            h={starSize}
-            color={star <= rating ? 'yellow.400' : 'gray.300'}
-          />
-        ))}
+      <Flex align='center' wrap='wrap' gap={1}>
+        <HStack spacing={1}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <StarIcon
+              key={star}
+              w={starSize}
+              h={starSize}
+              color={star <= rating ? 'yellow.400' : 'gray.300'}
+            />
+          ))}
+        </HStack>
         {showNumber && (
           <Text fontSize={size} fontWeight='semibold' ml={2}>
             {rating.toFixed(1)}
           </Text>
         )}
-      </HStack>
+      </Flex>
     );
   };
 
@@ -142,7 +146,7 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
 
     return (
       <Box
-        p={5}
+        p={4}
         border='1px'
         borderColor={isCurrentUserReview ? 'teal.200' : 'gray.200'}
         borderRadius='lg'
@@ -152,32 +156,30 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
         _hover={{ shadow: 'md' }}
         transition='all 0.2s'
         position='relative'
+        w='100%'
       >
-        {/* Current user badge */}
-        {isCurrentUserReview && (
-          <Badge
-            position='absolute'
-            top={2}
-            right={2}
-            colorScheme='teal'
-            variant='solid'
-            size='sm'
-            borderRadius='full'
-          >
-            Your Review
-          </Badge>
-        )}
-
         {/* Header with User Info and Rating */}
-        <HStack mb={4} justify='space-between' align='start'>
-          <HStack spacing={3}>
+        <Stack
+          direction={{ base: 'column', sm: 'row' }}
+          mb={4}
+          justify='space-between'
+          align={{ base: 'flex-start', sm: 'start' }}
+          spacing={3}
+        >
+          <HStack spacing={3} w='100%'>
             <Avatar
-              size='md'
+              size={{ base: 'sm', md: 'md' }}
               name={review.userId.name}
               src={review.userId.avatar}
             />
-            <VStack align='start' spacing={1}>
-              <Text fontWeight='bold' fontSize='md' color='gray.800'>
+            <VStack align='start' spacing={1} flex={1} minW={0}>
+              <Text
+                fontWeight='bold'
+                fontSize={{ base: 'sm', md: 'md' }}
+                color='gray.800'
+                isTruncated
+                w='100%'
+              >
                 {review.userId.name}
                 {isCurrentUserReview && (
                   <Text as='span' fontSize='sm' color='teal.600' ml={1}>
@@ -194,24 +196,19 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
               </Text>
             </VStack>
           </HStack>
-
-          <VStack align='end' spacing={2}>
-            <RatingStars rating={review.rating} size='sm' />
-            {!review.isApproved && (
-              <Badge colorScheme='yellow' size='sm' borderRadius='full'>
-                Pending Approval
-              </Badge>
-            )}
-          </VStack>
-        </HStack>
+        </Stack>
 
         {/* Rating with Number Display */}
-        <HStack mb={3} spacing={2}>
+        <Flex mb={3} align='center' wrap='wrap' gap={2}>
           <RatingStars rating={review.rating} size='md' />
-          <Text fontWeight='semibold' color='gray.700'>
+          <Text
+            fontWeight='semibold'
+            color='gray.700'
+            fontSize={{ base: 'sm', md: 'md' }}
+          >
             {review.rating}.0 out of 5 stars
           </Text>
-        </HStack>
+        </Flex>
 
         {/* Customer Comment - More Prominent Display */}
         {review.comment ? (
@@ -225,10 +222,11 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
               borderColor='gray.100'
             >
               <Text
-                fontSize='md'
+                fontSize={{ base: 'sm', md: 'md' }}
                 lineHeight='tall'
                 color='gray.800'
                 fontStyle='italic'
+                wordBreak='break-word'
               >
                 "{review.comment}"
               </Text>
@@ -246,14 +244,14 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
         {/* Edit button for current user's review */}
         {isCurrentUserReview && (
           <Box mt={4} pt={3} borderTop='1px' borderColor='gray.200'>
-            <Button
-              size='sm'
-              colorScheme='teal'
+            <IconButton
               variant='outline'
+              colorScheme='teal'
+              aria-label='Edit'
+              icon={<Edit />}
               onClick={handleOpenModal}
-            >
-              Edit Your Review
-            </Button>
+              size={{ base: 'sm', md: 'md' }}
+            />
           </Box>
         )}
       </Box>
@@ -261,9 +259,9 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
   };
 
   // Handle form submission
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     try {
-      await createReviewMutation.mutateAsync({
+      createReviewMutation.mutate({
         productId,
         rating,
         comment: comment.trim() || undefined,
@@ -276,7 +274,7 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
           : 'Your review has been submitted for approval.',
         status: 'success',
         duration: 3000,
-        position: 'top',
+        position: 'top-right',
       });
 
       refetchReviews();
@@ -290,7 +288,7 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
         } review. Please try again.`,
         status: 'error',
         duration: 3000,
-        position: 'top',
+        position: 'top-right',
       });
     }
   };
@@ -333,139 +331,156 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
     totalReviews: 0,
   };
 
-  // Determine button text and behavior
-  const getReviewButtonProps = () => {
-    if (userExistingReview) {
-      return {
-        text: 'Edit Your Review',
-        colorScheme: 'teal',
-        variant: 'outline' as const,
-      };
-    }
-    return {
-      text: 'Write a Review',
-      colorScheme: 'teal',
-      variant: 'solid' as const,
-    };
-  };
-
-  const buttonProps = getReviewButtonProps();
-
   return (
-    <Box>
+    <Box w='100%' maxW='100%'>
       {/* Rating Summary */}
-      <Box mb={6} p={4} bg='gray.50' borderRadius='md'>
-        <HStack justify='space-between' mb={4}>
-          <VStack align='start' spacing={1}>
-            <Heading size='md'>Customer Reviews</Heading>
-            <HStack>
+      <Box mb={6} p={4} bg='gray.50' borderRadius='md' w='100%'>
+        <Stack
+          direction={{ base: 'column', lg: 'row' }}
+          justify='space-between'
+          align={{ base: 'stretch', lg: 'center' }}
+          spacing={4}
+          mb={4}
+        >
+          <VStack align={{ base: 'center', lg: 'start' }} spacing={2} flex={1}>
+            <Heading
+              size={{ base: 'sm', md: 'md' }}
+              textAlign={{ base: 'center', lg: 'left' }}
+            >
+              Customer Reviews
+            </Heading>
+            <Flex
+              direction={{ base: 'column', sm: 'row' }}
+              align='center'
+              gap={2}
+              textAlign='center'
+            >
               <RatingStars rating={avgRating?.avgRating} showNumber />
-              <Text color='gray.600'>
+              <Text color='gray.600' fontSize={{ base: 'sm', md: 'md' }}>
                 ({avgRating.totalReviews} review
                 {avgRating.totalReviews !== 1 ? 's' : ''})
               </Text>
-            </HStack>
+            </Flex>
           </VStack>
-          {userId && (
-            <VStack spacing={2} align='end'>
+
+          {userId && !userExistingReview && (
+            <Box flexShrink={0}>
               <Button
-                colorScheme={buttonProps.colorScheme}
-                variant={buttonProps.variant}
+                colorScheme='teal'
+                variant='outline'
                 onClick={handleOpenModal}
+                size={{ base: 'sm', md: 'md' }}
+                w={{ base: 'full', sm: 'auto' }}
+                minW={{ base: 'auto', sm: '140px' }}
               >
-                {buttonProps.text}
+                Write a Review
               </Button>
-              {userExistingReview && (
-                <Text fontSize='xs' color='gray.500'>
-                  You reviewed this product
-                </Text>
-              )}
-            </VStack>
+            </Box>
           )}
-        </HStack>
+        </Stack>
       </Box>
 
       {/* Sort Controls */}
       {reviews.length > 0 && (
-        <HStack mb={4} spacing={4}>
-          <Text fontSize='sm' fontWeight='semibold'>
+        <Stack
+          direction={{ base: 'column', md: 'row' }}
+          mb={4}
+          spacing={4}
+          align={{ base: 'stretch', md: 'center' }}
+        >
+          <Text fontSize='sm' fontWeight='semibold' flexShrink={0}>
             Sort by:
           </Text>
-          <Select
-            size='sm'
-            value={sortBy}
-            onChange={(e) =>
-              handleSortChange(e.target.value as 'createdAt' | 'rating')
-            }
-            w='auto'
+          <Flex
+            gap={{ base: 4, md: 2 }}
+            w={{ base: '100%', md: 'auto' }}
+            direction={{ base: 'column', md: 'row' }}
           >
-            <option value='createdAt'>Date</option>
-            <option value='rating'>Rating</option>
-          </Select>
-          <Select
-            size='sm'
-            value={sortOrder}
-            onChange={(e) =>
-              handleOrderChange(e.target.value as 'asc' | 'desc')
-            }
-            w='auto'
-          >
-            <option value='desc'>Newest First</option>
-            <option value='asc'>Oldest First</option>
-          </Select>
-        </HStack>
+            <Select
+              size='sm'
+              value={sortBy}
+              onChange={(e) =>
+                handleSortChange(e.target.value as 'createdAt' | 'rating')
+              }
+              w={{ base: 'full', md: 'auto' }}
+              minW='120px'
+            >
+              <option value='createdAt'>Date</option>
+              <option value='rating'>Rating</option>
+            </Select>
+            <Select
+              size='sm'
+              value={sortOrder}
+              onChange={(e) =>
+                handleOrderChange(e.target.value as 'asc' | 'desc')
+              }
+              w={{ base: 'full', md: 'auto' }}
+              minW='130px'
+            >
+              <option value='desc'>Newest First</option>
+              <option value='asc'>Oldest First</option>
+            </Select>
+          </Flex>
+        </Stack>
       )}
 
       {/* Reviews List */}
       {reviews.length === 0 ? (
         <Box textAlign='center' py={8}>
-          <Text color='gray.500' mb={4}>
+          <Text color='gray.500' mb={4} fontSize={{ base: 'sm', md: 'md' }}>
             No reviews yet. Be the first to review this product!
           </Text>
-          {userId && (
-            <Button colorScheme='teal' onClick={handleOpenModal}>
-              Write the First Review
-            </Button>
-          )}
         </Box>
       ) : (
         <>
-          <VStack spacing={0} align='stretch'>
+          <Stack spacing={0} align='stretch' w='100%'>
             {reviews.map((review: Review) => (
               <ReviewCard key={review._id} review={review} />
             ))}
-          </VStack>
+          </Stack>
 
           {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
-            <HStack justify='center' mt={6} spacing={2}>
+            <Stack
+              direction={{ base: 'column', md: 'row' }}
+              justify='center'
+              align='center'
+              mt={6}
+              spacing={2}
+            >
               <Button
                 size='sm'
                 isDisabled={!pagination.hasPrevPage}
                 onClick={() => setCurrentPage(currentPage - 1)}
+                w={{ base: 'full', md: 'auto' }}
               >
                 Previous
               </Button>
-              <Text fontSize='sm'>
+              <Text fontSize='sm' textAlign='center' py={2}>
                 Page {pagination.currentPage} of {pagination.totalPages}
               </Text>
               <Button
                 size='sm'
                 isDisabled={!pagination.hasNextPage}
                 onClick={() => setCurrentPage(currentPage + 1)}
+                w={{ base: 'full', md: 'auto' }}
               >
                 Next
               </Button>
-            </HStack>
+            </Stack>
           )}
         </>
       )}
 
       {/* Write/Edit Review Modal */}
-      <Modal isOpen={isOpen} onClose={handleCloseModal} size='md'>
+      <Modal
+        isOpen={isOpen}
+        onClose={handleCloseModal}
+        size={{ base: 'full', md: 'md' }}
+      >
         <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
+        <ModalContent mx={{ base: 4, md: 0 }} my={{ base: 0, md: '10vh' }}>
+          <ModalHeader fontSize={{ base: 'lg', md: 'xl' }}>
             {isEditing ? 'Edit Your Review' : 'Write a Review'}
           </ModalHeader>
           <ModalCloseButton />
@@ -503,6 +518,7 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
                   placeholder='Share your thoughts about this product...'
                   maxLength={1000}
                   rows={4}
+                  resize='vertical'
                 />
                 <Text fontSize='xs' color='gray.500' mt={1}>
                   {comment.length}/1000 characters
@@ -512,17 +528,28 @@ export const ReviewComponent: React.FC<{ productId: string }> = ({
           </ModalBody>
 
           <ModalFooter>
-            <Button variant='ghost' mr={3} onClick={handleCloseModal}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme='teal'
-              onClick={handleSubmit}
-              isLoading={createReviewMutation.isPending}
-              loadingText={isEditing ? 'Updating...' : 'Submitting...'}
+            <Stack
+              direction={{ base: 'column', sm: 'row' }}
+              spacing={3}
+              w='100%'
             >
-              {isEditing ? 'Update Review' : 'Submit Review'}
-            </Button>
+              <Button
+                variant='ghost'
+                onClick={handleCloseModal}
+                w={{ base: 'full', sm: 'auto' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                colorScheme='teal'
+                onClick={handleSubmit}
+                isLoading={createReviewMutation.isPending}
+                loadingText={isEditing ? 'Updating...' : 'Submitting...'}
+                w={{ base: 'full', sm: 'auto' }}
+              >
+                {isEditing ? 'Update Review' : 'Submit Review'}
+              </Button>
+            </Stack>
           </ModalFooter>
         </ModalContent>
       </Modal>

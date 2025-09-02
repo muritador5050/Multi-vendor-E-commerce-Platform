@@ -57,15 +57,17 @@ class ApiClient {
     );
   }
 
-  private setToken(token: string): void {
-    const wasRemembered = localStorage.getItem('rememberMe') === 'true';
+  public setToken(token: string): void {
+    localStorage.removeItem('accessToken');
+    sessionStorage.removeItem('accessToken');
 
-    if (this.rememberMe || wasRemembered) {
+    const shouldRemember =
+      this.rememberMe || localStorage.getItem('rememberMe') === 'true';
+
+    if (shouldRemember) {
       localStorage.setItem('accessToken', token);
-      sessionStorage.removeItem('accessToken');
     } else {
       sessionStorage.setItem('accessToken', token);
-      localStorage.removeItem('accessToken');
     }
   }
 
@@ -82,7 +84,7 @@ class ApiClient {
 
     try {
       const token = await this.refreshPromise;
-      this.refreshAttempts = 0; // Reset on success
+      this.refreshAttempts = 0;
       return token;
     } finally {
       this.isRefreshing = false;

@@ -8,9 +8,10 @@ import { useVendorProfile } from '@/context/VendorContextService';
 
 interface ToggleProp {
   onToggle: () => void;
+  onOpenDrawer: () => void;
 }
 
-export default function StoreNavbar({ onToggle }: ToggleProp) {
+export default function StoreNavbar({ onToggle, onOpenDrawer }: ToggleProp) {
   const location = useLocation();
   const currentUser = useCurrentUser();
   const { data } = useVendorProfile();
@@ -20,7 +21,7 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
       bg='#203a43'
       color='white'
       w='full'
-      px={{ base: 1, md: 4 }}
+      px={{ base: 2, md: 4 }}
       height='20'
       alignItems='center'
       borderBottomWidth='1px'
@@ -56,6 +57,15 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
             icon={<AlignJustify />}
             bg='transparent'
             colorScheme='white'
+            display={{ base: 'none', md: 'flex' }}
+          />
+          <IconButton
+            onClick={onOpenDrawer}
+            aria-label='Open drawer'
+            icon={<AlignJustify />}
+            bg='transparent'
+            colorScheme='white'
+            display={{ base: 'flex', md: 'none' }}
           />
         </Tooltip>
         {LinkItems.map((link, idx) => {
@@ -80,7 +90,13 @@ export default function StoreNavbar({ onToggle }: ToggleProp) {
         })}
       </HStack>
 
-      <Text fontWeight='bold' fontSize='xl' fontFamily='fantasy' color='orange'>
+      <Text
+        fontWeight='bold'
+        fontSize='xl'
+        fontFamily='cursive'
+        color='orange'
+        display={{ base: 'none', md: 'flex' }}
+      >
         {data?.generalSettings?.storeName}
       </Text>
     </Flex>

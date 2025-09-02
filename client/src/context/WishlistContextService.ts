@@ -56,6 +56,7 @@ export const useWishlist = (params: WishlistParams = {}) => {
     queryKey: ['wishlist', params],
     queryFn: () => wishlistApi.getWishlist(params),
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -64,6 +65,7 @@ export const useWishlistCount = () => {
     queryKey: ['wishlist-count'],
     queryFn: () => wishlistApi.getWishlistCount(),
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -73,6 +75,7 @@ export const useWishlistStatus = (productId: string) => {
     queryFn: () => wishlistApi.checkWishlistStatus(productId),
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -80,52 +83,7 @@ export const useAddToWishlist = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (productId: string) => wishlistApi.addToWishlist(productId),
-    onMutate: async (productId) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['wishlist-count'] });
-      await queryClient.cancelQueries({
-        queryKey: ['wishlist-status', productId],
-      });
-
-      // Snapshot previous values
-      const previousCount = queryClient.getQueryData(['wishlist-count']);
-      const previousStatus = queryClient.getQueryData([
-        'wishlist-status',
-        productId,
-      ]);
-
-      queryClient.setQueryData(
-        ['wishlist-count'],
-        (old: ApiResponse<number> | undefined) => {
-          if (!old || old.data === undefined) return { data: 1 };
-          return { ...old, data: old.data + 1 };
-        }
-      );
-
-      queryClient.setQueryData(
-        ['wishlist-status', productId],
-        (old: ApiResponse<boolean> | undefined) => {
-          if (!old || old.data === undefined) return { data: true };
-          return { ...old, data: true };
-        }
-      );
-
-      return { previousCount, previousStatus };
-    },
-    onError: (_err, productId, context) => {
-      // Rollback on error
-      if (context?.previousCount) {
-        queryClient.setQueryData(['wishlist-count'], context.previousCount);
-      }
-      if (context?.previousStatus) {
-        queryClient.setQueryData(
-          ['wishlist-status', productId],
-          context.previousStatus
-        );
-      }
-    },
-    onSettled: () => {
-      // Always refetch to ensure consistency
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
       queryClient.invalidateQueries({ queryKey: ['wishlist-count'] });
     },
@@ -134,73 +92,10 @@ export const useAddToWishlist = () => {
 
 export const useRemoveFromWishlist = () => {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationKey: ['remove-from-wishlist'],
     mutationFn: (productId: string) =>
       wishlistApi.removeFromWishlist(productId),
-    onMutate: async (productId) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['wishlist'] });
-      await queryClient.cancelQueries({ queryKey: ['wishlist-count'] });
-      await queryClient.cancelQueries({
-        queryKey: ['wishlist-status', productId],
-      });
-
-      // Snapshot previous values
-      const previousWishlist = queryClient.getQueryData(['wishlist']);
-      const previousCount = queryClient.getQueryData(['wishlist-count']);
-      const previousStatus = queryClient.getQueryData([
-        'wishlist-status',
-        productId,
-      ]);
-
-      queryClient.setQueryData(
-        ['wishlist'],
-        (old: WishlistResponse | undefined) => {
-          if (!old?.data) return old;
-          return {
-            ...old,
-            data: old.data.filter((item) => item.product._id !== productId),
-          };
-        }
-      );
-
-      queryClient.setQueryData(
-        ['wishlist-count'],
-        (old: ApiResponse<number> | undefined) => {
-          if (!old || old.data === undefined) return { data: 0 };
-          return { ...old, data: Math.max(0, old.data - 1) };
-        }
-      );
-
-      queryClient.setQueryData(
-        ['wishlist-status', productId],
-        (old: ApiResponse<boolean> | undefined) => {
-          if (!old || old.data === undefined) return { data: false };
-          return { ...old, data: false };
-        }
-      );
-
-      return { previousWishlist, previousCount, previousStatus };
-    },
-    onError: (_err, productId, context) => {
-      // Rollback on error
-      if (context?.previousWishlist) {
-        queryClient.setQueryData(['wishlist'], context.previousWishlist);
-      }
-      if (context?.previousCount) {
-        queryClient.setQueryData(['wishlist-count'], context.previousCount);
-      }
-      if (context?.previousStatus) {
-        queryClient.setQueryData(
-          ['wishlist-status', productId],
-          context.previousStatus
-        );
-      }
-    },
-    onSettled: () => {
-      // Refetch to ensure consistency
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wishlist'] });
       queryClient.invalidateQueries({ queryKey: ['wishlist-count'] });
     },

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { Box, Container } from '@chakra-ui/react';
+import { Box, Container, useDisclosure } from '@chakra-ui/react';
 
 import Orders from '../components/VendorManagement/orders';
 import Payments from '../components/VendorManagement/payments';
@@ -16,17 +16,19 @@ export default function StoreManagerDashboard() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => setIsCollapsed((prev) => !prev);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
     <Box position='relative' minH='100vh' display='flex' flexDirection='column'>
       {/* Sticky Top Navbar */}
-      <StoreNavbar onToggle={toggleSidebar} />
+      <StoreNavbar onToggle={toggleSidebar} onOpenDrawer={onOpen} />
 
       {/* Layout Body */}
       <Box position='relative' display='flex' flex='1'>
         <StoreSidebar
           isCollapsed={isCollapsed}
-          onClose={() => setIsCollapsed(true)}
+          onCloseDrawer={onClose}
+          isOpenDrawer={isOpen}
         />
         <Box ml={0} flex='1' transition='margin-left 0.3s ease-in'>
           <Container maxW='full' px={{ base: 2, md: 4 }}>

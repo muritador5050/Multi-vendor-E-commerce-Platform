@@ -35,6 +35,11 @@ import {
   Center,
   Image,
   Spinner,
+  Accordion,
+  AccordionButton,
+  AccordionItem,
+  AccordionIcon,
+  AccordionPanel,
 } from '@chakra-ui/react';
 import { HamburgerIcon, SearchIcon } from '@chakra-ui/icons';
 import { UserRound, Heart, ShoppingBag, AlignLeft } from 'lucide-react';
@@ -290,7 +295,8 @@ function Navbar() {
           >
             Welcome to{' '}
             <Text as='span' color='orange'>
-              {settings?.data?.platformName || 'Multi-vendor-E-commerce-platform'}
+              {settings?.data?.platformName ||
+                'Multi-vendor-E-commerce-platform'}
             </Text>
           </Text>
           <Text fontWeight='bold' color='white'>
@@ -305,7 +311,13 @@ function Navbar() {
           borderBottom='1px solid'
           borderColor='whiteAlpha.300'
         >
-          <Logo />
+          <ChakraLink
+            as={ReactRouterLink}
+            to='/'
+            _hover={{ textDecoration: 'none' }}
+          >
+            <Logo />
+          </ChakraLink>
 
           {/* Desktop Links */}
           <HStack
@@ -671,10 +683,10 @@ function Navbar() {
         isOpen={leftDrawer.isOpen}
       >
         <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton color='white' />
-          <DrawerBody bg='teal.900' color='white'>
-            <Flex direction='column' p={4} gap={2}>
+        <DrawerContent bg='teal.900' color='white'>
+          <DrawerCloseButton />
+          <DrawerBody>
+            <Stack spacing={4} p={4}>
               {/* Main Navigation */}
               <NavLink to='/' onClick={leftDrawer.onClose}>
                 Home
@@ -697,75 +709,118 @@ function Navbar() {
               <NavLink to='contact-us' onClick={leftDrawer.onClose}>
                 Contact Us
               </NavLink>
-
-              {/* Categories Section */}
-              <Box mt={6}>
-                <Flex justify='space-between' align='center' mb={3}>
-                  <Text fontWeight='bold' fontSize='lg'>
-                    Categories
-                  </Text>
-                  {!categoriesLoading && categories.length > 0 && (
-                    <Badge colorScheme='blue' variant='subtle'>
-                      {categories.length}
-                    </Badge>
-                  )}
-                </Flex>
-
-                {isFetching && categoriesData && (
-                  <Text fontSize='xs' color='blue.500' mb={2}>
-                    Refreshing...
-                  </Text>
-                )}
-
-                {categoriesLoading && !categoriesData ? (
-                  Array.from({ length: 5 }, (_, i) => (
-                    <Skeleton
-                      key={`mobile-skeleton-${i}`}
-                      height='40px'
-                      mb={2}
-                    />
-                  ))
-                ) : isCategoriesError && !categoriesData ? (
-                  <Alert status='error' size='sm' mb={4}>
-                    <AlertIcon />
-                    <Box>
-                      <Text fontSize='sm'>Failed to load categories</Text>
-                      <Text fontSize='xs' color='gray.500'>
-                        {categoriesError instanceof Error
-                          ? categoriesError.message
-                          : 'Unknown error'}
+              <Accordion allowToggle>
+                <AccordionItem border='1px solid' borderColor='whiteAlpha.300'>
+                  <AccordionButton
+                    bg='yellow.500'
+                    _hover={{ bg: 'yellow.600' }}
+                    color='white'
+                    transition='all 0.2s'
+                    _expanded={{ bg: 'yellow.600' }}
+                    py={3}
+                  >
+                    <HStack flex='1' textAlign='left'>
+                      <AlignLeft />
+                      <Text fontWeight='medium'>
+                        {categoriesLoading && !categoriesData
+                          ? 'Loading...'
+                          : 'All Categories'}
                       </Text>
-                    </Box>
-                  </Alert>
-                ) : categories.length > 0 ? (
-                  <VStack spacing={2} align='stretch'>
-                    {categories.map((category: Category) => (
-                      <NavLink
-                        key={category._id}
-                        to={`/products/category/${
-                          category.slug ||
-                          category.name.toLowerCase().replace(/\s+/g, '-')
-                        }`}
-                        onClick={leftDrawer.onClose}
-                      >
-                        <Text>{category.name}</Text>
-                      </NavLink>
-                    ))}
-                  </VStack>
-                ) : (
-                  <Text color='gray.500' fontSize='sm'>
-                    No categories available
-                  </Text>
-                )}
-
-                {isCategoriesError && categoriesData && (
-                  <Alert status='warning' size='sm' mt={2}>
-                    <AlertIcon />
-                    <Text fontSize='xs'>Failed to refresh categories</Text>
-                  </Alert>
-                )}
-              </Box>
-
+                    </HStack>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4} px={0} bg='whiteAlpha.100'>
+                    {categoriesLoading && !categoriesData ? (
+                      <VStack spacing={2} align='stretch' px={4}>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Skeleton key={`skeleton-${i}`} height='30px' />
+                        ))}
+                      </VStack>
+                    ) : isCategoriesError && !categoriesData ? (
+                      <Box px={4} py={2}>
+                        <Alert
+                          status='error'
+                          size='sm'
+                          bg='red.50'
+                          color='red.800'
+                        >
+                          <AlertIcon />
+                          <VStack spacing={1} align='start'>
+                            <Text fontSize='sm'>Failed to load categories</Text>
+                            <Text fontSize='xs' color='red.600'>
+                              {categoriesError instanceof Error
+                                ? categoriesError.message
+                                : 'Unknown error'}
+                            </Text>
+                          </VStack>
+                        </Alert>
+                      </Box>
+                    ) : categories.length > 0 ? (
+                      <VStack spacing={1} align='stretch'>
+                        {isFetching && categoriesData && (
+                          <Box
+                            px={4}
+                            py={2}
+                            borderBottom='1px solid'
+                            borderColor='whiteAlpha.200'
+                          >
+                            <Text fontSize='xs' color='yellow.300'>
+                              Refreshing categories...
+                            </Text>
+                          </Box>
+                        )}
+                        {categories.map((category: Category) => (
+                          <ChakraLink
+                            key={category._id}
+                            as={ReactRouterLink}
+                            to={`/products/category/${category.slug}`}
+                            onClick={leftDrawer.onClose}
+                            display='block'
+                            px={4}
+                            py={3}
+                            _hover={{
+                              bg: 'whiteAlpha.200',
+                              textDecoration: 'none',
+                              color: 'yellow.300',
+                            }}
+                            transition='all 0.2s'
+                            borderBottom='1px solid'
+                            borderColor='whiteAlpha.100'
+                            _last={{ borderBottom: 'none' }}
+                          >
+                            <Text fontSize='sm'>{category.name}</Text>
+                          </ChakraLink>
+                        ))}
+                      </VStack>
+                    ) : (
+                      <Box px={4} py={3}>
+                        <Text color='gray.400' fontSize='sm' textAlign='center'>
+                          No categories available
+                        </Text>
+                      </Box>
+                    )}
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
+              <Button
+                w='full'
+                color='white'
+                variant='outline'
+                border='1px solid'
+                borderColor='yellow.500'
+                bg='transparent'
+                _hover={{
+                  bg: 'yellow.500',
+                  borderColor: 'yellow.500',
+                  color: 'white',
+                }}
+                onClick={() => {
+                  navigate('/register/vendor/?plan=starter');
+                  leftDrawer.onClose();
+                }}
+              >
+                Become a vendor
+              </Button>
               {/* Auth Buttons */}
               <Button
                 colorScheme='gray'
@@ -775,7 +830,7 @@ function Navbar() {
               >
                 {isAuthenticated ? 'View profile' : 'Login/Sign-Up'}
               </Button>
-            </Flex>
+            </Stack>
           </DrawerBody>
         </DrawerContent>
       </Drawer>

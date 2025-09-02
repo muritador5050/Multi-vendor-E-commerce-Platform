@@ -14,12 +14,14 @@ interface HeaderProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   onToggle?: () => void;
+  onOpen: () => void;
 }
 
 export const Header = ({
   searchTerm,
   setSearchTerm,
   onToggle,
+  onOpen,
 }: HeaderProps) => {
   return (
     <Flex
@@ -48,6 +50,15 @@ export const Header = ({
           aria-label='Toggle Sidebar'
           icon={<AlignJustify />}
           onClick={onToggle}
+          display={{ base: 'none', md: 'flex' }}
+        />
+        <IconButton
+          bg={'transparent'}
+          colorScheme='white'
+          aria-label='Open drawer'
+          icon={<AlignJustify />}
+          onClick={onOpen}
+          display={{ base: 'flex', md: 'none' }}
         />
       </Stack>
 

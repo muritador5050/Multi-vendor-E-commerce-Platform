@@ -1,4 +1,10 @@
-import { Box, Center, Container, useColorModeValue } from '@chakra-ui/react';
+import {
+  Box,
+  Center,
+  Container,
+  useColorModeValue,
+  useDisclosure,
+} from '@chakra-ui/react';
 import { useState } from 'react';
 import { VendorsContent } from './VendorManagement/VendorsContent';
 import { OrdersContent } from './OrdersManagement/OrdersContent';
@@ -21,6 +27,8 @@ const AdminDashboardLayout = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  //drawer state
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
 
   const toggleSidebar = () => setIsCollapsed((prev) => !prev);
@@ -68,12 +76,15 @@ const AdminDashboardLayout = () => {
         onToggle={toggleSidebar}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        onOpen={onOpen}
       />
       <Box position='relative' display='flex' flex='1'>
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           isCollapsed={isCollapsed}
+          isOpen={isOpen}
+          onClose={onClose}
         />
         <Container maxW={'full'} p={3}>
           {renderContent()}

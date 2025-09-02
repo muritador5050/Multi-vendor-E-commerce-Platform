@@ -123,7 +123,7 @@ function App() {
               icon={<LogOut size={48} color='teal' />}
               colorScheme='gray'
               size='lg'
-              onClick={() => logout.mutateAsync()}
+              onClick={() => logout.mutate()}
             />
           </Tooltip>
         </Box>
