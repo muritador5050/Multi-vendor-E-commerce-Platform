@@ -1,8 +1,7 @@
+require('dotenv').config();
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/user.model');
-require('dotenv').config();
 
 //Google Strategy
 passport.use(
@@ -10,7 +9,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/auth/google/callback',
+      callbackURL: '/api/users/google/callback',
     },
     async function (accessToken, refreshToken, profile, done) {
       //Check if user exist

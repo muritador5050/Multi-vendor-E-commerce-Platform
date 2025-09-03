@@ -4,7 +4,7 @@ const rateLimit = require('express-rate-limit');
 const generalLimiter = rateLimit({
   windowMs: 3 * 60 * 1000,
   max: 100,
-  message: 'Too many requests from this IP, please try again after 3 minutes',
+  message: 'Too many requests from this IP, please try again in 3 minutes',
   standardHeaders: true,
   legacyHeaders: false,
 });
