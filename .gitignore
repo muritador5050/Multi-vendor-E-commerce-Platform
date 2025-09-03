@@ -1,6 +1,8 @@
 # Root
 node_modules/
 .env
+.env.*
+!.env.example
 .DS_Store
 
 # Logs
@@ -12,12 +14,15 @@ npm-debug.log*
 client/node_modules/
 client/.next/
 client/dist/
-client/.env.local
- 
-server/uploads
+client/.env
+client/.env.*
+!client/.env.example
 
 # Server
 server/node_modules/
 server/.env
+server/.env.*
+!server/.env.example
 server/dist/
 server/coverage/
+server/uploads
