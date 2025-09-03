@@ -212,16 +212,6 @@ export default function ShopPage() {
           )}
 
           {/* Products Grid */}
-          {/* <SimpleGrid spacing={{ base: 3, md: 4, lg: 5 }} minChildWidth='200px'>
-            {products.map((product: Product) => (
-              <ProductCard
-                key={product._id}
-                product={product}
-                onQuickView={handleQuickView}
-              />
-            ))}
-          </SimpleGrid> */}
-
           <SimpleGrid
             columns={{
               base: 2,
@@ -245,7 +235,6 @@ export default function ShopPage() {
               lg: '200px',
             }}
             maxW='100%'
-            // mx='auto'
             px={{ base: 2, sm: 4, md: 6 }}
           >
             {products.map((product: Product) => (
