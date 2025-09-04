@@ -40,7 +40,6 @@ const PaymentSuccessPage = () => {
     const symbol = currencySymbols[currency] || '$';
     const displayCurrency = currency.toUpperCase();
 
-    // Use extracted provider or fallback to paymentProvider
     const currentProvider = provider || paymentProvider;
 
     // Paystack amounts might be in kobo (1/100 NGN)

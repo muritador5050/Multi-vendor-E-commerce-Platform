@@ -7,6 +7,7 @@ import type {
 import { apiClient } from '@/utils/Api';
 import { buildQueryString } from '@/utils/QueryString';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsAuthenticated } from './AuthContextService';
 
 const wishlistApi = {
   getWishlist: async (
@@ -65,10 +66,11 @@ export const useWishlistCount = () => {
 };
 
 export const useWishlistStatus = (productId: string) => {
+  const { isAuthenticated } = useIsAuthenticated();
   return useQuery({
     queryKey: ['wishlist-status', productId],
     queryFn: () => wishlistApi.checkWishlistStatus(productId),
-    enabled: !!productId,
+    enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
