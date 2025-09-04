@@ -76,7 +76,7 @@ const corsOptions = {
     const allowedOrigins = [FRONTEND_URL];
 
     if (NODE_ENV === 'development') {
-      allowedOrigins.push('http://localhost:3000', 'http://localhost:5173');
+      allowedOrigins.push('http://localhost:5173');
     }
 
     console.log('🔍 Checking origin:', origin);
