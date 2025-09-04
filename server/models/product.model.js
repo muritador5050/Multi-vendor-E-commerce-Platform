@@ -229,8 +229,6 @@ productSchema.statics.createProducts = async function (productsData, vendorId) {
   return Array.isArray(productsData) ? populatedProducts : populatedProducts[0];
 };
 
-// Update product by ID
-// Update product by ID - FIXED VERSION
 productSchema.statics.updateById = async function (id, updateData, user) {
   this.validateObjectId(id, 'product ID');
 
@@ -274,7 +272,6 @@ productSchema.statics.resolveCategoryFilter = async function (category) {
   return categoryDoc?._id;
 };
 
-// Build advanced filter
 productSchema.statics.buildFilter = function (queryParams) {
   const {
     category,
