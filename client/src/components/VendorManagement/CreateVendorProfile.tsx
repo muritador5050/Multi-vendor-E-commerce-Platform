@@ -503,7 +503,9 @@ const CreateVendorProfile: React.FC = () => {
             </StepIndicator>
 
             <Box flexShrink='0'>
-              <StepTitle>{step.title}</StepTitle>
+              <StepTitle display={{ base: 'none', md: 'flex' }}>
+                {step.title}
+              </StepTitle>
               <StepDescription>{step.description}</StepDescription>
             </Box>
 

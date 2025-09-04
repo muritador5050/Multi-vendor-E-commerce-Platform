@@ -175,7 +175,6 @@ export function useAddToCart() {
 
 export function useUpdateQuantity() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: updateItemQuantity,
     onMutate: async ({ productId, quantity }) => {
@@ -232,7 +231,6 @@ export function useUpdateQuantity() {
 
 export function useRemoveFromCart() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: removeCartItem,
     onMutate: async (productId) => {
@@ -275,7 +273,6 @@ export function useRemoveFromCart() {
 
 export function useClearCart() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: clearCartItems,
     onMutate: async () => {
@@ -308,7 +305,6 @@ export function useClearCart() {
 
 export function useClearCartOnLogout() {
   const queryClient = useQueryClient();
-
   const clearCartData = () => {
     queryClient.removeQueries({ queryKey: cartKeys.items() });
   };

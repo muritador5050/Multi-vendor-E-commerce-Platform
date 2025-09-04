@@ -218,6 +218,8 @@ const ProductCard = React.memo(
               noOfLines={2}
               mb={1}
               color='gray.800'
+              textDecoration={!product.isActive ? 'line-through' : 'revert'}
+              textDecorationStyle={!product.isActive ? 'double' : 'revert'}
             >
               {product.name}
             </Text>
@@ -394,7 +396,7 @@ export default function VendorProducts() {
     pages: 0,
     hasNext: false,
     hasPrev: false,
-    limit: 12,
+    limit: 10,
   };
 
   const updateDrawerState = useCallback((updates: Partial<DrawerState>) => {

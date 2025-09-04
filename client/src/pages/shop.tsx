@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Box,
   Flex,
@@ -75,8 +75,10 @@ export default function ShopPage() {
   };
 
   // Use React Query hook
-  const { data, isLoading, error, refetch, isRefetching } =
-    useProducts(queryParams);
+  const { data, isLoading, error, refetch, isRefetching } = useProducts({
+    ...queryParams,
+    isActive: true,
+  });
 
   const products = data?.products || [];
   const pagination = data?.pagination || {
@@ -112,23 +114,19 @@ export default function ShopPage() {
     onClose();
   };
 
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handlePreviousPage = () => {
+  const handlePreviousPage = useCallback(() => {
     if (pagination.hasPrev) {
-      handlePageChange(currentPage - 1);
+      setCurrentPage(currentPage - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [pagination.hasPrev, currentPage]);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (pagination.hasNext) {
-      handlePageChange(currentPage + 1);
+      setCurrentPage(currentPage + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
+  }, [pagination.hasNext, currentPage]);
 
   return (
     <Box bg='white'>

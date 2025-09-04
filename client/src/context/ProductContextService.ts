@@ -20,7 +20,6 @@ const productKeys = {
   item: (id: string) => [productKeys.all, 'item', id] as const,
 };
 
-// API Functions (unchanged)
 const getAllProducts = async (
   params: ProductQueryParams = {}
 ): Promise<ApiResponse<ProductPaginatedResponse>> => {

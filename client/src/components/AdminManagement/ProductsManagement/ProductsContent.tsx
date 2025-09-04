@@ -59,7 +59,7 @@ import {
   useDeleteProduct,
   useToggleProductStatus,
 } from '@/context/ProductContextService';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import type {
   Product,
   CreateProductRequest,
@@ -86,8 +86,17 @@ export const ProductsContent = () => {
   };
 
   // Data fetching
-  const { data: productData, isLoading, error } = useProducts(queryParams);
-  const products = productData?.products || [];
+  const {
+    data: productData,
+    isLoading,
+    error,
+    refetch,
+  } = useProducts(queryParams);
+  const products = useMemo(
+    () => productData?.products || [],
+    [productData?.products]
+  );
+
   const pagination = productData?.pagination;
 
   // Mutations
@@ -121,7 +130,6 @@ export const ProductsContent = () => {
     category: '',
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [toggledProductId, setToggledProductId] = useState<string | null>(null);
 
   const cancelRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -163,18 +171,18 @@ export const ProductsContent = () => {
 
   const handlePageLimitChange = (newLimit: number) => {
     setPageLimit(newLimit);
-    setCurrentPage(1); // Reset to first page when changing limit
+    setCurrentPage(1);
   };
 
   // Filter handlers
   const handleCategoryFilterChange = (category: string) => {
     setCategoryFilter(category);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (search: string) => {
     setSearchQuery(search);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
   // Update product
@@ -242,34 +250,36 @@ export const ProductsContent = () => {
     }
   };
 
-  // Toggle product status
-  const handleToggleStatus = async (product: Product) => {
-    try {
-      setToggledProductId(product._id);
-      await toggleStatusMutation.mutateAsync(product._id);
+  const handleToggleStatus = useCallback(
+    (productId: string) => {
+      const product = products.find((p) => p._id === productId);
+      toggleStatusMutation.mutate(productId, {
+        onSuccess: () => {
+          toast({
+            title: 'Status Updated',
+            description: `${product?.name || 'Product'} has been ${
+              product?.isActive ? 'deactivated' : 'activated'
+            }.`,
+            status: 'success',
+            position: 'top-right',
+            duration: 2000,
+          });
 
-      toast({
-        title: `Product ${
-          !product.isActive ? 'activated' : 'deactivated'
-        } successfully`,
-        status: 'success',
-        position: 'top-right',
-        duration: 3000,
-        isClosable: true,
+          refetch();
+        },
+        onError: () => {
+          toast({
+            title: 'Error',
+            description: 'Failed to update product status.',
+            status: 'error',
+            position: 'top-right',
+            duration: 3000,
+          });
+        },
       });
-    } catch (error) {
-      toast({
-        title: 'Error updating product status',
-        description: `${error} Please try again`,
-        status: 'error',
-        position: 'top-right',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setToggledProductId(null);
-    }
-  };
+    },
+    [toggleStatusMutation, toast, products, refetch]
+  );
 
   // Open modals with data
   const openViewModal = (product: Product) => {
@@ -390,7 +400,15 @@ export const ProductsContent = () => {
           <Tbody>
             {products.map((product) => (
               <Tr key={product._id}>
-                <Td fontWeight='medium'>{product.name}</Td>
+                <Td
+                  fontWeight='medium'
+                  color={!product.isActive ? 'red.600' : ''}
+                  textDecoration={!product.isActive ? 'line-through' : 'revert'}
+                  textDecorationColor={!product.isActive ? 'red.600' : 'revert'}
+                  textDecorationStyle={!product.isActive ? 'double' : 'unset'}
+                >
+                  {product.name}
+                </Td>
                 <Td>{product.vendor.name}</Td>
                 <Td>${product.price}</Td>
                 <Td>{product.quantityInStock}</Td>
@@ -435,8 +453,7 @@ export const ProductsContent = () => {
                       size='sm'
                       variant='ghost'
                       colorScheme={product.isActive ? 'orange' : 'green'}
-                      onClick={() => handleToggleStatus(product)}
-                      isLoading={toggledProductId === product._id}
+                      onClick={() => handleToggleStatus(product._id)}
                     />
                     <IconButton
                       aria-label='Delete product'

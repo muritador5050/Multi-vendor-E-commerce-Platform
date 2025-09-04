@@ -31,7 +31,7 @@ export default function CartList() {
   if (isLoading) {
     return (
       <Flex justify='center' align='center' minH='200px'>
-        <Spinner size='lg' />
+        <Spinner size='lg' color='teal.500' />
         <Text ml={4}>Loading cart...</Text>
       </Flex>
     );
@@ -48,91 +48,149 @@ export default function CartList() {
   return (
     <Box p={3}>
       {cart?.items.length === 0 ? (
-        <Stack textAlign='center' spacing={6}>
-          <Text fontWeight='bold' fontSize='xl'>
+        <VStack spacing={6} py={8} textAlign='center'>
+          <Text
+            fontWeight='bold'
+            fontSize={{ base: 'lg', md: 'xl' }}
+            color='teal.600'
+          >
             Your cart is empty
           </Text>
           <Button
-            mx='auto'
             colorScheme='teal'
             onClick={() => navigate('/shop')}
+            size={{ base: 'md', md: 'lg' }}
+            w={{ base: 'full', sm: 'auto' }}
+            maxW='250px'
           >
             Back To Shop
           </Button>
-        </Stack>
+        </VStack>
       ) : (
         <>
-          <Stack spacing={6}>
-            {cart?.items.map((item) => {
-              return (
-                <VStack key={item.product._id} bg='teal.900' color='white'>
-                  <Flex w='100%' align='center' justify='space-between' p={3}>
-                    <Image
-                      src={
-                        item.product.images?.length > 0
-                          ? item.product.images[0]
-                          : '/placeholder-image.jpg'
-                      }
-                      alt={item.product.name}
-                      boxSize='70px'
-                      objectFit='cover'
-                      borderRadius='md'
-                      border='2px solid red'
-                    />
+          {/* Cart Header */}
+          <VStack spacing={3} mb={4}>
+            <Text
+              fontSize={{ base: 'md', md: 'lg' }}
+              fontWeight='bold'
+              color='teal.700'
+              textAlign='center'
+            >
+              Cart ({cart?.totalItems} items)
+            </Text>
+            <Button
+              colorScheme='red'
+              variant='outline'
+              size='sm'
+              onClick={() => clearCartMutation.mutate()}
+              leftIcon={<DeleteIcon />}
+              w='full'
+              maxW='200px'
+            >
+              Clear Cart
+            </Button>
+          </VStack>
 
-                    <VStack spacing={2} flex={1} mx={3} align='flex-start'>
-                      <Text
-                        isTruncated
-                        fontSize='sm'
-                        maxW='120px'
-                        fontWeight='medium'
-                      >
-                        {item.product.name}
-                      </Text>
+          {/* Cart Items */}
+          <Stack spacing={4} mb={6}>
+            {cart?.items.map((item) => (
+              <VStack
+                key={item.product._id}
+                bg='teal.900'
+                color='white'
+                borderRadius='lg'
+                overflow='hidden'
+                spacing={0}
+              >
+                {/* Product Info Section */}
+                <Flex w='100%' align='center' p={3} gap={3}>
+                  <Image
+                    src={
+                      item.product.images?.length > 0
+                        ? item.product.images[0]
+                        : '/placeholder-image.jpg'
+                    }
+                    alt={item.product.name}
+                    boxSize={{ base: '60px', md: '70px' }}
+                    objectFit='cover'
+                    borderRadius='md'
+                    border='2px solid'
+                    borderColor='teal.400'
+                    flexShrink={0}
+                  />
 
-                      <HStack spacing={1}>
-                        {Array(5)
-                          .fill('')
-                          .map((_, i) => {
-                            const rating =
-                              Number(item.product.averageRating) || 0;
-                            return (
-                              <StarIcon
-                                key={i}
-                                color={
-                                  i < Math.floor(rating)
-                                    ? 'yellow.400'
-                                    : 'gray.300'
-                                }
-                                boxSize={3}
-                              />
-                            );
-                          })}
-                      </HStack>
-                    </VStack>
+                  <VStack align='flex-start' spacing={1} flex={1} minW={0}>
+                    <Text
+                      fontSize={{ base: 'sm', md: 'md' }}
+                      fontWeight='semibold'
+                      noOfLines={2}
+                      wordBreak='break-word'
+                    >
+                      {item.product.name}
+                    </Text>
 
-                    <IconButton
-                      aria-label='delete item'
-                      colorScheme='orange'
-                      icon={<DeleteIcon />}
-                      size='xs'
-                      alignSelf='flex-start'
-                      onClick={() => removeItem.mutate(item.product._id)}
-                    />
-                  </Flex>
-                  <Divider />
-                  <Flex w='100%' align='center' justify='space-between' p={3}>
+                    <HStack spacing={1}>
+                      {Array(5)
+                        .fill('')
+                        .map((_, i) => {
+                          const rating =
+                            Number(item.product.averageRating) || 0;
+                          return (
+                            <StarIcon
+                              key={i}
+                              color={
+                                i < Math.floor(rating)
+                                  ? 'yellow.400'
+                                  : 'gray.400'
+                              }
+                              boxSize={3}
+                            />
+                          );
+                        })}
+                    </HStack>
+
+                    <Text
+                      fontSize={{ base: 'sm', md: 'md' }}
+                      fontWeight='bold'
+                      color='teal.200'
+                    >
+                      ${item.product.price} each
+                    </Text>
+                  </VStack>
+
+                  <IconButton
+                    aria-label='Remove item'
+                    colorScheme='red'
+                    icon={<DeleteIcon />}
+                    size='sm'
+                    onClick={() => removeItem.mutate(item.product._id)}
+                    flexShrink={0}
+                  />
+                </Flex>
+
+                <Divider borderColor='teal.700' />
+
+                {/* Quantity and Total Section */}
+                <Flex
+                  w='100%'
+                  align='center'
+                  p={3}
+                  direction={{ base: 'column', sm: 'row' }}
+                  gap={4}
+                >
+                  {/* Quantity Controls */}
+                  <VStack spacing={2} w={{ base: 'full', sm: 'auto' }}>
+                    <Text fontSize='xs' fontWeight='medium' color='teal.200'>
+                      Quantity
+                    </Text>
                     <ButtonGroup
-                      size='xs'
+                      size='sm'
                       isAttached
                       variant='outline'
-                      alignItems='center'
+                      w='fit-content'
                     >
-                      <Text fontSize='xs' fontWeight='light' mr={2}>
-                        Quantity
-                      </Text>
                       <IconButton
-                        aria-label='Add quantity'
+                        aria-label='Decrease quantity'
                         icon={<MinusIcon />}
                         onClick={() =>
                           updateQuantity.mutate({
@@ -142,12 +200,20 @@ export default function CartList() {
                         }
                         disabled={item.quantity <= 1}
                         color='white'
+                        borderColor='teal.400'
+                        _hover={{ bg: 'teal.800' }}
                       />
-                      <Button size='xs' color='white'>
+                      <Button
+                        size='sm'
+                        color='white'
+                        borderColor='teal.400'
+                        minW='50px'
+                        cursor='default'
+                      >
                         {item.quantity}
                       </Button>
                       <IconButton
-                        aria-label='Add quantity'
+                        aria-label='Increase quantity'
                         icon={<AddIcon />}
                         onClick={() =>
                           updateQuantity.mutate({
@@ -156,80 +222,77 @@ export default function CartList() {
                           })
                         }
                         color='white'
+                        borderColor='teal.400'
+                        _hover={{ bg: 'teal.800' }}
                       />
                     </ButtonGroup>
-                    <Text fontWeight='extrabold' fontSize='xs'>
-                      ${item.product.price}
+                  </VStack>
+
+                  {/* Subtotal */}
+                  <VStack spacing={1} align='center' flex={1}>
+                    <Text fontSize='xs' color='teal.200' fontWeight='medium'>
+                      Subtotal
                     </Text>
-                  </Flex>
-                </VStack>
-              );
-            })}
+                    <Text
+                      fontSize={{ base: 'md', md: 'lg' }}
+                      fontWeight='bold'
+                      color='white'
+                    >
+                      ${(item.product.price * item.quantity).toFixed(2)}
+                    </Text>
+                  </VStack>
+                </Flex>
+              </VStack>
+            ))}
           </Stack>
 
-          <Divider />
-
-          <Flex
-            w='100%'
-            bg='teal.900'
-            color='white'
-            align='center'
-            justify='space-between'
-            mt={8}
-            p={3}
-          >
-            <Box>
-              <Text fontWeight='light' fontSize='xs'>
-                Total Items:
-                <Text
-                  as='span'
-                  fontWeight='bold'
-                  fontSize='xs'
-                  color='blue.600'
-                  ml={1}
-                >
+          {/* Cart Summary */}
+          <Box bg='teal.900' color='white' borderRadius='lg' p={4} mb={4}>
+            <VStack spacing={3}>
+              <Flex w='100%' align='center'>
+                <Text flex={1} fontSize='md' fontWeight='medium'>
+                  Total Items:
+                </Text>
+                <Text fontSize='md' fontWeight='bold' color='teal.200'>
                   {cart?.totalItems}
                 </Text>
-              </Text>
-              <Text fontWeight='light' fontSize='xs'>
-                Sub Total:
-                <Text
-                  as='span'
-                  fontWeight='bold'
-                  fontSize='xs'
-                  color='red'
-                  ml={1}
-                >
+              </Flex>
+
+              <Divider borderColor='teal.700' />
+
+              <Flex w='100%' align='center'>
+                <Text flex={1} fontSize='lg' fontWeight='bold'>
+                  Total Amount:
+                </Text>
+                <Text fontSize='lg' fontWeight='bold' color='teal.200'>
                   ${cart?.totalAmount.toFixed(2)}
                 </Text>
-              </Text>
-            </Box>
-            <Button
-              colorScheme='orange'
-              size='xs'
-              onClick={() => clearCartMutation.mutate()}
-            >
-              Clear Cart
-            </Button>
-          </Flex>
+              </Flex>
+            </VStack>
+          </Box>
 
-          <Flex
-            w='100%'
-            bg='teal.900'
-            color='white'
-            my={5}
-            p={3}
-            justify='flex-end'
-          >
+          {/* Action Buttons */}
+          <VStack spacing={3}>
+            <Button
+              variant='outline'
+              colorScheme='teal'
+              onClick={() => navigate('/shop')}
+              size='md'
+              w='full'
+            >
+              Continue Shopping
+            </Button>
+
             <Button
               colorScheme='teal'
-              fontSize='xs'
-              px='30px'
               onClick={() => navigate('/checkout')}
+              size='lg'
+              w='full'
+              fontWeight='bold'
             >
               Checkout
             </Button>
-          </Flex>
+          </VStack>
         </>
       )}
     </Box>
