@@ -1,15 +1,5 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config();
-
-const getFrontendUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return (
-      process.env.FRONTEND_URL_PROD ||
-      'https://multi-vendor-e-commerce-platform.vercel.app'
-    );
-  }
-  return process.env.FRONTEND_URL || 'http://localhost:5173';
-};
+const { FRONTEND_URL } = require('../configs');
 
 //Email service
 class EmailService {
@@ -38,7 +28,7 @@ class EmailService {
   }
 
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${getFrontendUrl()}/users/verify-email/${token}`;
+    const verificationUrl = `${FRONTEND_URL}/users/verify-email/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -101,7 +91,7 @@ class EmailService {
   }
 
   async sendResendVerificationEmail(user, token) {
-    const verificationUrl = `${getFrontendUrl()}/users/verify-email/${token}`;
+    const verificationUrl = `${FRONTEND_URL}/users/verify-email/${token}`;
 
     const html = `
     <!DOCTYPE html>
@@ -206,7 +196,7 @@ class EmailService {
   }
 
   async sendPasswordResetEmail(user, token) {
-    const resetUrl = `${getFrontendUrl()}/users/reset-password/${token}`;
+    const resetUrl = `${FRONTEND_URL}/users/reset-password/${token}`;
 
     const html = `
       <!DOCTYPE html>
@@ -255,7 +245,7 @@ class EmailService {
   }
 
   async sendAccountActivationEmail(user, reason = null) {
-    const loginUrl = `${getFrontendUrl()}/my-account`;
+    const loginUrl = `${FRONTEND_URL}/my-account`;
 
     const html = `
       <!DOCTYPE html>
@@ -318,7 +308,7 @@ class EmailService {
   }
 
   async sendAccountDeactivationEmail(user, reason = null) {
-    const supportUrl = `${getFrontendUrl()}/support`;
+    const supportUrl = `${FRONTEND_URL}/support`;
 
     const html = `
       <!DOCTYPE html>
@@ -381,7 +371,7 @@ class EmailService {
   }
 
   async sendVendorVerificationEmail(user, status, notes = null) {
-    const dashboardUrl = `${getFrontendUrl()}/store-manager`;
+    const dashboardUrl = `${FRONTEND_URL}/store-manager`;
     const supportEmail = process.env.SUPPORT_EMAIL || 'support@example.com';
 
     let html, text, subject;
@@ -773,59 +763,112 @@ class EmailService {
     let statusTitle,
       statusMessage,
       nextSteps,
-      showTracking = false;
+      showTracking = false,
+      headerColor = '#4CAF50';
 
     switch (orderStatus) {
-      case 'processing':
-        statusTitle = 'Your Order is Being Processed';
+      case 'pending':
+        statusTitle = 'Order Confirmation';
         statusMessage =
-          "We've received your order and are preparing it for shipment.";
+          'Thank you for your order. We have received your order and will process it shortly.';
         nextSteps = [
-          "We'll notify you when your order ships",
-          'Expected processing time: 1-2 business days',
+          'Payment verification in progress',
+          'You will receive an update within 24 hours',
         ];
+        headerColor = '#FF9800';
+        break;
+
+      case 'paid':
+        statusTitle = 'Payment Confirmed';
+        statusMessage =
+          'Your payment has been successfully processed and confirmed.';
+        nextSteps = [
+          'Your order will be processed within 1-2 business days',
+          'You will receive a shipping notification once dispatched',
+        ];
+        headerColor = '#4CAF50';
+        break;
+
+      case 'processing':
+        statusTitle = 'Order in Progress';
+        statusMessage = 'Your order is currently being prepared for shipment.';
+        nextSteps = [
+          'Processing time: 1-2 business days',
+          'Shipping notification will be sent upon dispatch',
+        ];
+        headerColor = '#2196F3';
         break;
 
       case 'shipped':
-        statusTitle = 'Your Order Has Shipped!';
-        statusMessage = 'Your order is on its way to you!';
+        statusTitle = 'Order Dispatched';
+        statusMessage = 'Your order has been shipped and is on its way to you.';
         nextSteps = [
-          'Track your package using the link below',
-          `Estimated delivery: ${formattedEstDelivery || '3-5 business days'}`,
+          'Track your package using the details below',
+          `Expected delivery: ${formattedEstDelivery || '3-5 business days'}`,
         ];
         showTracking = true;
+        headerColor = '#4CAF50';
         break;
 
       case 'delivered':
-        statusTitle = 'Your Order Has Been Delivered';
-        statusMessage = 'Your order has been successfully delivered.';
+        statusTitle = 'Order Delivered';
+        statusMessage =
+          'Your order has been successfully delivered to your address.';
         nextSteps = [
-          'Check your package for any damages',
-          'Contact us within 7 days for any issues',
+          'Please inspect your package upon receipt',
+          'Contact support within 7 days for any concerns',
         ];
+        headerColor = '#4CAF50';
         break;
 
       case 'cancelled':
-        statusTitle = 'Your Order Has Been Cancelled';
+        statusTitle = 'Order Cancelled';
         statusMessage = 'Your order has been cancelled as requested.';
         nextSteps = [
-          'If this was unexpected, please contact our support team',
-          'Refunds typically process within 5-7 business days',
+          'Refund processing will begin within 24 hours',
+          'Full refund expected within 5-7 business days',
         ];
+        headerColor = '#f56565';
+        break;
+
+      case 'returned':
+        statusTitle = 'Return Processed';
+        statusMessage = 'Your return request has been processed successfully.';
+        nextSteps = [
+          'Refund will be processed to your original payment method',
+          'Please allow 5-10 business days for refund completion',
+        ];
+        headerColor = '#FF9800';
+        break;
+
+      case 'on_hold':
+        statusTitle = 'Order On Hold';
+        statusMessage =
+          'Your order is temporarily on hold pending verification.';
+        nextSteps = [
+          'Our team will contact you within 24 hours',
+          'Please check your email for any additional requirements',
+        ];
+        headerColor = '#FF9800';
         break;
 
       default:
-        statusTitle = 'Your Order Status Has Been Updated';
-        statusMessage = `Your order status is now: ${orderStatus}`;
-        nextSteps = ['Contact our support team if you have any questions'];
+        statusTitle = 'Order Status Update';
+        statusMessage =
+          'Your order status has been updated. Please review the details below.';
+        nextSteps = [
+          'Contact our support team for assistance',
+          'Reference your order number for faster service',
+        ];
+        headerColor = '#9E9E9E';
     }
 
-    const trackOrderUrl = `${getFrontendUrl()}/orders/${orderId}/track`;
-    const contactUrl = `${getFrontendUrl()}/contact-us`;
-    const shopUrl = getFrontendUrl();
+    const trackOrderUrl = `${FRONTEND_URL}/orders/${orderId}/track`;
+    const contactUrl = `${FRONTEND_URL}/contact-us`;
+    const shopUrl = `${FRONTEND_URL}/shop`;
 
     // Safely handle user data
-    const userName = userId?.name || 'Customer';
+    const userName = userId?.name || 'Valued Customer';
     const userEmail = userId?.email;
 
     if (!userEmail) {
@@ -834,158 +877,205 @@ class EmailService {
     }
 
     const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { 
-          background-color: ${
-            orderStatus === 'cancelled' ? '#f56565' : '#4CAF50'
-          }; 
-          color: white; padding: 20px; text-align: center; 
-        }
-        .status-icon { font-size: 48px; text-align: center; margin: 20px 0; }
-        .content { background-color: #f9f9f9; padding: 20px; margin-top: 20px; }
-        .button { 
-          display: inline-block; padding: 10px 20px; 
-          background-color: ${
-            orderStatus === 'cancelled' ? '#f56565' : '#4CAF50'
-          }; 
-          color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; 
-        }
-        .order-items { margin: 20px 0; }
-        .order-item { display: flex; justify-content: space-between; margin-bottom: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .no-products { color: #666; font-style: italic; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>${statusTitle}</h1>
-          <p>Order #${orderId} • ${formattedOrderDate}</p>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { 
+        background-color: ${headerColor}; 
+        color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;
+      }
+      .header h1 { margin: 0; font-size: 24px; }
+      .header p { margin: 10px 0 0 0; opacity: 0.9; }
+      .status-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+      .content { background-color: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; }
+      .greeting { font-size: 18px; margin-bottom: 15px; }
+      .message { font-size: 16px; margin-bottom: 25px; color: #555; }
+      .tracking-info { 
+        background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;
+        border-left: 4px solid ${headerColor};
+      }
+      .button-container { text-align: center; margin: 30px 0; }
+      .button { 
+        display: inline-block; padding: 12px 24px; margin: 5px;
+        color: white; text-decoration: none; border-radius: 5px; 
+        font-weight: bold; transition: opacity 0.3s;
+      }
+      .button:hover { opacity: 0.8; }
+      .button-primary { background-color: ${headerColor}; }
+      .button-secondary { background-color: #2196F3; }
+      .button-tertiary { background-color: #9C27B0; }
+      .order-summary { margin: 25px 0; }
+      .order-item { 
+        display: flex; justify-content: space-between; padding: 12px 0; 
+        border-bottom: 1px solid #f0f0f0; 
+      }
+      .order-item:last-child { border-bottom: 2px solid #ddd; font-weight: bold; }
+      .no-products { color: #666; font-style: italic; text-align: center; padding: 20px; }
+      .next-steps { margin: 25px 0; }
+      .next-steps ul { padding-left: 20px; }
+      .next-steps li { margin: 8px 0; }
+      .footer { 
+        text-align: center; margin-top: 30px; padding-top: 20px; 
+        border-top: 1px solid #eee; font-size: 12px; color: #666; 
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>${statusTitle}</h1>
+        <p>Order #${orderId} • ${formattedOrderDate}</p>
+      </div>
+      
+      <div class="content">
+        <div class="status-icon">
+          ${
+            orderStatus === 'pending'
+              ? '⏳'
+              : orderStatus === 'paid'
+              ? '💳'
+              : orderStatus === 'processing'
+              ? '🔄'
+              : orderStatus === 'shipped'
+              ? '🚚'
+              : orderStatus === 'delivered'
+              ? '✅'
+              : orderStatus === 'cancelled'
+              ? '❌'
+              : orderStatus === 'returned'
+              ? '↩️'
+              : orderStatus === 'on_hold'
+              ? '⏸️'
+              : 'ℹ️'
+          }
         </div>
         
-        <div class="content">
-          <div class="status-icon">
+        <div class="greeting">Dear ${userName},</div>
+        <div class="message">${statusMessage}</div>
+        
+        ${
+          showTracking && trackingNumber
+            ? `
+          <div class="tracking-info">
+            <strong>Tracking Information:</strong><br>
+            Tracking Number: ${trackingNumber}<br>
             ${
-              orderStatus === 'processing'
-                ? '🔄'
-                : orderStatus === 'shipped'
-                ? '🚚'
-                : orderStatus === 'delivered'
-                ? '✅'
-                : orderStatus === 'cancelled'
-                ? '❌'
-                : 'ℹ️'
+              formattedEstDelivery
+                ? `Estimated Delivery: ${formattedEstDelivery}`
+                : ''
             }
           </div>
-          
-          <h2>Hello ${userName},</h2>
-          <p >${statusMessage}</p>
-          
+        `
+            : ''
+        }
+        
+        <div class="order-summary">
+          <h3>Order Summary:</h3>
           ${
-            showTracking && trackingNumber
-              ? `
-            <p><strong>Tracking Number:</strong> ${trackingNumber}</p>
-          `
-              : ''
+            safeProducts.length > 0
+              ? safeProducts
+                  .map(
+                    (product) => `
+              <div class="order-item">
+                <span>${product.product?.name || product.name || 'Product'} × ${
+                      product.quantity || 1
+                    }</span>
+                <span>$${(
+                  (product.price || 0) * (product.quantity || 1)
+                ).toFixed(2)}</span>
+              </div>
+            `
+                  )
+                  .join('')
+              : '<div class="no-products">Product details unavailable</div>'
           }
-          
-          <div class="order-items">
-            <h3>Your Order:</h3>
-            ${
-              safeProducts.length > 0
-                ? safeProducts
-                    .map(
-                      (product) => `
-                <div class="order-item">
-                  <span>${
-                    product.product?.name || product.name || 'Product'
-                  } × ${product.quantity || 1}</span>
-                  <span>$${(
-                    (product.price || 0) * (product.quantity || 1)
-                  ).toFixed(2)}</span>
-                </div>
-              `
-                    )
-                    .join('')
-                : '<div class="no-products">No product details available</div>'
-            }
-            <div class="order-item" style="font-weight: bold; border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px;">
-              <span>Total</span>
-              <span>$${(totalPrice || 0).toFixed(2)}</span>
-            </div>
+          <div class="order-item">
+            <span><strong>Total Amount</strong></span>
+            <span><strong>$${(totalPrice || 0).toFixed(2)}</strong></span>
           </div>
-          
-          <h3>Next Steps:</h3>
+        </div>
+        
+        <div class="next-steps">
+          <h3>What's Next:</h3>
           <ul>
             ${nextSteps.map((step) => `<li>${step}</li>`).join('')}
           </ul>
-          
-          <div style="text-align: center; margin-top: 30px;">
-            ${
-              showTracking
-                ? `<a href="${trackOrderUrl}" class="button">Track Your Order</a>`
-                : ''
-            }
-            <a href="${contactUrl}" class="button" style="background-color: #2196F3; margin-left: 10px;">Contact Support</a>
-            <a href="${shopUrl}" class="button" style="background-color: #9C27B0; margin-left: 10px;">Continue Shopping</a>
-          </div>
         </div>
         
-        <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
-          <p>&copy; ${new Date().getFullYear()} ${
-      process.env.APP_NAME || 'Our Store'
-    }. All rights reserved.</p>
+        <div class="button-container">
+          ${
+            showTracking
+              ? `<a href="${trackOrderUrl}" class="button button-primary">Track Package</a>`
+              : ''
+          }
+          <a href="${contactUrl}" class="button button-secondary">Contact Support</a>
+          <a href="${shopUrl}" class="button button-tertiary">Continue Shopping</a>
         </div>
       </div>
-    </body>
-    </html>
-  `;
+      
+      <div class="footer">
+        <p>&copy; ${new Date().getFullYear()} ${
+      process.env.APP_NAME || 'Our Store'
+    }. All rights reserved.</p>
+        <p>This is an automated message. Please do not reply to this email.</p>
+      </div>
+    </div>
+  </body>
+  </html>
+`;
 
     const text = `
-    ${statusTitle}
-    
-    Hello ${userName},
-    
-    ${statusMessage}
-    
-    Order Details:
-    - Order #: ${orderId}
-    - Date: ${formattedOrderDate}
-    - Status: ${orderStatus}
-    ${trackingNumber ? `- Tracking #: ${trackingNumber}\n` : ''}
-    
-    Order Items:
-    ${
-      safeProducts.length > 0
-        ? safeProducts
-            .map(
-              (product) =>
-                `- ${product.product?.name || product.name || 'Product'} × ${
-                  product.quantity || 1
-                }: $${((product.price || 0) * (product.quantity || 1)).toFixed(
-                  2
-                )}`
-            )
-            .join('\n')
-        : '- No product details available'
-    }
-    
-    Total: $${(totalPrice || 0).toFixed(2)}
-    
-    Next Steps:
-    ${nextSteps.map((step) => `- ${step}`).join('\n')}
-    
-    ${process.env.APP_NAME || 'Our Store'}
-  `;
+  ${statusTitle}
+  
+  Dear ${userName},
+  
+  ${statusMessage}
+  
+  Order Details:
+  - Order Number: ${orderId}
+  - Order Date: ${formattedOrderDate}
+  - Current Status: ${orderStatus.toUpperCase()}
+  ${trackingNumber ? `- Tracking Number: ${trackingNumber}\n` : ''}
+  ${
+    formattedEstDelivery
+      ? `- Estimated Delivery: ${formattedEstDelivery}\n`
+      : ''
+  }
+  
+  Order Summary:
+  ${
+    safeProducts.length > 0
+      ? safeProducts
+          .map(
+            (product) =>
+              `- ${product.product?.name || product.name || 'Product'} × ${
+                product.quantity || 1
+              }: $${((product.price || 0) * (product.quantity || 1)).toFixed(
+                2
+              )}`
+          )
+          .join('\n')
+      : '- Product details unavailable'
+  }
+  
+  Total Amount: $${(totalPrice || 0).toFixed(2)}
+  
+  Next Steps:
+  ${nextSteps.map((step) => `- ${step}`).join('\n')}
+  
+  For assistance, please contact our support team or visit our website.
+  
+  Best regards,
+  ${process.env.APP_NAME || 'Our Store'} Team
+`;
 
     try {
       await this.sendEmail({
         to: userEmail,
-        subject: `${statusTitle} - Order #${orderId}`,
+        subject: `Order Update: ${statusTitle} - #${orderId}`,
         html,
         text,
       });

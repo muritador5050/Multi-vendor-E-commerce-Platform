@@ -101,7 +101,6 @@ class UserController {
     //Verify refresh token
     const payload = jwt.verify(token, REFRESH_TOKEN);
 
-    //Find user by ID from payload and check if refresh token matches
     const user = await User.findById(payload.id);
 
     if (!user || user.refreshToken !== token) {

@@ -5,16 +5,7 @@ const axios = require('axios');
 const Order = require('./order.model');
 const Cart = require('./cart.model');
 const EmailService = require('../services/emailService');
-
-const getFrontendUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return (
-      process.env.FRONTEND_URL_PROD ||
-      'https://multi-vendor-e-commerce-platform.vercel.app'
-    );
-  }
-  return process.env.FRONTEND_URL || 'http://localhost:5173';
-};
+const { FRONTEND_URL } = require('../configs');
 
 /**
  * @openapi
@@ -129,8 +120,8 @@ paymentSchema.statics.createStripePayment = async function (
       },
     ],
     mode: 'payment',
-    success_url: `${getFrontendUrl()}/payments/success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}&provider=stripe`,
-    cancel_url: `${getFrontendUrl()}/payments/cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
+    success_url: `${FRONTEND_URL}/payments/success/stripe?session_id={CHECKOUT_SESSION_ID}&order_id=${orderId}&provider=stripe`,
+    cancel_url: `${FRONTEND_URL}/payments/cancel/stripe?order_id=${orderId}&reason=user_cancelled`,
     metadata: {
       idempotencyKey,
       orderId: orderId.toString(),
@@ -167,7 +158,7 @@ paymentSchema.statics.createPaystackPayment = async function (orderId, amount) {
     amount: amountInKobo,
     currency: 'NGN',
     reference: paymentReference,
-    callback_url: `${getFrontendUrl()}/payments/success/paystack?reference=${paymentReference}&order_id=${orderId}&provider=paystack`,
+    callback_url: `${FRONTEND_URL}/payments/success/paystack?reference=${paymentReference}&order_id=${orderId}&provider=paystack`,
     channels: [
       'card',
       'bank',
