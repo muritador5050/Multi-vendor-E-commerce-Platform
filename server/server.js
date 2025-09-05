@@ -73,11 +73,10 @@ const corsOptions = {
     }
 
     // Start with configured frontend URL
-    const allowedOrigins = [FRONTEND_URL];
-
-    if (NODE_ENV === 'development') {
-      allowedOrigins.push('http://localhost:5173');
-    }
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'https://multi-vendor-e-commerce-platform.vercel.app',
+    ];
 
     console.log('🔍 Checking origin:', origin);
     console.log('✅ Allowed origins:', allowedOrigins);
