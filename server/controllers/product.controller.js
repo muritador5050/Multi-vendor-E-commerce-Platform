@@ -10,7 +10,6 @@ class ProductsController {
     );
   }
 
-  // Helper method to parse attributes
   static parseAttributes(attributes) {
     if (attributes && typeof attributes === 'string') {
       try {
