@@ -833,9 +833,15 @@ export const useDeleteUserAccount = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       if (currentUser?.role === 'admin' && currentUser._id === id) {
-        throw new Error(
-          'You cannot delete your own account. Please contact another admin if necessary.'
-        );
+        toast({
+          title: 'warning',
+          description:
+            'You cannot delete your own account. Please contact another admin if necessary.',
+          status: 'warning',
+          duration: 3000,
+          isClosable: true,
+          position: 'top-right',
+        });
       }
       return await deleteUser(id);
     },

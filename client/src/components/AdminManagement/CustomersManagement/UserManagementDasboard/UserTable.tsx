@@ -227,7 +227,10 @@ export const UserTable = () => {
                   bg={isCurrentUser ? 'blue.50' : 'white'}
                   _hover={{ bg: 'gray.50' }}
                 >
-                  <Td>
+                  <Td
+                    textDecoration={!user.isActive ? 'line-through' : 'revert'}
+                    textDecorationStyle='double'
+                  >
                     <Flex align='center'>
                       <Avatar
                         size='sm'
@@ -250,6 +253,8 @@ export const UserTable = () => {
                   <Td
                     fontSize='sm'
                     color={user.isEmailVerified ? 'green.700' : 'red.700'}
+                    textDecoration={!user.isActive ? 'line-through' : 'revert'}
+                    textDecorationStyle='double'
                   >
                     {user.email}
                   </Td>
@@ -331,7 +336,7 @@ export const UserTable = () => {
                             >
                               {isDeactivating
                                 ? 'Deactivating...'
-                                : 'Deactivate User'}
+                                : 'Deactivate Acct'}
                             </MenuItem>
                           )}
 
@@ -344,7 +349,9 @@ export const UserTable = () => {
                               }
                               isDisabled={isActivating}
                             >
-                              {isActivating ? 'Activating...' : 'Activate User'}
+                              {isActivating
+                                ? 'Activating...'
+                                : 'Activate Acct.'}
                             </MenuItem>
                           )}
 

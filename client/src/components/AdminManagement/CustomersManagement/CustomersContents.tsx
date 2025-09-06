@@ -158,10 +158,6 @@ export const CustomersContents = () => {
             />
           </Grid>
 
-          {/* Page Size Selector */}
-
-          {/* User Table */}
-
           <UserTable />
         </CardBody>
       </Card>

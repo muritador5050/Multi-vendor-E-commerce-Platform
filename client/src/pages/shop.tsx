@@ -226,14 +226,8 @@ export default function ShopPage() {
               lg: 5,
               xl: 6,
             }}
-            minChildWidth={{
-              base: '140px',
-              sm: '160px',
-              md: '180px',
-              lg: '200px',
-            }}
             maxW='100%'
-            px={{ base: 2, sm: 4, md: 6 }}
+            px={{ base: 1, sm: 2, md: 6 }}
           >
             {products.map((product: Product) => (
               <ProductCard
