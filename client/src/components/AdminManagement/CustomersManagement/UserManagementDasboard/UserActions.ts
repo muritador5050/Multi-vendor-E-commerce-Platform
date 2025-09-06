@@ -99,15 +99,15 @@ export const useUserActions = () => {
     async (userId: string): Promise<boolean> => {
       try {
         await deleteAccountMutation.mutateAsync(userId);
-        showToast('Success', 'User account deleted successfully', 'success');
+        // showToast('Success', 'User account deleted successfully', 'success');
         return true;
       } catch (error) {
-        showToast('Error', 'Failed to delete user account', 'error');
+        // showToast('Error', 'Failed to delete user account', 'error');
         console.error('Error deleting user:', error);
         return false;
       }
     },
-    [deleteAccountMutation, showToast]
+    [deleteAccountMutation]
   );
 
   const handleRoleChange = useCallback(

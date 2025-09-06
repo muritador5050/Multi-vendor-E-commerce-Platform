@@ -1032,7 +1032,7 @@ export const useForceLogout = () => {
     queryClient.clear();
     const url = message
       ? `/my-account?message=${encodeURIComponent(message)}`
-      : '/my-account';
+      : '/';
     navigate(url, { replace: true });
   };
 };

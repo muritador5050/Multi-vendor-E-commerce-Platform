@@ -7,24 +7,40 @@ class EmailService {
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
-      secure: true,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
     });
+
+    // Verify connection configuration
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.error('Email transporter verification failed:', error);
+      } else {
+        console.log('Email server is ready to take messages');
+      }
+    });
   }
 
   async sendEmail(options) {
-    const mailOptions = {
-      from: `"${process.env.APP_NAME}" <${process.env.EMAIL_FROM}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-    };
+    try {
+      const mailOptions = {
+        from: `"${process.env.APP_NAME}" <${process.env.EMAIL_FROM}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      };
 
-    await this.transporter.sendMail(mailOptions);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', result.messageId);
+      return result;
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      throw error;
+    }
   }
 
   async sendVerificationEmail(user, token) {
