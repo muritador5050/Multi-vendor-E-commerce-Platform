@@ -21,14 +21,6 @@ require('./controllers/passport');
 
 const app = express();
 
-// Log environment info for debugging
-console.log(`🚀 Starting server in ${NODE_ENV} mode`);
-console.log(`📍 Frontend URL: ${FRONTEND_URL}`);
-console.log(`📍 Backend URL: ${BACKEND_URL}`);
-console.log(
-  `📍 Environment file loaded: .env.${process.env.NODE_ENV || 'development'}`
-);
-
 app.use('/api/payments/webhooks', (req, res, next) => {
   if (req.path.includes('stripe')) {
     return express.raw({ type: 'application/json' })(req, res, next);
