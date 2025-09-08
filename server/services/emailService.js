@@ -27,6 +27,16 @@ class EmailService {
 
   async sendEmail(options) {
     try {
+      console.log('Email config check:', {
+        hasSmtpHost: !!process.env.SMTP_HOST,
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: process.env.SMTP_PORT,
+        hasSmtpUser: !!process.env.SMTP_USER,
+        smtpUser: process.env.SMTP_USER,
+        fromEmail: process.env.EMAIL_FROM,
+        appName: process.env.APP_NAME,
+      });
+
       const emailData = {
         from: `${process.env.APP_NAME} <${process.env.EMAIL_FROM}>`,
         to: options.to,
@@ -35,10 +45,21 @@ class EmailService {
         text: options.text,
       };
 
+      console.log('Attempting to send email:', {
+        to: emailData.to,
+        subject: emailData.subject,
+        from: emailData.from,
+      });
+
       const result = await this.transporter.sendMail(emailData);
       return result;
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Email sending failed:', {
+        error: error.message,
+        name: error.name,
+        code: error.code,
+        command: error.command,
+      });
       throw error;
     }
   }
