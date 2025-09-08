@@ -18,6 +18,7 @@ export const VerificationButton = ({
           title: data.message,
           status: 'success',
           duration: 3000,
+          position: 'top-right',
           isClosable: true,
         });
       },
@@ -27,6 +28,7 @@ export const VerificationButton = ({
           description: err.message,
           status: 'error',
           duration: 4000,
+          position: 'top-right',
           isClosable: true,
         });
       },

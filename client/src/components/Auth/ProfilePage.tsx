@@ -72,9 +72,9 @@ export const ProfilePage = () => {
   });
 
   const sendEmailVerification = useSendVerifyEmailLink();
-  const handleSendVerification = () => {
+  const handleSendVerification = async () => {
     try {
-      sendEmailVerification.mutate();
+      await sendEmailVerification.mutateAsync();
       toast({
         title: 'Verification email sent!',
         description: 'Please check your email inbox or spam folder.',

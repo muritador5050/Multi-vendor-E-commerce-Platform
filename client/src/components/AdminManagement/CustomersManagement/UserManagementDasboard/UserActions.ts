@@ -11,7 +11,6 @@ import type { UserRole } from '@/type/auth';
 
 export const useUserActions = () => {
   const toast = useToast();
-
   // Mutation hooks
   const activateUserMutation = useActivateUser();
   const deActivateUserMutation = useDeactivateUser();
