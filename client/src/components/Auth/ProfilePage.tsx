@@ -12,6 +12,12 @@ import {
   Stat,
   StatLabel,
   StatNumber,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   useToast,
   useDisclosure,
 } from '@chakra-ui/react';
@@ -25,10 +31,12 @@ import {
   MapPin,
   Clock,
   Shield,
+  UserX,
 } from 'lucide-react';
 import { getRoleBadgeColor } from '@/components/AdminManagement/Utils/Utils';
 import {
   useCurrentUser,
+  useDeactivateUser,
   useLogout,
   useSendVerifyEmailLink,
 } from '@/context/AuthContextService';
@@ -36,12 +44,20 @@ import { useNavigate } from 'react-router-dom';
 import { formatDate } from '@/components/AdminManagement/Utils/Utils';
 import { UserGreeting } from './UserGreeting';
 import { EditProfileDrawer } from './components/EditProfileDrawer';
+import { useCallback, useRef } from 'react';
 
 export const ProfilePage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: iSOpenDialog,
+    onOpen: onOpenDialog,
+    onClose: onCloseDialog,
+  } = useDisclosure();
   const navigate = useNavigate();
   const toast = useToast();
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const currentUser = useCurrentUser();
+  const deactivateAccount = useDeactivateUser();
   const logout = useLogout({
     onSuccess: () => {
       toast({
@@ -54,11 +70,11 @@ export const ProfilePage = () => {
       });
     },
   });
-  const sendEmailVerification = useSendVerifyEmailLink();
 
-  const handleSendVerification = () => {
+  const sendEmailVerification = useSendVerifyEmailLink();
+  const handleSendVerification = async () => {
     try {
-      sendEmailVerification.mutate();
+      await sendEmailVerification.mutateAsync();
       toast({
         title: 'Verification email sent!',
         description: 'Please check your email inbox or spam folder.',
@@ -82,6 +98,19 @@ export const ProfilePage = () => {
       });
     }
   };
+
+  const handleDeactivateAccount = useCallback(
+    async (userId: string): Promise<boolean> => {
+      try {
+        await deactivateAccount.mutateAsync(userId);
+        return true;
+      } catch (error) {
+        console.error('Error deactivating user:', error);
+        return false;
+      }
+    },
+    [deactivateAccount]
+  );
 
   return (
     <Box
@@ -392,30 +421,89 @@ export const ProfilePage = () => {
                 </Button>
               </Box>
             )}
-            <Box
+            <Flex
               mt={4}
               pt={4}
               borderTop='1px solid'
               borderColor='whiteAlpha.300'
+              gap={4}
+              direction={{ base: 'column', md: 'row' }}
             >
               <Button
-                colorScheme='red'
-                variant='outline'
+                colorScheme='gray'
+                size='sm'
+                onClick={onOpenDialog}
+                leftIcon={<UserX size={16} />}
+                width={{ base: 'full', sm: 'auto' }}
+              >
+                Deactivate Acct.
+              </Button>
+              <Button
+                colorScheme='gray'
                 size='sm'
                 onClick={() => logout.mutate()}
                 leftIcon={<LogOut size={16} />}
                 width={{ base: 'full', sm: 'auto' }}
                 isLoading={logout.isPending}
                 loadingText='Logging out...'
-                _hover={{
-                  bg: 'red.50',
-                  borderColor: 'red.300',
-                  color: 'red.600',
-                }}
               >
                 Logout
               </Button>
-            </Box>
+            </Flex>
+            <AlertDialog
+              isOpen={iSOpenDialog}
+              leastDestructiveRef={cancelRef}
+              onClose={onCloseDialog}
+            >
+              <AlertDialogOverlay>
+                <AlertDialogContent>
+                  <AlertDialogHeader
+                    fontSize='lg'
+                    fontWeight='bold'
+                    color='red.600'
+                  >
+                    Deactivate Account
+                  </AlertDialogHeader>
+
+                  <AlertDialogBody>
+                    <Box>
+                      <Text mb={2}>
+                        Are you sure you want to deactivate your{' '}
+                        <Text as='span' fontWeight='bold' color='red.600'>
+                          Account
+                        </Text>
+                        ?
+                      </Text>
+                      <Text fontSize='sm' color='gray.600'>
+                        You will have to contact admin before your account can
+                        be active back.
+                      </Text>
+                    </Box>
+                  </AlertDialogBody>
+
+                  <AlertDialogFooter>
+                    <Button
+                      ref={cancelRef}
+                      onClick={onCloseDialog}
+                      disabled={deactivateAccount.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      colorScheme='red'
+                      onClick={() =>
+                        handleDeactivateAccount(currentUser?._id as string)
+                      }
+                      ml={3}
+                      isLoading={deactivateAccount.isPending}
+                      loadingText='Deactivating...'
+                    >
+                      Proceed
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog>
           </Box>
           <EditProfileDrawer isOpen={isOpen} onClose={onClose} />
         </Box>

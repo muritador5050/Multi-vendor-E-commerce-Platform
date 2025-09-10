@@ -1,30 +1,68 @@
-const nodemailer = require('nodemailer');
+require('dotenv').config();
 const { FRONTEND_URL } = require('../configs');
+const nodemailer = require('nodemailer');
 
 //Email service
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
-      secure: false,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      authMethod: 'PLAIN',
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
+    });
+
+    // Verify connection configuration
+    this.transporter.verify((error, success) => {
+      if (error) {
+        console.error('SMTP connection error:', error);
+      } else {
+        console.log('SMTP server is ready to take messages');
+      }
     });
   }
 
   async sendEmail(options) {
-    const mailOptions = {
-      from: `"${process.env.APP_NAME}" <${process.env.EMAIL_FROM}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-    };
+    try {
+      console.log('Email config check:', {
+        hasSmtpHost: !!process.env.SMTP_HOST,
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: process.env.SMTP_PORT,
+        hasSmtpUser: !!process.env.SMTP_USER,
+        smtpUser: process.env.SMTP_USER,
+        fromEmail: process.env.EMAIL_FROM,
+        appName: process.env.APP_NAME,
+      });
 
-    await this.transporter.sendMail(mailOptions);
+      const emailData = {
+        from: `${process.env.APP_NAME} <${process.env.EMAIL_FROM}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      };
+
+      console.log('Attempting to send email:', {
+        to: emailData.to,
+        subject: emailData.subject,
+        from: emailData.from,
+      });
+
+      const result = await this.transporter.sendMail(emailData);
+      return result;
+    } catch (error) {
+      console.error('Email sending failed:', {
+        error: error.message,
+        name: error.name,
+        code: error.code,
+        command: error.command,
+      });
+      throw error;
+    }
   }
 
   async sendVerificationEmail(user, token) {

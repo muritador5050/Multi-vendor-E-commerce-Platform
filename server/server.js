@@ -21,14 +21,6 @@ require('./controllers/passport');
 
 const app = express();
 
-// Log environment info for debugging
-console.log(`🚀 Starting server in ${NODE_ENV} mode`);
-console.log(`📍 Frontend URL: ${FRONTEND_URL}`);
-console.log(`📍 Backend URL: ${BACKEND_URL}`);
-console.log(
-  `📍 Environment file loaded: .env.${process.env.NODE_ENV || 'development'}`
-);
-
 app.use('/api/payments/webhooks', (req, res, next) => {
   if (req.path.includes('stripe')) {
     return express.raw({ type: 'application/json' })(req, res, next);
@@ -55,7 +47,6 @@ app.use(
 app.set('trust proxy', 1);
 
 app.use('/api/payments/webhooks', (req, res, next) => {
-  console.log('⚡ Skipping rate limit for webhook:', req.path);
   next();
 });
 
@@ -72,19 +63,14 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Start with configured frontend URL
     const allowedOrigins = [
       'http://localhost:5173',
       'https://multi-vendor-e-commerce-platform.vercel.app',
     ];
 
-    console.log('🔍 Checking origin:', origin);
-    console.log('✅ Allowed origins:', allowedOrigins);
-
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log('❌ CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },

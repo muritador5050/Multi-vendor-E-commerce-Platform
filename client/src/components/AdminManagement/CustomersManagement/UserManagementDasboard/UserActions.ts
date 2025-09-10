@@ -11,7 +11,6 @@ import type { UserRole } from '@/type/auth';
 
 export const useUserActions = () => {
   const toast = useToast();
-
   // Mutation hooks
   const activateUserMutation = useActivateUser();
   const deActivateUserMutation = useDeactivateUser();
@@ -99,15 +98,13 @@ export const useUserActions = () => {
     async (userId: string): Promise<boolean> => {
       try {
         await deleteAccountMutation.mutateAsync(userId);
-        showToast('Success', 'User account deleted successfully', 'success');
         return true;
       } catch (error) {
-        showToast('Error', 'Failed to delete user account', 'error');
         console.error('Error deleting user:', error);
         return false;
       }
     },
-    [deleteAccountMutation, showToast]
+    [deleteAccountMutation]
   );
 
   const handleRoleChange = useCallback(

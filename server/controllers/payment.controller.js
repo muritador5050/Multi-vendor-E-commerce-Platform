@@ -42,8 +42,7 @@ class PaymentController {
     if (!paymentProvider) {
       return res.status(400).json({
         success: false,
-        message:
-          'Payment provider not specified. Use /webhooks/stripe or /webhooks/paystack',
+        message: 'Payment provider not specified',
       });
     }
 
