@@ -423,4 +423,11 @@ vendorSchema.methods.getPublicFields = function () {
   };
 };
 
+vendorSchema.statics.deleteByUser = async function (userId, adminUser) {
+  if (adminUser.role !== 'admin') {
+    throw new Error('You do not have permission to delete vendor records');
+  }
+  await this.deleteOne({ user: userId });
+};
+
 module.exports = mongoose.model('Vendor', vendorSchema);

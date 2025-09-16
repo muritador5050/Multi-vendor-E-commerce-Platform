@@ -426,6 +426,17 @@ productSchema.statics.softDelete = async function (id, user) {
   };
 };
 
+productSchema.statics.softDeleteByUser = async function (userId, adminUser) {
+  if (adminUser.role !== 'admin') {
+    throw new Error('You do not have permission to delete these products');
+  }
+  const result = await this.updateMany(
+    { vendor: userId, isDeleted: false },
+    { isDeleted: true, isActive: false }
+  );
+  return result.modifiedCount;
+};
+
 // ============ INSTANCE METHODS ============
 
 // Calculate discounted price
