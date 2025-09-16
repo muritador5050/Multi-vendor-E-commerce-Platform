@@ -38,12 +38,13 @@ export const VerificationButton = ({
   return (
     <Button
       size='xs'
-      colorScheme={isVerified ? 'green' : 'red'}
+      colorScheme='green'
       variant='outline'
       onClick={handleToggle}
       isLoading={isPending}
+      isDisabled={isVerified}
     >
-      {isVerified ? 'Unverify' : 'Verify'}
+      {isVerified ? 'Verified' : 'Verify'}
     </Button>
   );
 };
