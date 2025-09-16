@@ -469,7 +469,7 @@ const VendorsTable = () => {
                         </Text>
                       </HStack>
                       <Text fontSize='xs' color='gray.500'>
-                        {vendor.user.name}
+                        {vendor.user?.name || 'N/A'}
                       </Text>
                     </VStack>
                   </Td>

@@ -306,10 +306,12 @@ export const ProductsContent = () => {
 
   // Get unique categories for filter
   const categories = Array.from(
-    new Set(products.map((p) => p.category.name))
+    new Set(
+      products.filter((p) => p.category?.name).map((p) => p.category.name)
+    )
   ).map((name) => ({
     name,
-    id: products.find((p) => p.category.name === name)?.category._id,
+    id: products.find((p) => p.category?.name === name)?.category._id,
   }));
 
   if (isLoading) {
@@ -407,12 +409,12 @@ export const ProductsContent = () => {
                   textDecorationColor={!product.isActive ? 'red.600' : 'revert'}
                   textDecorationStyle={!product.isActive ? 'double' : 'unset'}
                 >
-                  {product.name}
+                  {product?.name}
                 </Td>
-                <Td>{product.vendor.name}</Td>
+                <Td>{product.vendor?.name || 'N/A'}</Td>
                 <Td>${product.price}</Td>
                 <Td>{product.quantityInStock}</Td>
-                <Td>{product.category.name}</Td>
+                <Td>{product.category?.name || 'N/A'} </Td>
                 <Td>{product.averageRating?.toFixed(1) || 'N/A'}</Td>
                 <Td>
                   <Badge
@@ -675,7 +677,7 @@ export const ProductsContent = () => {
                     <Text fontWeight='bold' mb={2}>
                       Vendor
                     </Text>
-                    <Text>{selectedProduct.vendor.name}</Text>
+                    <Text>{selectedProduct.vendor?.name || 'N/A'}</Text>
                   </Box>
                   <Box>
                     <Text fontWeight='bold' mb={2}>

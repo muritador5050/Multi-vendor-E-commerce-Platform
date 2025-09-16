@@ -19,6 +19,7 @@ import type { ApiResponse } from '@/type/ApiResponse';
 import { buildQueryString } from '@/utils/QueryString';
 import { useToast } from '@chakra-ui/react';
 import { getVendorProfileStatus, vendorKeys } from './VendorContextService';
+import { productKeys } from './ProductContextService';
 
 /**
  * Query keys for auth-related queries
@@ -847,6 +848,8 @@ export const useDeleteUserAccount = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.users() });
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: vendorKeys.all });
       toast({
         title: 'Successful message',
         description: 'User account deleted successfully',

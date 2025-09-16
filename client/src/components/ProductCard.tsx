@@ -11,8 +11,9 @@ import {
   AspectRatio,
   Badge,
   HStack,
+  Center,
 } from '@chakra-ui/react';
-import { Heart, Check, Eye } from 'lucide-react';
+import { Heart, Check, Eye, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAddToCart, useIsInCart } from '@/context/CartContextService';
 import type { Product } from '@/type/product';
@@ -170,19 +171,25 @@ export default function ProductCard({
       <CardBody p={{ base: 2, sm: 3, md: 4 }} onClick={handleNavigateToProduct}>
         {/* Image Container */}
         <Box position='relative' mb={{ base: 2, md: 3 }}>
-          <AspectRatio ratio={1}>
-            <Image
-              src={getProductImage()}
-              alt={product.name || 'Product image'}
-              borderRadius={{ base: 'sm', md: 'md' }}
-              objectFit='cover'
-              fallbackSrc='/placeholder-image.jpg'
-              transition='transform 0.3s ease'
-              _groupHover={{
-                md: { transform: 'scale(1.05)' },
-              }}
-            />
-          </AspectRatio>
+          {product.images && product.images[0] ? (
+            <AspectRatio ratio={1}>
+              <Image
+                src={getProductImage()}
+                alt={product.name || 'Product image'}
+                borderRadius={{ base: 'sm', md: 'md' }}
+                objectFit='cover'
+                fallbackSrc='/placeholder-image.jpg'
+                transition='transform 0.3s ease'
+                _groupHover={{
+                  md: { transform: 'scale(1.05)' },
+                }}
+              />
+            </AspectRatio>
+          ) : (
+            <Center h='full' color='gray.300'>
+              <Package size={32} />
+            </Center>
+          )}
 
           {/* Discount Badge */}
           {discount > 0 && (
