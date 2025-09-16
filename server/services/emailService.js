@@ -1,65 +1,71 @@
 require('dotenv').config();
 const { FRONTEND_URL } = require('../configs');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 //Email service
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      authMethod: 'PLAIN',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    this.resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Verify connection configuration
-    this.transporter.verify((error, success) => {
-      if (error) {
-        console.error('SMTP connection error:', error);
-      } else {
-        console.log('SMTP server is ready to take messages');
+    this.testConnection();
+  }
+
+  async testConnection() {
+    try {
+      if (!process.env.RESEND_API_KEY) {
+        console.error('RESEND_API_KEY is not set');
+        return;
       }
-    });
+
+      if (!process.env.RESEND_API_KEY.startsWith('re_')) {
+        console.error(
+          'Invalid RESEND_API_KEY format - should start with "re_"'
+        );
+        return;
+      }
+
+      console.log('Resend service initialized successfully');
+    } catch (error) {
+      console.error('Resend initialization error:', error);
+    }
   }
 
   async sendEmail(options) {
     try {
       console.log('Email config check:', {
-        hasSmtpHost: !!process.env.SMTP_HOST,
-        smtpHost: process.env.SMTP_HOST,
-        smtpPort: process.env.SMTP_PORT,
-        hasSmtpUser: !!process.env.SMTP_USER,
-        smtpUser: process.env.SMTP_USER,
+        hasResendKey: !!process.env.RESEND_API_KEY,
+        resendKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 8) + '...',
         fromEmail: process.env.EMAIL_FROM,
         appName: process.env.APP_NAME,
       });
 
       const emailData = {
         from: `${process.env.APP_NAME} <${process.env.EMAIL_FROM}>`,
-        to: options.to,
+        to: [options.to],
         subject: options.subject,
         html: options.html,
         text: options.text,
       };
 
-      console.log('Attempting to send email:', {
+      console.log('Attempting to send email via Resend SDK:', {
         to: emailData.to,
         subject: emailData.subject,
         from: emailData.from,
       });
 
-      const result = await this.transporter.sendMail(emailData);
+      const result = await this.resend.emails.send(emailData);
+
+      if (result.error) {
+        throw new Error(`Resend API Error: ${result.error.message}`);
+      }
+
+      console.log('Email sent successfully:', result.data.id);
       return result;
     } catch (error) {
       console.error('Email sending failed:', {
         error: error.message,
         name: error.name,
-        code: error.code,
-        command: error.command,
+        stack: error.stack,
       });
       throw error;
     }

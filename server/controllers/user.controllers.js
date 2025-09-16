@@ -271,13 +271,11 @@ class UserController {
 
     const user = await User.findByIdAndValidate(req.params.id);
 
-    await user.toggleEmailVerification();
+    await user.adminVerification();
 
     res.json({
       success: true,
-      message: `User ${
-        user.isEmailVerified ? 'verified' : 'unverified'
-      } successfully`,
+      message: `User verified`,
       data: user,
     });
   }
