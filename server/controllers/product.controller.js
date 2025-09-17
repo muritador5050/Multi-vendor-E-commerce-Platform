@@ -59,7 +59,10 @@ class ProductsController {
   }
 
   static async getAllProducts(req, res) {
-    const result = await Product.getPaginated(req.query);
+    const { page, limit, sort, ...filters } = req.query;
+
+    const options = { page, limit, sort };
+    const result = await Product.getPaginated(filters, options);
 
     return res.status(200).json({
       success: true,

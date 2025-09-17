@@ -324,7 +324,6 @@ productSchema.statics.buildFilter = function (queryParams) {
   };
 };
 
-// Get paginated products with advanced filtering
 productSchema.statics.getPaginated = async function (
   queryParams = {},
   options = {}
