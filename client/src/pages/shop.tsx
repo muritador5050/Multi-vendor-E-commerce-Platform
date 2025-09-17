@@ -75,10 +75,8 @@ export default function ShopPage() {
   };
 
   // Use React Query hook
-  const { data, isLoading, error, refetch, isRefetching } = useProducts({
-    ...queryParams,
-    isActive: true,
-  });
+  const { data, isLoading, error, refetch, isRefetching } =
+    useProducts(queryParams);
 
   const products = data?.products || [];
   const pagination = data?.pagination || {

@@ -14,9 +14,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 export const productKeys = {
   all: ['product'] as const,
   lists: (params?: ProductQueryParams) =>
-    [...productKeys.all, 'lists', { params }] as const,
+    [...productKeys.all, 'lists', params] as const,
   vendorLists: (params?: Omit<ProductQueryParams, 'vendor'>) =>
-    [...productKeys.all, 'vendor-lists', { params }] as const,
+    [...productKeys.all, 'vendor-lists', params] as const,
   item: (id: string) => [productKeys.all, 'item', id] as const,
 };
 
