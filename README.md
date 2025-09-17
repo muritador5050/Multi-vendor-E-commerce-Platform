@@ -1,4 +1,4 @@
-# Multi-Vendor E-Commerce Platform
+# Multivendor E-Commerce Platform
 
 A comprehensive full-stack e-commerce solution that enables multiple vendors to sell their
 products through a single platform, with separate interfaces for admins, vendors, and customers.
@@ -58,7 +58,7 @@ products through a single platform, with separate interfaces for admins, vendors
 - **Payment Processing**: Stripe, Paystack
 - **Security**: Helmet, bcrypt, CORS, Rate limiting
 - **File Upload**: Multer
-- **Email Service**: Nodemailer
+- **Email Service**: Resend
 - **API Documentation**: Swagger UI
 - **Caching**: API Cache
 - **Validation**: Joi
@@ -93,7 +93,7 @@ cd server
 npm install
 
 # Create environment file
-cp .env.example .env
+cp .env
 # Configure your environment variables
 
 # Start development server
@@ -117,28 +117,27 @@ Create a `.env` file in the server directory:
 NODE_ENV=development
 PORT=8000
 MONGODB_URI=mongodb://localhost:27017/multivendor-ecommerce
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=jwt_secret
 JWT_EXPIRES_IN=7d
 
 # Payment Gateways
-STRIPE_SECRET_KEY=your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
-PAYSTACK_SECRET_KEY=your_paystack_secret_key
+STRIPE_SECRET_KEY=stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=stripe_publishable_key
+PAYSTACK_SECRET_KEY=paystack_secret_key
 
 # OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-FACEBOOK_APP_ID=your_facebook_app_id
-FACEBOOK_APP_SECRET=your_facebook_app_secret
+GOOGLE_CLIENT_ID=google_client_id
+GOOGLE_CLIENT_SECRET=google_client_secret
+FACEBOOK_APP_ID=facebook_app_id
+FACEBOOK_APP_SECRET=facebook_app_secret
 
 # Email Configuration
-EMAIL_HOST=your_email_host
-EMAIL_PORT=587
-EMAIL_USER=your_email
-EMAIL_PASS=your_email_password
+EMAIL_HOST=email_host
+EMAIL_USER=email
+RESEND_KEY=resend
 
-# Other
-CLIENT_URL=http://localhost:3000
+
+
 ```
 
 ## Running the Application
@@ -165,19 +164,6 @@ cd server
 npm start
 ```
 
-## Testing
-
-```bash
-# Run backend tests
-cd server
-npm test
-
-# Run tests with coverage
-npx nyc npm test
-
-# API testing with Newman
-npx newman run postman-collection.json
-```
 
 ## API Documentation
 
@@ -222,6 +208,7 @@ multi-vendor-ecommerce-platform/
 The platform supports multiple payment gateways:
 - **Stripe**: International payments with comprehensive features
 - **Paystack**: African market focus with local payment methods
+-**Stripe-card-for-testing**: 4242 4242 4242 4242,  10/30, 564
 
 ## Key Technical Highlights
 
@@ -233,24 +220,11 @@ The platform supports multiple payment gateways:
 - **Scalability**: Modular architecture with separation of concerns
 - **Security**: Industry-standard security practices and authentication
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the ISC License.
-
 ## Author
 
 **Abdulazeez Muritador**
 - Email: muritador5050@gmail.com
-- GitHub: [Your GitHub Profile]
-- LinkedIn: [Your LinkedIn Profile]
+
 
 ## Support
 
