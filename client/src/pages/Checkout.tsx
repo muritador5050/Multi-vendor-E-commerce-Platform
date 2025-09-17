@@ -56,7 +56,7 @@ const CheckoutPage = () => {
       country: '',
     },
     useSameAddress: true,
-    paymentMethod: 'card',
+    paymentMethod: 'paystack',
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const toast = useToast();
@@ -225,7 +225,7 @@ const CheckoutPage = () => {
 
   const handleBackNavigation = () => {
     if (isBuyNow) {
-      navigate(-1); // Go back to product page
+      navigate(-1);
     } else {
       navigate('/carts');
     }
@@ -420,7 +420,7 @@ const CheckoutPage = () => {
               }
             >
               <Stack direction='column' spacing={4}>
-                <Radio value='card'>
+                <Radio isDisabled value='card'>
                   <Box ml={2}>
                     <Text fontWeight='medium'>Credit/Debit Card</Text>
                     <Text fontSize='sm' color='gray.500'>
