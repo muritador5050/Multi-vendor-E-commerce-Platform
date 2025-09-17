@@ -476,7 +476,7 @@ export const ProductsContent = () => {
       {/* Pagination */}
       {pagination && (
         <Flex justify='space-between' align='center' mt={6}>
-          <HStack spacing={4}>
+          <HStack display={{ base: 'none', md: 'flex' }} spacing={4}>
             <Text fontSize='sm' color='gray.600'>
               Showing {(currentPage - 1) * pageLimit + 1} to{' '}
               {Math.min(currentPage * pageLimit, pagination.total)} of{' '}

@@ -1,5 +1,4 @@
-import { LogOut } from 'lucide-react';
-import { Box, Tooltip, IconButton, Stack, Center } from '@chakra-ui/react';
+import { Stack, Center } from '@chakra-ui/react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/homepage';
 import ShopPage from './pages/shop';
@@ -16,7 +15,6 @@ import ForgotPasswordForm from './components/Auth/ForgotPassword';
 import ProtectedRoute from './ProtectedRoute/ProtectedRoute';
 import ProductCategoryPage from './pages/ProductCategoryPage';
 import AdminDashboard from './components/AdminManagement/AdminDashboardLayout';
-import { useIsAuthenticated, useLogout } from './context/AuthContextService';
 import { EmailVerificationPage } from './components/Auth/EmailVerification';
 import CreateVendorProfile from './components/VendorManagement/CreateVendorProfile';
 import CartList from './pages/CartList';
@@ -37,9 +35,6 @@ import Returns from './pages/Returns';
 
 //App
 function App() {
-  const { isAuthenticated } = useIsAuthenticated();
-  const logout = useLogout();
-
   return (
     <Stack position='relative'>
       <Routes>
@@ -122,20 +117,6 @@ function App() {
           />
         </Route>
       </Routes>
-
-      {isAuthenticated && (
-        <Box position='fixed' right={10} bottom={50}>
-          <Tooltip hasArrow label='logout' bg='white' color='teal'>
-            <IconButton
-              aria-label='logout-btn'
-              icon={<LogOut size={48} color='teal' />}
-              colorScheme='gray'
-              size='lg'
-              onClick={() => logout.mutate()}
-            />
-          </Tooltip>
-        </Box>
-      )}
     </Stack>
   );
 }
