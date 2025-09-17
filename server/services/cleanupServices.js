@@ -7,7 +7,6 @@ class CleanupService {
   }
 
   static startOnlineUsersCleanup() {
-    // Every 5 minutes
     cron.schedule('*/5 * * * *', async () => {
       try {
         await this.cleanupStaleOnlineUsers();
@@ -36,7 +35,6 @@ class CleanupService {
     }
   }
 
-  // Optional: Manual cleanup endpoint for testing
   static async runManualCleanup() {
     return await this.cleanupStaleOnlineUsers();
   }
