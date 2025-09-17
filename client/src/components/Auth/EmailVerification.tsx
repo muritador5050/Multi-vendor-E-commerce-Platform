@@ -39,8 +39,6 @@ export function EmailVerificationPage() {
       setTimeout(() => navigate('/my-account', { replace: true }), 3000);
     },
     onError: (error) => {
-      console.error('Email verification failed:', error);
-
       toast({
         title: 'Verification failed',
         description: error?.message || 'Please try again or contact support.',

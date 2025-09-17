@@ -70,6 +70,18 @@ export const useProfileForm = () => {
       return;
     }
 
+    if (!currentUser?.isEmailVerified) {
+      toast({
+        title: 'Email verifaction required',
+        status: 'info',
+        position: 'top-right',
+        isClosable: true,
+        description:
+          'You need to verify your email before getting access to this feature!',
+        duration: 4000,
+      });
+      return;
+    }
     try {
       await updateProfile.mutateAsync({
         id: currentUser._id,

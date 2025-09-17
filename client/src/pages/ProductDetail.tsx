@@ -55,10 +55,9 @@ export default function ProductDetail(): React.ReactElement {
         duration: 2000,
       });
     } catch (error) {
-      console.log(error);
       toast({
         title: 'Failed operation',
-        description: 'Failed to add product to cart',
+        description: 'Failed to add product to cart' + error,
         status: 'error',
         duration: 2000,
         position: 'top-right',

@@ -98,9 +98,7 @@ async function login(email: string, password: string, rememberMe: boolean) {
  * Initiate Google OAuth login
  */
 async function googleLogin() {
-  window.location.href = `${
-    apiBase || 'http://localhost:8000/api'
-  }/users/google-signup`;
+  window.location.href = `${apiBase}/users/google-signup`;
 }
 
 /**
@@ -407,10 +405,6 @@ export const useProfile = () => {
           error instanceof ApiError &&
           (error.status === 401 || error.status === 403)
         ) {
-          console.warn(
-            'Profile fetch failed - authentication error:',
-            error.message
-          );
           throw error;
         }
         throw error;
@@ -572,7 +566,7 @@ export const useGoogleLogin = () => {
   return useMutation({
     mutationFn: googleLogin,
     onError: (error) => {
-      console.error('Google login failed:', error);
+      throw error;
     },
   });
 };
@@ -580,7 +574,10 @@ export const useGoogleLogin = () => {
 /**
  * Register mutation
  */
-export const useRegister = (options?: { onSuccess?: () => void }) => {
+export const useRegister = (options?: {
+  onSuccess?: () => void;
+  onError?: () => void;
+}) => {
   return useMutation({
     mutationFn: async ({
       name,
@@ -604,6 +601,7 @@ export const useRegister = (options?: { onSuccess?: () => void }) => {
       return response;
     },
     onSuccess: options?.onSuccess,
+    onError: options?.onError,
   });
 };
 
@@ -860,7 +858,6 @@ export const useDeleteUserAccount = () => {
       });
     },
     onError: (error) => {
-      console.error('Failed to delete user account:', error);
       toast({
         title: 'Action Not Allowed',
         description: error.message,

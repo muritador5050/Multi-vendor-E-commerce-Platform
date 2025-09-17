@@ -102,13 +102,6 @@ const PaymentFailedPage = () => {
         urlParams.get('payment_id');
     }
 
-    console.log('Payment failure URL params:', {
-      provider: detectedProvider,
-      orderId: detectedOrderId,
-      paymentId: extractedPaymentId,
-      reason: reasonParam,
-    });
-
     if (!extractedPaymentId && !detectedOrderId) {
       setError('No payment or order reference found');
       return;

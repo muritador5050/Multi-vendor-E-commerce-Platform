@@ -111,7 +111,14 @@ function OAuthCallback() {
             timeoutsRef.current.push(fallbackTimeoutId);
           }
         } catch (err) {
-          console.error('OAuth callback error:', err);
+          toast({
+            title: 'Error',
+            description: `OAuth callback error: ${err}`,
+            status: 'error',
+            position: 'top-right',
+            duration: 6000,
+            isClosable: true,
+          });
           setLoadingStage('error');
           const errorTimeoutId = setTimeout(() => {
             navigate('/my-account?error=oauth_processing_failed', {
@@ -121,7 +128,6 @@ function OAuthCallback() {
           timeoutsRef.current.push(errorTimeoutId);
         }
       } else if (error === 'oauth_failed' || error === 'account_inactive') {
-        console.error('OAuth error:', error);
         setLoadingStage('error');
         toast({
           title:

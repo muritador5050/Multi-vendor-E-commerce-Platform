@@ -64,8 +64,15 @@ export default function ResetPasswordForm() {
 
     try {
       await resetPassword.mutateAsync({ token, password });
-    } catch (err) {
-      console.log(err);
+    } catch {
+      toast({
+        title: 'Failed',
+        description: 'Something went wrong. Unable to submit',
+        status: 'error',
+        position: 'top',
+        duration: 6000,
+        isClosable: true,
+      });
     }
   };
 

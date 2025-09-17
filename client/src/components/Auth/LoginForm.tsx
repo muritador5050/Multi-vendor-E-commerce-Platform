@@ -20,12 +20,14 @@ import {
   Divider,
   Text,
   Box,
+  useToast,
 } from '@chakra-ui/react';
 import { AlertCircle, Eye, EyeOff, Mail } from 'lucide-react';
 import { useLogin } from '@/context/AuthContextService';
 import { GoogleLoginButton } from '@/components/Buttons/GoogleButton';
 
 export default function LoginForm() {
+  const toast = useToast();
   const [user, setUser] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -71,7 +73,14 @@ export default function LoginForm() {
         rememberMe: rememberMe,
       });
     } catch (err) {
-      console.log(err);
+      toast({
+        title: 'Error',
+        description: `Something went wrong! ${err}`,
+        status: 'error',
+        position: 'top-right',
+        duration: 6000,
+        isClosable: true,
+      });
     }
   };
 

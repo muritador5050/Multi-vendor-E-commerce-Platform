@@ -100,8 +100,15 @@ function VendorRegistration() {
         password: user.password,
         confirmPassword: user.confirmPassword,
       });
-    } catch (err) {
-      console.log(err);
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Check your internet connection',
+        status: 'error',
+        position: 'top-right',
+        duration: 6000,
+        isClosable: true,
+      });
     }
   };
 

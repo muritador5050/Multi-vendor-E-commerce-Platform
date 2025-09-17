@@ -431,10 +431,10 @@ const CreateVendorProfile: React.FC = () => {
         });
         navigate('/store-manager', { replace: true });
       } catch (error) {
-        console.error('Error creating vendor profile:', error);
         toast({
           title: 'Error',
-          description: 'Failed to create vendor profile. Please try again.',
+          description:
+            'Failed to create vendor profile. Please try again.' + error,
           status: 'error',
           position: 'top-right',
           duration: 5000,

@@ -239,7 +239,11 @@ const OrderDetailsPage = () => {
         {order.orderStatus === 'delivered' && (
           <Button colorScheme='blue'>Buy Again</Button>
         )}
-        <Button colorScheme='blue' variant='outline'>
+        <Button
+          colorScheme='blue'
+          variant='outline'
+          onClick={() => navigate('/contact-us')}
+        >
           Contact Support
         </Button>
       </Flex>

@@ -54,6 +54,16 @@ export default function RegisterForm() {
         confirmPassword: '',
       });
     },
+    onError() {
+      toast({
+        title: 'Error',
+        description: 'Something went wrong!',
+        status: 'error',
+        position: 'top-right',
+        duration: 6000,
+        isClosable: true,
+      });
+    },
   });
 
   const handleOnchange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,16 +76,12 @@ export default function RegisterForm() {
     if (user.password !== user.confirmPassword) {
       return;
     }
-    try {
-      await registerMutation.mutateAsync({
-        name: user.name,
-        email: user.email,
-        password: user.password,
-        confirmPassword: user.confirmPassword,
-      });
-    } catch (err) {
-      console.log(err);
-    }
+    await registerMutation.mutateAsync({
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      confirmPassword: user.confirmPassword,
+    });
   };
 
   return (

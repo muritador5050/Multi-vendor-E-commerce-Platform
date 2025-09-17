@@ -84,7 +84,6 @@ export const ProfilePage = () => {
         isClosable: true,
       });
     } catch (error) {
-      console.error('Email verification error:', error);
       toast({
         title: 'Failed to send verification email',
         description:
@@ -105,11 +104,18 @@ export const ProfilePage = () => {
         await deactivateAccount.mutateAsync(userId);
         return true;
       } catch (error) {
-        console.error('Error deactivating user:', error);
+        toast({
+          title: 'Error',
+          description: `Error deactivating user: ${error}`,
+          status: 'error',
+          position: 'top-right',
+          duration: 6000,
+          isClosable: true,
+        });
         return false;
       }
     },
-    [deactivateAccount]
+    [deactivateAccount, toast]
   );
 
   return (

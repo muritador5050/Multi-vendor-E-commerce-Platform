@@ -68,10 +68,11 @@ export default function ProductCard({
           });
         },
         onError: (error) => {
-          console.error('Failed to add to cart:', error);
           toast({
             title: 'Error',
-            description: 'Failed to add product to cart. Please try again.',
+            description: `Failed to add product to cart. Please try again. ${
+              error.message || 'Unknown error'
+            }`,
             status: 'error',
             duration: 4000,
             position: 'top-right',
@@ -107,12 +108,11 @@ export default function ProductCard({
         });
       },
       onError: (error) => {
-        console.error('Failed to update wishlist:', error);
         toast({
           title: 'Error',
           description: `Failed to ${
             isInWishlist ? 'remove from' : 'add to'
-          } wishlist. Please try again.`,
+          } wishlist. Please try again. ${error.stack} `,
           status: 'error',
           duration: 4000,
           position: 'top-right',

@@ -184,7 +184,7 @@ export const useCreateProduct = () => {
       queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
     onError: (error) => {
-      console.error('Create product failed:', error);
+      throw error;
     },
   });
 };
@@ -252,7 +252,7 @@ export const useUpdateProduct = () => {
     },
 
     onError: (error) => {
-      console.error('Update product failed:', error);
+      throw error;
     },
   });
 };
@@ -297,7 +297,7 @@ export const useDeleteProduct = () => {
       context?.previousLists.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });
-      console.error('Delete product failed:', error);
+      throw error;
     },
 
     onSettled: () => {

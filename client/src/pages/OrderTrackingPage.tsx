@@ -114,11 +114,6 @@ const OrderTrackingPage = () => {
       navigate('/orders', { replace: true });
       return;
     }
-
-    if (order) {
-      console.log('Order Status:', order.orderStatus);
-      console.log('Mapped Step:', getActiveStep(order.orderStatus));
-    }
   }, [orderId, order, navigate]);
 
   const CancelledOrderStatus = ({ status }: { status: string }) => {

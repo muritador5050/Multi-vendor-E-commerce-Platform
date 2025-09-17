@@ -24,7 +24,6 @@ import {
   Spinner,
   useColorModeValue,
   Flex,
-  useToast,
 } from '@chakra-ui/react';
 import { Edit3, Save, Camera } from 'lucide-react';
 import { useProfileForm } from '../hooks/useProfileForm';
@@ -41,7 +40,6 @@ export const EditProfileDrawer = ({
   //Colors
   const bgGradient = 'linear(to-br, blue.100, purple.50)';
   const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const toast = useToast();
   const { handleSubmit, handleInputChange, formData, isLoading } =
     useProfileForm();
   const {
@@ -63,23 +61,8 @@ export const EditProfileDrawer = ({
   // Handle form submission
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser?.isEmailVerified) {
-      toast({
-        title: 'Email verifaction required',
-        status: 'info',
-        position: 'top-right',
-        isClosable: true,
-        description:
-          'You need to verify your email before getting access to this feature!',
-        duration: 4000,
-      });
-    }
-    try {
-      await handleSubmit();
-      onClose();
-    } catch (error) {
-      console.error('Error submitting form:', error);
-    }
+    await handleSubmit();
+    onClose();
   };
 
   // Handle save button click

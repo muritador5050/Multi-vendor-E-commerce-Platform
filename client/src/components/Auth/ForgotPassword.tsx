@@ -53,7 +53,14 @@ export default function ForgotPasswordForm() {
     try {
       await forgotPassword.mutateAsync(email);
     } catch (err) {
-      console.log(err);
+      toast({
+        title: 'Error',
+        description: `Something went wrong! ${err}`,
+        status: 'error',
+        position: 'top-right',
+        duration: 6000,
+        isClosable: true,
+      });
     }
   };
 
