@@ -26,8 +26,10 @@ import {
 import { Search, Clock, Tag, Eye, Calendar, User } from 'lucide-react';
 import { useBlogs } from '@/context/BlogContextService';
 import type { Blog } from '@/type/Blog';
+import { useNavigate } from 'react-router-dom';
 
 function BlogPage() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
@@ -317,8 +319,7 @@ function BlogPage() {
                       fontWeight='medium'
                       _hover={{ transform: 'translateY(-1px)' }}
                       transition='all 0.2s'
-                      as='a'
-                      href={`/blog/${blog.slug || blog._id}`}
+                      onClick={() => navigate(`/blogs/${blog._id}`)}
                     >
                       Read More
                     </Button>

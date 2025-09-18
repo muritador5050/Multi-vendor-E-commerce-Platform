@@ -3,14 +3,31 @@ import {
   useSettings,
   useUpdateSettings,
 } from '@/context/SettingsContextService';
-import { Box, Input, Button, useToast } from '@chakra-ui/react';
+import { Box, Input, Button, Select, useToast } from '@chakra-ui/react';
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD - US Dollar ($)' },
+  { value: 'EUR', label: 'EUR - Euro (€)' },
+  { value: 'GBP', label: 'GBP - British Pound (£)' },
+  { value: 'JPY', label: 'JPY - Japanese Yen (¥)' },
+  { value: 'CAD', label: 'CAD - Canadian Dollar (C$)' },
+  { value: 'AUD', label: 'AUD - Australian Dollar (A$)' },
+  { value: 'CHF', label: 'CHF - Swiss Franc (Fr)' },
+  { value: 'CNY', label: 'CNY - Chinese Yuan (¥)' },
+  { value: 'INR', label: 'INR - Indian Rupee (₹)' },
+  { value: 'NGN', label: 'NGN - Nigerian Naira (₦)' },
+  { value: 'ZAR', label: 'ZAR - South African Rand (R)' },
+  { value: 'BRL', label: 'BRL - Brazilian Real (R$)' },
+  { value: 'MXN', label: 'MXN - Mexican Peso ($)' },
+  { value: 'KRW', label: 'KRW - South Korean Won (₩)' },
+  { value: 'SGD', label: 'SGD - Singapore Dollar (S$)' },
+];
 
 export const SettingsContent = () => {
   const toast = useToast();
   const { data: settings } = useSettings();
   const { mutate: updateSettings, isPending } = useUpdateSettings();
 
-  // Local form state
   const [form, setForm] = useState({
     platformName: '',
     adminEmail: '',
@@ -18,7 +35,6 @@ export const SettingsContent = () => {
     currency: '',
   });
 
-  // Load settings into state when fetched
   useEffect(() => {
     if (settings?.data) {
       setForm({
@@ -34,6 +50,10 @@ export const SettingsContent = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
   const handleSave = () => {
     updateSettings(
       { data: form },
@@ -41,7 +61,7 @@ export const SettingsContent = () => {
         onSuccess: () => {
           toast({
             title: 'Settings updated',
-            description: 'Your platform settings have been saved successfully.',
+            description: 'Platform settings have been saved successfully.',
             status: 'success',
             duration: 4000,
             position: 'top-right',
@@ -68,7 +88,7 @@ export const SettingsContent = () => {
         Settings
       </Box>
 
-      <Box bg='teal.900' color='white' p={6} borderRadius='lg' boxShadow='sm'>
+      <Box p={6} borderRadius='lg' boxShadow='sm'>
         <Box fontSize='lg' fontWeight='bold' mb={4}>
           Platform Settings
         </Box>
@@ -104,11 +124,18 @@ export const SettingsContent = () => {
 
           <Box>
             <label>Currency</label>
-            <Input
+            <Select
               name='currency'
               value={form.currency}
-              onChange={handleChange}
-            />
+              onChange={handleSelectChange}
+              placeholder='Select currency'
+            >
+              {CURRENCY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
           </Box>
         </Box>
 

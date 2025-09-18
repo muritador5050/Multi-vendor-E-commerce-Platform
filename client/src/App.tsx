@@ -32,6 +32,7 @@ import HelpCenter from './pages/HelpCenter';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import Returns from './pages/Returns';
+import BlogDetail from './pages/BlogDetail';
 
 //App
 function App() {
@@ -41,6 +42,7 @@ function App() {
         <Route path='/' element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path='blogs' element={<BlogPage />} />
+          <Route path='blogs/:id' element={<BlogDetail />} />
           <Route path='shop' element={<ShopPage />} />
           <Route path='help-center' element={<HelpCenter />} />
           <Route path='terms-of-service' element={<TermsOfService />} />
