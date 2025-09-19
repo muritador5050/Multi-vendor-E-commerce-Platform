@@ -449,12 +449,11 @@ userSchema.methods.generateVerificationEmailToken = function () {
   return token;
 };
 
-userSchema.methods.toggleEmailVerification = async function () {
-  this.isEmailVerified = !this.isEmailVerified;
-  if (this.isEmailVerified) {
-    this.emailVerificationToken = undefined;
-    this.emailVerificationExpires = undefined;
-  }
+userSchema.methods.adminVerification = async function () {
+  this.isEmailVerified = true;
+  this.emailVerificationToken = undefined;
+  this.emailVerificationExpires = undefined;
+  await EmailService.sendWelcomeEmail(this);
   return await this.save();
 };
 

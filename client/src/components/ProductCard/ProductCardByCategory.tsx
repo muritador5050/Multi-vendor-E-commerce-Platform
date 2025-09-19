@@ -6,6 +6,7 @@ import {
 import type { Product } from '@/type/product';
 import {
   Box,
+  Center,
   Flex,
   IconButton,
   Image,
@@ -13,7 +14,7 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import { Heart, Eye, ShoppingCart, Star } from 'lucide-react';
+import { Heart, Eye, ShoppingCart, Star, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 type ProductProps = {
@@ -99,18 +100,25 @@ export default function ProductCardByCategory({
       cursor='pointer'
       role='group'
     >
-      <Image
-        src={product.images[0]}
-        alt={product.name}
-        objectFit='cover'
-        borderRadius='md'
-        width='100%'
-        height='250px'
-        mb={3}
-        transition='transform 0.3s ease'
-        _groupHover={{ transform: 'scale(1.05)' }}
-        onClick={handleNavigateToProduct}
-      />
+      {product.images && product.images[0] ? (
+        <Image
+          src={product.images[0]}
+          alt={product.name}
+          objectFit='cover'
+          borderRadius='md'
+          width='100%'
+          height='250px'
+          mb={3}
+          transition='transform 0.3s ease'
+          _groupHover={{ transform: 'scale(1.05)' }}
+          onClick={handleNavigateToProduct}
+        />
+      ) : (
+        <Center h='full' color='gray.300'>
+          <Package size={32} />
+        </Center>
+      )}
+
       <Flex justify='center' gap={2}>
         <IconButton
           aria-label='ShoppingCart'

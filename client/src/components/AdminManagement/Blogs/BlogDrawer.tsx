@@ -1,4 +1,3 @@
-// components/BlogDrawer.tsx
 import React from 'react';
 import {
   Drawer,
@@ -23,6 +22,7 @@ import {
 import { EyeOff, ExternalLink, Calendar, User, BarChart } from 'lucide-react';
 import type { Blog } from '@/type/Blog';
 import { useTogglePublish } from '@/context/BlogContextService';
+import { useNavigate } from 'react-router-dom';
 
 interface BlogDrawerProps {
   isOpen: boolean;
@@ -32,6 +32,7 @@ interface BlogDrawerProps {
 
 const BlogDrawer: React.FC<BlogDrawerProps> = ({ isOpen, onClose, blog }) => {
   const toast = useToast();
+  const navigate = useNavigate();
   const togglePublishMutation = useTogglePublish();
 
   const handlePublishToggle = async () => {
@@ -59,9 +60,7 @@ const BlogDrawer: React.FC<BlogDrawerProps> = ({ isOpen, onClose, blog }) => {
 
   const handleViewLive = () => {
     if (blog?.slug) {
-      // Replace with your actual blog URL structure
-      const blogUrl = `${window.location.origin}/blog/${blog.slug}`;
-      window.open(blogUrl, '_blank');
+      navigate(`/blogs/${blog._id}`);
     }
   };
 

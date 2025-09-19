@@ -56,7 +56,7 @@ const OrdersPage = () => {
   const { data: orders, isLoading, error: ordersError } = useOrders();
 
   const userOrders = orders?.orders.filter(
-    (order) => order.userId._id === currentUser?._id
+    (order) => order.userId?._id === currentUser?._id
   );
 
   // Handle orders API error
@@ -245,18 +245,6 @@ const OrdersPage = () => {
                 >
                   View Details
                 </Button>
-                {order.orderStatus === 'delivered' && (
-                  <Button
-                    colorScheme='blue'
-                    size='sm'
-                    onClick={() => {
-                      /* Handle reorder logic */
-                      console.log('Reordering:', order._id);
-                    }}
-                  >
-                    Reorder
-                  </Button>
-                )}
               </Flex>
             </Box>
           ))}

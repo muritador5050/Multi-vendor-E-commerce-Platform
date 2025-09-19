@@ -183,7 +183,7 @@ export const useCreateOrder = () => {
       }
     },
     onError: (error) => {
-      console.error('Failed to create order:', error);
+      throw error;
     },
   });
 };
@@ -213,7 +213,7 @@ export const useUpdateOrderStatus = () => {
       }
     },
     onError: (error) => {
-      console.error('Failed to update order status:', error);
+      throw error;
     },
   });
 };
@@ -232,7 +232,7 @@ export const useDeleteOrder = () => {
       queryClient.removeQueries({ queryKey: orderKeys.details(orderId) });
     },
     onError: (error) => {
-      console.error('Failed to delete order:', error);
+      throw error;
     },
   });
 };

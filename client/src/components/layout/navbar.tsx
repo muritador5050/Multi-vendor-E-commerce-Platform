@@ -295,8 +295,7 @@ function Navbar() {
           >
             Welcome to{' '}
             <Text as='span' color='orange'>
-              {settings?.data?.platformName ||
-                'Multi-vendor-E-commerce-platform'}
+              {settings?.data?.platformName || 'Multivendor'}
             </Text>
           </Text>
           <Text fontWeight='bold' color='white'>

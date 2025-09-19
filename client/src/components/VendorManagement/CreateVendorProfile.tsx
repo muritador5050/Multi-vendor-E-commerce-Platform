@@ -420,18 +420,21 @@ const CreateVendorProfile: React.FC = () => {
 
         toast({
           title: 'Success!',
-          description: 'Vendor profile created successfully.',
+          description: `Thank you for creating your profile. 
+          Your submitted documents are now being reviewed by our verification team.
+           We'll contact you as soon as the approval process is complete.
+           `,
           status: 'success',
           position: 'top-right',
-          duration: 5000,
+          duration: 6000,
           isClosable: true,
         });
         navigate('/store-manager', { replace: true });
       } catch (error) {
-        console.error('Error creating vendor profile:', error);
         toast({
           title: 'Error',
-          description: 'Failed to create vendor profile. Please try again.',
+          description:
+            'Failed to create vendor profile. Please try again.' + error,
           status: 'error',
           position: 'top-right',
           duration: 5000,

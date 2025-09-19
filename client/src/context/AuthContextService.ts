@@ -19,6 +19,7 @@ import type { ApiResponse } from '@/type/ApiResponse';
 import { buildQueryString } from '@/utils/QueryString';
 import { useToast } from '@chakra-ui/react';
 import { getVendorProfileStatus, vendorKeys } from './VendorContextService';
+import { productKeys } from './ProductContextService';
 
 /**
  * Query keys for auth-related queries
@@ -97,9 +98,7 @@ async function login(email: string, password: string, rememberMe: boolean) {
  * Initiate Google OAuth login
  */
 async function googleLogin() {
-  window.location.href = `${
-    apiBase || 'http://localhost:8000/api'
-  }/users/google-signup`;
+  window.location.href = `${apiBase}/users/google-signup`;
 }
 
 /**
@@ -406,10 +405,6 @@ export const useProfile = () => {
           error instanceof ApiError &&
           (error.status === 401 || error.status === 403)
         ) {
-          console.warn(
-            'Profile fetch failed - authentication error:',
-            error.message
-          );
           throw error;
         }
         throw error;
@@ -571,7 +566,7 @@ export const useGoogleLogin = () => {
   return useMutation({
     mutationFn: googleLogin,
     onError: (error) => {
-      console.error('Google login failed:', error);
+      throw error;
     },
   });
 };
@@ -579,7 +574,10 @@ export const useGoogleLogin = () => {
 /**
  * Register mutation
  */
-export const useRegister = (options?: { onSuccess?: () => void }) => {
+export const useRegister = (options?: {
+  onSuccess?: () => void;
+  onError?: () => void;
+}) => {
   return useMutation({
     mutationFn: async ({
       name,
@@ -603,6 +601,7 @@ export const useRegister = (options?: { onSuccess?: () => void }) => {
       return response;
     },
     onSuccess: options?.onSuccess,
+    onError: options?.onError,
   });
 };
 
@@ -847,6 +846,8 @@ export const useDeleteUserAccount = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.users() });
+      queryClient.invalidateQueries({ queryKey: productKeys.all });
+      queryClient.invalidateQueries({ queryKey: vendorKeys.all });
       toast({
         title: 'Successful message',
         description: 'User account deleted successfully',
@@ -857,7 +858,6 @@ export const useDeleteUserAccount = () => {
       });
     },
     onError: (error) => {
-      console.error('Failed to delete user account:', error);
       toast({
         title: 'Action Not Allowed',
         description: error.message,

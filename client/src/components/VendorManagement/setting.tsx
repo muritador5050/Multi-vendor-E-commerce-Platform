@@ -1,4 +1,4 @@
-import  { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Flex,
@@ -70,7 +70,7 @@ interface FormData {
 
 interface TabItem {
   name: string;
-  icon: LucideIcon
+  icon: LucideIcon;
 }
 
 const tabName: TabItem[] = [
@@ -278,10 +278,9 @@ export default function Setting() {
       });
       setIsDirty(false);
     } catch (error) {
-      console.error('Save error:', error);
       toast({
         title: 'Error',
-        description: `Failed to save some settings. Please try again`,
+        description: `Failed to save some settings. Please try again ${error} `,
         position: 'top-right',
         status: 'error',
         duration: 5000,

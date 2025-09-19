@@ -1,4 +1,6 @@
 const User = require('../models/user.model');
+const Product = require('../models/product.model');
+const Vendor = require('../models/vendor.model');
 const jwt = require('jsonwebtoken');
 const {
   NODE_ENV,
@@ -271,13 +273,11 @@ class UserController {
 
     const user = await User.findByIdAndValidate(req.params.id);
 
-    await user.toggleEmailVerification();
+    await user.adminVerification();
 
     res.json({
       success: true,
-      message: `User ${
-        user.isEmailVerified ? 'verified' : 'unverified'
-      } successfully`,
+      message: `User verified`,
       data: user,
     });
   }
@@ -447,7 +447,15 @@ class UserController {
     }
 
     await User.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'User deleted successfully' });
+    await Vendor.deleteByUser(req.params.id, req.user);
+    const deletedProductsCount = await Product.softDeleteByUser(
+      req.params.id,
+      req.user
+    );
+    res.json({
+      success: true,
+      message: `User deleted successfully. ${deletedProductsCount} products were also soft deleted.`,
+    });
   }
 
   //Deactivate user

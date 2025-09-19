@@ -11,12 +11,12 @@ import { ApiError } from '@/utils/ApiError';
 import { buildQueryString } from '@/utils/QueryString';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const productKeys = {
+export const productKeys = {
   all: ['product'] as const,
   lists: (params?: ProductQueryParams) =>
-    [...productKeys.all, 'lists', { params }] as const,
+    [...productKeys.all, 'lists', params] as const,
   vendorLists: (params?: Omit<ProductQueryParams, 'vendor'>) =>
-    [...productKeys.all, 'vendor-lists', { params }] as const,
+    [...productKeys.all, 'vendor-lists', params] as const,
   item: (id: string) => [productKeys.all, 'item', id] as const,
 };
 
@@ -184,7 +184,7 @@ export const useCreateProduct = () => {
       queryClient.invalidateQueries({ queryKey: productKeys.vendorLists() });
     },
     onError: (error) => {
-      console.error('Create product failed:', error);
+      throw error;
     },
   });
 };
@@ -252,7 +252,7 @@ export const useUpdateProduct = () => {
     },
 
     onError: (error) => {
-      console.error('Update product failed:', error);
+      throw error;
     },
   });
 };
@@ -297,7 +297,7 @@ export const useDeleteProduct = () => {
       context?.previousLists.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });
-      console.error('Delete product failed:', error);
+      throw error;
     },
 
     onSettled: () => {

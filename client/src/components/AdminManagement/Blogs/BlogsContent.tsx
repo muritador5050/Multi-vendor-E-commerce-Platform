@@ -76,7 +76,13 @@ const BlogsContent = () => {
   });
 
   // API hooks
-  const { data: blogsData, isLoading, isError, refetch } = useBlogs(filters);
+  const {
+    data: blogsData,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useBlogs(filters);
   const deleteBlogMutation = useDeleteBlog();
   const togglePublishMutation = useTogglePublish();
 
@@ -180,7 +186,13 @@ const BlogsContent = () => {
         >
           Blog Management
         </Text>
-        <HStack spacing={4}>
+        <HStack spacing={{ base: '9', md: '4' }}>
+          <IconButton
+            aria-label='refresh'
+            icon={<RefreshCw size={18} />}
+            onClick={handleRefresh}
+            isLoading={isFetching}
+          />
           <Button
             leftIcon={<Plus size={18} />}
             colorScheme='blue'
@@ -188,19 +200,11 @@ const BlogsContent = () => {
           >
             New Blog
           </Button>
-          <Button
-            leftIcon={<RefreshCw size={18} />}
-            variant='outline'
-            onClick={handleRefresh}
-            isLoading={isLoading}
-          >
-            Refresh
-          </Button>
         </HStack>
       </Flex>
 
       <Flex mb={6} gap={4}>
-        <InputGroup>
+        <InputGroup display={{ base: 'none', md: 'flex' }}>
           <InputLeftElement>
             <Search size={18} />
           </InputLeftElement>

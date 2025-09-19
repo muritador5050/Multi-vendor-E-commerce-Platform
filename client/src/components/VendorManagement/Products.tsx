@@ -77,6 +77,7 @@ import {
   useUpdateProduct,
 } from '@/context/ProductContextService';
 import { useCategories } from '@/context/CategoryContextService';
+import { useVendorProfile } from '@/context/VendorContextService';
 
 interface DrawerState {
   product: Product | null;
@@ -374,11 +375,12 @@ export default function VendorProducts() {
     limit: 12,
   });
 
+  const vendorProfile = useVendorProfile();
   const toggleMutation = useToggleProductStatus();
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
   const { data: categories } = useCategories();
-
+  const documentsUnderReview = vendorProfile.data;
   const {
     isOpen: isDrawerOpen,
     onOpen: onDrawerOpen,
@@ -724,6 +726,7 @@ export default function VendorProducts() {
             size='md'
             w={{ base: 'full', sm: 'auto' }}
             onClick={() => navigate('/store-manager/create-product')}
+            disabled={documentsUnderReview?.verificationStatus !== 'approved'}
           >
             Add New Product
           </Button>
@@ -740,12 +743,18 @@ export default function VendorProducts() {
                 No products yet
               </Text>
               <Text fontSize='sm' color='gray.400' maxW='md'>
-                Start by adding your first product to showcase in your store
+                {documentsUnderReview?.verificationStatus !== 'approved'
+                  ? `Your documents is under review, you can't perform any operation on product`
+                  : `Start
+                by adding your first product to showcase in your store`}
               </Text>
               <Button
                 colorScheme='blue'
                 mt={4}
                 onClick={() => navigate('/store-manager/create-product')}
+                disabled={
+                  documentsUnderReview?.verificationStatus !== 'approved'
+                }
               >
                 Create Your First Product
               </Button>

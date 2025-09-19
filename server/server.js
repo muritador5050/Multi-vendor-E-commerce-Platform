@@ -65,7 +65,8 @@ const corsOptions = {
 
     const allowedOrigins = [
       'http://localhost:5173',
-      'https://multi-vendor-e-commerce-platform.vercel.app',
+      'https://multivendor.site',
+      'https://www.multivendor.site',
     ];
 
     if (allowedOrigins.includes(origin)) {

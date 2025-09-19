@@ -133,7 +133,7 @@ export const useCreateReview = () => {
       queryClient.invalidateQueries({ queryKey: reviewQueryKeys.stats() });
     },
     onError: (error) => {
-      console.error('Create review error:', error);
+      throw error;
     },
   });
 };
